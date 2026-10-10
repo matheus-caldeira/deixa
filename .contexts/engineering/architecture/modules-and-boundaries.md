@@ -1,0 +1,57 @@
+---
+title: Módulos e fronteiras
+updated: 2026-10-10
+source: PROJETO.md §14
+---
+
+# Módulos e fronteiras
+
+## Estrutura de `src/`
+
+```
+src/app/              Next.js: (auth), (learning) com as cinco abas, read/[episodeId], api/
+src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
+src/modules/<m>/      domain/ · application/ (casos de uso e ports) · infrastructure/ · index.ts
+src/infrastructure/   config/ database/ storage/ tmdb/ google-ai/ kokoro/ logger/ container.ts
+src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
+src/seed/             seed de demonstração (idempotente)
+tests/                e2e (Playwright), bundle
+fixtures/             SRT fictícios EN e PT
+```
+
+## Módulos
+
+| Módulo           | Responsabilidade                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| `identity`       | Contas, senha, sessão, preferências                                                 |
+| `catalog`        | Obras, temporadas, episódios, `MetadataProvider`, sincronização com o TMDB           |
+| `subtitles`      | Parser SRT, validação, hash, deduplicação, importação, falas                         |
+| `alignment`      | Alinhamento EN ↔ PT por sobreposição de tempo (puro)                                 |
+| `highlights`     | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio          |
+| `learning`       | Itens de aprendizado, explicações, `LlmProvider`, geração de cards                   |
+| `flashcards`     | Cards do usuário, agendamento de revisão, histórico                                  |
+| `ai-credentials` | Chave Gemini por usuário: cifra, teste, máscara, remoção                             |
+| `audio`          | `TtsProvider`, cache de áudio por hash                                               |
+| `gamification`   | XP por eventos e retrato de demonstração de Início, Conversar e Progresso            |
+
+Os módulos `scripts`, `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
+chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.
+
+## Regras de dependência
+
+- `domain` importa só `shared/` e outros arquivos do próprio `domain`.
+- `application` importa `domain`, `shared` e ports; nunca `infrastructure`, Drizzle, `fetch` ou Next.
+- `infrastructure` de um módulo implementa os ports do módulo.
+- Um módulo só importa outro pelo `index.ts`.
+- `src/infrastructure/container.ts` é o único lugar que monta casos de uso com implementações concretas.
+- `src/app` importa o container e tipos públicos dos módulos; nunca adapters (`tmdb`, `kokoro`, `google-ai`,
+  `database`) nem `modules/**/infrastructure`.
+- `src/ui` não importa `src/infrastructure/**` nem `modules/**/infrastructure/**`. Componente cliente chama
+  server action.
+
+O ESLint (`no-restricted-imports`) barra as duas últimas.
+
+## Borda fina
+
+Page, action e handler fazem quatro coisas: resolvem a sessão, validam a entrada com Zod, chamam o caso de uso
+e traduzem o resultado. Regra de negócio fora disso é defeito.
