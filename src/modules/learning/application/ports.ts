@@ -42,7 +42,6 @@ export type CatalogSuggestion = {
   startToken: number;
   endToken: number;
   term: string;
-  meaning: string;
 };
 
 export interface LearningRepository {

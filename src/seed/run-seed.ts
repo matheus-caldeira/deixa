@@ -1,0 +1,259 @@
+import { readFile } from "node:fs/promises";
+import { eq } from "drizzle-orm";
+import type { Container } from "@/infrastructure/container";
+import type { Database } from "@/infrastructure/database/client";
+import {
+  episodes,
+  learningItemExplanations,
+  learningItems,
+  userCards,
+  userPreferences,
+  users,
+} from "@/infrastructure/database/schema";
+import {
+  makeLoadSeasonEpisodes,
+  makeRegisterWork,
+  type CatalogRepository,
+  type EpisodeProgressRepository,
+} from "@/modules/catalog";
+import {
+  FakeMetadataProvider,
+  fakeExternalId,
+} from "@/modules/catalog/infrastructure/fake-metadata-provider";
+import type { CueMarks } from "@/modules/highlights";
+import { defaultPreferences } from "@/modules/identity";
+import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
+import { systemClock } from "@/shared/clock";
+import { isAppError } from "@/shared/errors";
+import { uuidGenerator } from "@/shared/ids";
+import { cleanToken, normalizeTerm, tokenize } from "@/shared/text";
+import {
+  SEED_EMAIL_SUFFIX,
+  SEED_PASSWORD,
+  SEED_PROFILES,
+  SEED_WORKS,
+  SHARED_MARKS,
+  type EpisodeKey,
+} from "./data";
+
+const ENGLISH_FIXTURE = "fixtures/sample.en.srt";
+const PORTUGUESE_FIXTURE = "fixtures/sample.pt-BR.srt";
+
+function tokenIndexesOf(text: string, phrase: string): number[] {
+  const tokens = tokenize(text).map((token) => cleanToken(token).toLowerCase());
+  const words = phrase.toLowerCase().split(" ");
+  for (let start = 0; start <= tokens.length - words.length; start += 1) {
+    if (words.every((word, offset) => tokens[start + offset] === word)) {
+      return words.map((_, offset) => start + offset);
+    }
+  }
+  return [];
+}
+
+export async function runSeed(input: {
+  container: Container;
+  db: Database;
+  catalog: CatalogRepository & EpisodeProgressRepository;
+  log: (message: string) => void;
+}): Promise<void> {
+  const { container, db, catalog, log } = input;
+  const clock = systemClock;
+  const ids = uuidGenerator;
+  const now = clock.now();
+
+  const userIdBySlug = new Map<string, string>();
+  for (const profile of SEED_PROFILES) {
+    const email = `${profile.slug}${SEED_EMAIL_SUFFIX}`;
+    const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    const id = existing?.id ?? ids.next();
+    if (!existing) {
+      await db.insert(users).values({
+        id,
+        name: profile.name,
+        email,
+        passwordHash: await scryptPasswords.hash(SEED_PASSWORD),
+        avatarColor: profile.color,
+        createdAt: new Date(now.getTime() + userIdBySlug.size),
+      });
+      await db.insert(userPreferences).values({
+        userId: id,
+        ...defaultPreferences(profile.level),
+        dailyGoal: profile.dailyGoal,
+        preferredAccent: profile.accent,
+        audioSpeed: profile.audioSpeed,
+      });
+    }
+    userIdBySlug.set(profile.slug, id);
+  }
+  log(`perfis: ${[...userIdBySlug.keys()].join(", ")}`);
+
+  const fakeMetadata = new FakeMetadataProvider();
+  const catalogDeps = { catalog, metadata: fakeMetadata, clock, ids };
+  const registerWork = makeRegisterWork(catalogDeps);
+  const loadSeasonEpisodes = makeLoadSeasonEpisodes(catalogDeps);
+  const english = { filename: "sample.en.srt", bytes: new Uint8Array(await readFile(ENGLISH_FIXTURE)) };
+  const portuguese = {
+    filename: "sample.pt-BR.srt",
+    bytes: new Uint8Array(await readFile(PORTUGUESE_FIXTURE)),
+  };
+
+  const episodeIdByKey = new Map<EpisodeKey, string>();
+  for (const work of SEED_WORKS) {
+    const uploaderId = userIdBySlug.get(work.uploader) ?? null;
+    const { mediaId } = await registerWork({
+      userId: uploaderId,
+      type: work.type,
+      externalId: fakeExternalId(work.slug),
+    });
+    for (const season of await catalog.listSeasons(mediaId)) {
+      const loaded = await loadSeasonEpisodes({ mediaId, seasonNumber: season.seasonNumber });
+      for (const episode of loaded.episodes) {
+        episodeIdByKey.set(`${work.slug}-${season.seasonNumber}-${episode.episodeNumber}`, episode.id);
+      }
+    }
+    for (const [key, state] of Object.entries(work.episodes) as [EpisodeKey, string][]) {
+      const episodeId = episodeIdByKey.get(key);
+      if (!episodeId || !uploaderId) continue;
+      if (state === "PROCESSING" || state === "NEEDS_REVIEW") {
+        await db.update(episodes).set({ status: state }).where(eq(episodes.id, episodeId));
+        continue;
+      }
+      await container.importEpisodeSubtitles({
+        userId: uploaderId,
+        episodeId,
+        english,
+        portuguese: state === "READY_PT" ? portuguese : undefined,
+      });
+    }
+  }
+  log(`obras: ${SEED_WORKS.length}, episódios cadastrados: ${episodeIdByKey.size}`);
+
+  async function marksFor(
+    episodeId: string,
+    phrases: [number, string][],
+    lines: number[],
+  ): Promise<CueMarks[]> {
+    const script = await container.getEpisodeScript(episodeId);
+    if (!script) return [];
+    const byCue = new Map<string, CueMarks>();
+    const entry = (lineIndex: number): CueMarks | null => {
+      const line = script.lines[lineIndex];
+      if (!line) return null;
+      const existing = byCue.get(line.cueId) ?? { cueId: line.cueId, tokens: [], wholeLine: false };
+      byCue.set(line.cueId, existing);
+      return existing;
+    };
+    for (const [lineIndex, phrase] of phrases) {
+      const mark = entry(lineIndex);
+      const line = script.lines[lineIndex];
+      if (mark && line) mark.tokens.push(...tokenIndexesOf(line.text, phrase));
+    }
+    for (const lineIndex of lines) {
+      const mark = entry(lineIndex);
+      if (mark) mark.wholeLine = true;
+    }
+    return [...byCue.values()];
+  }
+
+  for (const shared of SHARED_MARKS) {
+    const episodeId = episodeIdByKey.get(shared.episode);
+    if (!episodeId) continue;
+    for (const slug of shared.by) {
+      const profile = SEED_PROFILES.find((candidate) => candidate.slug === slug);
+      const userId = userIdBySlug.get(slug);
+      if (!profile || !userId) continue;
+      const current = await container.getReadingView(userId, episodeId);
+      const alreadyCarded = current.highlights.some((highlight) => highlight.cardBatchId !== null);
+      if (alreadyCarded && shared.by.length > 1) continue;
+      const known = current.highlights.map((highlight) => highlight.cueId);
+      const marks = await marksFor(episodeId, shared.marks, shared.lines);
+      const merged = [
+        ...marks,
+        ...current.highlights
+          .filter((highlight) => !marks.some((mark) => mark.cueId === highlight.cueId))
+          .map((highlight) => ({
+            cueId: highlight.cueId,
+            tokens:
+              highlight.kind === "line"
+                ? []
+                : Array.from(
+                    { length: highlight.endToken - highlight.startToken + 1 },
+                    (_, offset) => highlight.startToken + offset,
+                  ),
+            wholeLine: highlight.kind === "line",
+          })),
+      ];
+      if (known.length > 0 && marks.every((mark) => known.includes(mark.cueId))) continue;
+      await container.syncHighlights({ userId, episodeId, marks: merged });
+      try {
+        const batch = await container.generateCardDrafts({ userId, episodeId, learnerLevel: profile.level });
+        await container.confirmCardBatch({
+          userId,
+          batchId: batch.batchId,
+          keepKeys: batch.drafts.map((draft) => draft.key),
+          scope: "catalog",
+        });
+      } catch (error) {
+        if (!isAppError(error) || error.code !== "NO_HIGHLIGHTS") throw error;
+      }
+    }
+  }
+
+  for (const profile of SEED_PROFILES) {
+    const userId = userIdBySlug.get(profile.slug);
+    if (!userId) continue;
+    await container.saveSnapshot(userId, profile.snapshot);
+    for (const [key, percent] of Object.entries(profile.progress) as [EpisodeKey, number][]) {
+      const episodeId = episodeIdByKey.get(key);
+      if (episodeId) await catalog.upsert(userId, episodeId, percent, now);
+    }
+    const currentEpisodeId = episodeIdByKey.get(profile.currentEpisode);
+    if (currentEpisodeId) {
+      await container.updatePreferences(userId, { currentEpisodeId });
+      const view = await container.getReadingView(userId, currentEpisodeId);
+      if (view.highlights.length === 0) {
+        await container.syncHighlights({
+          userId,
+          episodeId: currentEpisodeId,
+          marks: await marksFor(currentEpisodeId, profile.premarks, profile.prelines),
+        });
+      }
+    }
+
+    const [curated] = await db
+      .select({ id: userCards.id })
+      .from(userCards)
+      .where(eq(userCards.userId, userId))
+      .limit(1);
+    const hasCurated =
+      Boolean(curated) &&
+      (await container.listDueCards(userId)).cards.some((card) => card.sourceKind === "curated");
+    if (hasCurated) continue;
+    const created: { learningItemId: string; sourceKind: string }[] = [];
+    for (const [index, review] of profile.reviews.entries()) {
+      const itemId = ids.next();
+      await db.insert(learningItems).values({
+        id: itemId,
+        episodeId: episodeIdByKey.get(review.episode) ?? null,
+        sourceText: review.en,
+        normalizedText: normalizeTerm(review.en),
+        difficulty: profile.level,
+        itemType: tokenize(review.en).length > 3 ? "sentence" : "expression",
+        origin: "curated",
+        visibility: "private",
+        ownerUserId: userId,
+        status: "ACTIVE",
+        createdAt: new Date(now.getTime() - (profile.reviews.length - index) * 1000),
+      });
+      await db.insert(learningItemExplanations).values({
+        learningItemId: itemId,
+        locale: "pt-BR",
+        translation: review.pt,
+        translationSource: "subtitle_pt",
+      });
+      created.push({ learningItemId: itemId, sourceKind: "curated" });
+    }
+    await container.addCards(userId, created);
+  }
+  log("progresso, retratos, marcações e revisões de demonstração prontos");
+}

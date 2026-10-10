@@ -101,7 +101,6 @@ export class InMemoryLearning implements LearningRepository {
         startToken: item.startToken,
         endToken: item.endToken,
         term: item.term,
-        meaning: item.meaning,
       }));
   }
 

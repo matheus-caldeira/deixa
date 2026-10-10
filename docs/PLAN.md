@@ -8,17 +8,17 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 | 01 | Scaffold: Next, TypeScript estrito, Tailwind, ESLint, Vitest, compose, `env.ts`, `.env` | `pnpm typecheck`, `lint`, `test` e `build` passam; Postgres de pé; `.env` criado sem exibir valores | [x] |
 | 02 | Design system: tokens, classes do protótipo, ícones, fontes | Tokens claro/escuro idênticos ao `:root` do protótipo; ícones como componentes | [x] |
 | 03 | Schema e migrações | `pnpm db:migrate` cria todas as tabelas das fases 01 e 02 | [x] |
-| 04 | Identidade: senha, sessão, entrar, criar conta, preferências | Teste unitário de senha e sessão; rotas protegidas redirecionam para `/login` | [ ] |
-| 05 | Catálogo e metadados: `MetadataProvider`, fake, TMDB, sincronização, cadastro manual | Unitários do mapeamento e dos casos de uso; integração com o TMDB real passa ou é pulada | [ ] |
-| 06 | Legendas: parser SRT, validação, SHA-256, storage em `data/` | Unitários do parser e da decodificação | [ ] |
-| 07 | Alinhamento EN ↔ PT | Unitários 1:1, 1:N, N:1, deslocamento fixo, sem par | [ ] |
-| 08 | Importação com deduplicação e estados do episódio | Unitário: reenvio devolve duplicidade sem reprocessar; fixtures EN/PT | [ ] |
-| 09 | Leitura e marcações: visão do episódio, agrupamento, sincronização, contagem anônima | Unitários do agrupamento e do isolamento | [ ] |
-| 10 | IA: `LlmProvider` (fake e Gemini), chave por usuário cifrada | Unitários de cifra, máscara e validação da saída | [ ] |
-| 11 | Cards e revisão: gerar, salvar (só para mim / catálogo), agendar, notas | Unitários de reuso, isolamento e intervalos | [ ] |
-| 12 | Áudio: `TtsProvider` (Kokoro e silencioso), cache por hash, endpoint | Unitário: segundo pedido vem do cache; Kokoro testado de verdade ou registrado no diário | [ ] |
-| 13 | Gamificação mínima e retrato de demonstração | XP por eventos somado ao retrato; Início, Conversar e Progresso com dados de seed | [ ] |
-| 14 | Container, logger, instrumentação, seed | `pnpm db:seed` idempotente; provider ativo logado sem valores | [ ] |
+| 04 | Identidade: senha, sessão, entrar, criar conta, preferências | Teste unitário de senha e sessão; rotas protegidas redirecionam para `/login` | [x] |
+| 05 | Catálogo e metadados: `MetadataProvider`, fake, TMDB, sincronização, cadastro manual | Unitários do mapeamento e dos casos de uso; integração com o TMDB real passa ou é pulada | [x] |
+| 06 | Legendas: parser SRT, validação, SHA-256, storage em `data/` | Unitários do parser e da decodificação | [x] |
+| 07 | Alinhamento EN ↔ PT | Unitários 1:1, 1:N, N:1, deslocamento fixo, sem par | [x] |
+| 08 | Importação com deduplicação e estados do episódio | Unitário: reenvio devolve duplicidade sem reprocessar; fixtures EN/PT | [x] |
+| 09 | Leitura e marcações: visão do episódio, agrupamento, sincronização, contagem anônima | Unitários do agrupamento e do isolamento | [x] |
+| 10 | IA: `LlmProvider` (fake e Gemini), chave por usuário cifrada | Unitários de cifra, máscara e validação da saída | [x] |
+| 11 | Cards e revisão: gerar, salvar (só para mim / catálogo), agendar, notas | Unitários de reuso, isolamento e intervalos | [x] |
+| 12 | Áudio: `TtsProvider` (Kokoro e silencioso), cache por hash, endpoint | Unitário: segundo pedido vem do cache; Kokoro testado de verdade ou registrado no diário | [x] |
+| 13 | Gamificação mínima e retrato de demonstração | XP por eventos somado ao retrato; Início, Conversar e Progresso com dados de seed | [x] |
+| 14 | Container, logger, instrumentação, seed | `pnpm db:seed` idempotente; provider ativo logado sem valores | [x] |
 | 15 | Interface: shell, entrar, Início, Explorar, detalhe, envio | Telas iguais ao protótipo em 390×844 | [ ] |
 | 16 | Interface: leitura e marcador, geração de cards, Revisar | Três modos, busca, marcador, cards e revisão funcionando | [ ] |
 | 17 | Interface: Conversar, Progresso, perfil, atribuição TMDB | Telas com dados de seed; aviso do TMDB visível | [ ] |

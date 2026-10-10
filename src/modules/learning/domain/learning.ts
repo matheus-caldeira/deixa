@@ -46,22 +46,35 @@ export const cardDraftSchema = z.object({
 
 export type CardDraft = z.infer<typeof cardDraftSchema>;
 
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g;
+const LINK_OR_MARKUP = /<|>|https?:|www\.|\[[^\]]*\]\(/i;
+
+export function isPlainExplanationText(value: string): boolean {
+  return !LINK_OR_MARKUP.test(value);
+}
+
+const plainText = (maxLength: number) =>
+  z
+    .string()
+    .transform((value) => value.replace(CONTROL_CHARACTERS, " ").replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(1).max(maxLength).refine(isPlainExplanationText, "texto com link ou marcação"));
+
 export const explainedTermSchema = z.object({
   id: z.string().min(1),
-  meaning: z.string().trim().min(1).max(300),
+  meaning: plainText(300),
   itemType: z.enum(ITEM_TYPES),
   difficulty: z.enum(CEFR_LEVELS),
-  pronunciation: z.string().trim().max(120).nullish(),
-  exampleEnglish: z.string().trim().max(240).nullish(),
-  examplePortuguese: z.string().trim().max(240).nullish(),
-  lineTranslation: z.string().trim().max(500).nullish(),
+  pronunciation: plainText(120).nullish(),
+  exampleEnglish: plainText(240).nullish(),
+  examplePortuguese: plainText(240).nullish(),
+  lineTranslation: plainText(500).nullish(),
 });
 
 export const explainedTermsSchema = z.array(explainedTermSchema).max(MAX_HIGHLIGHTS_PER_BATCH);
 export type ExplainedTerm = z.infer<typeof explainedTermSchema>;
 
 export const translatedLinesSchema = z
-  .array(z.object({ id: z.string().min(1), translation: z.string().trim().min(1).max(500) }))
+  .array(z.object({ id: z.string().min(1), translation: plainText(500) }))
   .max(MAX_HIGHLIGHTS_PER_BATCH);
 
 export function spanKeyOf(span: { cueId: string; startToken: number; endToken: number }): string {

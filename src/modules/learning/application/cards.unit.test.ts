@@ -192,6 +192,30 @@ describe("geração de cards a partir das marcações", () => {
     });
   });
 
+  it("recusa explicação da IA com link, marcação ou texto invisível, que poderia contaminar o catálogo", async () => {
+    const attempt = async (meaning: string) => {
+      const hostile: LlmProvider = {
+        name: "gemini",
+        explainTerms: async () => [{ id: "h-phrase", meaning, itemType: "expression", difficulty: "B1" }],
+        translateLines: async () => [],
+      };
+      const scenario = setup(hostile);
+      scenario.spy.setPending("ana", [PHRASE]);
+      return scenario.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    };
+    await expect(attempt("pagou a conta. Veja mais em https://exemplo.test")).rejects.toMatchObject({
+      code: "LLM_INVALID_OUTPUT",
+    });
+    await expect(attempt("<img src=x onerror=alert(1)>")).rejects.toMatchObject({
+      code: "LLM_INVALID_OUTPUT",
+    });
+    await expect(attempt("clique [aqui](javascript:alert(1))")).rejects.toMatchObject({
+      code: "LLM_INVALID_OUTPUT",
+    });
+    const cleaned = await attempt("pagou\u202e a\u0000 conta\n(de todos)");
+    expect(cleaned.drafts[0]?.meaning).toBe("pagou a conta (de todos)");
+  });
+
   it("avisa quando não há marcações ou o episódio não está pronto", async () => {
     await expect(
       app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" }),
@@ -255,7 +279,13 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
     });
     expect(app.learning.items).toMatchObject([{ visibility: "global", ownerUserId: null }]);
     expect(await app.suggestions("ep-1")).toMatchObject([{ term: "picked up the tab", cueId: "cue-1" }]);
-    expect(Object.keys((await app.suggestions("ep-1"))[0] ?? {})).not.toContain("ownerUserId");
+    expect(Object.keys((await app.suggestions("ep-1"))[0] ?? {}).sort()).toEqual([
+      "cueId",
+      "endToken",
+      "itemId",
+      "startToken",
+      "term",
+    ]);
 
     app.spy.setPending("ana", [{ ...PHRASE, id: "h-ana" }]);
     const second = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
