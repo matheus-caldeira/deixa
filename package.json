@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:bundle": "vitest run --config vitest.bundle.config.mts",
-    "test:e2e": "pnpm build && playwright test",
+    "test:e2e": "pnpm build && tsx tests/e2e/prepare.ts && playwright test",
     "setup:env": "node scripts/setup-env.mjs",
     "infra:up": "docker compose up -d --wait postgres && docker compose up -d kokoro",
     "infra:down": "docker compose down",

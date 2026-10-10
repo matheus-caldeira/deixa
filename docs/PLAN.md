@@ -19,10 +19,10 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 | 12 | Áudio: `TtsProvider` (Kokoro e silencioso), cache por hash, endpoint | Unitário: segundo pedido vem do cache; Kokoro testado de verdade ou registrado no diário | [x] |
 | 13 | Gamificação mínima e retrato de demonstração | XP por eventos somado ao retrato; Início, Conversar e Progresso com dados de seed | [x] |
 | 14 | Container, logger, instrumentação, seed | `pnpm db:seed` idempotente; provider ativo logado sem valores | [x] |
-| 15 | Interface: shell, entrar, Início, Explorar, detalhe, envio | Telas iguais ao protótipo em 390×844 | [ ] |
-| 16 | Interface: leitura e marcador, geração de cards, Revisar | Três modos, busca, marcador, cards e revisão funcionando | [ ] |
-| 17 | Interface: Conversar, Progresso, perfil, atribuição TMDB | Telas com dados de seed; aviso do TMDB visível | [ ] |
+| 15 | Interface: shell, entrar, Início, Explorar, detalhe, envio | Telas iguais ao protótipo em 390×844 | [x] |
+| 16 | Interface: leitura e marcador, geração de cards, Revisar | Três modos, busca, marcador, cards e revisão funcionando | [x] |
+| 17 | Interface: Conversar, Progresso, perfil, atribuição TMDB | Telas com dados de seed; aviso do TMDB visível | [x] |
 | 18 | Integração (Postgres) e teste de bundle | Isolamento e deduplicação no banco real; token ausente de `.next/static` | [ ] |
-| 19 | E2E Playwright | Fluxo completo passa com providers fake | [ ] |
+| 19 | E2E Playwright | Fluxo completo passa com providers fake | [x] |
 | 20 | Validação visual | Screenshots claro/escuro comparados ao protótipo; diferenças corrigidas | [ ] |
 | 21 | README e fechamento | Como subir, variáveis do TMDB, credenciais de seed | [ ] |

@@ -2012,3 +2012,41 @@
     appearance: none;
   }
 }
+
+@layer components {
+  .nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .nav a svg {
+    width: 24px;
+    height: 24px;
+  }
+  .nav a.on {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+  .field textarea {
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    padding: 12px;
+    outline: none;
+    width: 100%;
+  }
+  .inline-icon {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+  .stat svg.flame-off path {
+    fill: var(--line);
+  }
+}

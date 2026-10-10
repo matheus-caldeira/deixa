@@ -178,6 +178,8 @@ export function buildContainer(options: ContainerOptions) {
     getMediaDetail: makeGetMediaDetail(catalogDeps),
     getEpisodeContext: makeGetEpisodeContext(catalogDeps),
     startEpisode: makeStartEpisode(catalogDeps),
+    listSeasons: (mediaId: string) => catalog.listSeasons(mediaId),
+    getMediaById: (mediaId: string) => catalog.findMediaById(mediaId),
 
     importEpisodeSubtitles: makeImportEpisodeSubtitles({
       subtitles,
