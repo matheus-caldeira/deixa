@@ -5,7 +5,7 @@ import { makeGetSessionUser, makeSignOut } from "./session-user";
 import { SESSION_TTL_DAYS, makeSignIn } from "./sign-in";
 import { makeSignUp } from "./sign-up";
 import { makeUpdatePreferences } from "./update-preferences";
-import { InMemoryIdentityStore, plainPasswords, sequentialTokens } from "./testing/fakes";
+import { InMemoryIdentityStore, passwordChecks, plainPasswords, sequentialTokens } from "./testing/fakes";
 
 function setup() {
   const store = new InMemoryIdentityStore();
@@ -78,6 +78,14 @@ describe("identidade", () => {
     await expect(app.signIn({ email: "ninguem@example.com", password: "segredo123" })).rejects.toMatchObject({
       code: "INVALID_CREDENTIALS",
     });
+  });
+
+  it("confere a senha mesmo quando o e-mail não existe, para não revelar quais contas existem", async () => {
+    passwordChecks.length = 0;
+    await expect(app.signIn({ email: "ninguem@example.com", password: "qualquer" })).rejects.toMatchObject({
+      code: "INVALID_CREDENTIALS",
+    });
+    expect(passwordChecks).toEqual([{ plain: "qualquer", hadStoredHash: false }]);
   });
 
   it("expira a sessão depois do prazo e a invalida ao sair", async () => {

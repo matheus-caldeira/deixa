@@ -12,6 +12,10 @@ describe("senha e token de sessão", () => {
     expect(await scryptPasswords.verify("segredo123", "formato-invalido")).toBe(false);
   });
 
+  it("faz o mesmo trabalho de derivação quando não há hash guardado", async () => {
+    expect(await scryptPasswords.verify("segredo123", null)).toBe(false);
+  });
+
   it("emite tokens distintos e hash estável", () => {
     const a = randomSessionTokens.issue();
     const b = randomSessionTokens.issue();

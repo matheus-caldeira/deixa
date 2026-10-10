@@ -5,6 +5,7 @@ import type {
   WorkDetails,
   WorkSummary,
 } from "@/modules/catalog";
+import { AppError } from "@/shared/errors";
 import type { TmdbClient } from "./client";
 import {
   mapMovieDetails,
@@ -13,6 +14,7 @@ import {
   mapTvDetails,
   needsEnglishFallback,
   seasonNeedsEnglishFallback,
+  tmdbNumericId,
 } from "./mapping";
 import { movieDetailsSchema, searchMultiSchema, seasonDetailsSchema, tvDetailsSchema } from "./schemas";
 
@@ -42,8 +44,10 @@ export class TmdbMetadataProvider implements MetadataProvider {
   }
 
   async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
+    const id = tmdbNumericId(type, externalId);
+    if (!id) throw new AppError("METADATA_NOT_FOUND", "identificador de obra inválido");
     if (type === "movie") {
-      const path = `movie/${encodeURIComponent(externalId)}`;
+      const path = `movie/${id}`;
       const localized = await this.client.get(path, { language: PORTUGUESE }, movieDetailsSchema);
       const mapped = mapMovieDetails(localized);
       if (!needsEnglishFallback(mapped)) return mapped;
@@ -52,7 +56,7 @@ export class TmdbMetadataProvider implements MetadataProvider {
         await this.client.get(path, { language: ENGLISH }, movieDetailsSchema),
       );
     }
-    const path = `tv/${encodeURIComponent(externalId)}`;
+    const path = `tv/${id}`;
     const localized = await this.client.get(path, { language: PORTUGUESE }, tvDetailsSchema);
     const mapped = mapTvDetails(localized);
     if (!needsEnglishFallback(mapped)) return mapped;
@@ -60,7 +64,11 @@ export class TmdbMetadataProvider implements MetadataProvider {
   }
 
   async getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]> {
-    const path = `tv/${encodeURIComponent(externalId)}/season/${seasonNumber}`;
+    const id = tmdbNumericId("series", externalId);
+    if (!id || !Number.isInteger(seasonNumber) || seasonNumber < 0) {
+      throw new AppError("METADATA_NOT_FOUND", "identificador de temporada inválido");
+    }
+    const path = `tv/${id}/season/${seasonNumber}`;
     const localized = await this.client.get(path, { language: PORTUGUESE }, seasonDetailsSchema);
     if (!seasonNeedsEnglishFallback(localized)) return mapSeasonEpisodes(localized);
     return mapSeasonEpisodes(

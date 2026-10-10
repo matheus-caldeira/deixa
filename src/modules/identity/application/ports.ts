@@ -28,7 +28,7 @@ export interface PreferencesRepository {
 
 export interface PasswordHasher {
   hash(plain: string): Promise<string>;
-  verify(plain: string, stored: string): Promise<boolean>;
+  verify(plain: string, stored: string | null): Promise<boolean>;
 }
 
 export interface SessionTokens {

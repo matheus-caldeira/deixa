@@ -14,6 +14,7 @@ describe.skipIf(!readAccessToken)("TMDB real", () => {
     expect(series).toBeDefined();
     if (!series) return;
     expect(series.posterPath).toMatch(/^\//);
+    expect(series.externalId).toMatch(/^tv:\d+$/);
 
     const details = await provider.getWork("series", series.externalId);
     expect(details.overview.length).toBeGreaterThan(0);

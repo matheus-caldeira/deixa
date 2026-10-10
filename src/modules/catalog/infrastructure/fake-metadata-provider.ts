@@ -189,9 +189,10 @@ export class FakeMetadataProvider implements MetadataProvider {
     return FAKE_WORKS.filter((work) => work.title.toLowerCase().includes(needle)).map(toSummary);
   }
 
-  async getWork(_type: MediaType, externalId: string): Promise<WorkDetails> {
+  async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
     this.calls.work += 1;
     const work = findWork(externalId);
+    if (work.type !== type) throw new AppError("METADATA_NOT_FOUND");
     return {
       ...toSummary(work),
       runtimeMinutes: work.runtimeMinutes,

@@ -1,4 +1,4 @@
-import { AppError } from "@/shared/errors";
+import { AppError, isAppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import {
@@ -88,11 +88,18 @@ export function makeRegisterWork(deps: Deps) {
     if (existing && !input.force && !isMetadataStale(existing.metadataSyncedAt, deps.clock.now())) {
       return { mediaId: existing.id, fetched: false };
     }
+    if (existing && existing.type !== input.type) throw new AppError("MEDIA_NOT_FOUND");
     try {
       const details = await deps.metadata.getWork(input.type, input.externalId);
+      if (details.type !== input.type || details.externalId !== input.externalId) {
+        throw new AppError("METADATA_NOT_FOUND");
+      }
       return { mediaId: await storeWork(deps, details, existing, input.userId), fetched: true };
     } catch (error) {
-      if (existing) return { mediaId: existing.id, fetched: false };
+      if (existing && !isAppError(error)) return { mediaId: existing.id, fetched: false };
+      if (existing && isAppError(error) && error.code === "METADATA_UNAVAILABLE") {
+        return { mediaId: existing.id, fetched: false };
+      }
       throw error;
     }
   };

@@ -11,6 +11,7 @@ const SALT_BYTES = 16;
 const KEY_BYTES = 64;
 const TOKEN_BYTES = 32;
 const SCHEME = "scrypt";
+const DECOY_SALT = Buffer.alloc(SALT_BYTES, 1);
 
 export const scryptPasswords: PasswordHasher = {
   async hash(plain) {
@@ -19,6 +20,10 @@ export const scryptPasswords: PasswordHasher = {
     return `${SCHEME}$${salt.toString("base64")}$${derived.toString("base64")}`;
   },
   async verify(plain, stored) {
+    if (stored === null) {
+      await scryptAsync(plain, DECOY_SALT, KEY_BYTES);
+      return false;
+    }
     const [scheme, saltText, hashText] = stored.split("$");
     if (scheme !== SCHEME || !saltText || !hashText) return false;
     const expected = Buffer.from(hashText, "base64");

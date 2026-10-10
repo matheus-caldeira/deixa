@@ -131,6 +131,22 @@ describe("catálogo", () => {
     expect(reloaded.episodes[0]).toMatchObject({ id: pilot.id, status: "READY" });
   });
 
+  it("não deixa o tipo informado pelo cliente trocar ou sobrescrever uma obra do catálogo", async () => {
+    const { mediaId } = await app.registerWork({
+      userId: "u1",
+      type: "series",
+      externalId: fakeExternalId("friends"),
+    });
+    await expect(
+      app.registerWork({ userId: "u2", type: "movie", externalId: fakeExternalId("friends"), force: true }),
+    ).rejects.toMatchObject({ code: "MEDIA_NOT_FOUND" });
+    await expect(
+      app.registerWork({ userId: "u2", type: "series", externalId: fakeExternalId("prada") }),
+    ).rejects.toMatchObject({ code: "METADATA_NOT_FOUND" });
+    expect(await app.catalog.findMediaById(mediaId)).toMatchObject({ type: "series", title: "Friends" });
+    expect(app.catalog.media.size).toBe(1);
+  });
+
   it("trata filme como temporada 0 com um único episódio", async () => {
     const { mediaId } = await app.registerWork({
       userId: "u1",

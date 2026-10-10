@@ -1,0 +1,64 @@
+import type { AlignmentStatus } from "@/modules/alignment";
+import type { SubtitleLanguage } from "../domain/srt";
+
+export type StoredSubtitleFile = {
+  id: string;
+  language: SubtitleLanguage;
+  sha256: string;
+  storagePath: string;
+};
+export type StoredCue = { id: string; sequence: number; startMs: number; endMs: number; text: string };
+export type StoredAlignment = {
+  enCueId: string;
+  ptCueIds: string[];
+  overlapScore: number;
+  offsetMs: number;
+  status: AlignmentStatus;
+};
+export type ProcessingStep = { label: string; detail: string };
+
+export type NewSubtitleFile = StoredSubtitleFile & {
+  originalFilename: string;
+  sizeBytes: number;
+  cues: StoredCue[];
+};
+
+export type ImportRecord = {
+  episodeId: string;
+  userId: string;
+  now: Date;
+  jobId: string;
+  files: NewSubtitleFile[];
+  alignments: (StoredAlignment & { id: string })[] | null;
+  cueCount: number;
+  alignmentPairs: number | null;
+  alignmentRate: number | null;
+  steps: ProcessingStep[];
+};
+
+export interface SubtitleRepository {
+  listFiles(episodeId: string): Promise<StoredSubtitleFile[]>;
+  listCues(subtitleFileId: string): Promise<StoredCue[]>;
+  listAlignments(episodeId: string): Promise<StoredAlignment[]>;
+  listCueTranslations(episodeId: string): Promise<Map<string, string>>;
+  saveCueTranslation(cueId: string, text: string, now: Date): Promise<void>;
+  findCue(cueId: string): Promise<(StoredCue & { episodeId: string; language: SubtitleLanguage }) | null>;
+  saveImport(record: ImportRecord): Promise<void>;
+  markFailed(input: {
+    episodeId: string;
+    userId: string;
+    jobId: string;
+    reason: string;
+    steps: ProcessingStep[];
+    now: Date;
+  }): Promise<void>;
+}
+
+export type EpisodeLocation = {
+  episodeId: string;
+  mediaId: string;
+  mediaType: "series" | "movie";
+  seasonNumber: number;
+};
+
+export type FindEpisodeLocation = (episodeId: string) => Promise<EpisodeLocation | null>;

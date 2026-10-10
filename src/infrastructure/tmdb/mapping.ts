@@ -1,6 +1,17 @@
 import type { EpisodeMetadata, WorkDetails, WorkSummary } from "@/modules/catalog";
 import type { TmdbMovieDetails, TmdbSearchMulti, TmdbSeasonDetails, TmdbTvDetails } from "./schemas";
 
+const KIND_BY_TYPE = { series: "tv", movie: "movie" } as const;
+
+export function tmdbExternalId(type: "series" | "movie", id: number | string): string {
+  return `${KIND_BY_TYPE[type]}:${id}`;
+}
+
+export function tmdbNumericId(type: "series" | "movie", externalId: string): string | null {
+  const [kind, id] = externalId.split(":");
+  return kind === KIND_BY_TYPE[type] && id !== undefined && /^\d+$/.test(id) ? id : null;
+}
+
 const filled = (value: string | null | undefined): string => (value ?? "").trim();
 
 function firstFilled(...values: (string | null | undefined)[]): string {
@@ -37,7 +48,7 @@ export function mapSearchResults(localized: TmdbSearchMulti, english?: TmdbSearc
     return [
       {
         provider: "tmdb" as const,
-        externalId: String(result.id),
+        externalId: tmdbExternalId(isSeries ? "series" : "movie", result.id),
         type: isSeries ? ("series" as const) : ("movie" as const),
         title,
         originalTitle: originalTitle || title,
@@ -56,7 +67,7 @@ export function mapTvDetails(localized: TmdbTvDetails, english?: TmdbTvDetails):
   const runtime = localized.episode_run_time?.[0] ?? english?.episode_run_time?.[0] ?? null;
   return {
     provider: "tmdb",
-    externalId: String(localized.id),
+    externalId: tmdbExternalId("series", localized.id),
     type: "series",
     title,
     originalTitle: originalTitle || title,
@@ -81,7 +92,7 @@ export function mapMovieDetails(localized: TmdbMovieDetails, english?: TmdbMovie
   const title = firstFilled(localized.title, english?.title, originalTitle);
   return {
     provider: "tmdb",
-    externalId: String(localized.id),
+    externalId: tmdbExternalId("movie", localized.id),
     type: "movie",
     title,
     originalTitle: originalTitle || title,

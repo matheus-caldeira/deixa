@@ -61,9 +61,14 @@ export class InMemoryIdentityStore implements UserRepository, SessionRepository,
   }
 }
 
+export const passwordChecks: { plain: string; hadStoredHash: boolean }[] = [];
+
 export const plainPasswords: PasswordHasher = {
   hash: async (plain) => `plain:${plain}`,
-  verify: async (plain, stored) => stored === `plain:${plain}`,
+  verify: async (plain, stored) => {
+    passwordChecks.push({ plain, hadStoredHash: stored !== null });
+    return stored === `plain:${plain}`;
+  },
 };
 
 export function sequentialTokens(): SessionTokens {

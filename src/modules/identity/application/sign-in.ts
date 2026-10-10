@@ -19,7 +19,7 @@ export function makeSignIn(deps: {
 }) {
   return async function signIn(input: { email: string; password: string }): Promise<IssuedSession> {
     const user = await deps.users.findByEmail(normalizeEmail(input.email));
-    const passwordMatches = user ? await deps.passwords.verify(input.password, user.passwordHash) : false;
+    const passwordMatches = await deps.passwords.verify(input.password, user?.passwordHash ?? null);
     if (!user || !passwordMatches) throw new AppError("INVALID_CREDENTIALS");
     const now = deps.clock.now();
     const expiresAt = new Date(now.getTime() + SESSION_TTL_DAYS * MS_PER_DAY);

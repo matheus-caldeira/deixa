@@ -6,6 +6,8 @@ import {
   mapTvDetails,
   needsEnglishFallback,
   seasonNeedsEnglishFallback,
+  tmdbExternalId,
+  tmdbNumericId,
 } from "./mapping";
 import { movieDetailsSchema, searchMultiSchema, seasonDetailsSchema, tvDetailsSchema } from "./schemas";
 
@@ -37,7 +39,7 @@ describe("mapeamento da resposta do TMDB", () => {
     expect(mapSearchResults(localized)).toEqual([
       {
         provider: "tmdb",
-        externalId: "10",
+        externalId: "tv:10",
         type: "series",
         title: "Uma Série",
         originalTitle: "A Show",
@@ -47,7 +49,7 @@ describe("mapeamento da resposta do TMDB", () => {
       },
       {
         provider: "tmdb",
-        externalId: "12",
+        externalId: "movie:12",
         type: "movie",
         title: "Um Filme",
         originalTitle: "A Movie",
@@ -103,7 +105,7 @@ describe("mapeamento da resposta do TMDB", () => {
     expect(needsEnglishFallback({ title: "Uma Série", overview: "" })).toBe(true);
     expect(mapTvDetails(localized, english)).toEqual({
       provider: "tmdb",
-      externalId: "10",
+      externalId: "tv:10",
       type: "series",
       title: "Uma Série",
       originalTitle: "A Show",
@@ -130,7 +132,7 @@ describe("mapeamento da resposta do TMDB", () => {
     });
     expect(mapMovieDetails(movie)).toMatchObject({
       type: "movie",
-      externalId: "77",
+      externalId: "movie:77",
       year: 2006,
       posterPath: null,
       runtimeMinutes: 109,
@@ -156,5 +158,14 @@ describe("mapeamento da resposta do TMDB", () => {
     expect(mapSeasonEpisodes(seasonDetailsSchema.parse({ episodes: [{ episode_number: 3 }] }))).toEqual([
       { episodeNumber: 3, title: "Episódio 3", overview: "", runtimeMinutes: null },
     ]);
+  });
+
+  it("inclui o tipo no id externo, porque série e filme têm numerações independentes no TMDB", () => {
+    expect(tmdbExternalId("series", 550)).toBe("tv:550");
+    expect(tmdbExternalId("movie", 550)).toBe("movie:550");
+    expect(tmdbNumericId("series", "tv:550")).toBe("550");
+    expect(tmdbNumericId("movie", "tv:550")).toBeNull();
+    expect(tmdbNumericId("series", "tv:550/../../account")).toBeNull();
+    expect(tmdbNumericId("series", "550")).toBeNull();
   });
 });
