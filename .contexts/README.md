@@ -15,11 +15,11 @@ pessoa já assiste. A especificação completa está em `PROJETO.md`, na raiz; e
 
 ## Mapa das pastas
 
-| Pasta          | Conteúdo                                                                                                                                              |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pasta          | Conteúdo                                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `business/`    | `vision.md` (problema, valor, fases), `brand.md` (nome, logotipo, cor), `glossary.md` (vocabulário único), `compliance.md` (direitos, segredos, IA)    |
 | `product/`     | `persona.md` (quem usa), `tone-of-voice.md` (como o produto fala), `design-system.md` (tokens, tipografia, componentes), `product-scope.md` (entregas) |
-| `engineering/` | `architecture/`, `decisions/` (ADRs a partir de 0001), `rules/` (invariantes de código), `stacks/` (uma por tecnologia)                               |
+| `engineering/` | `architecture/`, `decisions/` (ADRs a partir de 0001), `rules/` (invariantes de código), `stacks/` (uma por tecnologia)                                |
 
 Fora daqui: `docs/PLAN.md` (tarefas da etapa em curso) e `docs/DECISIONS.md` (diário de decisões tomadas durante
 a execução, com data, motivo e alternativa descartada). Decisão que vira regra permanente ganha um ADR.

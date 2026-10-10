@@ -28,13 +28,13 @@ O produto fala como um amigo que já passou por isso: direto, caloroso, sem infa
 
 ## Exemplos
 
-| Situação                   | Texto                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------------------------- |
-| Legenda duplicada          | "Essa legenda já existe no catálogo. Nada foi reprocessado."                                  |
-| Tradução da legenda        | "Tradução das falas veio da legenda PT, sem custo de IA."                                     |
-| Sem chave de IA            | "Revisões e flashcards continuam funcionando sem ela."                                        |
-| Áudio em geração           | "gerando…"                                                                                    |
-| Recurso de fase futura     | "Chega numa próxima fase." (sem prometer data)                                                |
+| Situação               | Texto                                                        |
+| ---------------------- | ------------------------------------------------------------ |
+| Legenda duplicada      | "Essa legenda já existe no catálogo. Nada foi reprocessado." |
+| Tradução da legenda    | "Tradução das falas veio da legenda PT, sem custo de IA."    |
+| Sem chave de IA        | "Revisões e flashcards continuam funcionando sem ela."       |
+| Áudio em geração       | "gerando…"                                                   |
+| Recurso de fase futura | "Chega numa próxima fase." (sem prometer data)               |
 
 ## Evitar
 

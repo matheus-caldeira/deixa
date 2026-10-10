@@ -1,4 +1,4 @@
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getContainer } from "@/infrastructure/container";
@@ -17,11 +17,10 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 export async function startSession(token: string, expiresAt: Date): Promise<void> {
-  const isHttps = (await headers()).get("x-forwarded-proto") === "https";
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: isHttps,
+    secure: getContainer().secureSessionCookie,
     path: "/",
     expires: expiresAt,
   });

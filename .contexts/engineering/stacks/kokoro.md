@@ -20,11 +20,11 @@ container, 1881 no host. `KOKORO_URL=http://localhost:1881`. O repositório do K
 
 ## API
 
-| Uso      | Chamada                                                                                      |
-| -------- | -------------------------------------------------------------------------------------------- |
-| Saúde    | `GET /health`                                                                                |
-| Vozes    | `GET /v1/audio/voices`                                                                       |
-| Fala     | `POST /v1/audio/speech` com `{ model: "kokoro", voice, input, response_format: "wav" }`      |
+| Uso   | Chamada                                                                                 |
+| ----- | --------------------------------------------------------------------------------------- |
+| Saúde | `GET /health`                                                                           |
+| Vozes | `GET /v1/audio/voices`                                                                  |
+| Fala  | `POST /v1/audio/speech` com `{ model: "kokoro", voice, input, response_format: "wav" }` |
 
 ## Vozes
 

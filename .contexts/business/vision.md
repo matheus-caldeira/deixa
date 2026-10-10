@@ -29,23 +29,23 @@ todos. Conta, progresso, vocabulário, sequência, metas, revisões e nível sã
 
 ## Pilares
 
-| Pilar                           | O que entrega                                                                 |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| Aprender com séries e filmes    | Catálogo de obras, temporadas e episódios; ninguém reenvia o que já existe    |
-| Ler o episódio inteiro e marcar | Legenda EN ↔ PT lado a lado; marcações viram cards de revisão                 |
-| Trilha personalizada por nível  | Exercícios do A1 ao C2 a partir do mesmo episódio                             |
-| Gamificação                     | Sequência, XP, metas, missões e conquistas que premiam consistência           |
-| Conversação com IA              | Cenários por nível, correção de frases e, depois, chamada de voz              |
+| Pilar                           | O que entrega                                                              |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| Aprender com séries e filmes    | Catálogo de obras, temporadas e episódios; ninguém reenvia o que já existe |
+| Ler o episódio inteiro e marcar | Legenda EN ↔ PT lado a lado; marcações viram cards de revisão              |
+| Trilha personalizada por nível  | Exercícios do A1 ao C2 a partir do mesmo episódio                          |
+| Gamificação                     | Sequência, XP, metas, missões e conquistas que premiam consistência        |
+| Conversação com IA              | Cenários por nível, correção de frases e, depois, chamada de voz           |
 
 ## Fases
 
-| Fase | Escopo                                                                                   |
-| ---- | ---------------------------------------------------------------------------------------- |
-| 01   | Fundação e catálogo: contas, TMDB, upload EN e PT, alinhamento, deduplicação, Explorar   |
-| 02   | Leitura e marcador: três modos, marcações, busca, cards, chave Gemini por usuário        |
-| 03   | Motor de aprendizado: workflow, explicações, trilha, sessão de estudo, roteiro           |
-| 04   | Retenção e gamificação: repetição espaçada completa, XP, metas, conquistas, Progresso    |
-| 05   | Tutor de IA por texto e áudio                                                            |
-| 06   | Voz e publicação: fala em tempo real, limites de uso, direitos, storage compartilhado    |
+| Fase | Escopo                                                                                 |
+| ---- | -------------------------------------------------------------------------------------- |
+| 01   | Fundação e catálogo: contas, TMDB, upload EN e PT, alinhamento, deduplicação, Explorar |
+| 02   | Leitura e marcador: três modos, marcações, busca, cards, chave Gemini por usuário      |
+| 03   | Motor de aprendizado: workflow, explicações, trilha, sessão de estudo, roteiro         |
+| 04   | Retenção e gamificação: repetição espaçada completa, XP, metas, conquistas, Progresso  |
+| 05   | Tutor de IA por texto e áudio                                                          |
+| 06   | Voz e publicação: fala em tempo real, limites de uso, direitos, storage compartilhado  |
 
 O objetivo é usar o sistema em casa desde cedo, validar o método e só então abrir para outras pessoas.

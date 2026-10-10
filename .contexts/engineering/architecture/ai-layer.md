@@ -22,11 +22,11 @@ A saída passa por schema Zod. Item inválido derruba a geração com erro trat�
 
 ## Quando a LLM é usada
 
-| Situação                                             | Origem da tradução              |
-| ---------------------------------------------------- | ------------------------------- |
-| Fala com par alinhado                                | Legenda PT (`subtitle_pt`)      |
-| Fala sem par, ou episódio sem legenda PT             | LLM (`llm`), etiqueta **IA**    |
-| Significado de palavra ou expressão no contexto      | LLM, com a legenda PT no prompt |
+| Situação                                        | Origem da tradução              |
+| ----------------------------------------------- | ------------------------------- |
+| Fala com par alinhado                           | Legenda PT (`subtitle_pt`)      |
+| Fala sem par, ou episódio sem legenda PT        | LLM (`llm`), etiqueta **IA**    |
+| Significado de palavra ou expressão no contexto | LLM, com a legenda PT no prompt |
 
 ## Chave por usuário
 

@@ -19,7 +19,7 @@ Utilitários de layout e ponte dos tokens do protótipo.
 - `tokens.css`: variáveis do `:root` do protótipo (claro, escuro por mídia e por `data-theme`) e `@theme inline`
   mapeando cores, fontes, raio e sombra para utilitários (`bg-surface`, `text-muted`, `font-display`…).
 - `components.css`: classes do protótipo, dentro de `@layer components`.
-- PostCSS com `@tailwindcss/postcss`.
+- Integração pelo loader `@tailwindcss/turbopack`, declarado em `next.config.ts`.
 
 ## Convenções
 

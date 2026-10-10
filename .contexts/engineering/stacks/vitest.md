@@ -15,11 +15,11 @@ Testes unitários, de integração e de bundle.
 
 ## Configurações
 
-| Arquivo                         | Inclui                               | Comando                 |
-| ------------------------------- | ------------------------------------ | ----------------------- |
-| `vitest.config.mts`             | `src/**/*.unit.test.ts`              | `pnpm test`             |
-| `vitest.integration.config.mts` | `src/**/*.integration.test.ts`       | `pnpm test:integration` |
-| `vitest.bundle.config.mts`      | `tests/bundle/*.test.ts`             | `pnpm test:bundle`      |
+| Arquivo                         | Inclui                         | Comando                 |
+| ------------------------------- | ------------------------------ | ----------------------- |
+| `vitest.config.mts`             | `src/**/*.unit.test.ts`        | `pnpm test`             |
+| `vitest.integration.config.mts` | `src/**/*.integration.test.ts` | `pnpm test:integration` |
+| `vitest.bundle.config.mts`      | `tests/bundle/*.test.ts`       | `pnpm test:bundle`      |
 
 Todas com `fileParallelism: false` e um worker.
 

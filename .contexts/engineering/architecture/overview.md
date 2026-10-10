@@ -27,20 +27,20 @@ domínio, aplicação e infraestrutura, para extrair serviços depois sem reescr
 
 ## Processos
 
-| Processo        | Papel                                                        | Fase   |
-| --------------- | ------------------------------------------------------------ | ------ |
-| Next.js         | Interface, actions, handlers, importação de legendas         | 01     |
-| PostgreSQL      | Catálogo, falas, alinhamento, marcações, cards, progresso    | 01     |
-| Kokoro-FastAPI  | Geração de voz por HTTP                                      | 02     |
-| Worker Node.js  | Seleção pedagógica com LLM e áudio em lote                   | 03     |
+| Processo       | Papel                                                     | Fase |
+| -------------- | --------------------------------------------------------- | ---- |
+| Next.js        | Interface, actions, handlers, importação de legendas      | 01   |
+| PostgreSQL     | Catálogo, falas, alinhamento, marcações, cards, progresso | 01   |
+| Kokoro-FastAPI | Geração de voz por HTTP                                   | 02   |
+| Worker Node.js | Seleção pedagógica com LLM e áudio em lote                | 03   |
 
 ## Serviços externos e reservas
 
-| Serviço | Port               | Implementação real      | Reserva                 | Quando a reserva entra                 |
-| ------- | ------------------ | ----------------------- | ----------------------- | -------------------------------------- |
-| TMDB    | `MetadataProvider` | `TmdbMetadataProvider`  | `FakeMetadataProvider`  | Sem credenciais no `.env`; testes      |
-| Gemini  | `LlmProvider`      | `GeminiLlmProvider`     | `FakeLlmProvider`       | Usuário sem chave; testes              |
-| Kokoro  | `TtsProvider`      | `KokoroTtsProvider`     | `SilentTtsProvider`     | Sem `KOKORO_URL`; serviço fora; testes |
+| Serviço | Port               | Implementação real     | Reserva                | Quando a reserva entra                 |
+| ------- | ------------------ | ---------------------- | ---------------------- | -------------------------------------- |
+| TMDB    | `MetadataProvider` | `TmdbMetadataProvider` | `FakeMetadataProvider` | Sem credenciais no `.env`; testes      |
+| Gemini  | `LlmProvider`      | `GeminiLlmProvider`    | `FakeLlmProvider`      | Usuário sem chave; testes              |
+| Kokoro  | `TtsProvider`      | `KokoroTtsProvider`    | `SilentTtsProvider`    | Sem `KOKORO_URL`; serviço fora; testes |
 
 ## Dados
 

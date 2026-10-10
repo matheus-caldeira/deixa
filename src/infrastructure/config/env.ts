@@ -19,6 +19,13 @@ const envSchema = z.object({
   KOKORO_URL: z.preprocess(blankAsUndefined, z.url().optional()),
   DATA_DIR: z.preprocess(blankAsUndefined, z.string().default("data")),
   GEMINI_MODEL: z.preprocess(blankAsUndefined, z.string().default("gemini-2.5-flash")),
+  SESSION_COOKIE_SECURE: z.preprocess(
+    blankAsUndefined,
+    z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((value) => value === "true"),
+  ),
   DEV_SHORTCUTS: z.preprocess(
     blankAsUndefined,
     z

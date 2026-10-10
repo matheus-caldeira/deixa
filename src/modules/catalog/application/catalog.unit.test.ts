@@ -194,6 +194,22 @@ describe("catálogo", () => {
     expect(await app.refreshWork({ mediaId, force: true })).toEqual({ refreshed: false });
   });
 
+  it("não cria temporada nem episódio avulso em obra que veio do provider", async () => {
+    const { mediaId } = await app.registerWork({
+      userId: "u1",
+      type: "series",
+      externalId: fakeExternalId("suits"),
+    });
+    const seasonsBefore = (await app.catalog.listSeasons(mediaId)).length;
+    await expect(
+      app.ensureManualEpisode({ mediaId, seasonNumber: 9, episodeNumber: 9 }),
+    ).rejects.toMatchObject({
+      code: "EPISODE_NOT_FOUND",
+    });
+    expect((await app.catalog.listSeasons(mediaId)).length).toBe(seasonsBefore);
+    expect(app.catalog.episodes.size).toBe(0);
+  });
+
   it("mostra o progresso só de quem está logado", async () => {
     const { mediaId } = await app.registerWork({
       userId: "u1",

@@ -23,17 +23,17 @@ src/ui/<área>/                 componentes por área: shell, catalog, read, rev
 
 ## Rotas
 
-| Rota                    | Tela do protótipo                         |
-| ----------------------- | ----------------------------------------- |
-| `/login`, `/signup`     | Seletor de perfil (picker)                |
-| `/`                     | Início                                    |
-| `/catalog`              | Explorar                                  |
-| `/catalog/[mediaId]`    | Detalhe da obra                           |
-| `/review`               | Revisar                                   |
-| `/tutor`                | Conversar                                 |
-| `/progress`             | Progresso                                 |
-| `/read/[episodeId]`     | Ler episódio e marcar (tela cheia)        |
-| `/api/audio/**`         | Áudio de uma fala ou de um item           |
+| Rota                 | Tela do protótipo                  |
+| -------------------- | ---------------------------------- |
+| `/login`, `/signup`  | Seletor de perfil (picker)         |
+| `/`                  | Início                             |
+| `/catalog`           | Explorar                           |
+| `/catalog/[mediaId]` | Detalhe da obra                    |
+| `/review`            | Revisar                            |
+| `/tutor`             | Conversar                          |
+| `/progress`          | Progresso                          |
+| `/read/[episodeId]`  | Ler episódio e marcar (tela cheia) |
+| `/api/audio/**`      | Áudio de uma fala ou de um item    |
 
 ## Fluxo de dados
 

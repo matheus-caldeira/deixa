@@ -19,11 +19,11 @@ Banco único: catálogo, falas, alinhamentos, aprendizado e progresso.
 
 ## Bancos
 
-| Banco         | Uso                              |
-| ------------- | -------------------------------- |
-| `deixa`       | Desenvolvimento                  |
-| `deixa_test`  | Testes de integração             |
-| `deixa_e2e`   | Playwright                       |
+| Banco        | Uso                  |
+| ------------ | -------------------- |
+| `deixa`      | Desenvolvimento      |
+| `deixa_test` | Testes de integração |
+| `deixa_e2e`  | Playwright           |
 
 Os dois últimos são criados e migrados pelos scripts de teste.
 

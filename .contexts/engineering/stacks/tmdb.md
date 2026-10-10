@@ -15,12 +15,12 @@ Identificar obras: títulos, sinopses, pôsteres, temporadas, episódios e ids e
 
 ## Endpoints
 
-| Uso                          | Endpoint                 |
-| ---------------------------- | ------------------------ |
-| Busca de obras               | `GET /3/search/multi`    |
-| Série com temporadas         | `GET /3/tv/{id}`         |
-| Episódios de uma temporada   | `GET /3/tv/{id}/season/{n}` |
-| Filme                        | `GET /3/movie/{id}`      |
+| Uso                        | Endpoint                    |
+| -------------------------- | --------------------------- |
+| Busca de obras             | `GET /3/search/multi`       |
+| Série com temporadas       | `GET /3/tv/{id}`            |
+| Episódios de uma temporada | `GET /3/tv/{id}/season/{n}` |
+| Filme                      | `GET /3/movie/{id}`         |
 
 Base: `https://api.themoviedb.org`. Imagens: `https://image.tmdb.org/t/p/w342{poster_path}`.
 

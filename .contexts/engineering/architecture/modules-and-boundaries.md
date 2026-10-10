@@ -21,18 +21,18 @@ fixtures/             SRT fictícios EN e PT
 
 ## Módulos
 
-| Módulo           | Responsabilidade                                                                    |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| `identity`       | Contas, senha, sessão, preferências                                                 |
-| `catalog`        | Obras, temporadas, episódios, `MetadataProvider`, sincronização com o TMDB           |
-| `subtitles`      | Parser SRT, validação, hash, deduplicação, importação, falas                         |
-| `alignment`      | Alinhamento EN ↔ PT por sobreposição de tempo (puro)                                 |
-| `highlights`     | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio          |
-| `learning`       | Itens de aprendizado, explicações, `LlmProvider`, geração de cards                   |
-| `flashcards`     | Cards do usuário, agendamento de revisão, histórico                                  |
-| `ai-credentials` | Chave Gemini por usuário: cifra, teste, máscara, remoção                             |
-| `audio`          | `TtsProvider`, cache de áudio por hash                                               |
-| `gamification`   | XP por eventos e retrato de demonstração de Início, Conversar e Progresso            |
+| Módulo           | Responsabilidade                                                            |
+| ---------------- | --------------------------------------------------------------------------- |
+| `identity`       | Contas, senha, sessão, preferências                                         |
+| `catalog`        | Obras, temporadas, episódios, `MetadataProvider`, sincronização com o TMDB  |
+| `subtitles`      | Parser SRT, validação, hash, deduplicação, importação, falas                |
+| `alignment`      | Alinhamento EN ↔ PT por sobreposição de tempo (puro)                        |
+| `highlights`     | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio |
+| `learning`       | Itens de aprendizado, explicações, `LlmProvider`, geração de cards          |
+| `flashcards`     | Cards do usuário, agendamento de revisão, histórico                         |
+| `ai-credentials` | Chave Gemini por usuário: cifra, teste, máscara, remoção                    |
+| `audio`          | `TtsProvider`, cache de áudio por hash                                      |
+| `gamification`   | XP por eventos e retrato de demonstração de Início, Conversar e Progresso   |
 
 Os módulos `scripts`, `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
 chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.

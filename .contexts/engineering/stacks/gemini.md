@@ -24,10 +24,10 @@ LLM das atividades personalizadas, com a chave de cada usuário.
 
 ## Usos nas fases 01 e 02
 
-| Uso                                         | Chamadas                  |
-| ------------------------------------------- | ------------------------- |
-| Explicar termos marcados                    | 1 por geração de cards    |
-| Traduzir fala sem par na legenda PT         | 1 por pedido, com cache   |
+| Uso                                 | Chamadas                |
+| ----------------------------------- | ----------------------- |
+| Explicar termos marcados            | 1 por geração de cards  |
+| Traduzir fala sem par na legenda PT | 1 por pedido, com cache |
 
 ## Reserva
 

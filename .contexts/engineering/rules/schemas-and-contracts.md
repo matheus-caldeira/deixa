@@ -12,13 +12,13 @@ Zod em toda fronteira; tipo por `z.infer`.
 
 ## Fronteiras
 
-| Fronteira              | Onde fica o schema                                   |
-| ---------------------- | ---------------------------------------------------- |
-| Variáveis de ambiente  | `src/infrastructure/config/env.ts`                   |
-| Server action          | No próprio arquivo de actions                        |
-| Resposta do TMDB       | `src/infrastructure/tmdb/schemas.ts`                 |
-| Saída da LLM           | `modules/learning/application/ports` (contrato)      |
-| Rascunho de cards      | `modules/learning/domain`                            |
+| Fronteira             | Onde fica o schema                              |
+| --------------------- | ----------------------------------------------- |
+| Variáveis de ambiente | `src/infrastructure/config/env.ts`              |
+| Server action         | No próprio arquivo de actions                   |
+| Resposta do TMDB      | `src/infrastructure/tmdb/schemas.ts`            |
+| Saída da LLM          | `modules/learning/application/ports` (contrato) |
+| Rascunho de cards     | `modules/learning/domain`                       |
 
 ## Erros
 

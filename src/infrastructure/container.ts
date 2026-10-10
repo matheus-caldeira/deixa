@@ -44,6 +44,7 @@ import {
   makeSignUp,
   makeUpdatePreferences,
 } from "@/modules/identity";
+import { AttemptThrottle } from "@/modules/identity/infrastructure/attempt-throttle";
 import { randomSessionTokens, scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { DrizzleIdentityRepository } from "@/modules/identity/infrastructure/drizzle-identity-repository";
 import {
@@ -72,6 +73,8 @@ import { TmdbClient } from "./tmdb/client";
 import { TmdbMetadataProvider } from "./tmdb/tmdb-metadata-provider";
 
 const MAX_AUDIO_GENERATIONS_PER_USER = 2;
+const MAX_LOGIN_FAILURES = 8;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 
 export type ContainerOptions = {
   env: Env;
@@ -160,6 +163,8 @@ export function buildContainer(options: ContainerOptions) {
   return {
     providers: { metadata: metadata.name, tts: tts.name },
     devShortcuts: env.DEV_SHORTCUTS,
+    secureSessionCookie: env.SESSION_COOKIE_SECURE,
+    loginThrottle: new AttemptThrottle(MAX_LOGIN_FAILURES, LOGIN_WINDOW_MS, clock),
 
     signIn: makeSignIn(sessionDeps),
     signUp: makeSignUp(sessionDeps),

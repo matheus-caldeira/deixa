@@ -10,13 +10,13 @@ source: PROJETO.md §3, §5, §7, §15
 
 Barra inferior com cinco áreas e topo fixo com avatar, nível, sequência e XP do dia.
 
-| Área      | Conteúdo                                                                                       | Estado nas fases 01 e 02      |
-| --------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
-| Início    | Continuar estudando, Ler episódio e marcar, meta do dia, trilha, revisões, missões             | Real + dados de demonstração  |
-| Explorar  | Busca, filtros, em andamento, catálogo, detalhe da obra, envio de legendas                     | Real                          |
-| Revisar   | Flashcards vencidos, incluindo os das marcações; erros recorrentes                             | Real (erros: demonstração)    |
-| Conversar | Cenários do tutor ordenados pelo nível                                                         | Demonstração                  |
-| Progresso | Nível, sequência, XP, expressões, precisão, semana, dias estudados, habilidades, conquistas    | Demonstração                  |
+| Área      | Conteúdo                                                                                    | Estado nas fases 01 e 02     |
+| --------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
+| Início    | Continuar estudando, Ler episódio e marcar, meta do dia, trilha, revisões, missões          | Real + dados de demonstração |
+| Explorar  | Busca, filtros, em andamento, catálogo, detalhe da obra, envio de legendas                  | Real                         |
+| Revisar   | Flashcards vencidos, incluindo os das marcações; erros recorrentes                          | Real (erros: demonstração)   |
+| Conversar | Cenários do tutor ordenados pelo nível                                                      | Demonstração                 |
+| Progresso | Nível, sequência, XP, expressões, precisão, semana, dias estudados, habilidades, conquistas | Demonstração                 |
 
 ## Fases 01 e 02: o que precisa funcionar
 
@@ -39,14 +39,14 @@ transcrição por IA. As telas existem com dados de demonstração onde o protó
 
 ## Estados de um episódio
 
-| Estado         | Na interface | Significado                                    |
-| -------------- | ------------ | ---------------------------------------------- |
-| `NONE`         | Sem legenda  | Cadastrado, sem SRT                            |
-| `UPLOADED`     | Processando  | Arquivo recebido                               |
-| `PROCESSING`   | Processando  | Em processamento                               |
-| `READY`        | Pronto       | Pode ler, marcar e estudar                     |
-| `FAILED`       | Falhou       | Pode ser reenviado                             |
-| `NEEDS_REVIEW` | Em revisão   | Saída da IA precisa de revisão manual          |
+| Estado         | Na interface | Significado                           |
+| -------------- | ------------ | ------------------------------------- |
+| `NONE`         | Sem legenda  | Cadastrado, sem SRT                   |
+| `UPLOADED`     | Processando  | Arquivo recebido                      |
+| `PROCESSING`   | Processando  | Em processamento                      |
+| `READY`        | Pronto       | Pode ler, marcar e estudar            |
+| `FAILED`       | Falhou       | Pode ser reenviado                    |
+| `NEEDS_REVIEW` | Em revisão   | Saída da IA precisa de revisão manual |
 
 ## Critérios de aceite destas fases
 

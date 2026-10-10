@@ -19,8 +19,19 @@ export async function signInAction(input: unknown): Promise<ActionResult<null>> 
   const result = await runAction("signIn", async () => {
     const parsed = signInSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_CREDENTIALS");
-    const session = await app().signIn(parsed.data);
-    await startSession(session.token, session.expiresAt);
+    const throttleKey = parsed.data.email.trim().toLowerCase();
+    const throttle = app().loginThrottle;
+    if (throttle.isBlocked(throttleKey)) {
+      throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
+    }
+    try {
+      const session = await app().signIn(parsed.data);
+      throttle.reset(throttleKey);
+      await startSession(session.token, session.expiresAt);
+    } catch (error) {
+      throttle.recordFailure(throttleKey);
+      throw error;
+    }
     return null;
   });
   if (result.ok) redirect("/");

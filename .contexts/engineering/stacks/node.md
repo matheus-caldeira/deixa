@@ -15,12 +15,12 @@ Runtime do Next, dos scripts e do futuro worker.
 
 ## APIs nativas usadas
 
-| Necessidade              | API                                               |
-| ------------------------ | ------------------------------------------------- |
-| Hash de senha            | `crypto.scrypt`, `timingSafeEqual`                |
-| Cifra da chave de IA     | `crypto.createCipheriv("aes-256-gcm")`            |
-| Hash de arquivo e áudio  | `crypto.createHash("sha256")`                     |
-| Token de sessão          | `crypto.randomBytes(32)`                          |
-| Arquivos                 | `fs/promises` (`mkdir`, `writeFile`, `rename`)    |
-| HTTP                     | `fetch` com `AbortSignal.timeout`                 |
+| Necessidade              | API                                                  |
+| ------------------------ | ---------------------------------------------------- |
+| Hash de senha            | `crypto.scrypt`, `timingSafeEqual`                   |
+| Cifra da chave de IA     | `crypto.createCipheriv("aes-256-gcm")`               |
+| Hash de arquivo e áudio  | `crypto.createHash("sha256")`                        |
+| Token de sessão          | `crypto.randomBytes(32)`                             |
+| Arquivos                 | `fs/promises` (`mkdir`, `writeFile`, `rename`)       |
+| HTTP                     | `fetch` com `AbortSignal.timeout`                    |
 | Decodificação de legenda | `TextDecoder` (`utf-8` fatal, depois `windows-1252`) |

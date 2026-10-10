@@ -10,11 +10,18 @@ describe("variáveis de ambiente", () => {
     expect(env.DATA_DIR).toBe("data");
     expect(env.KOKORO_URL).toBeUndefined();
     expect(env.DEV_SHORTCUTS).toBe(false);
+    expect(env.SESSION_COOKIE_SECURE).toBe(true);
     expect(hasTmdbCredentials(env)).toBe(false);
   });
 
   it("reconhece credenciais do TMDB sem expor o valor na mensagem de erro", () => {
-    const env = parseEnv({ ...base, TMDB_READ_ACCESS_TOKEN: "token-de-teste", DEV_SHORTCUTS: "true" });
+    const env = parseEnv({
+      ...base,
+      TMDB_READ_ACCESS_TOKEN: "token-de-teste",
+      DEV_SHORTCUTS: "true",
+      SESSION_COOKIE_SECURE: "false",
+    });
+    expect(env.SESSION_COOKIE_SECURE).toBe(false);
     expect(hasTmdbCredentials(env)).toBe(true);
     expect(env.DEV_SHORTCUTS).toBe(true);
   });

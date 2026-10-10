@@ -28,6 +28,7 @@ export function makeEnsureManualEpisode(deps: Deps) {
   }): Promise<{ episodeId: string }> {
     const media = await deps.catalog.findMediaById(input.mediaId);
     if (!media) throw new AppError("MEDIA_NOT_FOUND");
+    if (media.metadataProvider !== "manual") throw new AppError("EPISODE_NOT_FOUND");
     const seasonNumber = media.type === "movie" ? MOVIE_SEASON_NUMBER : input.seasonNumber;
     const episodeNumber = media.type === "movie" ? MOVIE_EPISODE_NUMBER : input.episodeNumber;
     if (media.type === "series") {

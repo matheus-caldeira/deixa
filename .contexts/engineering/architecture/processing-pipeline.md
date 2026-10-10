@@ -10,16 +10,16 @@ Workflow determinístico, com etapas explícitas. Nas fases 01 e 02 não há LLM
 
 ## Etapas da importação
 
-| #  | Etapa                           | Saída                                                                  |
-| -- | ------------------------------- | ---------------------------------------------------------------------- |
-| 1  | Validar arquivos                | Extensão `.srt`, até 5 MB, texto decodificável, ao menos uma fala      |
-| 2  | Calcular SHA-256                | Hash por arquivo                                                       |
-| 3  | Verificar duplicidade           | Mesmo hash no episódio e idioma → reutiliza e encerra                  |
-| 4  | Salvar originais                | `original.en.srt`, `original.pt-BR.srt` em `data/catalog/...`          |
-| 5  | Ler o SRT em inglês             | `subtitle_cues`                                                        |
-| 6  | Ler o SRT em português          | `subtitle_cues`                                                        |
-| 7  | Alinhar EN ↔ PT pelo tempo      | `cue_alignments`, `alignment.json`, taxa de alinhamento                |
-| 8  | Publicar no catálogo            | Episódio `READY`                                                       |
+| #   | Etapa                      | Saída                                                             |
+| --- | -------------------------- | ----------------------------------------------------------------- |
+| 1   | Validar arquivos           | Extensão `.srt`, até 5 MB, texto decodificável, ao menos uma fala |
+| 2   | Calcular SHA-256           | Hash por arquivo                                                  |
+| 3   | Verificar duplicidade      | Mesmo hash no episódio e idioma → reutiliza e encerra             |
+| 4   | Salvar originais           | `original.en.srt`, `original.pt-BR.srt` em `data/catalog/...`     |
+| 5   | Ler o SRT em inglês        | `subtitle_cues`                                                   |
+| 6   | Ler o SRT em português     | `subtitle_cues`                                                   |
+| 7   | Alinhar EN ↔ PT pelo tempo | `cue_alignments`, `alignment.json`, taxa de alinhamento           |
+| 8   | Publicar no catálogo       | Episódio `READY`                                                  |
 
 O job fica em `processing_jobs` com as etapas, as tentativas e o motivo de falha. A interface mostra cada etapa
 com o dado real (quantidade de falas, pares, percentual).

@@ -14,6 +14,7 @@ const DEV_DEFAULTS = {
   KOKORO_URL: () => "http://localhost:1881",
   DATA_DIR: () => "data",
   GEMINI_MODEL: () => "gemini-2.5-flash",
+  SESSION_COOKIE_SECURE: () => "false",
   DEV_SHORTCUTS: () => "true",
 };
 

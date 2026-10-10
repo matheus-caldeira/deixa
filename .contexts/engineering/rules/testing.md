@@ -8,12 +8,12 @@ source: PROJETO.md §4 (Testes); ADR 0012
 
 ## Pirâmide
 
-| Nível       | Comando                 | O que cobre                                                              | Depende de            |
-| ----------- | ----------------------- | ------------------------------------------------------------------------ | --------------------- |
-| Unitário    | `pnpm test`             | Domínio e casos de uso com fakes                                         | Nada                  |
-| Integração  | `pnpm test:integration` | Repositórios Drizzle (isolamento, deduplicação); TMDB real               | Postgres; token opcional |
-| Bundle      | `pnpm test:bundle`      | Token do TMDB ausente de `.next/static`                                  | Build                 |
-| E2E         | `pnpm test:e2e`         | Login → obra → upload → leitura → marcação → cards → revisão             | Postgres, Chrome      |
+| Nível      | Comando                 | O que cobre                                                  | Depende de               |
+| ---------- | ----------------------- | ------------------------------------------------------------ | ------------------------ |
+| Unitário   | `pnpm test`             | Domínio e casos de uso com fakes                             | Nada                     |
+| Integração | `pnpm test:integration` | Repositórios Drizzle (isolamento, deduplicação); TMDB real   | Postgres; token opcional |
+| Bundle     | `pnpm test:bundle`      | Token do TMDB ausente de `.next/static`                      | Build                    |
+| E2E        | `pnpm test:e2e`         | Login → obra → upload → leitura → marcação → cards → revisão | Postgres, Chrome         |
 
 ## Casos unitários obrigatórios
 
