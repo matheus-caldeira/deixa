@@ -7,11 +7,9 @@ const blankAsUndefined = (value: unknown): unknown =>
 
 const optionalText = z.preprocess(blankAsUndefined, z.string().min(1).optional());
 
-const masterKey = z
-  .string()
-  .refine((value) => Buffer.from(value, "base64").length === MASTER_KEY_BYTES, {
-    message: "AI_CREDENTIALS_MASTER_KEY precisa ter 32 bytes em base64",
-  });
+const masterKey = z.string().refine((value) => Buffer.from(value, "base64").length === MASTER_KEY_BYTES, {
+  message: "AI_CREDENTIALS_MASTER_KEY precisa ter 32 bytes em base64",
+});
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),

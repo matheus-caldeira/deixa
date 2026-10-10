@@ -16,7 +16,12 @@ export function redact(value: unknown): unknown {
 }
 
 function write(level: LogLevel, event: string, fields: LogFields): void {
-  const line = JSON.stringify({ level, event, ...(redact(fields) as LogFields), at: new Date().toISOString() });
+  const line = JSON.stringify({
+    level,
+    event,
+    ...(redact(fields) as LogFields),
+    at: new Date().toISOString(),
+  });
   if (level === "error") console.error(line);
   else if (level === "warn") console.warn(line);
   else console.info(line);

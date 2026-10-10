@@ -1,0 +1,120 @@
+import { AppError } from "@/shared/errors";
+import type { Clock } from "@/shared/clock";
+import type { IdGenerator } from "@/shared/ids";
+import {
+  DEFAULT_LEVEL_RANGE,
+  MOVIE_EPISODE_NUMBER,
+  MOVIE_EPISODE_TITLE,
+  MOVIE_SEASON_NUMBER,
+  isMetadataStale,
+  posterColorsFor,
+  type MediaItem,
+  type MediaType,
+} from "../domain/catalog";
+import type { CatalogRepository, MetadataProvider, WorkDetails } from "./ports";
+
+const SECONDS_PER_MINUTE = 60;
+const FIRST_REGULAR_SEASON = 1;
+
+type Deps = { catalog: CatalogRepository; metadata: MetadataProvider; clock: Clock; ids: IdGenerator };
+
+async function storeWork(
+  deps: Deps,
+  details: WorkDetails,
+  existing: MediaItem | null,
+  userId: string | null,
+) {
+  const now = deps.clock.now();
+  const [levelMin, levelMax] = details.levelRange ?? DEFAULT_LEVEL_RANGE;
+  const mediaId = await deps.catalog.upsertMedia({
+    id: existing?.id ?? deps.ids.next(),
+    type: details.type,
+    title: details.title,
+    originalTitle: details.originalTitle,
+    overview: details.overview,
+    year: details.year,
+    metadataProvider: details.provider,
+    externalId: details.externalId,
+    posterPath: details.posterPath,
+    posterColors: details.posterColors ?? posterColorsFor(details.title),
+    levelMin: existing?.levelMin ?? levelMin,
+    levelMax: existing?.levelMax ?? levelMax,
+    accent: existing?.accent ?? details.accent ?? null,
+    createdBy: userId,
+    syncedAt: now,
+    createdAt: now,
+  });
+
+  if (details.type === "movie") {
+    await deps.catalog.upsertSeasons(mediaId, [
+      { id: deps.ids.next(), seasonNumber: MOVIE_SEASON_NUMBER, title: "Filme", episodeCount: 1 },
+    ]);
+    const [season] = await deps.catalog.listSeasons(mediaId);
+    if (season) {
+      await deps.catalog.upsertEpisodes(
+        season.id,
+        [
+          {
+            id: deps.ids.next(),
+            episodeNumber: MOVIE_EPISODE_NUMBER,
+            title: MOVIE_EPISODE_TITLE,
+            overview: details.overview,
+            durationSeconds: details.runtimeMinutes ? details.runtimeMinutes * SECONDS_PER_MINUTE : null,
+          },
+        ],
+        now,
+      );
+    }
+    return mediaId;
+  }
+
+  await deps.catalog.upsertSeasons(
+    mediaId,
+    details.seasons
+      .filter((season) => season.seasonNumber >= FIRST_REGULAR_SEASON)
+      .map((season) => ({ id: deps.ids.next(), ...season })),
+  );
+  return mediaId;
+}
+
+export function makeRegisterWork(deps: Deps) {
+  return async function registerWork(input: {
+    userId: string | null;
+    type: MediaType;
+    externalId: string;
+    force?: boolean;
+  }): Promise<{ mediaId: string; fetched: boolean }> {
+    const existing = await deps.catalog.findMediaByExternal(deps.metadata.name, input.externalId);
+    if (existing && !input.force && !isMetadataStale(existing.metadataSyncedAt, deps.clock.now())) {
+      return { mediaId: existing.id, fetched: false };
+    }
+    try {
+      const details = await deps.metadata.getWork(input.type, input.externalId);
+      return { mediaId: await storeWork(deps, details, existing, input.userId), fetched: true };
+    } catch (error) {
+      if (existing) return { mediaId: existing.id, fetched: false };
+      throw error;
+    }
+  };
+}
+
+export function makeRefreshWork(deps: Deps) {
+  const registerWork = makeRegisterWork(deps);
+  return async function refreshWork(input: {
+    mediaId: string;
+    force: boolean;
+  }): Promise<{ refreshed: boolean }> {
+    const media = await deps.catalog.findMediaById(input.mediaId);
+    if (!media) throw new AppError("MEDIA_NOT_FOUND");
+    if (media.metadataProvider !== deps.metadata.name) return { refreshed: false };
+    if (!input.force && !isMetadataStale(media.metadataSyncedAt, deps.clock.now()))
+      return { refreshed: false };
+    const result = await registerWork({
+      userId: null,
+      type: media.type,
+      externalId: media.externalId,
+      force: true,
+    });
+    return { refreshed: result.fetched };
+  };
+}
