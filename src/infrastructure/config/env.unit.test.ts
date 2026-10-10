@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hasTmdbCredentials, parseEnv } from "./env";
 
 const MASTER_KEY = Buffer.alloc(32, 7).toString("base64");
-const base = { DATABASE_URL: "postgres://u:p@localhost:5442/db", AI_CREDENTIALS_MASTER_KEY: MASTER_KEY };
+const base = { DATABASE_URL: "postgres://u:p@localhost:1442/db", AI_CREDENTIALS_MASTER_KEY: MASTER_KEY };
 
 describe("variáveis de ambiente", () => {
   it("aplica padrões e trata string vazia como ausente", () => {

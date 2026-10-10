@@ -36,12 +36,16 @@ export function makeSyncHighlights(deps: Deps) {
     const existing = await deps.highlights.listForEpisode(input.userId, input.episodeId);
     const existingKeys = new Set(existing.map(spanKey));
 
-    const removedIds = existing.filter((highlight) => !desiredKeys.has(spanKey(highlight))).map((h) => h.id);
+    const removed = existing.filter((highlight) => !desiredKeys.has(spanKey(highlight)));
+    const removedIds = removed.map((highlight) => highlight.id);
+    const removedFromCatalog = removed.filter((highlight) => highlight.shareScope === "catalog");
     const added = desired
       .filter((span) => !existingKeys.has(spanKey(span)))
       .map((span) => ({ ...span, id: deps.ids.next() }));
 
     if (removedIds.length > 0) await deps.highlights.deleteByIds(input.userId, removedIds);
+    if (removedFromCatalog.length > 0)
+      await deps.highlights.recountStats(input.episodeId, removedFromCatalog);
     if (added.length > 0)
       await deps.highlights.insert(input.userId, input.episodeId, added, deps.clock.now());
     return deps.highlights.listForEpisode(input.userId, input.episodeId);
@@ -87,8 +91,6 @@ export function makeMarkHighlightsCarded(deps: Pick<Deps, "highlights">) {
   }): Promise<void> {
     if (input.highlightIds.length === 0) return;
     const newlyShared = await deps.highlights.markCarded(input);
-    if (input.scope === "catalog" && newlyShared.length > 0) {
-      await deps.highlights.incrementStats(input.episodeId, newlyShared);
-    }
+    if (newlyShared.length > 0) await deps.highlights.recountStats(input.episodeId, newlyShared);
   };
 }

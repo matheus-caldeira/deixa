@@ -16,7 +16,7 @@ Geração de voz local, por HTTP, compatível com o formato de fala da OpenAI.
 ## Como sobe
 
 Serviço `kokoro` no `docker-compose.yml`, com a imagem publicada (os modelos vêm dentro dela). Porta 8880 no
-container, 8881 no host. `KOKORO_URL=http://localhost:8881`. O repositório do Kokoro não é copiado para cá.
+container, 1881 no host. `KOKORO_URL=http://localhost:1881`. O repositório do Kokoro não é copiado para cá.
 
 ## API
 

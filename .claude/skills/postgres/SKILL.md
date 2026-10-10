@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Grep, Glob, Bash
 
 Padrões do projeto:
 
-- Sobe por `docker compose up -d` (serviço `postgres`, porta 5442 no host).
+- Sobe por `docker compose up -d` (serviço `postgres`, porta 1442 no host).
 - Banco `deixa` para dev; `deixa_test` para integração e `deixa_e2e` para o Playwright, criados pelos scripts.
 - Unicidade no banco: e-mail, `(metadata_provider, external_id)`, `(episode_id, language, processing_version, sha256)`, `(user_id, learning_item_id)`, `(text_hash, voice_id)`.
 - Ids `uuid`; datas `timestamptz`.

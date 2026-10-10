@@ -55,10 +55,10 @@ nunca importa repositório, cliente Gemini, TMDB nem Kokoro. Detalhes:
 ```bash
 pnpm install
 pnpm setup:env         # cria ou completa o .env sem imprimir valores
-pnpm infra:up          # Postgres (5442) e Kokoro (8881)
+pnpm infra:up          # Postgres (1442) e Kokoro (1881)
 pnpm db:migrate        # aplica as migrações
 pnpm db:seed           # perfis, obras e episódios de demonstração
-pnpm dev               # http://localhost:3300
+pnpm dev               # http://localhost:1300
 pnpm typecheck && pnpm lint && pnpm lint:comments && pnpm test
 pnpm test:integration  # Postgres + TMDB real (pulado sem token)
 pnpm build && pnpm test:bundle   # token do TMDB fora de .next/static

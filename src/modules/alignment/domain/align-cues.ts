@@ -24,6 +24,23 @@ const MIN_OFFSET_CONSENSUS = 0.5;
 const MIN_SHARE_OF_ENGLISH_CUE = 0.2;
 const MIN_SHARE_OF_PORTUGUESE_CUE = 0.5;
 const MAX_CANDIDATES_PER_CUE = 64;
+const MAX_CUE_SPAN_MS = 30_000;
+
+function lastIndexStartingBefore(cues: readonly TimedCue[], limitMs: number): number {
+  let low = 0;
+  let high = cues.length - 1;
+  let found = -1;
+  while (low <= high) {
+    const middle = (low + high) >> 1;
+    if ((cues[middle]?.startMs ?? 0) < limitMs) {
+      found = middle;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return found;
+}
 
 const duration = (cue: TimedCue): number => Math.max(1, cue.endMs - cue.startMs);
 
@@ -75,29 +92,30 @@ export function alignCues(enCues: readonly TimedCue[], ptCues: readonly TimedCue
   const en = [...enCues].sort((a, b) => a.startMs - b.startMs);
   const pt = [...ptCues].sort((a, b) => a.startMs - b.startMs);
   const offsetMs = estimateFixedOffset(en, pt);
-  const shifted = pt.map((cue) => ({ ...cue, startMs: cue.startMs - offsetMs, endMs: cue.endMs - offsetMs }));
-  const longestPortugueseMs = shifted.reduce((longest, cue) => Math.max(longest, duration(cue)), 0);
+  const shifted = pt.map((cue) => ({
+    ...cue,
+    startMs: cue.startMs - offsetMs,
+    endMs: Math.min(cue.endMs, cue.startMs + MAX_CUE_SPAN_MS) - offsetMs,
+  }));
 
-  let windowStart = 0;
   const alignments = en.map((english): CueAlignment => {
-    while (
-      windowStart < shifted.length &&
-      (shifted[windowStart]?.startMs ?? 0) + longestPortugueseMs <= english.startMs
-    ) {
-      windowStart += 1;
-    }
     const contributors: { portuguese: TimedCue; overlap: number }[] = [];
-    const windowEnd = Math.min(shifted.length, windowStart + MAX_CANDIDATES_PER_CUE);
-    for (let index = windowStart; index < windowEnd; index += 1) {
+    const earliestRelevantStart = english.startMs - MAX_CUE_SPAN_MS;
+    let examined = 0;
+    for (
+      let index = lastIndexStartingBefore(shifted, english.endMs);
+      index >= 0 && examined < MAX_CANDIDATES_PER_CUE;
+      index -= 1, examined += 1
+    ) {
       const portuguese = shifted[index];
-      if (!portuguese || portuguese.startMs >= english.endMs) break;
+      if (!portuguese || portuguese.startMs < earliestRelevantStart) break;
       const overlap =
         Math.min(english.endMs, portuguese.endMs) - Math.max(english.startMs, portuguese.startMs);
       const counts =
         overlap > 0 &&
         (overlap / duration(english) >= MIN_SHARE_OF_ENGLISH_CUE ||
           overlap / duration(portuguese) >= MIN_SHARE_OF_PORTUGUESE_CUE);
-      if (counts) contributors.push({ portuguese, overlap });
+      if (counts) contributors.unshift({ portuguese, overlap });
     }
     const covered = contributors.reduce((total, { overlap }) => total + overlap, 0);
     const overlapScore = Math.min(1, Math.round((covered / duration(english)) * 1000) / 1000);

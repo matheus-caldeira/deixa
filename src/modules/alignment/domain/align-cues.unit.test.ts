@@ -98,4 +98,18 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     alignCues(piled, piled);
     expect(performance.now() - started).toBeLessThan(3000);
   });
+
+  it("uma fala PT com duração absurda não derruba o alinhamento do resto do episódio", () => {
+    const en = Array.from({ length: 200 }, (_, index) =>
+      cue(`en${index}`, index * 3000, index * 3000 + 2000),
+    );
+    const pt = [
+      cue("pt-gigante", 0, 10_000_000),
+      ...en.map((english) => cue(`pt-${english.id}`, english.startMs + 100, english.endMs + 100)),
+    ];
+    const result = alignCues(en, pt);
+    expect(result.rate).toBe(1);
+    expect(result.alignments[150]?.ptCueIds).toEqual(["pt-en150"]);
+    expect(result.alignments.filter((a) => a.ptCueIds.includes("pt-gigante")).length).toBeLessThanOrEqual(10);
+  });
 });

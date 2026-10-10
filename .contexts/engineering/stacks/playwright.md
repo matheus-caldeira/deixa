@@ -15,7 +15,7 @@ Fluxo ponta a ponta e screenshots de comparação com o protótipo.
 
 ## Como roda
 
-`pnpm test:e2e`: build, banco `deixa_e2e` migrado e semeado, `next start` na porta 3310 com providers fake e TTS
+`pnpm test:e2e`: build, banco `deixa_e2e` migrado e semeado, `next start` na porta 1310 com providers fake e TTS
 silencioso, Chrome instalado (`channel: "chrome"`), viewport 390×844, um worker.
 
 ## Fluxo coberto

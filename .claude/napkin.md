@@ -12,7 +12,7 @@
 1. **[2026-10-10] O `.env.tmdb` usa `nome: valor`, não `NOME=valor`**
    Do instead: nunca usar `cut -d=` nem `cat` nele; converter com `sed -nE 's/^token:[[:space:]]*/TMDB_READ_ACCESS_TOKEN=/p'` redirecionando para o `.env`, sem saída no terminal. Para conferir, listar só os nomes com `cut -d= -f1 .env`.
 2. **[2026-10-10] As portas 3000 e 5432 costumam estar ocupadas por outros projetos da máquina**
-   Do instead: este projeto usa 3300 (dev), 3310 (e2e), 5442 (Postgres) e 8881 (Kokoro); conferir com `lsof -nP -iTCP -sTCP:LISTEN` antes de mudar.
+   Do instead: este projeto usa 1300 (dev), 1310 (e2e), 1442 (Postgres) e 1881 (Kokoro); conferir com `lsof -nP -iTCP -sTCP:LISTEN` antes de mudar.
 3. **[2026-10-10] O hook de segredos bloqueia Edit/Write em `.env*` e em `data/`**
    Do instead: criar ou alterar o `.env` por comando de shell que não imprime valores (`pnpm setup:env`); o `.env.example` é o único editável.
 

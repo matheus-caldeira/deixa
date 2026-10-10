@@ -15,7 +15,7 @@ Banco único: catálogo, falas, alinhamentos, aprendizado e progresso.
 
 ## Como sobe
 
-`docker compose up -d` (serviço `postgres`, imagem `postgres:17-alpine`, porta 5442 no host, volume nomeado).
+`docker compose up -d` (serviço `postgres`, imagem `postgres:17-alpine`, porta 1442 no host, volume nomeado).
 
 ## Bancos
 

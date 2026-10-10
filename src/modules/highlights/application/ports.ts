@@ -16,7 +16,7 @@ export interface HighlightRepository {
     batchId: string;
     scope: ShareScope;
   }): Promise<HighlightSpan[]>;
-  incrementStats(episodeId: string, spans: HighlightSpan[]): Promise<void>;
+  recountStats(episodeId: string, spans: HighlightSpan[]): Promise<void>;
   listStats(episodeId: string): Promise<HighlightStat[]>;
 }
 

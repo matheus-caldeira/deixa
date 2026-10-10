@@ -8,7 +8,7 @@ allowed-tools: Read, Edit, Write, Grep, Glob, Bash
 
 Padrões do projeto:
 
-- Serviço separado no `docker-compose.yml` (imagem `ghcr.io/remsky/kokoro-fastapi-cpu`), porta 8881 no host; URL em `KOKORO_URL`.
+- Serviço separado no `docker-compose.yml` (imagem `ghcr.io/remsky/kokoro-fastapi-cpu`), porta 1881 no host; URL em `KOKORO_URL`.
 - Port `TtsProvider`; implementações `KokoroTtsProvider` (HTTP) e `SilentTtsProvider` (WAV curto de silêncio).
 - Geração: `POST /v1/audio/speech` com `model`, `voice`, `input`, `response_format: "wav"`.
 - Voz pelo sotaque do usuário (americano ou britânico).

@@ -220,6 +220,25 @@ describe("marcações do usuário", () => {
     });
   });
 
+  it("conta usuários distintos: uma pessoa sozinha não infla a contagem nem atinge o mínimo", async () => {
+    const marks = [{ cueId: "cue-2", tokens: [2, 3, 4, 5], wholeLine: false }];
+    for (let round = 0; round < 3; round += 1) {
+      await app.sync({ userId: "ana", episodeId: "ep-1", marks });
+      const ids = (await app.pending("ana", "ep-1")).map((h) => h.id);
+      await app.markCarded({
+        userId: "ana",
+        episodeId: "ep-1",
+        highlightIds: ids,
+        batchId: `b${round}`,
+        scope: "catalog",
+      });
+      expect(app.highlights.stats).toMatchObject([{ cueId: "cue-2", userCount: 1 }]);
+      await app.sync({ userId: "ana", episodeId: "ep-1", marks: [] });
+      expect(app.highlights.stats).toEqual([]);
+    }
+    expect((await app.readingView("lucas", "ep-1")).lines[1]?.markedByCount).toBeNull();
+  });
+
   it("não marca como card a marcação de outro usuário", async () => {
     await app.sync({
       userId: "ana",

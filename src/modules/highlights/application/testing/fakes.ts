@@ -52,20 +52,26 @@ export class InMemoryHighlights implements HighlightRepository {
     return newlyShared;
   }
 
-  async incrementStats(episodeId: string, spans: HighlightSpan[]): Promise<void> {
+  async recountStats(episodeId: string, spans: HighlightSpan[]): Promise<void> {
     for (const span of spans) {
-      const existing = this.stats.find(
-        (stat) =>
-          stat.cueId === span.cueId && stat.startToken === span.startToken && stat.endToken === span.endToken,
+      const sameSpan = (candidate: { cueId: string; startToken: number; endToken: number }) =>
+        candidate.cueId === span.cueId &&
+        candidate.startToken === span.startToken &&
+        candidate.endToken === span.endToken;
+      const users = new Set(
+        this.rows
+          .filter((row) => row.episodeId === episodeId && row.shareScope === "catalog" && sameSpan(row))
+          .map((row) => row.userId),
       );
-      if (existing) existing.userCount += 1;
-      else {
+      const index = this.stats.findIndex((stat) => stat.episodeId === episodeId && sameSpan(stat));
+      if (index >= 0) this.stats.splice(index, 1);
+      if (users.size > 0) {
         this.stats.push({
           episodeId,
           cueId: span.cueId,
           startToken: span.startToken,
           endToken: span.endToken,
-          userCount: 1,
+          userCount: users.size,
         });
       }
     }
