@@ -1,0 +1,55 @@
+{
+  "name": "deixa",
+  "private": true,
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "next dev -p 3300",
+    "build": "NODE_ENV=production next build",
+    "start": "NODE_ENV=production next start -p 3300",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint .",
+    "lint:comments": "node scripts/no-comments.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "test:bundle": "vitest run --config vitest.bundle.config.mts",
+    "test:e2e": "pnpm build && playwright test",
+    "setup:env": "node scripts/setup-env.mjs",
+    "infra:up": "docker compose up -d --wait postgres && docker compose up -d kokoro",
+    "infra:down": "docker compose down",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file=.env src/infrastructure/database/migrate-cli.ts",
+    "db:seed": "tsx --env-file=.env src/seed/main.ts",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "next": "16.4.0",
+    "postgres": "^3.4.9",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^24.19.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,23 @@
+name: deixa
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: deixa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deixa}
+      POSTGRES_DB: deixa
+    ports: ["127.0.0.1:5442:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U deixa -d deixa"], interval: 3s, retries: 30 }
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.2.4
+    ports: ["127.0.0.1:8881:8880"]
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8880/health')"]
+      interval: 10s
+      retries: 30
+      start_period: 60s
+volumes:
+  pgdata:

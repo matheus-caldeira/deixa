@@ -5,9 +5,9 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 | #  | Tarefa | Critério de pronto | Estado |
 | -- | ------ | ------------------ | ------ |
 | 00 | Repositório, `.gitignore`, `.claude/` e `.contexts/` adaptados, plano e diário | `git check-ignore` confirma `.env` e `.env.tmdb`; primeiro commit só com documentação | [x] |
-| 01 | Scaffold: Next, TypeScript estrito, Tailwind, ESLint, Vitest, compose, `env.ts`, `.env` | `pnpm typecheck`, `lint`, `test` e `build` passam; Postgres de pé; `.env` criado sem exibir valores | [ ] |
-| 02 | Design system: tokens, classes do protótipo, ícones, fontes | Tokens claro/escuro idênticos ao `:root` do protótipo; ícones como componentes | [ ] |
-| 03 | Schema e migrações | `pnpm db:migrate` cria todas as tabelas das fases 01 e 02 | [ ] |
+| 01 | Scaffold: Next, TypeScript estrito, Tailwind, ESLint, Vitest, compose, `env.ts`, `.env` | `pnpm typecheck`, `lint`, `test` e `build` passam; Postgres de pé; `.env` criado sem exibir valores | [x] |
+| 02 | Design system: tokens, classes do protótipo, ícones, fontes | Tokens claro/escuro idênticos ao `:root` do protótipo; ícones como componentes | [x] |
+| 03 | Schema e migrações | `pnpm db:migrate` cria todas as tabelas das fases 01 e 02 | [x] |
 | 04 | Identidade: senha, sessão, entrar, criar conta, preferências | Teste unitário de senha e sessão; rotas protegidas redirecionam para `/login` | [ ] |
 | 05 | Catálogo e metadados: `MetadataProvider`, fake, TMDB, sincronização, cadastro manual | Unitários do mapeamento e dos casos de uso; integração com o TMDB real passa ou é pulada | [ ] |
 | 06 | Legendas: parser SRT, validação, SHA-256, storage em `data/` | Unitários do parser e da decodificação | [ ] |

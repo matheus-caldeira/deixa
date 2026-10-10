@@ -1,0 +1,12 @@
+.next/
+node_modules/
+pnpm-lock.yaml
+next-env.d.ts
+data/
+fixtures/
+deixa.html
+PROJETO.md
+src/infrastructure/database/migrations/
+test-results/
+playwright-report/
+screenshots/
