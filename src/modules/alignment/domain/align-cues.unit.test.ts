@@ -84,4 +84,18 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     expect(alignCues(en, []).alignments[0]).toMatchObject({ status: "UNALIGNED", ptCueIds: [] });
     expect(alignCues([], []).rate).toBe(0);
   });
+
+  it("alinha dez mil falas em tempo linear, mesmo com todas no mesmo instante", () => {
+    const spread = Array.from({ length: 10_000 }, (_, index) =>
+      cue(`en${index}`, index * 3000, index * 3000 + 2000),
+    );
+    const ptSpread = spread.map((english) =>
+      cue(`pt-${english.id}`, english.startMs + 300, english.endMs + 300),
+    );
+    const piled = Array.from({ length: 10_000 }, (_, index) => cue(`x${index}`, 1000, 2000));
+    const started = performance.now();
+    expect(alignCues(spread, ptSpread).rate).toBe(1);
+    alignCues(piled, piled);
+    expect(performance.now() - started).toBeLessThan(3000);
+  });
 });

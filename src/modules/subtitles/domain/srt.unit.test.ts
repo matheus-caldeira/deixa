@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SUBTITLE_BYTES, decodeSubtitle, parseSrt, sceneIndexes, validateSubtitleFile } from "./srt";
+import {
+  MAX_CUES_PER_SUBTITLE,
+  MAX_CUE_TEXT_LENGTH,
+  MAX_SUBTITLE_BYTES,
+  decodeSubtitle,
+  parseSrt,
+  sceneIndexes,
+  validateSubtitleFile,
+} from "./srt";
 
 describe("parser SRT", () => {
   it("lê blocos simples com índice, tempo e texto", () => {
@@ -34,6 +42,24 @@ describe("parser SRT", () => {
     );
     expect(cues).toEqual([{ sequence: 1, startMs: 8000, endMs: 9000, text: "Válido" }]);
     expect(skippedBlocks).toBe(3);
+  });
+});
+
+describe("limites contra arquivo malicioso", () => {
+  it("processa em tempo linear uma fala cheia de marcas abertas e corta texto longo demais", () => {
+    const hostile = "<a".repeat(200_000);
+    const started = performance.now();
+    const { cues } = parseSrt(`1\n00:00:01,000 --> 00:00:02,000\n${hostile}\n`);
+    expect(performance.now() - started).toBeLessThan(2000);
+    expect(cues[0]?.text.length).toBe(MAX_CUE_TEXT_LENGTH);
+  });
+
+  it("recusa legenda com mais falas do que um episódio comporta", () => {
+    const block = (index: number) => `${index}\n00:00:01,000 --> 00:00:02,000\nx\n`;
+    const tooMany = Array.from({ length: MAX_CUES_PER_SUBTITLE + 1 }, (_, index) => block(index + 1)).join(
+      "\n",
+    );
+    expect(() => parseSrt(tooMany)).toThrow(/falas demais/);
   });
 });
 

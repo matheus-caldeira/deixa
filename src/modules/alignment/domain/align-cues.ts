@@ -23,6 +23,7 @@ const MIN_OFFSET_TO_APPLY_MS = 150;
 const MIN_OFFSET_CONSENSUS = 0.5;
 const MIN_SHARE_OF_ENGLISH_CUE = 0.2;
 const MIN_SHARE_OF_PORTUGUESE_CUE = 0.5;
+const MAX_CANDIDATES_PER_CUE = 64;
 
 const duration = (cue: TimedCue): number => Math.max(1, cue.endMs - cue.startMs);
 
@@ -44,11 +45,14 @@ export function estimateFixedOffset(en: readonly TimedCue[], pt: readonly TimedC
     ) {
       windowStart += 1;
     }
-    for (let index = windowStart; index < pt.length; index += 1) {
+    const windowEnd = Math.min(pt.length, windowStart + MAX_CANDIDATES_PER_CUE);
+    for (let index = windowStart; index < windowEnd; index += 1) {
       const difference = (pt[index]?.startMs ?? 0) - english.startMs;
       if (difference > MAX_OFFSET_SEARCH_MS) break;
       const bin = Math.round(difference / OFFSET_BIN_MS);
-      differencesByBin.set(bin, [...(differencesByBin.get(bin) ?? []), difference]);
+      const differences = differencesByBin.get(bin);
+      if (differences) differences.push(difference);
+      else differencesByBin.set(bin, [difference]);
     }
   }
   let bestBin = 0;
@@ -72,19 +76,29 @@ export function alignCues(enCues: readonly TimedCue[], ptCues: readonly TimedCue
   const pt = [...ptCues].sort((a, b) => a.startMs - b.startMs);
   const offsetMs = estimateFixedOffset(en, pt);
   const shifted = pt.map((cue) => ({ ...cue, startMs: cue.startMs - offsetMs, endMs: cue.endMs - offsetMs }));
+  const longestPortugueseMs = shifted.reduce((longest, cue) => Math.max(longest, duration(cue)), 0);
 
+  let windowStart = 0;
   const alignments = en.map((english): CueAlignment => {
-    const contributors = shifted
-      .map((portuguese) => ({
-        portuguese,
-        overlap: Math.min(english.endMs, portuguese.endMs) - Math.max(english.startMs, portuguese.startMs),
-      }))
-      .filter(
-        ({ portuguese, overlap }) =>
-          overlap > 0 &&
-          (overlap / duration(english) >= MIN_SHARE_OF_ENGLISH_CUE ||
-            overlap / duration(portuguese) >= MIN_SHARE_OF_PORTUGUESE_CUE),
-      );
+    while (
+      windowStart < shifted.length &&
+      (shifted[windowStart]?.startMs ?? 0) + longestPortugueseMs <= english.startMs
+    ) {
+      windowStart += 1;
+    }
+    const contributors: { portuguese: TimedCue; overlap: number }[] = [];
+    const windowEnd = Math.min(shifted.length, windowStart + MAX_CANDIDATES_PER_CUE);
+    for (let index = windowStart; index < windowEnd; index += 1) {
+      const portuguese = shifted[index];
+      if (!portuguese || portuguese.startMs >= english.endMs) break;
+      const overlap =
+        Math.min(english.endMs, portuguese.endMs) - Math.max(english.startMs, portuguese.startMs);
+      const counts =
+        overlap > 0 &&
+        (overlap / duration(english) >= MIN_SHARE_OF_ENGLISH_CUE ||
+          overlap / duration(portuguese) >= MIN_SHARE_OF_PORTUGUESE_CUE);
+      if (counts) contributors.push({ portuguese, overlap });
+    }
     const covered = contributors.reduce((total, { overlap }) => total + overlap, 0);
     const overlapScore = Math.min(1, Math.round((covered / duration(english)) * 1000) / 1000);
     const aligned = overlapScore >= ALIGNMENT_THRESHOLD;

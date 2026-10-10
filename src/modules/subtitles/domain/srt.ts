@@ -6,9 +6,11 @@ export type SubtitleLanguage = "en" | "pt-BR";
 export const MAX_SUBTITLE_BYTES = 5_000_000;
 export const SCENE_GAP_MS = 15_000;
 export const SUBTITLE_PROCESSING_VERSION = 1;
+export const MAX_CUES_PER_SUBTITLE = 10_000;
+export const MAX_CUE_TEXT_LENGTH = 500;
 
 const TIME_LINE = /(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/;
-const FORMATTING_TAGS = /<\/?[a-z][^>]*>|\{\\[^}]*\}/gi;
+const FORMATTING_TAGS = /<\/?[a-z][^<>]{0,200}>|\{\\[^{}]{0,200}\}/gi;
 const BYTE_ORDER_MARK = "﻿";
 
 function toMs(hours: string, minutes: string, seconds: string, fraction: string): number {
@@ -40,10 +42,14 @@ export function parseSrt(content: string): { cues: ParsedCue[]; skippedBlocks: n
       .join(" ")
       .replace(FORMATTING_TAGS, "")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
+      .slice(0, MAX_CUE_TEXT_LENGTH);
     if (text.length === 0 || endMs <= startMs) {
       skippedBlocks += 1;
       continue;
+    }
+    if (cues.length >= MAX_CUES_PER_SUBTITLE) {
+      throw new AppError("SUBTITLE_INVALID", "Legenda com falas demais para um episódio. Confira o arquivo.");
     }
     cues.push({ sequence: cues.length + 1, startMs, endMs, text });
   }
