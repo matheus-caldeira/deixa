@@ -412,6 +412,7 @@ flowchart TD
 ### Etapas
 
 **1. Importação**
+
 - Validar extensão, tamanho máximo e codificação.
 - Ler o SRT com parser próprio.
 - Calcular SHA-256 e detectar duplicidade.
@@ -419,11 +420,13 @@ flowchart TD
 - Criar registro de job com estado e tentativas.
 
 **1b. Alinhamento e roteiro**
+
 - Ler a legenda PT, quando existir, e alinhar com a EN por tempo (seção 6).
 - Conferir o roteiro contra o SRT EN e marcar o que foi verificado.
 - Gravar `cue_alignments` e `script_lines`. Nenhuma etapa aqui usa LLM, exceto a busca opcional de transcrição.
 
 **2. Normalização**
+
 - Preservar timestamps e ordem.
 - Remover marcadores de formatação sem destruir pontuação ou contrações.
 - Agrupar linhas que formam a mesma frase.
@@ -433,6 +436,7 @@ flowchart TD
 **3. Seleção pedagógica com LLM**
 
 Enviar lotes de frases ao Gemini para selecionar o que é mais útil por nível:
+
 - expressões coloquiais;
 - phrasal verbs e contrações;
 - frases que ajudam a entender conversas;
@@ -477,6 +481,7 @@ O processamento gera áudio **só para os itens da trilha** (`learning_items` se
 - Para evitar fila, limitar gerações simultâneas por usuário e pré-gerar opcionalmente as próximas 2–3 falas a partir da que foi tocada.
 
 Regras comuns aos dois casos:
+
 - Hash do texto normalizado + voz + idioma + versão do modelo.
 - Verificar se o áudio já existe.
 - Gerar só o que falta.
@@ -696,3 +701,121 @@ A leitura com marcador vem antes do motor de aprendizado completo porque é o di
 Começar pelo **catálogo compartilhado com legendas EN + PT alinhadas**, pela **leitura do episódio com marcador** e pelo **ambiente de estudo**. Esses três validam o diferencial do produto. Gamificação básica entra junto com os flashcards. Chamadas de voz, ranking e recursos sociais ficam para depois.
 
 O objetivo é usar o sistema em casa desde cedo, testar o método na prática e evoluir para uma plataforma pública sem complexidade desnecessária antes de validar o aprendizado.
+
+## 16. Próxima etapa
+
+Siga o prompt abaixo como próximo etapa:
+
+```markdown
+# Etapa 2 · Busca e download automático de legendas (OpenSubtitles)
+
+Esta é uma adição ao projeto já em andamento. Trabalhe de forma autônoma: não pare para pedir confirmação. Quando houver uma decisão em aberto, escolha a opção mais simples, registre em `docs/DECISIONS.md` (data, decisão, motivo, alternativa descartada) e siga em frente.
+
+Ambiente: macOS, zsh, Docker disponível.
+
+## Antes de começar
+
+1. Leia `docs/PLAN.md`, `docs/DECISIONS.md`, `README.md`, @PROJETO.md e @deixa.html para entender o estado atual.
+2. Se a etapa anterior (fases 01 e 02) ainda tiver tarefas abertas no `docs/PLAN.md`, não mexa nelas. Esta etapa depende só de: cadastro de obra e episódio pelo TMDB, pipeline de upload de SRT (hash, deduplicação, parser, alinhamento EN ↔ PT) e tela de envio de legenda. Se algum desses ainda não existir, termine o mínimo necessário dele primeiro e registre isso em DECISIONS.md.
+3. Crie uma branch `feat/opensubtitles` a partir da branch principal.
+4. Leia a documentação oficial da API REST do OpenSubtitles (`https://opensubtitles.stoplight.io/docs/opensubtitles-api`). Confirme lá, antes de implementar:
+   - autenticação: header `Api-Key`, login com usuário e senha que devolve um token;
+   - o `User-Agent` exigido;
+   - os parâmetros de busca por ID do TMDB, temporada, episódio e idioma;
+   - o fluxo de download (pedir link a partir do `file_id`);
+   - os limites de requisição e a cota diária de downloads.
+
+   Se algo deste prompt divergir da documentação, siga a documentação e registre em DECISIONS.md.
+5. Escreva `docs/STAGE-2-SUBTITLES.md` com a especificação desta etapa (o que está abaixo, ajustado ao que você confirmou na documentação). Não altere o `PROJETO.md`; só adicione nele, no final, uma linha apontando para esse arquivo.
+6. Acrescente as tarefas desta etapa ao `docs/PLAN.md`, numa seção "Etapa 2", com critério de pronto de cada uma.
+
+## Credenciais
+
+- Deixei as credenciais no arquivo `.env.opensubtitles`, na raiz. Ele serve só como origem: copie as variáveis para o `.env` do projeto como `OPENSUBTITLES_API_KEY`, `OPENSUBTITLES_USERNAME` e `OPENSUBTITLES_PASSWORD`.
+- Faça a cópia por comando de shell, sem exibir os valores. Por exemplo, `grep -E '^OPENSUBTITLES_' .env.opensubtitles >> .env`, ajustando os nomes se no arquivo estiverem diferentes.
+- Confirme com `git check-ignore -v .env.opensubtitles` que o arquivo está ignorado antes de qualquer commit.
+- Adicione os nomes, sem valores, ao `.env.example` e valide com Zod no módulo de configuração já existente.
+- Nunca imprima, registre em log, commite nem envie ao navegador esses valores. Nenhuma variável com prefixo `NEXT_PUBLIC_`.
+- Estenda o teste que procura segredos em `.next/static` para cobrir também essas variáveis.
+
+## O que construir
+
+**Fluxo do usuário**
+
+1. No cadastro do episódio, depois de escolher obra, temporada e episódio pelo TMDB, aparece o botão **"Buscar legendas"**, como opção padrão. O envio manual continua disponível logo abaixo.
+2. O backend busca no OpenSubtitles pelo ID do TMDB (da série e do episódio, ou do filme), temporada, episódio e idiomas `en` e `pt-BR`.
+3. A tela mostra a melhor sugestão já selecionada, com release, idioma, número de downloads e se tem marcações para surdos. O usuário pode trocar por outra opção de cada idioma.
+4. Ao confirmar, o backend baixa os arquivos e os entrega ao **mesmo pipeline do upload manual**: hash, deduplicação, parser, alinhamento, processamento. Não duplique essa lógica.
+5. Se não houver resultado em inglês, se a cota acabar ou se a API falhar, a tela explica o motivo em uma frase e oferece o envio manual. A falta de legenda em português não bloqueia: segue só com EN.
+
+**Ranqueamento** (função pura, com testes)
+
+1. Par EN e PT do **mesmo release** (comparar o nome do release normalizado) vem primeiro, porque o alinhamento por tempo fica muito melhor.
+2. Depois, mais downloads e melhor avaliação.
+3. Preferir `hearing_impaired = false`; os com marcação ficam como alternativa.
+4. Descartar resultados de tradução automática quando houver alternativa.
+5. Quando houver o mesmo release em FPS diferentes, preferir o FPS mais comum entre os resultados.
+
+**Cota e cache**
+
+- Guardar a cota restante que a API devolve, e mostrar numa linha discreta para quem cadastra ("downloads restantes hoje: N").
+- Nunca baixar o mesmo arquivo duas vezes: antes de pedir o download, verificar se o `file_id` externo já existe em `subtitle_files`. Se existir, reutilizar.
+- Cache dos resultados de busca por 24 h.
+- Reutilizar o token de login até expirar; não fazer login a cada requisição.
+- Respeitar o limite de requisições com retry e espera em caso de 429. Nunca baixar uma temporada inteira em lote sem pedido do usuário.
+
+**Arquitetura**
+
+- Módulo `src/modules/subtitle-sources/` com `domain`, `application` e `infrastructure`.
+- Interface `SubtitleSourceProvider` com `search(...)` e `download(fileId)`, e duas implementações:
+  - `OpenSubtitlesProvider`: real, com timeout, retry curto e tratamento de 401, 406/limite de cota e 429;
+  - `FakeSubtitleSourceProvider`: devolve os SRT de `fixtures/`; é usado nos testes e quando as credenciais não existirem no `.env`.
+- Logue qual provider está ativo na inicialização, sem valores de credencial.
+
+**Modelo de dados** (migração nova, sem quebrar dados existentes)
+
+- Em `subtitle_files`: `source` (`upload` | `opensubtitles`, padrão `upload`), `external_file_id`, `release_name`, `source_author`, `hearing_impaired`, `fps`. Índice único em (`source`, `external_file_id`) quando não nulo.
+- Nova tabela `subtitle_search_cache`: tmdb_id, season_number, episode_number, languages, results_json, fetched_at.
+- Nova tabela `external_api_quota`: provider, remaining, reset_at, updated_at.
+
+**Direitos e atribuição**
+
+- Na tela do episódio, mostrar a origem de cada legenda: "Legenda EN: OpenSubtitles · release · autor".
+- Na tela "Sobre", ao lado da atribuição do TMDB, citar o OpenSubtitles.
+- Os arquivos baixados não ficam disponíveis para download pelo usuário. O app só usa o texto dentro do estudo e da leitura.
+- Registre em DECISIONS.md que, antes de abrir a plataforma ao público, é preciso revisar os termos da API e o modelo de cota (talvez cada usuário conecte a própria conta).
+
+## Visual
+
+- Siga o padrão do @deixa.html e os componentes já criados no projeto: mesmos tokens, ícones, botões com sombra inferior, chips e etapas de processamento com spinner e check.
+- A busca aparece como uma etapa a mais no fluxo de envio, antes dos campos de arquivo manual:
+  - cartão da sugestão, com chips de idioma, release e downloads;
+  - link "Ver outras opções", com a lista por idioma;
+  - estados de vazio, sem cota e erro, cada um com uma frase clara e o botão para enviar manualmente.
+- Valide em 390×844, nos temas claro e escuro, com screenshot do Playwright.
+
+## Testes
+
+- Unitários (Vitest): ranqueamento, normalização de release, escolha do par EN/PT, reutilização por `file_id`, leitura e atualização da cota, mapeamento da resposta da API para o domínio.
+- Integração (`pnpm test:integration`): uma busca real por um episódio conhecido. Só roda se `OPENSUBTITLES_API_KEY` existir; caso contrário, é pulada. **Não faça download real no teste**, para não gastar cota; teste só a busca.
+- E2E (Playwright, com o provider fake): escolher episódio → buscar legendas → confirmar → processamento → episódio `READY` → abrir "Ler episódio e marcar" com EN + PT.
+
+## Como trabalhar
+
+- Faça commits pequenos, um por tarefa, com mensagens no formato `feat:`, `fix:`, `chore:`, `test:`. Antes de cada commit, confira com `git status` que nenhum `.env*` além do `.env.example` foi adicionado.
+- Depois de cada tarefa, rode `pnpm typecheck`, `pnpm lint` e `pnpm test`. Não avance com erro.
+- Durante o desenvolvimento, faça no máximo 2 ou 3 downloads reais para validar o fluxo de ponta a ponta. Use o provider fake no resto do tempo.
+- Pare e me chame só se uma ação for destrutiva fora deste repositório ou se a documentação da API exigir algo que mude o modelo de dados de forma incompatível.
+
+## Ao terminar
+
+- Atualize o `README.md`: variáveis do OpenSubtitles no `.env`, como funciona a cota e como forçar o provider fake.
+- Abra um merge local da branch ou deixe-a pronta para merge, com o resumo das mudanças no último commit.
+- Me entregue um resumo curto com:
+  - o que ficou pronto;
+  - se a busca e o download reais funcionaram e quantos downloads foram gastos;
+  - qualquer divergência entre este prompt e a documentação da API;
+  - riscos de termos e cota antes de abrir para outros usuários.
+```
+
+Etapa 2 (OpenSubtitles) implementada: ver [docs/STAGE-2-SUBTITLES.md](docs/STAGE-2-SUBTITLES.md).

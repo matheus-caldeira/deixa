@@ -45,18 +45,22 @@ A imagem do Kokoro tem cerca de 8 GB; o primeiro `docker compose up` demora. Sem
 Tudo fica no `.env`, lido pelo carregamento padrão do Next.js e validado com Zod em
 `src/infrastructure/config/env.ts`. O [`.env.example`](.env.example) lista os nomes, sem valores.
 
-| Variável                    | Para quê                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`              | Conexão com o Postgres                                                                      |
-| `AI_CREDENTIALS_MASTER_KEY` | Chave mestra (32 bytes em base64) que cifra a chave Gemini de cada usuário                  |
-| `TMDB_READ_ACCESS_TOKEN`    | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                        |
-| `TMDB_API_KEY`              | Chave v3 do TMDB, usada só como alternativa se o token for recusado                         |
-| `KOKORO_URL`                | Endereço do Kokoro; vazio = áudio silencioso                                                |
-| `DATA_DIR`                  | Diretório das legendas e dos áudios (padrão `data`, fora do git)                            |
-| `GEMINI_API_KEY`            | Chave Gemini do servidor: monta as trilhas e serve de reserva para quem não cadastrou a sua |
-| `GEMINI_MODEL`              | Modelo do Gemini (padrão `gemini-2.5-flash`)                                                |
-| `SESSION_COOKIE_SECURE`     | `true` por padrão; `false` permite entrar por HTTP na rede interna                          |
-| `DEV_SHORTCUTS`             | `true` mostra os perfis de seed na tela de entrada e o atalho de arquivos de exemplo        |
+| Variável                              | Para quê                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                        | Conexão com o Postgres                                                                      |
+| `AI_CREDENTIALS_MASTER_KEY`           | Chave mestra (32 bytes em base64) que cifra a chave Gemini de cada usuário                  |
+| `TMDB_READ_ACCESS_TOKEN`              | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                        |
+| `TMDB_API_KEY`                        | Chave v3 do TMDB, usada só como alternativa se o token for recusado                         |
+| `OPENSUBTITLES_API_KEY`               | Chave da API do OpenSubtitles; vazia = fonte de legendas de demonstração                    |
+| `OPENSUBTITLES_USERNAME`              | Opcional: usuário para login antes do download                                              |
+| `OPENSUBTITLES_PASSWORD`              | Opcional: senha desse usuário                                                               |
+| `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` | Teto de downloads de legenda por usuário em 24 horas (padrão 10)                            |
+| `KOKORO_URL`                          | Endereço do Kokoro; vazio = áudio silencioso                                                |
+| `DATA_DIR`                            | Diretório das legendas e dos áudios (padrão `data`, fora do git)                            |
+| `GEMINI_API_KEY`                      | Chave Gemini do servidor: monta as trilhas e serve de reserva para quem não cadastrou a sua |
+| `GEMINI_MODEL`                        | Modelo do Gemini (padrão `gemini-2.5-flash`)                                                |
+| `SESSION_COOKIE_SECURE`               | `true` por padrão; `false` permite entrar por HTTP na rede interna                          |
+| `DEV_SHORTCUTS`                       | `true` mostra os perfis de seed na tela de entrada e o atalho de arquivos de exemplo        |
 
 ### Credenciais do TMDB
 
@@ -66,6 +70,19 @@ cliente (`pnpm test:bundle` confere) e nunca aparecem em log. Sem elas, a busca 
 demonstração com algumas obras fixas, e o provider ativo aparece no log de inicialização.
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+### Legendas do OpenSubtitles
+
+Na folha "Adicionar ao catálogo", o passo padrão é **Buscar legendas**: o app procura no OpenSubtitles as
+legendas em inglês e português do episódio e só baixa quando você confirma. O envio manual de `.srt` continua
+no link logo abaixo. Detalhes em [docs/STAGE-2-SUBTITLES.md](docs/STAGE-2-SUBTITLES.md).
+
+- **Cota:** a conta do servidor tem um número de downloads por dia (a tela mostra quanto resta e quando
+  renova). Além disso, cada usuário pode baixar até `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` legendas em 24 horas.
+- **Sem a chave** (`OPENSUBTITLES_API_KEY` vazia), o app usa uma fonte de demonstração com as legendas fictícias
+  de `fixtures/`. Para forçar essa fonte, deixe a variável vazia e reinicie; o log de inicialização mostra
+  `subtitles: "fake"`.
+- As credenciais são lidas só no servidor e nunca vão para o navegador nem para o log.
 
 ## Perfis de seed
 

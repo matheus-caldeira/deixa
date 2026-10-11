@@ -61,9 +61,24 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 | 36  | Conversar por temas, texto e áudio, com avaliação em tempo real e revisão da conversa | Testado com Gemini real e com tutor simulado no e2e                       | [x]    |
 | 37  | Explorar: todas as temporadas e botão de adicionar no título                          | Seletor de temporadas carrega episódios do TMDB                           | [x]    |
 
+## Etapa 2: legendas a partir do OpenSubtitles
+
+Detalhes em [STAGE-2-SUBTITLES.md](STAGE-2-SUBTITLES.md). Branch `feat/opensubtitles`.
+
+| Nº  | Item                                                               | Critério de pronto                                                    | Estado |
+| --- | ------------------------------------------------------------------ | --------------------------------------------------------------------- | ------ |
+| 38  | Antecipação de revisão sem limite                                  | Sem teto diário nem espera                                            | [x]    |
+| 39  | Notificação de cards some depois de usada                          | Sino lista só as não lidas                                            | [x]    |
+| 40  | Origem da legenda no banco, cache de busca e cota                  | Migração 0010 aplicada                                                | [x]    |
+| 41  | Ranqueamento e par EN/PT do mesmo release                          | Testes unitários                                                      | [x]    |
+| 42  | Adapter do OpenSubtitles (busca, download, login opcional, cota)   | Testes unitários com respostas roteirizadas; busca real na integração | [x]    |
+| 43  | "Buscar legendas" como passo padrão, importação só com confirmação | E2E com provider falso; screenshots 390×844 claro e escuro            | [x]    |
+| 44  | Origem da legenda na leitura e citação no "Sobre"                  | Visível no e2e                                                        | [x]    |
+| 45  | Teto de downloads por usuário e intervalo para refazer a busca     | Testes unitários, inclusive pedidos simultâneos                       | [x]    |
+| 46  | Validação real                                                     | 1 episódio importado, 2 downloads gastos                              | [x]    |
+
 ## Próximo
 
-- Etapa do OpenSubtitles (seção 16 do PROJETO.md), deixada por último a pedido do autor.
 - Fase 03 restante: worker separado, áudio em lote, roteiro.
 - Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
 - Fase 06: fala em tempo real, limites de uso por conta, HTTPS para PWA e microfone.
