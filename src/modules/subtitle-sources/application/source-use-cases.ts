@@ -35,6 +35,8 @@ export interface SourceRepository {
   ): Promise<void>;
   getQuota(provider: SourceProviderName): Promise<(SourceQuota & { updatedAt: Date }) | null>;
   saveQuota(provider: SourceProviderName, quota: SourceQuota, now: Date): Promise<void>;
+  recordDownload(userId: string, provider: SourceProviderName, fileId: string, now: Date): Promise<void>;
+  countUserDownloads(userId: string, provider: SourceProviderName, since: Date): Promise<number>;
 }
 
 export type EpisodeSource = {
@@ -67,7 +69,6 @@ type Deps = {
     english: ImportedFile;
     portuguese?: ImportedFile;
   }) => Promise<ImportOutcome>;
-  countUserDownloads: (userId: string, since: Date) => Promise<number>;
   userDailyDownloads: number;
   clock: Clock;
 };
@@ -103,10 +104,18 @@ function currentQuota(stored: (SourceQuota & { updatedAt: Date }) | null, now: D
 export function makeSearchSubtitles(
   deps: Pick<Deps, "provider" | "sources" | "findEpisodeSource" | "clock">,
 ) {
-  return async function searchSubtitles(input: {
-    episodeId: string;
-    refresh?: boolean;
-  }): Promise<SubtitleSearch> {
+  type SearchInput = { episodeId: string; refresh?: boolean };
+  const running = new Map<string, Promise<SubtitleSearch>>();
+
+  return function searchSubtitles(input: SearchInput): Promise<SubtitleSearch> {
+    const current = running.get(input.episodeId);
+    if (current) return current;
+    const started = searchNow(input).finally(() => running.delete(input.episodeId));
+    running.set(input.episodeId, started);
+    return started;
+  };
+
+  async function searchNow(input: SearchInput): Promise<SubtitleSearch> {
     const episode = await deps.findEpisodeSource(input.episodeId);
     if (!episode) throw new AppError("EPISODE_NOT_FOUND");
     const now = deps.clock.now();
@@ -132,11 +141,12 @@ export function makeSearchSubtitles(
     const candidates = await deps.provider.search(episode.query);
     await deps.sources.saveSearch(input.episodeId, deps.provider.name, candidates, now);
     return { provider: deps.provider.name, ranking: rankCandidates(candidates), quota, cached: false };
-  };
+  }
 }
 
 export function makeImportFromSource(deps: Deps) {
   async function obtain(
+    userId: string,
     episode: EpisodeSource,
     candidate: SubtitleCandidate,
     downloads: { count: number },
@@ -153,6 +163,7 @@ export function makeImportFromSource(deps: Deps) {
     let bytes = stored ? await deps.readExistingFile(episode.episodeId, candidate.language) : null;
     let fileName = candidate.fileName;
     if (!bytes) {
+      await deps.sources.recordDownload(userId, deps.provider.name, candidate.fileId, deps.clock.now());
       const downloaded = await deps.provider.download(candidate.fileId).catch(async (error: unknown) => {
         if (error instanceof AppError && error.code === "SUBTITLE_SOURCE_QUOTA") {
           const known = error instanceof SourceQuotaExceeded ? error.quota : null;
@@ -230,7 +241,8 @@ export function makeImportFromSource(deps: Deps) {
     const known = currentQuota(await deps.sources.getQuota(deps.provider.name), deps.clock.now());
     if (known && needed > known.remaining) throw new SourceQuotaExceeded(known);
     const since = new Date(deps.clock.now().getTime() - USER_WINDOW_HOURS * MS_PER_HOUR);
-    const used = needed > 0 ? await deps.countUserDownloads(input.userId, since) : 0;
+    const used =
+      needed > 0 ? await deps.sources.countUserDownloads(input.userId, deps.provider.name, since) : 0;
     if (used + needed > deps.userDailyDownloads) {
       throw new AppError(
         "SUBTITLE_SOURCE_QUOTA",
@@ -239,8 +251,10 @@ export function makeImportFromSource(deps: Deps) {
     }
 
     const downloads = { count: 0 };
-    const englishFile = await obtain(episode, english, downloads);
-    const portugueseFile = portuguese ? await obtain(episode, portuguese, downloads) : undefined;
+    const englishFile = await obtain(input.userId, episode, english, downloads);
+    const portugueseFile = portuguese
+      ? await obtain(input.userId, episode, portuguese, downloads)
+      : undefined;
     const outcome = await deps.importSubtitles({
       userId: input.userId,
       episodeId: input.episodeId,

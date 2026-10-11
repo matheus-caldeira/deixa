@@ -40,6 +40,10 @@ chame o OpenSubtitles.
 | "Buscar de novo"            | `REFRESH_INTERVAL_MINUTES`                 | ignora pedidos em menos de 10 min   |
 | Arquivo baixado             | adapter e caso de uso                      | até 5 MB, só de `*.opensubtitles.*` |
 
+Cada download é registrado em `subtitle_downloads` antes da chamada à API; o teto por usuário conta esses
+registros, então uma importação que falha depois de baixar também consome o teto. Buscas simultâneas do
+mesmo episódio compartilham uma única chamada.
+
 A cota do fornecedor fica na tabela `external_api_quota` e é atualizada a cada download. Quando a cota
 conhecida não cobre a escolha, o app recusa antes de gastar download. O mesmo arquivo nunca é baixado
 duas vezes: se o episódio já tem aquele `file_id`, os bytes vêm do disco.

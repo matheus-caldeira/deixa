@@ -428,7 +428,6 @@ export function buildContainer(options: ContainerOptions) {
   const sourceDeps = {
     provider: subtitleSource,
     sources: sourceRepository,
-    countUserDownloads: (userId: string, since: Date) => sourceRepository.countUserDownloads(userId, since),
     userDailyDownloads: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
     clock,
     findEpisodeSource,

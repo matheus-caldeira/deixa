@@ -204,6 +204,20 @@ export const subtitleSearchCache = pgTable("subtitle_search_cache", {
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
 });
 
+export const subtitleDownloads = pgTable(
+  "subtitle_downloads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    externalFileId: text("external_file_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("subtitle_downloads_user_time").on(table.userId, table.createdAt)],
+);
+
 export const externalApiQuota = pgTable("external_api_quota", {
   provider: text("provider").primaryKey(),
   remaining: integer("remaining").notNull(),

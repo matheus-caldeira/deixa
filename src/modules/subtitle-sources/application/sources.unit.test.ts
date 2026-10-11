@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
+import { AppError } from "@/shared/errors";
 import {
   normalizeRelease,
   rankCandidates,
@@ -152,9 +153,21 @@ class InMemorySources implements SourceRepository {
   async saveQuota(provider: SourceProviderName, quota: SourceQuota, now: Date) {
     this.quota.set(provider, { ...quota, updatedAt: now });
   }
+
+  readonly downloads: { userId: string; at: Date }[] = [];
+
+  async recordDownload(userId: string, _provider: SourceProviderName, _fileId: string, now: Date) {
+    this.downloads.push({ userId, at: now });
+  }
+
+  async countUserDownloads(userId: string, _provider: SourceProviderName, since: Date) {
+    return this.downloads.filter((entry) => entry.userId === userId && entry.at > since).length;
+  }
 }
 
-function setup(options: { provider?: SubtitleSourceProvider; userDailyDownloads?: number } = {}) {
+function setup(
+  options: { provider?: SubtitleSourceProvider; userDailyDownloads?: number; failImport?: boolean } = {},
+) {
   const provider = options.provider ?? new FakeSubtitleSourceProvider();
   const sources = new InMemorySources();
   const clock = new FixedClock("2026-10-11T12:00:00Z");
@@ -171,10 +184,8 @@ function setup(options: { provider?: SubtitleSourceProvider; userDailyDownloads?
   ]);
   const stored = new Map<string, Uint8Array>();
   const imported: { userId: string; english: ImportedFile; portuguese?: ImportedFile }[] = [];
-  const spentByUser = new Map<string, number>();
   const deps = {
     provider,
-    countUserDownloads: async (userId: string) => spentByUser.get(userId) ?? 0,
     userDailyDownloads: options.userDailyDownloads ?? 10,
     sources,
     clock,
@@ -187,12 +198,11 @@ function setup(options: { provider?: SubtitleSourceProvider; userDailyDownloads?
       english: ImportedFile;
       portuguese?: ImportedFile;
     }) => {
+      if (options.failImport) throw new AppError("SUBTITLE_INVALID", "arquivo inválido");
       imported.push({ userId: input.userId, english: input.english, portuguese: input.portuguese });
       const episode = episodes.get(input.episodeId);
       for (const file of [input.english, input.portuguese]) {
         if (!file || !episode) continue;
-        if (!stored.has(`${input.episodeId}:${file === input.english ? "en" : "pt-BR"}`))
-          spentByUser.set(input.userId, (spentByUser.get(input.userId) ?? 0) + 1);
         const language: SourceLanguage = file === input.english ? "en" : "pt-BR";
         stored.set(`${input.episodeId}:${language}`, file.bytes);
         if (!episode.existing.some((known) => known.language === language)) {
@@ -450,5 +460,34 @@ describe("limites por usuário", () => {
     app.clock.advanceMs((REFRESH_INTERVAL_MINUTES + 1) * 60_000);
     expect((await app.search({ episodeId: "ep-1", refresh: true })).cached).toBe(false);
     expect(fake.calls.search).toBe(2);
+  });
+});
+
+describe("contabilidade que não deixa escapar", () => {
+  it("conta o download mesmo quando a importação falha depois de baixar", async () => {
+    const app = setup({ userDailyDownloads: 2, failImport: true });
+    const fake = app.provider as FakeSubtitleSourceProvider;
+    await app.search({ episodeId: "ep-1" });
+    const pair = {
+      userId: "ana",
+      episodeId: "ep-1",
+      englishFileId: "fake-en-1",
+      portugueseFileId: "fake-pt-1",
+    };
+    await expect(app.importFrom(pair)).rejects.toMatchObject({ code: "SUBTITLE_INVALID" });
+    expect(fake.calls.download).toBe(2);
+    await expect(app.importFrom(pair)).rejects.toMatchObject({ code: "SUBTITLE_SOURCE_QUOTA" });
+    expect(fake.calls.download).toBe(2);
+  });
+
+  it("buscas simultâneas do mesmo episódio fazem uma única chamada à fonte", async () => {
+    const app = setup();
+    const fake = app.provider as FakeSubtitleSourceProvider;
+    await Promise.all([
+      app.search({ episodeId: "ep-1", refresh: true }),
+      app.search({ episodeId: "ep-1", refresh: true }),
+      app.search({ episodeId: "ep-1" }),
+    ]);
+    expect(fake.calls.search).toBe(1);
   });
 });

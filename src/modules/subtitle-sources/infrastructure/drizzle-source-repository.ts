@@ -1,7 +1,7 @@
 import { and, count, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
-import { externalApiQuota, subtitleFiles, subtitleSearchCache } from "@/infrastructure/database/schema";
+import { externalApiQuota, subtitleDownloads, subtitleSearchCache } from "@/infrastructure/database/schema";
 import type { SubtitleCandidate } from "../domain/ranking";
 import type { SourceProviderName, SourceQuota, SourceRepository } from "../application/source-use-cases";
 
@@ -67,15 +67,26 @@ export class DrizzleSourceRepository implements SourceRepository {
       .onConflictDoUpdate({ target: externalApiQuota.provider, set: values });
   }
 
-  async countUserDownloads(userId: string, since: Date): Promise<number> {
+  async recordDownload(
+    userId: string,
+    provider: SourceProviderName,
+    fileId: string,
+    now: Date,
+  ): Promise<void> {
+    await this.db
+      .insert(subtitleDownloads)
+      .values({ userId, provider, externalFileId: fileId, createdAt: now });
+  }
+
+  async countUserDownloads(userId: string, provider: SourceProviderName, since: Date): Promise<number> {
     const [row] = await this.db
       .select({ total: count() })
-      .from(subtitleFiles)
+      .from(subtitleDownloads)
       .where(
         and(
-          eq(subtitleFiles.uploadedBy, userId),
-          eq(subtitleFiles.source, "opensubtitles"),
-          gt(subtitleFiles.createdAt, since),
+          eq(subtitleDownloads.userId, userId),
+          eq(subtitleDownloads.provider, provider),
+          gt(subtitleDownloads.createdAt, since),
         ),
       );
     return row?.total ?? 0;
