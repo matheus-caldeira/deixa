@@ -15,6 +15,13 @@
       "when": 1791683508275,
       "tag": "0001_smart_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791683828220,
+      "tag": "0002_whole_killraven",
+      "breakpoints": true
     }
   ]
 }

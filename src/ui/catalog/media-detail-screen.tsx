@@ -41,6 +41,9 @@ export type MediaDetailView = {
 
 const COMPLETE = 100;
 
+const episodeTag = (isMovie: boolean, episodeNumber: number): string =>
+  isMovie ? "▶" : `E${String(episodeNumber).padStart(2, "0")}`;
+
 function StatusChips({ episode }: { episode: EpisodeRow }) {
   if (episode.status === "READY") {
     return (
@@ -156,10 +159,15 @@ export function MediaDetailScreen({
           {season.episodes.map((episode) => {
             const ready = episode.status === "READY";
             return (
-              <div className="ep" key={episode.id}>
-                <span className="num">
-                  {isMovie ? "▶" : `E${String(episode.episodeNumber).padStart(2, "0")}`}
-                </span>
+              <div className={`ep ${episode.stillUrl ? "photo" : ""}`} key={episode.id}>
+                {episode.stillUrl ? (
+                  <span className="still">
+                    <Image src={episode.stillUrl} alt="" width={300} height={169} sizes="76px" />
+                    <span className="num">{episodeTag(isMovie, episode.episodeNumber)}</span>
+                  </span>
+                ) : (
+                  <span className="num">{episodeTag(isMovie, episode.episodeNumber)}</span>
+                )}
                 <div style={{ minWidth: 0 }}>
                   <div className="t">{episode.title}</div>
                   <div className="row" style={{ gap: 6, marginTop: 4, flexWrap: "wrap" }}>

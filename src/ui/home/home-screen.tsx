@@ -32,16 +32,14 @@ export type HomeView = {
   dailyGoal: number;
   streak: number;
   dueCount: number;
-  nodeDone: number;
-  trail: { tc: string; nm: string; ic: IconName }[];
+  trail: { index: number; tc: string; nm: string; ic: IconName; state: "done" | "current" | "locked" }[];
+  studyHref: string | null;
   missions: { icon: "cards" | "ear" | "chat"; title: string; value: number; max: number }[];
 };
 
 const MISSION_ICONS = { cards: CardsIcon, ear: EarIcon, chat: ChatIcon };
 const RING_RADIUS = 30;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
-const LESSONS_SOON =
-  "As lições da trilha chegam na próxima fase. Por enquanto, leia o episódio e marque o que não entendeu.";
 
 function GoalRing({ value, max }: { value: number; max: number }) {
   const ratio = max > 0 ? Math.min(1, value / max) : 0;
@@ -108,9 +106,11 @@ export function HomeScreen({ view }: { view: HomeView }) {
               {view.current.progressPercent}%
             </span>
           </div>
-          <button className="btn cue wide" onClick={() => toast(LESSONS_SOON)}>
-            <PlayIcon width={18} height={18} /> Continuar estudando
-          </button>
+          {view.studyHref ? (
+            <Link className="btn cue wide" href={view.studyHref}>
+              <PlayIcon width={18} height={18} /> Continuar estudando
+            </Link>
+          ) : null}
           {view.current.ready ? (
             <Link className="btn onDark wide" href={`/read/${view.current.episodeId}`}>
               <MarkerIcon width={18} height={18} /> Ler episódio e marcar
@@ -156,25 +156,24 @@ export function HomeScreen({ view }: { view: HomeView }) {
           <p className="small muted">Cada parada é uma cena da legenda, marcada pelo tempo do episódio.</p>
           <div className="trail">
             {view.trail.map((node, index) => {
-              const state = index < view.nodeDone ? "done" : index === view.nodeDone ? "cur" : "lock";
+              const state = node.state === "current" ? "cur" : node.state === "locked" ? "lock" : "done";
+              const href = view.current ? `/study/${view.current.episodeId}/${node.index}` : "/";
               return (
-                <div key={node.tc} className={`tnode ${index % 2 ? "r" : "l"} ${state}`}>
+                <div key={node.index} className={`tnode ${index % 2 ? "r" : "l"} ${state}`}>
                   {state === "cur" ? <span className="startpop">COMEÇAR</span> : null}
-                  <button
-                    className="dot"
-                    aria-label={node.nm}
-                    onClick={() =>
-                      toast(state === "lock" ? "Conclua a cena anterior para liberar esta." : LESSONS_SOON)
-                    }
-                  >
-                    {state === "done" ? (
-                      <CheckIcon />
-                    ) : state === "lock" ? (
+                  {state === "lock" ? (
+                    <button
+                      className="dot"
+                      aria-label={`${node.nm} (bloqueada)`}
+                      onClick={() => toast("Conclua a cena anterior para liberar esta.")}
+                    >
                       <LockIcon />
-                    ) : (
-                      <Icon name={node.ic} />
-                    )}
-                  </button>
+                    </button>
+                  ) : (
+                    <Link className="dot" href={href} aria-label={node.nm}>
+                      {state === "done" ? <CheckIcon /> : <Icon name={node.ic} />}
+                    </Link>
+                  )}
                   <div className="lbl">
                     <div className="tc">{node.tc}</div>
                     <div className="nm">{node.nm}</div>

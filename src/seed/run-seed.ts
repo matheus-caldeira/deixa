@@ -5,6 +5,7 @@ import type { Database } from "@/infrastructure/database/client";
 import {
   episodes,
   learningItemExplanations,
+  lessonAttempts,
   mediaItems,
   learningItems,
   userCards,
@@ -227,6 +228,23 @@ export async function runSeed(input: {
     const currentEpisodeId = episodeIdByKey.get(profile.currentEpisode);
     if (currentEpisodeId) {
       await container.updatePreferences(userId, { currentEpisodeId });
+      const trail = await container.getTrail(userId, currentEpisodeId);
+      const alreadyStudied = trail.nodes.some((node) => node.state === "done");
+      for (let nodeIndex = 0; !alreadyStudied && nodeIndex < profile.scenesDone; nodeIndex += 1) {
+        await db.insert(lessonAttempts).values({
+          id: ids.next(),
+          userId,
+          episodeId: currentEpisodeId,
+          nodeIndex,
+          level: profile.level,
+          correct: 5,
+          total: 6,
+          xp: 0,
+          seconds: 180,
+          replay: false,
+          createdAt: new Date(now.getTime() - (profile.scenesDone - nodeIndex) * 3_600_000),
+        });
+      }
       const view = await container.getReadingView(userId, currentEpisodeId);
       if (view.highlights.length === 0) {
         await container.syncHighlights({

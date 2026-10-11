@@ -16,6 +16,7 @@ export type SeedProfile = {
   accent: Accent;
   audioSpeed: number;
   currentEpisode: EpisodeKey;
+  scenesDone: number;
   progress: Record<EpisodeKey, number>;
   premarks: [number, string][];
   prelines: number[];
@@ -40,6 +41,7 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     accent: "US",
     audioSpeed: 0.8,
     currentEpisode: "friends-1-2",
+    scenesDone: 1,
     progress: { "friends-1-1": 100, "friends-1-2": 35, "prada-0-1": 10 },
     premarks: [
       [0, "tonight"],
@@ -102,6 +104,7 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     accent: "US",
     audioSpeed: 1,
     currentEpisode: "himym-1-3",
+    scenesDone: 2,
     progress: {
       "himym-1-1": 100,
       "himym-1-2": 100,
@@ -171,6 +174,7 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     accent: "UK",
     audioSpeed: 1.15,
     currentEpisode: "tedlasso-1-2",
+    scenesDone: 3,
     progress: {
       "tedlasso-1-1": 100,
       "tedlasso-1-2": 70,

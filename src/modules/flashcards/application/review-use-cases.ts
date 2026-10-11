@@ -8,6 +8,7 @@ const SESSION_LIMIT = 20;
 const SOURCE_SUFFIX: Record<string, string> = {
   highlight_private: "suas marcações",
   highlight_catalog: "catálogo",
+  lesson_error: "erros da lição",
 };
 
 export type DueCard = Omit<DueCardRecord, "state"> & {

@@ -1,4 +1,5 @@
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -198,4 +199,26 @@ export const xpEvents = pgTable(
     uniqueIndex("xp_events_dedupe").on(table.userId, table.source, table.sourceId),
     index("xp_events_user_created").on(table.userId, table.createdAt),
   ],
+);
+
+export const lessonAttempts = pgTable(
+  "lesson_attempts",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    episodeId: uuid("episode_id")
+      .notNull()
+      .references(() => episodes.id, { onDelete: "cascade" }),
+    nodeIndex: integer("node_index").notNull(),
+    level: text("level").notNull(),
+    correct: integer("correct").notNull(),
+    total: integer("total").notNull(),
+    xp: integer("xp").notNull(),
+    seconds: integer("seconds").notNull(),
+    replay: boolean("replay").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("lesson_attempts_user_episode").on(table.userId, table.episodeId)],
 );

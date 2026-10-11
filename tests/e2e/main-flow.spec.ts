@@ -148,6 +148,25 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.locator(".w.mk")).toHaveCount(3);
 
   await page.goto("/");
+  await expect(page.getByText("COMEÇAR")).toBeVisible();
+  await page.getByRole("link", { name: "Continuar estudando" }).click();
+  await expect(page).toHaveURL(/\/study\/.+\/2$/);
+  for (let step = 0; step < 8; step += 1) {
+    const finished = page.getByText(/Cena (perfeita|concluída)!/);
+    await expect(finished.or(page.getByRole("button", { name: /^(Verificar|Entendi)$/ }))).toBeVisible();
+    if (await finished.isVisible()) break;
+    if ((await page.locator(".opt").count()) > 0) await page.locator(".opt").first().click();
+    else if ((await page.locator(".bank .tok").count()) > 0) await page.locator(".bank .tok").first().click();
+    else if ((await page.locator("textarea").count()) > 0) await page.locator("textarea").fill("teste");
+    await page.getByRole("button", { name: /^(Verificar|Entendi)$/ }).click();
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  }
+  await expect(page.getByText(/Cena (perfeita|concluída)!/)).toBeVisible();
+  await expect(page.locator(".dstat").first()).toContainText(/\+\d+/);
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Perfil de Matheus" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Desafio final" })).toBeVisible();
+
   await page.getByRole("link", { name: /XP hoje/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Quem está estudando" })).toBeVisible();
   await expect(page.getByText("41 dias")).toBeVisible();

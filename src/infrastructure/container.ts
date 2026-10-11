@@ -55,12 +55,15 @@ import {
 } from "@/modules/learning";
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
+import { makeCompleteLesson, makeGetTrail, makeStartLesson, type TrailLine } from "@/modules/study";
+import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
 import { AppError } from "@/shared/errors";
 import { uuidGenerator } from "@/shared/ids";
 import type { FileStorage } from "@/shared/storage";
+import { tokenize } from "@/shared/text";
 import { getEnv, hasTmdbCredentials, type Env } from "./config/env";
 import { openDatabase, type Database } from "./database/client";
 import { GeminiLlmProvider, testGeminiApiKey } from "./google-ai/gemini-llm-provider";
@@ -102,6 +105,7 @@ export function buildContainer(options: ContainerOptions) {
   const credentials = new DrizzleCredentialRepository(db);
   const audioAssets = new DrizzleAudioAssetRepository(db);
   const gamification = new DrizzleGamificationRepository(db);
+  const study = new DrizzleStudyRepository(db);
 
   const metadata: MetadataProvider =
     options.metadata ??
@@ -153,6 +157,88 @@ export function buildContainer(options: ContainerOptions) {
     resolveLlm,
   };
 
+  async function loadTrailLines(episodeId: string): Promise<TrailLine[] | null> {
+    const script = await getEpisodeScript(episodeId);
+    if (!script) return null;
+    return script.lines.map((line) => ({
+      cueId: line.cueId,
+      startMs: line.startMs,
+      text: line.text,
+      sceneIndex: line.sceneIndex,
+      translation: line.translationSource === "subtitle_pt" ? line.translation : null,
+    }));
+  }
+
+  async function queueLinesForReview(userId: string, episodeId: string, cueIds: string[]): Promise<number> {
+    const script = await getEpisodeScript(episodeId);
+    if (!script) return 0;
+    const reusable = new Map(
+      (await learning.findReusable(userId, episodeId)).map((item) => [
+        `${item.cueId}:${item.startToken}:${item.endToken}`,
+        item.id,
+      ]),
+    );
+    const itemIds: string[] = [];
+    for (const cueId of cueIds) {
+      const line = script.lines.find((candidate) => candidate.cueId === cueId);
+      if (!line || !line.translation || line.translationSource !== "subtitle_pt") continue;
+      const endToken = tokenize(line.text).length - 1;
+      const known = reusable.get(`${cueId}:0:${endToken}`);
+      if (known) {
+        itemIds.push(known);
+        continue;
+      }
+      const id = ids.next();
+      await learning.createItem({
+        id,
+        episodeId,
+        visibility: "private",
+        ownerUserId: userId,
+        createdAt: clock.now(),
+        draft: {
+          key: id,
+          highlightId: id,
+          cueId,
+          startToken: 0,
+          endToken,
+          kind: "line",
+          term: line.text,
+          itemType: "sentence",
+          difficulty: "B1",
+          meaning: line.translation,
+          meaningSource: "subtitle_pt",
+          pronunciation: null,
+          exampleEnglish: null,
+          examplePortuguese: null,
+          lineText: line.text,
+          lineTranslation: line.translation,
+          lineTranslationSource: "subtitle_pt",
+          startMs: line.startMs,
+          endMs: line.endMs,
+          reusedItemId: null,
+        },
+      });
+      itemIds.push(id);
+    }
+    return addCards(
+      userId,
+      itemIds.map((learningItemId) => ({ learningItemId, sourceKind: "lesson_error" })),
+    );
+  }
+
+  const studyDeps = {
+    study,
+    clock,
+    ids,
+    loadLines: loadTrailLines,
+    awardXp,
+    queueForReview: queueLinesForReview,
+    saveProgress: async (userId: string, episodeId: string, percent: number) => {
+      const known = (await catalog.listForUser(userId)).find((entry) => entry.episodeId === episodeId);
+      await catalog.upsert(userId, episodeId, Math.max(percent, known?.progressPercent ?? 0), clock.now());
+    },
+  };
+
   async function findEnglishCue(cueId: string) {
     const cue = await subtitles.findCue(cueId);
     return cue && cue.language === "en" ? cue : null;
@@ -199,6 +285,10 @@ export function buildContainer(options: ContainerOptions) {
       },
     }),
     getEpisodeScript,
+
+    getTrail: makeGetTrail(studyDeps),
+    startLesson: makeStartLesson(studyDeps),
+    completeLesson: makeCompleteLesson(studyDeps),
 
     getReadingView: makeGetReadingView(highlightDeps),
     syncHighlights: makeSyncHighlights(highlightDeps),
@@ -266,12 +356,14 @@ export function buildContainer(options: ContainerOptions) {
 
 export type Container = ReturnType<typeof buildContainer>;
 
-const globalStore = globalThis as typeof globalThis & { __deixaContainer?: Container };
+const globalStore = globalThis as typeof globalThis & { __deixaDatabase?: Database };
+let container: Container | undefined;
 
 export function getContainer(): Container {
-  if (!globalStore.__deixaContainer) {
+  if (!container) {
     const env = getEnv();
-    globalStore.__deixaContainer = buildContainer({ env, db: openDatabase(env.DATABASE_URL).db });
+    globalStore.__deixaDatabase ??= openDatabase(env.DATABASE_URL).db;
+    container = buildContainer({ env, db: globalStore.__deixaDatabase });
   }
-  return globalStore.__deixaContainer;
+  return container;
 }

@@ -1,6 +1,7 @@
 import { getContainer } from "@/infrastructure/container";
 import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
 import { LEVEL_NAMES } from "@/shared/levels";
+import { formatTimecode } from "@/shared/time";
 import { HomeScreen } from "@/ui/home/home-screen";
 import { requireUser } from "../session";
 
@@ -20,6 +21,7 @@ export default async function HomePage() {
   ]);
   const script =
     context?.episode.status === "READY" ? await container.getEpisodeScript(context.episode.id) : null;
+  const trail = script ? await container.getTrail(user.id, context?.episode.id ?? "") : null;
   const progress = overview.inProgress.find((entry) => entry.episodeId === currentId)?.progressPercent ?? 0;
 
   return (
@@ -37,7 +39,7 @@ export default async function HomePage() {
                 context.episode.episodeNumber,
               ),
               episodeTitle: context.episode.title,
-              line: summary.heroLine || script?.lines[0]?.text || "",
+              line: script?.lines[0]?.text ?? "",
               progressPercent: progress,
               ready: context.episode.status === "READY",
               imageUrl:
@@ -49,8 +51,17 @@ export default async function HomePage() {
         dailyGoal: summary.dailyGoal,
         streak: summary.streak,
         dueCount,
-        nodeDone: summary.nodeDone,
-        trail: summary.trail,
+        trail: (trail?.nodes ?? []).map((node) => ({
+          index: node.index,
+          tc: formatTimecode(node.startMs),
+          nm: node.title,
+          ic: node.icon,
+          state: node.state,
+        })),
+        studyHref:
+          trail && context
+            ? `/study/${context.episode.id}/${trail.currentIndex ?? Math.max(0, trail.nodes.length - 1)}`
+            : null,
         missions: summary.missions,
       }}
     />

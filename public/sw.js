@@ -1,4 +1,4 @@
-const CACHE = "deixa-v1";
+const CACHE = "deixa-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -17,10 +17,11 @@ self.addEventListener("activate", (event) => {
 
 function isCacheable(request, response) {
   if (!response || response.status !== 200 || response.type === "opaque") return false;
+  if (request.mode === "navigate" || request.headers.has("rsc") || request.headers.has("next-action")) return false;
   const url = new URL(request.url);
-  if (url.pathname.startsWith("/api/audio/")) return true;
   if (url.pathname.startsWith("/_next/static/")) return true;
-  return request.mode === "navigate" || request.destination === "image" || request.destination === "font";
+  if (url.pathname.startsWith("/pwa-icon/")) return true;
+  return url.pathname.startsWith("/api/audio/cue/");
 }
 
 self.addEventListener("fetch", (event) => {
