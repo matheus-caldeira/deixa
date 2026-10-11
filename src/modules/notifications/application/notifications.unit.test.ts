@@ -16,8 +16,9 @@ function setup() {
     insert: async (notification) => {
       rows.push({ ...notification, readAt: null });
     },
-    listRecent: async (userId, limit) =>
+    listUnread: async (userId, limit) =>
       mine(userId)
+        .filter((row) => row.readAt === null)
         .slice(-limit)
         .reverse()
         .map(({ userId: _userId, readAt, ...row }) => ({ ...row, read: readAt !== null })),
@@ -72,6 +73,7 @@ describe("notificações", () => {
     expect((await app.inbox("ana")).unread).toBe(2);
     await app.markRead("ana", { href: "/x" });
     expect((await app.inbox("ana")).unread).toBe(1);
+    expect((await app.inbox("ana")).items.map((item) => item.title)).toEqual(["b"]);
     expect((await app.inbox("lucas")).unread).toBe(1);
     await app.markRead("ana", "all");
     expect((await app.inbox("ana")).unread).toBe(0);

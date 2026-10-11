@@ -29,14 +29,12 @@ export interface CardRepository {
   countUpcoming(userId: string, now: Date): Promise<number>;
   pullSoonestForward(userId: string, now: Date, limit: number): Promise<number>;
   listAnticipations(userId: string, since: Date): Promise<Date[]>;
-  claimAnticipation(entry: {
+  recordAnticipation(entry: {
     id: string;
     userId: string;
-    day: string;
-    ordinal: number;
+    cardsMoved: number;
     createdAt: Date;
-  }): Promise<boolean>;
-  setAnticipationResult(id: string, cardsMoved: number): Promise<void>;
+  }): Promise<void>;
   countDue(userId: string, now: Date): Promise<number>;
   findState(userId: string, cardId: string): Promise<CardState | null>;
   saveReview(input: {

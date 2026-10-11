@@ -80,7 +80,7 @@ export async function getCardBatchAction(batchId: unknown): Promise<ActionResult
     const parsed = idSchema.safeParse(batchId);
     if (!parsed.success) throw new AppError("BATCH_NOT_FOUND");
     const state = await app().getCardBatch(user.id, parsed.data);
-    if (state.status === "DRAFT") {
+    if (state.status === "DRAFT" || state.status === "SAVED") {
       await app().markNotificationsRead(user.id, { href: `/read/${state.episodeId}?batch=${state.batchId}` });
     }
     return state;
@@ -98,7 +98,9 @@ export async function confirmCardsAction(input: unknown): Promise<ActionResult<C
       })
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const batch = await app().getCardBatch(user.id, parsed.data.batchId);
     const result = await app().confirmCardBatch({ userId: user.id, ...parsed.data });
+    await app().markNotificationsRead(user.id, { href: `/read/${batch.episodeId}?batch=${batch.batchId}` });
     revalidatePath("/review");
     revalidatePath("/");
     return result;

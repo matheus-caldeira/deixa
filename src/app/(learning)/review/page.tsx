@@ -19,14 +19,7 @@ export default async function ReviewPage() {
       key={queue.cards.map((card) => card.cardId).join(",")}
       view={{
         dueCount: queue.dueCount,
-        anticipation: {
-          available: anticipation.available,
-          batchSize: anticipation.batchSize,
-          upcoming: anticipation.upcoming,
-          usedToday: anticipation.usedToday,
-          maxPerDay: anticipation.maxPerDay,
-          availableAt: anticipation.availableAt?.toISOString() ?? null,
-        },
+        anticipation: { available: anticipation.available, batchSize: anticipation.batchSize },
         audioSpeed: user.preferences.audioSpeed,
         recurringErrors: summary.recurringErrors,
         cards: queue.cards.map((card) => ({

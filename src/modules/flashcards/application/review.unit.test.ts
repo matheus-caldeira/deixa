@@ -173,70 +173,42 @@ describe("fila de revisão", () => {
     );
   });
 
-  it("antecipa a próxima revisão: traz os cartões mais próximos e a espera cresce uma hora a cada uso", async () => {
+  it("antecipa a próxima revisão quantas vezes quiser, sempre trazendo os cartões mais próximos", async () => {
     const tz = "America/Sao_Paulo";
-    const items = Array.from({ length: 14 }, (_, index) => ({
+    const items = Array.from({ length: 24 }, (_, index) => ({
       learningItemId: `item-${index}`,
       sourceKind: "curated",
     }));
     await app.addCards("ana", items);
-    for (const card of (await app.listDue("ana")).cards)
-      await app.grade({ userId: "ana", cardId: card.cardId, rating: "good" });
+    for (let round = 0; round < 2; round += 1) {
+      for (const card of (await app.listDue("ana")).cards)
+        await app.grade({ userId: "ana", cardId: card.cardId, rating: "good" });
+    }
     expect(await app.countDue("ana")).toBe(0);
     expect(await app.status("ana", tz)).toMatchObject({
       available: true,
-      upcoming: 14,
+      upcoming: 24,
       batchSize: 10,
       usedToday: 0,
     });
 
-    expect(await app.anticipate("ana", tz)).toEqual({ moved: 10 });
-    expect(await app.countDue("ana")).toBe(10);
-    const afterFirst = await app.status("ana", tz);
-    expect(afterFirst).toMatchObject({ available: false, usedToday: 1, waitHours: 1, upcoming: 4 });
-    expect(afterFirst.availableAt?.getTime()).toBe(app.clock.now().getTime() + 60 * 60 * 1000);
-    await expect(app.anticipate("ana", tz)).rejects.toMatchObject({ code: "INVALID_INPUT" });
-
-    app.clock.advanceMs(61 * 60 * 1000);
-    expect(await app.anticipate("ana", tz)).toEqual({ moved: 4 });
-    expect(await app.status("ana", tz)).toMatchObject({
-      usedToday: 2,
-      waitHours: 2,
-      upcoming: 0,
-      available: false,
-    });
-  });
-
-  it("dois pedidos simultâneos de antecipação contam como um só", async () => {
-    const tz = "America/Sao_Paulo";
-    const items = Array.from({ length: 12 }, (_, index) => ({
-      learningItemId: `i-${index}`,
-      sourceKind: "curated",
-    }));
-    await app.addCards("ana", items);
-    for (const card of (await app.listDue("ana")).cards) {
-      await app.grade({ userId: "ana", cardId: card.cardId, rating: "good" });
+    for (const expected of [10, 10, 4]) {
+      expect(await app.anticipate("ana")).toEqual({ moved: expected });
     }
-    const results = await Promise.allSettled([app.anticipate("ana", tz), app.anticipate("ana", tz)]);
-    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-    expect((await app.status("ana", tz)).usedToday).toBe(1);
-    expect(await app.countDue("ana")).toBe(10);
+    expect(await app.countDue("ana")).toBe(24);
+    expect(await app.status("ana", tz)).toMatchObject({ usedToday: 3, upcoming: 0, available: false });
+    await expect(app.anticipate("ana")).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 
-  it("a antecipação de um usuário não mexe nos cartões do outro e tem teto diário", async () => {
-    const tz = "America/Sao_Paulo";
+  it("a antecipação de um usuário não mexe nos cartões do outro", async () => {
     await app.addCards("ana", [{ learningItemId: "a", sourceKind: "curated" }]);
     await app.addCards("lucas", [{ learningItemId: "b", sourceKind: "curated" }]);
     for (const user of ["ana", "lucas"]) {
       const cardId = (await app.listDue(user)).cards[0]?.cardId ?? "";
       await app.grade({ userId: user, cardId, rating: "good" });
     }
-    await app.anticipate("ana", tz);
+    await app.anticipate("ana");
     expect(await app.countDue("ana")).toBe(1);
     expect(await app.countDue("lucas")).toBe(0);
-    expect(await app.status("lucas", tz)).toMatchObject({ usedToday: 0, available: true });
-    for (let used = 1; used < 5; used += 1)
-      app.cards.anticipations.push({ userId: "ana", createdAt: app.clock.now() });
-    expect(await app.status("ana", tz)).toMatchObject({ usedToday: 5, available: false, availableAt: null });
   });
 });

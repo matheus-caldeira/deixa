@@ -59,23 +59,8 @@ export class InMemoryCards implements CardRepository {
       .map((entry) => entry.createdAt);
   }
 
-  private readonly claimedSlots = new Set<string>();
-
-  async claimAnticipation(entry: {
-    userId: string;
-    day: string;
-    ordinal: number;
-    createdAt: Date;
-  }): Promise<boolean> {
-    const slot = `${entry.userId}:${entry.day}:${entry.ordinal}`;
-    if (this.claimedSlots.has(slot)) return false;
-    this.claimedSlots.add(slot);
+  async recordAnticipation(entry: { userId: string; createdAt: Date }): Promise<void> {
     this.anticipations.push({ userId: entry.userId, createdAt: entry.createdAt });
-    return true;
-  }
-
-  async setAnticipationResult(): Promise<void> {
-    return undefined;
   }
 
   private due(userId: string, now: Date): Row[] {

@@ -22,14 +22,7 @@ export type ReviewCard = {
 export type ReviewView = {
   cards: ReviewCard[];
   dueCount: number;
-  anticipation: {
-    available: boolean;
-    batchSize: number;
-    upcoming: number;
-    usedToday: number;
-    maxPerDay: number;
-    availableAt: string | null;
-  };
+  anticipation: { available: boolean; batchSize: number };
   audioSpeed: number;
   recurringErrors: { label: string; count: string }[];
 };
@@ -57,7 +50,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
       setEarned((total) => total + result.data.xpAwarded);
       setFlipped(false);
       setIndex((current) => current + 1);
-      router.refresh();
+      if (index + 1 >= view.cards.length) router.refresh();
     });
   };
 
@@ -122,21 +115,10 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
                 Antecipar próxima revisão
               </button>
               <p className="small muted">
-                Traz os {view.anticipation.batchSize} cartões que venceriam primeiro. Antecipações de hoje:{" "}
-                {view.anticipation.usedToday}/{view.anticipation.maxPerDay}; a cada uso, a espera para a
-                próxima cresce uma hora.
+                Traz os {view.anticipation.batchSize} cartões que venceriam primeiro. Pode antecipar quantas
+                vezes quiser.
               </p>
             </>
-          ) : view.anticipation.availableAt ? (
-            <p className="small muted">
-              Próxima antecipação liberada às{" "}
-              {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(
-                new Date(view.anticipation.availableAt),
-              )}
-              . Antecipações de hoje: {view.anticipation.usedToday}/{view.anticipation.maxPerDay}.
-            </p>
-          ) : view.anticipation.upcoming > 0 ? (
-            <p className="small muted">Você já usou todas as antecipações de hoje.</p>
           ) : null}
         </div>
         {errors}

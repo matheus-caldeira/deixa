@@ -64,6 +64,13 @@
       "when": 1791689319970,
       "tag": "0008_fair_nocturne",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791690202745,
+      "tag": "0009_lazy_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

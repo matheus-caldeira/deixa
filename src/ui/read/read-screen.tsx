@@ -243,8 +243,8 @@ export function ReadScreen({ view }: { view: ReadView }) {
         return;
       }
       if (result?.ok && result.data.status === "SAVED") {
-        toast("Esses cards já foram salvos.");
         setStage("read");
+        router.replace(`/read/${view.episodeId}`);
         return;
       }
       if (result && !result.ok) {
@@ -259,7 +259,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [batchId, generated, stage, toast]);
+  }, [batchId, generated, router, stage, toast, view.episodeId]);
 
   useEffect(() => {
     if (stage !== "generating") return;

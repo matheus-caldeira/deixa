@@ -1,7 +1,7 @@
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
-import { localDateKey, startOfLocalDay } from "@/shared/time";
+import { startOfLocalDay } from "@/shared/time";
 import { ANTICIPATION_BATCH, anticipationStatus, type AnticipationStatus } from "../domain/anticipation";
 import { REVIEW_XP, previewIntervals, review, type Rating } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "./ports";
@@ -108,36 +108,16 @@ export function makeGetAnticipationStatus(deps: Pick<Deps, "cards" | "clock">) {
       deps.cards.listAnticipations(userId, startOfLocalDay(now, timezone)),
       deps.cards.countUpcoming(userId, now),
     ]);
-    return anticipationStatus({ anticipationsToday, upcoming, now });
+    return anticipationStatus({ usedToday: anticipationsToday.length, upcoming });
   };
 }
 
 export function makeAnticipateReview(deps: Pick<Deps, "cards" | "clock" | "ids">) {
-  const getStatus = makeGetAnticipationStatus(deps);
-  return async function anticipateReview(userId: string, timezone: string): Promise<{ moved: number }> {
-    const status = await getStatus(userId, timezone);
-    if (!status.available) {
-      throw new AppError(
-        "INVALID_INPUT",
-        status.upcoming === 0
-          ? "Não há cartões futuros para antecipar."
-          : status.availableAt
-            ? "A próxima antecipação ainda não foi liberada."
-            : "Você já usou todas as antecipações de hoje.",
-      );
-    }
+  return async function anticipateReview(userId: string): Promise<{ moved: number }> {
     const now = deps.clock.now();
-    const id = deps.ids.next();
-    const claimed = await deps.cards.claimAnticipation({
-      id,
-      userId,
-      day: localDateKey(now, timezone),
-      ordinal: status.usedToday + 1,
-      createdAt: now,
-    });
-    if (!claimed) throw new AppError("INVALID_INPUT", "Essa antecipação já foi usada. Atualize a tela.");
     const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH);
-    await deps.cards.setAnticipationResult(id, moved);
+    if (moved === 0) throw new AppError("INVALID_INPUT", "Não há cartões futuros para antecipar.");
+    await deps.cards.recordAnticipation({ id: deps.ids.next(), userId, cardsMoved: moved, createdAt: now });
     return { moved };
   };
 }

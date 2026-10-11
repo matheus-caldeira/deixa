@@ -30,7 +30,7 @@ export async function gradeCardAction(
 export async function anticipateReviewAction(): Promise<ActionResult<{ moved: number }>> {
   const user = await requireUser();
   return runAction("anticipateReview", async () => {
-    const result = await app().anticipateReview(user.id, user.preferences.timezone);
+    const result = await app().anticipateReview(user.id);
     revalidatePath("/", "layout");
     return result;
   });

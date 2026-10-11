@@ -18,11 +18,11 @@ export class DrizzleNotificationRepository implements NotificationRepository {
     await this.db.insert(notifications).values(notification);
   }
 
-  async listRecent(userId: string, limit: number): Promise<Notification[]> {
+  async listUnread(userId: string, limit: number): Promise<Notification[]> {
     const rows = await this.db
       .select()
       .from(notifications)
-      .where(eq(notifications.userId, userId))
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
       .orderBy(desc(notifications.createdAt))
       .limit(limit);
     return rows.map((row) => ({

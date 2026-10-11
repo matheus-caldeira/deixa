@@ -25,7 +25,7 @@ export type NewNotification = {
 
 export interface NotificationRepository {
   insert(notification: NewNotification): Promise<void>;
-  listRecent(userId: string, limit: number): Promise<Notification[]>;
+  listUnread(userId: string, limit: number): Promise<Notification[]>;
   countUnread(userId: string): Promise<number>;
   markRead(userId: string, notificationId: string): Promise<void>;
   markAllRead(userId: string): Promise<void>;
@@ -61,7 +61,7 @@ export function makeNotify(deps: Deps) {
 export function makeGetInbox(deps: Pick<Deps, "notifications">) {
   return async function getInbox(userId: string): Promise<{ unread: number; items: Notification[] }> {
     const [items, unread] = await Promise.all([
-      deps.notifications.listRecent(userId, INBOX_LIMIT),
+      deps.notifications.listUnread(userId, INBOX_LIMIT),
       deps.notifications.countUnread(userId),
     ]);
     return { unread, items };
