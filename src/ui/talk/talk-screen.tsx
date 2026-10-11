@@ -1,88 +1,117 @@
 "use client";
 
-import type { CefrLevel } from "@/shared/levels";
-import { levelIndex } from "@/shared/levels";
-import { BackIcon, Icon, KeyIcon, MicIcon, type IconName } from "../icons";
-import { useShell } from "../shell/app-shell";
+import Link from "next/link";
+import { useState, useTransition } from "react";
+import { startConversationAction } from "@/app/actions/tutor";
+import { CUSTOM_THEME_ID, MAX_TOPIC_LENGTH } from "@/modules/conversations";
+import { BackIcon, Icon, SparkIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
 
-export type ScenarioView = { id: string; icon: IconName; title: string; level: CefrLevel; detail: string };
+export type ThemeView = { id: string; icon: IconName; title: string; detail: string };
+export type RecentConversation = {
+  id: string;
+  title: string;
+  turnCount: number;
+  reviewed: boolean;
+  score: number | null;
+};
 
-export function TalkScreen(props: { scenarios: ScenarioView[]; userLevel: CefrLevel; hasKey: boolean }) {
+export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversation[]; simulated: boolean }) {
   const toast = useToast();
-  const { openProfile } = useShell();
-  const user = levelIndex(props.userLevel);
-  const sorted = [...props.scenarios].sort(
-    (a, b) => Math.abs(levelIndex(a.level) - user) - Math.abs(levelIndex(b.level) - user),
-  );
+  const [pending, startTransition] = useTransition();
+  const [topic, setTopic] = useState("");
+
+  const start = (themeId: string, customTopic: string | null) =>
+    startTransition(async () => {
+      const result = await startConversationAction({ themeId, customTopic }).catch(() => null);
+      if (result && !result.ok) toast(result.message);
+    });
 
   return (
     <>
       <h1 style={{ fontSize: 28, paddingTop: 4 }}>Conversar</h1>
       <p className="muted">
-        Pratique situações reais com um tutor de IA. Ele corrige suas frases e transforma os erros em cartões
-        de revisão.
+        Escolha um tema e converse livremente com o tutor, por texto ou por áudio. Ele corrige na hora e,
+        quando você quiser, avalia a conversa inteira.
       </p>
-      {props.hasKey ? null : (
-        <div className="hint" style={{ flexDirection: "column", gap: 8 }}>
+      {props.simulated ? (
+        <div className="hint">
           <span>
-            <b>Configure sua chave do Google AI</b> para conversar com o tutor. Revisões e flashcards
-            continuam funcionando sem ela.
+            <b>Tutor simulado.</b> Sem chave do Google AI, as respostas são genéricas. Adicione a sua no
+            perfil.
           </span>
-          <button
-            className="btn cue"
-            style={{ alignSelf: "flex-start", padding: "10px 14px", fontSize: 13 }}
-            onClick={openProfile}
-          >
-            <KeyIcon width={18} height={18} /> Adicionar chave
-          </button>
         </div>
-      )}
+      ) : null}
       <section className="card" style={{ padding: "4px 16px" }}>
-        {sorted.map((scenario) => {
-          const distance = levelIndex(scenario.level) - user;
-          return (
-            <div className="ep" style={{ gridTemplateColumns: "1fr" }} key={scenario.id}>
-              <button className="scen" onClick={() => toast("O tutor por texto chega numa próxima fase.")}>
-                <span className="ic">
-                  <Icon name={scenario.icon} />
-                </span>
-                <span className="col" style={{ gap: 3, minWidth: 0 }}>
-                  <b>{scenario.title}</b>
-                  <span className="small muted">{scenario.detail}</span>
-                  <span className="row" style={{ gap: 6 }}>
-                    {distance === 0 ? (
-                      <span className="chip good">Recomendado</span>
-                    ) : distance > 0 ? (
-                      <span className="chip warn">Desafio</span>
-                    ) : (
-                      <span className="chip">Revisão</span>
-                    )}
-                    <span className="chip mono">{scenario.level}</span>
-                  </span>
-                </span>
-                <span style={{ color: "var(--muted)", width: 20, transform: "rotate(180deg)" }}>
-                  <BackIcon />
-                </span>
-              </button>
-            </div>
-          );
-        })}
+        {props.themes.map((theme) => (
+          <div className="ep" style={{ gridTemplateColumns: "1fr" }} key={theme.id}>
+            <button className="scen" onClick={() => start(theme.id, null)} disabled={pending}>
+              <span className="ic">
+                <Icon name={theme.icon} />
+              </span>
+              <span className="col" style={{ gap: 3, minWidth: 0 }}>
+                <b>{theme.title}</b>
+                <span className="small muted">{theme.detail}</span>
+              </span>
+              <span style={{ color: "var(--muted)", width: 20, transform: "rotate(180deg)" }}>
+                <BackIcon />
+              </span>
+            </button>
+          </div>
+        ))}
       </section>
-      <section className="card row" style={{ opacity: 0.75 }}>
-        <span className="scen" style={{ gridTemplateColumns: "48px 1fr" }}>
-          <span className="ic">
-            <MicIcon />
-          </span>
-          <span className="col" style={{ gap: 3 }}>
-            <b>Chamada de voz com o tutor</b>
-            <span className="small muted">
-              Fase 2: fala em tempo real, transcrição e avaliação de pronúncia.
-            </span>
-          </span>
-        </span>
-        <span className="chip">Em breve</span>
-      </section>
+      <form
+        className="card col"
+        style={{ gap: 10 }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          start(CUSTOM_THEME_ID, topic);
+        }}
+      >
+        <div className="row">
+          <SparkIcon className="inline-icon" style={{ color: "var(--brand)" }} />
+          <b>Outro assunto</b>
+        </div>
+        <div className="field">
+          <input
+            value={topic}
+            onChange={(event) => setTopic(event.target.value)}
+            maxLength={MAX_TOPIC_LENGTH}
+            placeholder="Ex.: futebol, meu cachorro, entrevista de emprego"
+            aria-label="Assunto da conversa"
+          />
+        </div>
+        <button className="btn" type="submit" disabled={pending || topic.trim().length < 2}>
+          Conversar sobre isso
+        </button>
+      </form>
+      {props.recent.length > 0 ? (
+        <section className="col" style={{ gap: 10 }}>
+          <div className="sec-h">
+            <h2 style={{ fontSize: 18 }}>Conversas recentes</h2>
+          </div>
+          <div className="card" style={{ padding: "4px 16px" }}>
+            {props.recent.map((conversation) => (
+              <Link
+                className="ep"
+                style={{ gridTemplateColumns: "1fr auto" }}
+                key={conversation.id}
+                href={`/tutor/${conversation.id}`}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div className="t">{conversation.title}</div>
+                  <span className="small muted">{conversation.turnCount} mensagens</span>
+                </div>
+                {conversation.reviewed ? (
+                  <span className="chip good">Revisada · {conversation.score}</span>
+                ) : (
+                  <span className="chip">Em aberto</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

@@ -1,12 +1,31 @@
 import { getContainer } from "@/infrastructure/container";
-import { SCENARIOS } from "@/modules/gamification";
+import { THEMES } from "@/modules/conversations";
 import { TalkScreen } from "@/ui/talk/talk-screen";
 import { requireUser } from "../../session";
 
 export default async function TutorPage() {
   const user = await requireUser();
-  const keyStatus = await getContainer().getKeyStatus(user.id);
+  const container = getContainer();
+  const [recent, simulated] = await Promise.all([
+    container.listConversations(user.id),
+    container.isTutorSimulated(user.id),
+  ]);
   return (
-    <TalkScreen scenarios={[...SCENARIOS]} userLevel={user.preferences.level} hasKey={keyStatus.connected} />
+    <TalkScreen
+      simulated={simulated}
+      themes={THEMES.map((theme) => ({
+        id: theme.id,
+        icon: theme.icon,
+        title: theme.title,
+        detail: theme.detail,
+      }))}
+      recent={recent.map((session) => ({
+        id: session.id,
+        title: session.themeTitle,
+        turnCount: session.turnCount,
+        reviewed: session.review !== null,
+        score: session.review?.score ?? null,
+      }))}
+    />
   );
 }

@@ -177,6 +177,31 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.getByRole("button", { name: "Perfil de Matheus" })).toBeVisible();
   await expect(page.getByText("Desafio final")).toBeVisible();
 
+  await page.getByRole("button", { name: /^Notificações/ }).click();
+  const inbox = page.getByRole("dialog", { name: "Notificações" });
+  await expect(inbox.getByText("Seus cards estão prontos")).toBeVisible();
+  await inbox.getByRole("button", { name: "Fechar" }).click();
+
+  await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Conversar" }).click();
+  await expect(page.getByText(/Tutor simulado/)).toBeVisible();
+  await page.getByRole("button", { name: /^Comida/ }).click();
+  await expect(page).toHaveURL(/\/tutor\/.+/);
+  await expect(page.getByText("What's your favorite thing to eat when you go out?")).toBeVisible();
+  await page.getByLabel("Sua mensagem").fill("I want a pizza and more better fries");
+  await page.getByRole("button", { name: "Enviar" }).click();
+  await expect(page.locator(".fix")).toHaveCount(2);
+  await expect(page.locator(".fix").first()).toContainText("I'd like");
+  await page.getByRole("button", { name: "Revisar a conversa inteira" }).click();
+  const reviewSheet = page.getByRole("dialog", { name: "Revisão da conversa" });
+  await expect(reviewSheet.getByText(/Revisão simulada/)).toBeVisible();
+  await expect(reviewSheet.getByText("Frases que foram para a sua revisão")).toBeVisible();
+  await reviewSheet.getByRole("button", { name: "Fechar" }).click();
+  await page.goto("/review");
+  await expect(page.getByText(/\d+ na fila/)).toBeVisible();
+  await page.goto("/catalog");
+  await expect(page.getByRole("button", { name: "Adicionar série ou filme" })).toBeVisible();
+  await page.goto("/");
+
   await page.getByRole("link", { name: /XP hoje/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Quem está estudando" })).toBeVisible();
   await expect(page.getByText("41 dias")).toBeVisible();

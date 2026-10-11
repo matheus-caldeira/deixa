@@ -45,17 +45,18 @@ A imagem do Kokoro tem cerca de 8 GB; o primeiro `docker compose up` demora. Sem
 Tudo fica no `.env`, lido pelo carregamento padrão do Next.js e validado com Zod em
 `src/infrastructure/config/env.ts`. O [`.env.example`](.env.example) lista os nomes, sem valores.
 
-| Variável                    | Para quê                                                                             |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| `DATABASE_URL`              | Conexão com o Postgres                                                               |
-| `AI_CREDENTIALS_MASTER_KEY` | Chave mestra (32 bytes em base64) que cifra a chave Gemini de cada usuário           |
-| `TMDB_READ_ACCESS_TOKEN`    | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                 |
-| `TMDB_API_KEY`              | Chave v3 do TMDB, usada só como alternativa se o token for recusado                  |
-| `KOKORO_URL`                | Endereço do Kokoro; vazio = áudio silencioso                                         |
-| `DATA_DIR`                  | Diretório das legendas e dos áudios (padrão `data`, fora do git)                     |
-| `GEMINI_MODEL`              | Modelo do Gemini (padrão `gemini-2.5-flash`)                                         |
-| `SESSION_COOKIE_SECURE`     | `true` por padrão; `false` permite entrar por HTTP na rede interna                   |
-| `DEV_SHORTCUTS`             | `true` mostra os perfis de seed na tela de entrada e o atalho de arquivos de exemplo |
+| Variável                    | Para quê                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Conexão com o Postgres                                                                      |
+| `AI_CREDENTIALS_MASTER_KEY` | Chave mestra (32 bytes em base64) que cifra a chave Gemini de cada usuário                  |
+| `TMDB_READ_ACCESS_TOKEN`    | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                        |
+| `TMDB_API_KEY`              | Chave v3 do TMDB, usada só como alternativa se o token for recusado                         |
+| `KOKORO_URL`                | Endereço do Kokoro; vazio = áudio silencioso                                                |
+| `DATA_DIR`                  | Diretório das legendas e dos áudios (padrão `data`, fora do git)                            |
+| `GEMINI_API_KEY`            | Chave Gemini do servidor: monta as trilhas e serve de reserva para quem não cadastrou a sua |
+| `GEMINI_MODEL`              | Modelo do Gemini (padrão `gemini-2.5-flash`)                                                |
+| `SESSION_COOKIE_SECURE`     | `true` por padrão; `false` permite entrar por HTTP na rede interna                          |
+| `DEV_SHORTCUTS`             | `true` mostra os perfis de seed na tela de entrada e o atalho de arquivos de exemplo        |
 
 ### Credenciais do TMDB
 
@@ -79,8 +80,9 @@ Todos com a mesma senha de desenvolvimento: **`deixa1234`**
 A tela de entrada pede e-mail e senha e tem "Criar conta". Ela não lista as contas existentes.
 
 Todo o catálogo vem do TMDB: o seed cadastra as sete obras pela API (títulos em pt-BR, pôster, imagem de fundo e
-imagem de cada episódio). O **texto** dos episódios do seed é um diálogo fictício (o mesmo do protótipo), nunca
-legendas reais; em [`fixtures/`](fixtures/) há o par EN/PT usado. Sem credenciais do TMDB, o seed e a busca caem
+imagem de cada episódio). O **texto** dos episódios do seed vem de 8 diálogos fictícios originais em
+[`fixtures/dialogues/`](fixtures/dialogues/), nunca de legendas reais; as trilhas deles em A1, B1 e C1 estão em
+[`fixtures/plans/`](fixtures/plans/). O seed é fixo e não chama a IA. Sem credenciais do TMDB, o seed e a busca caem
 num provider de demonstração, sem fotos.
 
 `pnpm db:reset` apaga o banco de desenvolvimento e os arquivos em `data/`, migra e semeia de novo.
@@ -103,7 +105,26 @@ num provider de demonstração, sem fotos.
 - Instalar como aplicativo (PWA): manifesto, ícones e service worker online-first. O service worker só registra em
   HTTPS ou em `localhost`; pelo IP da rede em HTTP dá para "Adicionar à tela de início", mas sem cache offline.
 
-Conversar, percentual de nível, habilidades e erros recorrentes ainda mostram dados de demonstração.
+- Trilha por IA: para cada episódio e nível, o Gemini divide as falas em blocos, dá título a cada um e cria as
+  questões, mais um desafio final do episódio inteiro. A trilha é montada em segundo plano e avisada pelo sino. É
+  preciso 70% de acerto para concluir um bloco; só acertos rendem XP e todo erro vira card de revisão.
+- Cards em segundo plano: "Gerar cards" não trava a tela; dá para continuar lendo e abrir o resultado pelo sino.
+- Revisar: quando a fila acaba, "Antecipar próxima revisão" traz os 10 cartões que venceriam primeiro (até 5 vezes por
+  dia, com espera que cresce 1 hora a cada uso).
+- Conversar: escolha um tema ou escreva um assunto e converse livremente com o tutor, por texto ou áudio. Ele corrige
+  cada mensagem na hora e o botão de alvo avalia a conversa inteira. As correções entram na revisão.
+- Explorar: botão "+" ao lado do título e seletor com todas as temporadas da obra.
+
+Percentual de nível, habilidades e erros recorrentes ainda mostram dados de demonstração.
+
+### Sobre a chave Gemini
+
+No plano gratuito do Google AI a cota é de cerca de 20 requisições por dia por modelo. Quando a cota do modelo
+principal acaba, o app tenta `gemini-flash-latest` e `gemini-2.5-flash-lite`; se todas acabarem, avisa e não trava.
+As trilhas dos episódios do seed já vêm prontas em `fixtures/plans/` e não gastam cota. Sem nenhuma chave, trilhas,
+cards e tutor funcionam em modo simulado.
+
+O microfone do tutor só funciona em HTTPS ou em `localhost` (restrição do navegador).
 
 ## Comandos
 

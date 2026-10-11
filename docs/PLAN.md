@@ -47,8 +47,23 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 | 27  | Tela "Quem está estudando" ao tocar em XP ou sequência                    | Nome, nível, ofensiva e XP                                     | [x]    |
 | 28  | Gamificação calculada: sequência, XP, semana, mapa de dias, missões       | Unitários do cálculo no fuso da conta                          | [x]    |
 
+## Terceira rodada (pedidos depois do segundo teste)
+
+| #   | Tarefa                                                                                | Critério de pronto                                                        | Estado |
+| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------ |
+| 29  | Cards em segundo plano com sino de notificações                                       | Tela não trava; aviso "Seus cards estão prontos"; coberto no e2e          | [x]    |
+| 30  | Oito legendas fictícias distintas e seed fixo                                         | Cada episódio do seed com diálogo diferente; trilhas em `fixtures/plans/` | [x]    |
+| 31  | Alternativas normalizadas e escuta com opções parecidas                               | Tudo em minúsculas; opções de escuta com tamanho próximo                  | [x]    |
+| 32  | Trilha, blocos e questões por IA conforme o nível                                     | Plano por episódio e nível, validado e guardado; reserva sem chave        | [x]    |
+| 33  | Mínimo de acerto, XP só por acertos, desafio final                                    | 70% para concluir; reprovação sem XP; desafio cobre o episódio            | [x]    |
+| 34  | Todo erro entra na revisão                                                            | Erros de lição e correções do tutor viram cards disponíveis               | [x]    |
+| 35  | Antecipar a próxima revisão                                                           | 10 cartões por vez, espera crescente, teto diário                         | [x]    |
+| 36  | Conversar por temas, texto e áudio, com avaliação em tempo real e revisão da conversa | Testado com Gemini real e com tutor simulado no e2e                       | [x]    |
+| 37  | Explorar: todas as temporadas e botão de adicionar no título                          | Seletor de temporadas carrega episódios do TMDB                           | [x]    |
+
 ## Próximo
 
-- Fase 03 restante: seleção pedagógica e explicações por IA sobre a mesma trilha, worker separado, áudio em lote, roteiro.
-- Fase 04 restante: percentual de nível, habilidades, erros recorrentes e demais conquistas com fonte real.
-- Fase 05: tutor por texto.
+- Etapa do OpenSubtitles (seção 16 do PROJETO.md), deixada por último a pedido do autor.
+- Fase 03 restante: worker separado, áudio em lote, roteiro.
+- Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
+- Fase 06: fala em tempo real, limites de uso por conta, HTTPS para PWA e microfone.

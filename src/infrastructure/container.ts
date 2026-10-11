@@ -34,6 +34,18 @@ import {
 } from "@/modules/flashcards";
 import { DrizzleCardRepository } from "@/modules/flashcards/infrastructure/drizzle-card-repository";
 import {
+  makeGetConversation,
+  makeGetTurnSpeechText,
+  makeListConversations,
+  makeReviewConversation,
+  makeSendMessage,
+  makeStartConversation,
+  type Correction,
+  type TutorProvider,
+} from "@/modules/conversations";
+import { DrizzleConversationRepository } from "@/modules/conversations/infrastructure/drizzle-conversation-repository";
+import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
+import {
   makeAwardXp,
   makeGetProfileSummary,
   makeSaveSnapshot,
@@ -94,6 +106,7 @@ import { openDatabase, type Database } from "./database/client";
 import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { testGeminiApiKey } from "./google-ai/gemini-client";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
+import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
@@ -114,6 +127,7 @@ export type ContainerOptions = {
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
   plannerForUser?: (userId: string) => Promise<LessonPlanner | null>;
+  tutorForUser?: (userId: string) => Promise<TutorProvider>;
   testApiKey?: ApiKeyTester;
 };
 
@@ -164,6 +178,15 @@ export function buildContainer(options: ContainerOptions) {
       const key = env.GEMINI_API_KEY ?? (await resolveApiKey(userId));
       return key ? new GeminiLessonPlanner(key, env.GEMINI_MODEL) : null;
     });
+
+  const fakeTutor = new FakeTutorProvider();
+  const resolveTutor =
+    options.tutorForUser ??
+    (async (userId: string): Promise<TutorProvider> => {
+      const key = (await resolveApiKey(userId)) ?? env.GEMINI_API_KEY;
+      return key ? new GeminiTutorProvider(key, env.GEMINI_MODEL) : fakeTutor;
+    });
+  const conversations = new DrizzleConversationRepository(db);
 
   const sessionDeps = {
     users: identity,
@@ -274,6 +297,35 @@ export function buildContainer(options: ContainerOptions) {
     return Math.max(created, itemIds.length);
   }
 
+  async function queueCorrections(
+    userId: string,
+    corrections: Correction[],
+    _sourceLabel: string,
+  ): Promise<number> {
+    const itemIds: string[] = [];
+    for (const correction of corrections) {
+      itemIds.push(
+        await learning.upsertStandaloneItem({
+          id: ids.next(),
+          ownerUserId: userId,
+          term: correction.right,
+          meaning: correction.why,
+          context: `Você disse: ${correction.wrong}`,
+          origin: "tutor_correction",
+          createdAt: clock.now(),
+        }),
+      );
+    }
+    await addCards(
+      userId,
+      itemIds.map((learningItemId) => ({ learningItemId, sourceKind: "tutor" })),
+    );
+    await cards.bringForward(userId, itemIds, clock.now());
+    return itemIds.length;
+  }
+
+  const conversationDeps = { conversations, resolveTutor, queueCorrections, awardXp, clock, ids };
+
   const studyDeps = {
     study,
     plans: study,
@@ -341,6 +393,14 @@ export function buildContainer(options: ContainerOptions) {
     generatePlan: makeGeneratePlan(studyDeps),
     savePlan: (input: Parameters<typeof study.saveReady>[0]) => study.saveReady(input),
     getTrail: makeGetTrail(studyDeps),
+
+    startConversation: makeStartConversation(conversationDeps),
+    getConversation: makeGetConversation(conversationDeps),
+    listConversations: makeListConversations(conversationDeps),
+    sendMessage: makeSendMessage(conversationDeps),
+    reviewConversation: makeReviewConversation(conversationDeps),
+    getTurnSpeechText: makeGetTurnSpeechText(conversationDeps),
+    isTutorSimulated: async (userId: string) => (await resolveTutor(userId)).name === "fake",
     startLesson: makeStartLesson(studyDeps),
     completeLesson: makeCompleteLesson(studyDeps),
 

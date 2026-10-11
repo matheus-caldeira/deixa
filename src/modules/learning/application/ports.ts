@@ -71,6 +71,15 @@ export interface LearningRepository {
     cardsCreated: number;
   }): Promise<void>;
   listGlobalSuggestions(episodeId: string): Promise<CatalogSuggestion[]>;
+  upsertStandaloneItem(item: {
+    id: string;
+    ownerUserId: string;
+    term: string;
+    meaning: string;
+    context: string | null;
+    origin: string;
+    createdAt: Date;
+  }): Promise<string>;
   findSpeakableText(userId: string, itemId: string): Promise<string | null>;
 }
 

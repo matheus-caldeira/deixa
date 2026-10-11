@@ -261,3 +261,37 @@ export const reviewAnticipations = pgTable(
     uniqueIndex("review_anticipations_slot").on(table.userId, table.day, table.ordinal),
   ],
 );
+
+export const conversationSessions = pgTable(
+  "conversation_sessions",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    themeId: text("theme_id").notNull(),
+    themeTitle: text("theme_title").notNull(),
+    level: text("level").notNull(),
+    review: jsonb("review"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("conversation_sessions_user").on(table.userId, table.createdAt)],
+);
+
+export const conversationTurns = pgTable(
+  "conversation_turns",
+  {
+    id: uuid("id").primaryKey(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => conversationSessions.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    text: text("text").notNull(),
+    translation: text("translation"),
+    corrections: jsonb("corrections").notNull(),
+    inputKind: text("input_kind").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("conversation_turns_session").on(table.sessionId, table.createdAt)],
+);

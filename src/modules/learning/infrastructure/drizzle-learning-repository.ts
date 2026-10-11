@@ -249,6 +249,52 @@ export class DrizzleLearningRepository implements LearningRepository {
     );
   }
 
+  async upsertStandaloneItem(item: {
+    id: string;
+    ownerUserId: string;
+    term: string;
+    meaning: string;
+    context: string | null;
+    origin: string;
+    createdAt: Date;
+  }): Promise<string> {
+    const normalizedText = normalizeTerm(item.term);
+    return this.db.transaction(async (tx) => {
+      const [known] = await tx
+        .select({ id: learningItems.id })
+        .from(learningItems)
+        .where(
+          and(
+            eq(learningItems.ownerUserId, item.ownerUserId),
+            eq(learningItems.origin, item.origin),
+            eq(learningItems.normalizedText, normalizedText),
+          ),
+        )
+        .limit(1);
+      if (known) return known.id;
+      await tx.insert(learningItems).values({
+        id: item.id,
+        sourceText: item.term,
+        normalizedText,
+        contextText: item.context,
+        difficulty: "B1",
+        itemType: "expression",
+        origin: item.origin,
+        visibility: "private",
+        ownerUserId: item.ownerUserId,
+        status: "ACTIVE",
+        createdAt: item.createdAt,
+      });
+      await tx.insert(learningItemExplanations).values({
+        learningItemId: item.id,
+        locale: LOCALE,
+        translation: item.meaning,
+        translationSource: "llm",
+      });
+      return item.id;
+    });
+  }
+
   async findSpeakableText(userId: string, itemId: string): Promise<string | null> {
     if (!z.uuid().safeParse(itemId).success) return null;
     const [row] = await this.db

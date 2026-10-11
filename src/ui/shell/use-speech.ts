@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type SpeechKind = "cue" | "item";
+type SpeechKind = "cue" | "item" | "turn";
 const BUSY = 429;
 
 export function useSpeech(options: { speed: number; onError: (message: string) => void }) {

@@ -147,6 +147,30 @@ export class InMemoryLearning implements LearningRepository {
       }));
   }
 
+  readonly standalone: { id: string; ownerUserId: string; term: string; origin: string }[] = [];
+
+  async upsertStandaloneItem(item: {
+    id: string;
+    ownerUserId: string;
+    term: string;
+    origin: string;
+  }): Promise<string> {
+    const known = this.standalone.find(
+      (candidate) =>
+        candidate.ownerUserId === item.ownerUserId &&
+        candidate.origin === item.origin &&
+        candidate.term === item.term,
+    );
+    if (known) return known.id;
+    this.standalone.push({
+      id: item.id,
+      ownerUserId: item.ownerUserId,
+      term: item.term,
+      origin: item.origin,
+    });
+    return item.id;
+  }
+
   async findSpeakableText(userId: string, itemId: string): Promise<string | null> {
     const item = this.items.find(
       (candidate) =>

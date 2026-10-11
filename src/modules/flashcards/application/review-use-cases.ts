@@ -11,6 +11,7 @@ const SOURCE_SUFFIX: Record<string, string> = {
   highlight_private: "suas marcações",
   highlight_catalog: "catálogo",
   lesson_error: "erros da lição",
+  tutor: "conversa com o tutor",
 };
 
 export type DueCard = Omit<DueCardRecord, "state"> & {
