@@ -47,6 +47,21 @@ async function captureApp(browser, scheme) {
   await page.goto(`${BASE_URL}/catalog`);
   await page.getByRole("button", { name: /Adicionar episódio/ }).click();
   await shoot(page, "app-09-upload", scheme);
+  await page.getByRole("button", { name: "Fechar" }).click();
+  await page.locator(".ptile").first().click();
+  await page.getByRole("heading", { level: 1 }).waitFor();
+  await page.getByRole("button", { name: "Enviar legenda de outro episódio" }).click();
+  const source = page.getByRole("dialog", { name: "Adicionar ao catálogo" });
+  await source.getByRole("button", { name: "Buscar legendas" }).waitFor();
+  await page.waitForTimeout(1200);
+  await shoot(page, "app-10-subtitle-source", scheme);
+  await source.getByRole("button", { name: "Buscar legendas" }).click();
+  await source
+    .getByText("Sugestão do OpenSubtitles")
+    .or(source.locator(".formerr"))
+    .first()
+    .waitFor({ timeout: 30_000 });
+  await shoot(page, "app-11-subtitle-suggestion", scheme);
   await context.close();
 }
 

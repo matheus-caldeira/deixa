@@ -67,17 +67,18 @@ function Choice(props: {
                 : "Envie o arquivo manualmente."}
             </span>
           )}
+          {canSwitch ? (
+            <button
+              className="link small"
+              style={{ alignSelf: "flex-start" }}
+              onClick={props.onToggle}
+              aria-expanded={props.open}
+              aria-label={`Ver outras opções em ${LANGUAGE_NAME[language]}`}
+            >
+              {props.open ? "Fechar" : "Ver outras opções"}
+            </button>
+          ) : null}
         </span>
-        {canSwitch ? (
-          <button
-            className="link small"
-            onClick={props.onToggle}
-            aria-expanded={props.open}
-            aria-label={`Ver outras opções em ${LANGUAGE_NAME[language]}`}
-          >
-            {props.open ? "Fechar" : "Ver outras opções"}
-          </button>
-        ) : null}
       </div>
       {props.open ? (
         <div className="col" style={{ gap: 8 }}>
@@ -144,8 +145,10 @@ export function SubtitleSourcePicker(props: {
     return (
       <>
         <div className="hint">
-          Buscamos no <b>OpenSubtitles</b> as legendas em inglês e português deste episódio. Nada é baixado
-          até você confirmar a escolha.
+          <span>
+            Buscamos no <b>OpenSubtitles</b> as legendas em inglês e português deste episódio. Nada é baixado
+            até você confirmar a escolha.
+          </span>
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button
@@ -153,7 +156,7 @@ export function SubtitleSourcePicker(props: {
           onClick={() => runSearch(false)}
           disabled={pending || props.episodeId === ""}
         >
-          <SearchIcon /> {pending ? "Buscando…" : "Buscar legendas"}
+          <SearchIcon width={18} height={18} /> {pending ? "Buscando…" : "Buscar legendas"}
         </button>
         {manualLink}
       </>
