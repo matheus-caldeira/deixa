@@ -37,6 +37,7 @@ export type ReadView = {
   label: string;
   episodeTitle: string;
   hasPortuguese: boolean;
+  subtitleCredits: string[];
   defaultMode: DisplayMode;
   audioSpeed: number;
   lines: ReadLine[];
@@ -477,6 +478,15 @@ export function ReadScreen({ view }: { view: ReadView }) {
             >
               {view.episodeTitle} · legenda {view.hasPortuguese ? "EN + PT alinhada" : "EN, tradução por IA"}
             </span>
+            {view.subtitleCredits.map((credit) => (
+              <span
+                key={credit}
+                className="small muted"
+                style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              >
+                {credit}
+              </span>
+            ))}
           </div>
         </div>
         <div className="seg">

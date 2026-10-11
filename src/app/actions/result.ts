@@ -24,6 +24,9 @@ const MESSAGES: Partial<Record<AppErrorCode, string>> = {
   METADATA_NOT_FOUND: "Não encontramos essa obra na busca.",
   LLM_FAILED: "A IA não respondeu. Tente de novo em instantes.",
   LLM_INVALID_OUTPUT: "A IA devolveu uma resposta fora do formato. Tente de novo.",
+  SUBTITLE_SOURCE_QUOTA: "A cota de downloads de hoje acabou. Envie o arquivo manualmente ou tente depois.",
+  SUBTITLE_SOURCE_UNAVAILABLE: "A busca de legendas está fora do ar. Envie o arquivo manualmente.",
+  SUBTITLE_SOURCE_EMPTY: "Não encontramos legendas para este episódio. Envie o arquivo manualmente.",
   AUDIO_BUSY: "Já estamos gerando outros áudios para você. Tente de novo em instantes.",
 };
 const GENERIC = "Algo deu errado. Tente de novo.";

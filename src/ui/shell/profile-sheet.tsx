@@ -216,6 +216,10 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
           {data.metadataProvider === "tmdb" ? "" : " (dados de demonstração neste ambiente)"}
         </span>
         <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+        <span>
+          Legendas buscadas a pedido: <b>OpenSubtitles</b> (opensubtitles.com). Cada legenda mostra o release
+          e quem enviou.
+        </span>
       </div>
     </Sheet>
   );

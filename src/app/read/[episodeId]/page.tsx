@@ -21,10 +21,20 @@ export default async function ReadPage(props: {
   const context = await container.getEpisodeContext(episodeId);
   if (!context || context.episode.status !== "READY") notFound();
 
-  const [view, suggestions] = await Promise.all([
+  const [view, suggestions, origins] = await Promise.all([
     container.getReadingView(user.id, episodeId),
     container.listCatalogSuggestions(episodeId),
+    container.listSubtitleOrigins(episodeId),
   ]);
+  const subtitleCredits = origins.flatMap(({ language, origin }) =>
+    origin
+      ? [
+          [`Legenda ${language === "en" ? "EN" : "PT"}: OpenSubtitles`, origin.releaseName, origin.author]
+            .filter(Boolean)
+            .join(" · "),
+        ]
+      : [],
+  );
   const cachedAudioCueIds = await container.listCachedSpeech({
     accent: user.preferences.preferredAccent,
     lines: view.lines.map((line) => ({ id: line.cueId, text: line.text })),
@@ -41,6 +51,7 @@ export default async function ReadPage(props: {
           label: episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber),
           episodeTitle: context.episode.title,
           hasPortuguese: view.hasPortuguese,
+          subtitleCredits,
           defaultMode: defaultDisplayMode(user.preferences.level),
           audioSpeed: user.preferences.audioSpeed,
           cachedAudioCueIds,

@@ -14,6 +14,7 @@ import { posterColorsFor } from "@/modules/catalog";
 import { CheckIcon, SearchIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { Poster } from "./poster";
+import { SubtitleSourcePicker } from "./subtitle-source-picker";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const STEP_REVEAL_MS = 420;
@@ -83,6 +84,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
   const [english, setEnglish] = useState<File | null>(null);
   const [portuguese, setPortuguese] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [manual, setManual] = useState(false);
   const [outcome, setOutcome] = useState<ImportView | null>(null);
   const [revealed, setRevealed] = useState(0);
   const searchSequence = useRef(0);
@@ -305,8 +307,8 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
           <p className="small muted">
             Passo 2 de 3 ·{" "}
             {target.type === "movie"
-              ? "Envie as legendas do filme."
-              : "Escolha o episódio e envie as legendas."}{" "}
+              ? "Busque as legendas do filme ou envie os arquivos."
+              : "Escolha o episódio e busque as legendas, ou envie os arquivos."}{" "}
             Com a legenda em português, a tradução das falas não passa pela IA.
           </p>
 
@@ -346,52 +348,74 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             </div>
           ) : null}
 
-          <Slot
-            tag="EN"
-            title="Legenda em inglês"
-            hint=".srt · obrigatória"
-            file={english}
-            accept=".srt"
-            inputLabel="Arquivo da legenda em inglês"
-            onPick={(file) => pickFile(setEnglish, file)}
-          />
-          <Slot
-            tag="PT"
-            title="Legenda em português"
-            hint=".srt · opcional · as falas já chegam traduzidas, sem gastar IA"
-            file={portuguese}
-            accept=".srt"
-            inputLabel="Arquivo da legenda em português"
-            onPick={(file) => pickFile(setPortuguese, file)}
-          />
-          <Slot
-            tag="TXT"
-            title="Roteiro ou transcrição"
-            hint=".txt ou .pdf · chega numa próxima fase"
-            file={null}
-            accept=".txt,.pdf"
-            inputLabel="Arquivo de roteiro"
-            disabled
-            onPick={() => undefined}
-          />
-          {props.devShortcuts ? (
-            <button
-              className="link"
-              style={{ alignSelf: "center" }}
-              onClick={() => submit(true)}
-              disabled={!hasEpisode || pending}
-            >
-              Usar arquivos de exemplo (EN + PT)
-            </button>
-          ) : null}
-          {error ? <p className="formerr">{error}</p> : null}
-          <button
-            className="btn wide"
-            onClick={() => submit(false)}
-            disabled={!english || !hasEpisode || pending}
-          >
-            {pending ? "Enviando…" : "Enviar e processar"}
-          </button>
+          {manual ? (
+            <>
+              <Slot
+                tag="EN"
+                title="Legenda em inglês"
+                hint=".srt · obrigatória"
+                file={english}
+                accept=".srt"
+                inputLabel="Arquivo da legenda em inglês"
+                onPick={(file) => pickFile(setEnglish, file)}
+              />
+              <Slot
+                tag="PT"
+                title="Legenda em português"
+                hint=".srt · opcional · as falas já chegam traduzidas, sem gastar IA"
+                file={portuguese}
+                accept=".srt"
+                inputLabel="Arquivo da legenda em português"
+                onPick={(file) => pickFile(setPortuguese, file)}
+              />
+              <Slot
+                tag="TXT"
+                title="Roteiro ou transcrição"
+                hint=".txt ou .pdf · chega numa próxima fase"
+                file={null}
+                accept=".txt,.pdf"
+                inputLabel="Arquivo de roteiro"
+                disabled
+                onPick={() => undefined}
+              />
+              {props.devShortcuts ? (
+                <button
+                  className="link"
+                  style={{ alignSelf: "center" }}
+                  onClick={() => submit(true)}
+                  disabled={!hasEpisode || pending}
+                >
+                  Usar arquivos de exemplo (EN + PT)
+                </button>
+              ) : null}
+              {error ? <p className="formerr">{error}</p> : null}
+              <button
+                className="btn wide"
+                onClick={() => submit(false)}
+                disabled={!english || !hasEpisode || pending}
+              >
+                {pending ? "Enviando…" : "Enviar e processar"}
+              </button>
+              <button className="link" style={{ alignSelf: "center" }} onClick={() => setManual(false)}>
+                Buscar legendas no OpenSubtitles
+              </button>
+            </>
+          ) : (
+            <SubtitleSourcePicker
+              key={episodeId}
+              mediaId={target.mediaId}
+              episodeId={episodeId}
+              onManual={() => {
+                setError("");
+                setManual(true);
+              }}
+              onImported={(view) => {
+                setOutcome(view);
+                setRevealed(0);
+                setStage("processing");
+              }}
+            />
+          )}
         </>
       ) : null}
 

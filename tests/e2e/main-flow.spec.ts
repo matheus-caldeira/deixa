@@ -25,6 +25,7 @@ async function signOut(page: Page, name: string) {
 }
 
 async function attachSubtitles(page: Page) {
+  await page.getByRole("button", { name: "Enviar arquivos .srt manualmente" }).click();
   await page.getByLabel("Arquivo da legenda em inglês").setInputFiles(ENGLISH);
   await page.getByLabel("Arquivo da legenda em português").setInputFiles(PORTUGUESE);
   await page.getByRole("button", { name: "Enviar e processar" }).click();

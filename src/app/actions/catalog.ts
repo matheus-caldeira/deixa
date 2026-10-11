@@ -7,11 +7,22 @@ import { posterUrl, type Episode, type MediaItem, type Season } from "@/modules/
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
-import type { ImportView, SearchResultView, UploadEpisodeView, UploadTargetView } from "./views";
+import type {
+  ImportView,
+  SearchResultView,
+  SourceImportView,
+  SubtitleOptionView,
+  SubtitleSearchView,
+  UploadEpisodeView,
+  UploadTargetView,
+} from "./views";
 
 const SAMPLE_ENGLISH = "fixtures/sample.en.srt";
 const SAMPLE_PORTUGUESE = "fixtures/sample.pt-BR.srt";
 const MAX_UPLOAD_BYTES = 5_000_000;
+const MAX_OPTIONS = 8;
+const MAX_RELEASE_CHARS = 120;
+const MAX_UPLOADER_CHARS = 40;
 
 const mediaTypeSchema = z.enum(["series", "movie"]);
 const idSchema = z.uuid();
@@ -167,6 +178,95 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
       mediaId: context.media.id,
       seasonNumber: context.season.seasonNumber,
       filename: english.filename,
+    };
+  });
+}
+
+const quotaView = (quota: { remaining: number; resetAt: Date | null } | null) =>
+  quota ? { remaining: quota.remaining, resetAt: quota.resetAt?.toISOString() ?? null } : null;
+
+export async function searchSubtitlesAction(input: unknown): Promise<ActionResult<SubtitleSearchView>> {
+  await requireUser();
+  return runAction("searchSubtitles", async () => {
+    const parsed = z.object({ episodeId: idSchema, refresh: z.boolean().default(false) }).safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const [search, origins] = await Promise.all([
+      app().searchSubtitles(parsed.data),
+      app().listSubtitleOrigins(parsed.data.episodeId),
+    ]);
+    const toOption = (candidate: (typeof search.ranking.english)[number]): SubtitleOptionView => ({
+      fileId: candidate.fileId,
+      language: candidate.language,
+      release: candidate.release.slice(0, MAX_RELEASE_CHARS),
+      downloads: candidate.downloads,
+      hearingImpaired: candidate.hearingImpaired,
+      machineTranslated: candidate.machineTranslated,
+      uploader: candidate.uploader?.slice(0, MAX_UPLOADER_CHARS) ?? null,
+    });
+    const english = origins.find((file) => file.language === "en");
+    const portuguese = origins.find((file) => file.language === "pt-BR");
+    return {
+      provider: search.provider,
+      english: search.ranking.english.slice(0, MAX_OPTIONS).map(toOption),
+      portuguese: search.ranking.portuguese.slice(0, MAX_OPTIONS).map(toOption),
+      suggestion: {
+        englishFileId: search.ranking.suggestion.english?.fileId ?? null,
+        portugueseFileId: search.ranking.suggestion.portuguese?.fileId ?? null,
+        sameRelease: search.ranking.suggestion.sameRelease,
+      },
+      existing: {
+        english: english?.origin?.externalFileId ?? null,
+        portuguese: portuguese?.origin?.externalFileId ?? null,
+        hasEnglish: Boolean(english),
+        hasPortuguese: Boolean(portuguese),
+      },
+      quota: quotaView(search.quota),
+      cached: search.cached,
+    };
+  });
+}
+
+export async function importFromSourceAction(input: unknown): Promise<ActionResult<SourceImportView>> {
+  const user = await requireUser();
+  return runAction("importFromSource", async () => {
+    const fileId = z.string().min(1).max(40);
+    const parsed = z
+      .object({
+        mediaId: idSchema,
+        episodeId: idSchema,
+        englishFileId: fileId,
+        portugueseFileId: fileId.nullable(),
+      })
+      .safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const { mediaId, episodeId, englishFileId, portugueseFileId } = parsed.data;
+    const context = await app().getEpisodeContext(episodeId);
+    if (!context || context.media.id !== mediaId) throw new AppError("EPISODE_NOT_FOUND");
+    const result = await app().importFromSource({
+      userId: user.id,
+      episodeId,
+      englishFileId,
+      portugueseFileId,
+    });
+    revalidatePath("/catalog");
+    revalidatePath(`/catalog/${mediaId}`);
+    return {
+      outcome: result.outcome,
+      steps: [
+        {
+          label: "Baixando do OpenSubtitles",
+          detail:
+            result.downloadsUsed === 0 ? "já estava no catálogo" : `${result.downloadsUsed} download(s)`,
+        },
+        ...result.steps,
+      ],
+      hasPortuguese: result.hasPortuguese,
+      episodeId,
+      mediaId,
+      seasonNumber: context.season.seasonNumber,
+      filename: "legendas do OpenSubtitles",
+      downloadsUsed: result.downloadsUsed,
+      quota: quotaView(result.quota),
     };
   });
 }
