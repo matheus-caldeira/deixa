@@ -38,6 +38,31 @@ export class InMemoryCards implements CardRepository {
     }
   }
 
+  readonly anticipations: { userId: string; createdAt: Date }[] = [];
+
+  async countUpcoming(userId: string, now: Date): Promise<number> {
+    return this.rows.filter((row) => row.userId === userId && row.dueAt > now).length;
+  }
+
+  async pullSoonestForward(userId: string, now: Date, limit: number): Promise<number> {
+    const soonest = this.rows
+      .filter((row) => row.userId === userId && row.dueAt > now)
+      .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime())
+      .slice(0, limit);
+    for (const row of soonest) row.dueAt = now;
+    return soonest.length;
+  }
+
+  async listAnticipations(userId: string, since: Date): Promise<Date[]> {
+    return this.anticipations
+      .filter((entry) => entry.userId === userId && entry.createdAt >= since)
+      .map((entry) => entry.createdAt);
+  }
+
+  async recordAnticipation(entry: { userId: string; createdAt: Date }): Promise<void> {
+    this.anticipations.push({ userId: entry.userId, createdAt: entry.createdAt });
+  }
+
   private due(userId: string, now: Date): Row[] {
     return this.rows
       .filter((row) => row.userId === userId && row.dueAt <= now)

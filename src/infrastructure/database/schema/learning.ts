@@ -243,3 +243,16 @@ export const lessonPlans = pgTable(
   },
   (table) => [uniqueIndex("lesson_plans_episode_level").on(table.episodeId, table.level)],
 );
+
+export const reviewAnticipations = pgTable(
+  "review_anticipations",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    cardsMoved: integer("cards_moved").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("review_anticipations_user_created").on(table.userId, table.createdAt)],
+);

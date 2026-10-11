@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { LevelFit } from "@/shared/levels";
-import { SearchIcon, UploadIcon } from "../icons";
+import { PlusIcon, SearchIcon, UploadIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
 
@@ -45,7 +45,12 @@ export function CatalogScreen({ tiles, inProgress }: { tiles: CatalogTile[]; inP
 
   return (
     <>
-      <h1 style={{ fontSize: 28, paddingTop: 4 }}>Explorar</h1>
+      <div className="sec-h" style={{ paddingTop: 4, alignItems: "center" }}>
+        <h1 style={{ fontSize: 28 }}>Explorar</h1>
+        <button className="playbtn" onClick={() => openUpload()} aria-label="Adicionar série ou filme">
+          <PlusIcon />
+        </button>
+      </div>
       <label className="search">
         <SearchIcon />
         <input

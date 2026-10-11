@@ -2204,3 +2204,20 @@
     font-family: var(--f-mono);
   }
 }
+
+@layer components {
+  .seasonpick {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 2px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 3px 0 var(--line);
+    font-size: 14px;
+  }
+}

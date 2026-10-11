@@ -9,6 +9,7 @@ import type { EpisodeStatus } from "@/modules/catalog";
 import type { LevelFit } from "@/shared/levels";
 import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, UploadIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
+import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { FIT_CHIP } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
@@ -36,7 +37,9 @@ export type MediaDetailView = {
   accent: string | null;
   uploaderName: string | null;
   canRefresh: boolean;
-  seasons: { seasonNumber: number; title: string; episodes: EpisodeRow[] }[];
+  seasons: { seasonNumber: number; title: string; episodeCount: number | null }[];
+  seasonNumber: number | null;
+  episodes: EpisodeRow[];
 };
 
 const COMPLETE = 100;
@@ -61,22 +64,14 @@ function StatusChips({ episode }: { episode: EpisodeRow }) {
   return <span className="chip">Sem legenda</span>;
 }
 
-export function MediaDetailScreen({
-  media,
-  initialSeason,
-}: {
-  media: MediaDetailView;
-  initialSeason: number | null;
-}) {
+export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
   const router = useRouter();
   const toast = useToast();
   const { openUpload } = useShell();
   const [pending, startTransition] = useTransition();
-  const fallbackSeason = media.seasons[0]?.seasonNumber ?? null;
-  const [seasonNumber, setSeasonNumber] = useState(
-    media.seasons.some((season) => season.seasonNumber === initialSeason) ? initialSeason : fallbackSeason,
-  );
-  const season = media.seasons.find((candidate) => candidate.seasonNumber === seasonNumber);
+  const [pickingSeason, setPickingSeason] = useState(false);
+  const seasonNumber = media.seasonNumber;
+  const current = media.seasons.find((candidate) => candidate.seasonNumber === seasonNumber);
   const isMovie = media.poster.type === "movie";
 
   const study = (episode: EpisodeRow) =>
@@ -142,21 +137,52 @@ export function MediaDetailScreen({
         ) : null}
       </p>
       {!isMovie && media.seasons.length > 0 ? (
-        <div className={`seg ${media.seasons.length > 3 ? "scroll" : ""}`}>
-          {media.seasons.map((option) => (
-            <button
-              key={option.seasonNumber}
-              className={option.seasonNumber === seasonNumber ? "on" : ""}
-              onClick={() => setSeasonNumber(option.seasonNumber)}
-            >
-              Temporada {option.seasonNumber}
-            </button>
-          ))}
-        </div>
+        <button
+          className="seasonpick"
+          onClick={() => setPickingSeason(true)}
+          aria-label="Trocar de temporada"
+        >
+          <span>
+            <b>{current?.title ?? `Temporada ${seasonNumber}`}</b>
+            {current?.episodeCount ? (
+              <span className="muted"> · {current.episodeCount} episódios</span>
+            ) : null}
+          </span>
+          <span className="link small">
+            {media.seasons.length > 1 ? `Trocar · ${media.seasons.length} temporadas` : "Temporada única"}
+          </span>
+        </button>
       ) : null}
-      {season ? (
+      {pickingSeason ? (
+        <Sheet label="Temporadas" onClose={() => setPickingSeason(false)}>
+          <h2 style={{ fontSize: 22 }}>Temporadas</h2>
+          <div className="col">
+            {media.seasons.map((option) => (
+              <button
+                key={option.seasonNumber}
+                className={`result ${option.seasonNumber === seasonNumber ? "on" : ""}`}
+                onClick={() => {
+                  setPickingSeason(false);
+                  router.push(`/catalog/${media.id}?season=${option.seasonNumber}`);
+                }}
+              >
+                <span className="lvlchip" style={{ textAlign: "center" }}>
+                  T{option.seasonNumber}
+                </span>
+                <span className="col" style={{ gap: 2, minWidth: 0 }}>
+                  <b>{option.title}</b>
+                  <span className="small muted">
+                    {option.episodeCount ? `${option.episodeCount} episódios` : "episódios a carregar"}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </Sheet>
+      ) : null}
+      {media.episodes.length > 0 ? (
         <section className="card" style={{ padding: "4px 16px" }}>
-          {season.episodes.map((episode) => {
+          {media.episodes.map((episode) => {
             const ready = episode.status === "READY";
             return (
               <div className={`ep ${episode.stillUrl ? "photo" : ""}`} key={episode.id}>

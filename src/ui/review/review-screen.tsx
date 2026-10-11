@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { gradeCardAction } from "@/app/actions/review";
+import { anticipateReviewAction, gradeCardAction } from "@/app/actions/review";
 import { RATINGS, RATING_LABELS, type Rating } from "@/modules/flashcards";
 import { CheckIcon, SoundIcon } from "../icons";
 import { useToast } from "../shell/toast";
@@ -22,6 +22,14 @@ export type ReviewCard = {
 export type ReviewView = {
   cards: ReviewCard[];
   dueCount: number;
+  anticipation: {
+    available: boolean;
+    batchSize: number;
+    upcoming: number;
+    usedToday: number;
+    maxPerDay: number;
+    availableAt: string | null;
+  };
   audioSpeed: number;
   recurringErrors: { label: string; count: string }[];
 };
@@ -52,6 +60,17 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
       router.refresh();
     });
   };
+
+  const anticipate = () =>
+    startTransition(async () => {
+      const result = await anticipateReviewAction().catch(() => null);
+      if (!result?.ok) {
+        toast(result?.message ?? "Não deu para falar com o servidor.");
+        return;
+      }
+      toast(`${result.data.moved} cartões antecipados.`);
+      router.refresh();
+    });
 
   const errors =
     view.recurringErrors.length > 0 ? (
@@ -97,6 +116,27 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
             >
               Continuar revisando
             </button>
+          ) : view.anticipation.available ? (
+            <>
+              <button className="btn" onClick={anticipate} disabled={pending}>
+                Antecipar próxima revisão
+              </button>
+              <p className="small muted">
+                Traz os {view.anticipation.batchSize} cartões que venceriam primeiro. Antecipações de hoje:{" "}
+                {view.anticipation.usedToday}/{view.anticipation.maxPerDay}; a cada uso, a espera para a
+                próxima cresce uma hora.
+              </p>
+            </>
+          ) : view.anticipation.availableAt ? (
+            <p className="small muted">
+              Próxima antecipação liberada às{" "}
+              {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(
+                new Date(view.anticipation.availableAt),
+              )}
+              . Antecipações de hoje: {view.anticipation.usedToday}/{view.anticipation.maxPerDay}.
+            </p>
+          ) : view.anticipation.upcoming > 0 ? (
+            <p className="small muted">Você já usou todas as antecipações de hoje.</p>
           ) : null}
         </div>
         {errors}

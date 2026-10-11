@@ -367,6 +367,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   const plans: PlanRepository = {
     find: async (episodeId, level) => stored.get(key(episodeId, level)) ?? null,
     markPending: async (input) => {
+      if (stored.get(key(input.episodeId, input.level))?.status === "READY") return;
       stored.set(key(input.episodeId, input.level), {
         status: "PENDING",
         plan: null,
@@ -375,6 +376,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
       });
     },
     saveReady: async (input) => {
+      if (stored.get(key(input.episodeId, input.level))?.status === "READY") return;
       stored.set(key(input.episodeId, input.level), {
         status: "READY",
         plan: input.plan,
@@ -383,6 +385,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
       });
     },
     markFailed: async (input) => {
+      if (stored.get(key(input.episodeId, input.level))?.status !== "PENDING") return;
       stored.set(key(input.episodeId, input.level), {
         status: "FAILED",
         plan: null,
@@ -493,6 +496,26 @@ describe("geração da trilha em segundo plano", () => {
     app.clock.advanceMs(PLAN_TIMEOUT_MS + 1000);
     expect((await app.ensure(job)).status).toBe("PENDING");
     expect((await app.ensure(job)).status).toBe("PENDING");
+  });
+
+  it("um trabalho atrasado não derruba nem troca uma trilha que já ficou pronta", async () => {
+    const app = setup();
+    await ready(app);
+    const before = app.stored.get("ep-1:B1")?.plan;
+    app.setPlanner({
+      name: "gemini",
+      plan: async () => {
+        throw new Error("timeout");
+      },
+    });
+    await app.generate(job);
+    expect(app.stored.get("ep-1:B1")).toMatchObject({ status: "READY" });
+    app.setPlanner({
+      name: "gemini",
+      plan: async () => ({ ...AI_PLAN, blocks: AI_PLAN.blocks.slice(0, 1) }),
+    });
+    await app.generate(job);
+    expect(app.stored.get("ep-1:B1")?.plan).toBe(before);
   });
 
   it("sem chave de IA, usa o plano de reserva na hora", async () => {

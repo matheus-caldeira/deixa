@@ -26,3 +26,12 @@ export async function gradeCardAction(
     return result;
   });
 }
+
+export async function anticipateReviewAction(): Promise<ActionResult<{ moved: number }>> {
+  const user = await requireUser();
+  return runAction("anticipateReview", async () => {
+    const result = await app().anticipateReview(user.id, user.preferences.timezone);
+    revalidatePath("/", "layout");
+    return result;
+  });
+}

@@ -31,12 +31,26 @@ export default async function MediaDetailPage(props: {
     throw error;
   });
   const { media } = detail;
-  const requestedSeason = Number(season);
+  const allSeasons = (await container.listSeasons(mediaId)).filter(
+    (entry) => media.type === "movie" || entry.seasonNumber >= 1,
+  );
+  const requested = Number(season);
+  const fallback = detail.seasons[0]?.seasonNumber ?? allSeasons[0]?.seasonNumber ?? null;
+  const seasonNumber = allSeasons.some((entry) => entry.seasonNumber === requested) ? requested : fallback;
+  let episodes = detail.seasons.find((entry) => entry.seasonNumber === seasonNumber)?.episodes ?? [];
+  if (episodes.length === 0 && seasonNumber !== null) {
+    const loaded = await container.loadSeasonEpisodes({ mediaId, seasonNumber }).catch((error: unknown) => {
+      logger.warn("catalog.season_load_failed", {
+        reason: error instanceof Error ? error.message : "desconhecido",
+      });
+      return null;
+    });
+    episodes = (loaded?.episodes ?? []).map((episode) => ({ ...episode, progressPercent: null }));
+  }
 
   return (
     <MediaDetailScreen
-      key={`${media.id}:${season ?? ""}`}
-      initialSeason={Number.isInteger(requestedSeason) ? requestedSeason : null}
+      key={`${media.id}:${seasonNumber ?? ""}`}
       media={{
         id: media.id,
         poster: {
@@ -53,23 +67,25 @@ export default async function MediaDetailPage(props: {
         accent: media.accent,
         uploaderName: media.uploaderName,
         canRefresh: media.metadataProvider === container.providers.metadata,
-        seasons: detail.seasons.map((entry) => ({
+        seasonNumber,
+        seasons: allSeasons.map((entry) => ({
           seasonNumber: entry.seasonNumber,
           title: entry.title,
-          episodes: entry.episodes.map((episode) => ({
-            id: episode.id,
-            episodeNumber: episode.episodeNumber,
-            title: episode.title,
-            status: episode.status,
-            cueCount: episode.cueCount,
-            hasPortuguese: episode.hasPortuguese,
-            durationMinutes: episode.durationSeconds
-              ? Math.round(episode.durationSeconds / SECONDS_PER_MINUTE)
-              : null,
-            progressPercent: episode.progressPercent,
-            failureReason: episode.failureReason,
-            stillUrl: stillUrl(episode.stillPath),
-          })),
+          episodeCount: entry.episodeCount,
+        })),
+        episodes: episodes.map((episode) => ({
+          id: episode.id,
+          episodeNumber: episode.episodeNumber,
+          title: episode.title,
+          status: episode.status,
+          cueCount: episode.cueCount,
+          hasPortuguese: episode.hasPortuguese,
+          durationMinutes: episode.durationSeconds
+            ? Math.round(episode.durationSeconds / SECONDS_PER_MINUTE)
+            : null,
+          progressPercent: episode.progressPercent,
+          failureReason: episode.failureReason,
+          stillUrl: stillUrl(episode.stillPath),
         })),
       }}
     />

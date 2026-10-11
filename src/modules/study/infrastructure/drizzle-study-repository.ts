@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
 import { lessonAttempts, lessonPlans } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
@@ -83,6 +83,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
       .onConflictDoUpdate({
         target: [lessonPlans.episodeId, lessonPlans.level],
         set: { ...values, updatedAt: input.now },
+        setWhere: ne(lessonPlans.status, "READY"),
       });
   }
 
@@ -118,6 +119,12 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
     await this.db
       .update(lessonPlans)
       .set({ status: "FAILED", failureReason: input.reason.slice(0, 300), updatedAt: input.now })
-      .where(and(eq(lessonPlans.episodeId, input.episodeId), eq(lessonPlans.level, input.level)));
+      .where(
+        and(
+          eq(lessonPlans.episodeId, input.episodeId),
+          eq(lessonPlans.level, input.level),
+          eq(lessonPlans.status, "PENDING"),
+        ),
+      );
   }
 }

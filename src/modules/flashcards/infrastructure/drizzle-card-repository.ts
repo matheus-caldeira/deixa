@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import {
@@ -6,6 +6,7 @@ import {
   learningItemExplanations,
   learningItems,
   mediaItems,
+  reviewAnticipations,
   reviewLogs,
   seasons,
   userCards,
@@ -44,6 +45,54 @@ export class DrizzleCardRepository implements CardRepository {
           gt(userCards.dueAt, now),
         ),
       );
+  }
+
+  async countUpcoming(userId: string, now: Date): Promise<number> {
+    const [row] = await this.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(userCards)
+      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now)));
+    return row?.total ?? 0;
+  }
+
+  async pullSoonestForward(userId: string, now: Date, limit: number): Promise<number> {
+    const soonest = await this.db
+      .select({ id: userCards.id })
+      .from(userCards)
+      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now)))
+      .orderBy(asc(userCards.dueAt), asc(userCards.id))
+      .limit(limit);
+    if (soonest.length === 0) return 0;
+    await this.db
+      .update(userCards)
+      .set({ dueAt: now })
+      .where(
+        and(
+          eq(userCards.userId, userId),
+          inArray(
+            userCards.id,
+            soonest.map((row) => row.id),
+          ),
+        ),
+      );
+    return soonest.length;
+  }
+
+  async listAnticipations(userId: string, since: Date): Promise<Date[]> {
+    const rows = await this.db
+      .select({ createdAt: reviewAnticipations.createdAt })
+      .from(reviewAnticipations)
+      .where(and(eq(reviewAnticipations.userId, userId), gte(reviewAnticipations.createdAt, since)));
+    return rows.map((row) => row.createdAt);
+  }
+
+  async recordAnticipation(entry: {
+    id: string;
+    userId: string;
+    cardsMoved: number;
+    createdAt: Date;
+  }): Promise<void> {
+    await this.db.insert(reviewAnticipations).values(entry);
   }
 
   async listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]> {

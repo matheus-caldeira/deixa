@@ -1,6 +1,8 @@
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
+import { startOfLocalDay } from "@/shared/time";
+import { ANTICIPATION_BATCH, anticipationStatus, type AnticipationStatus } from "../domain/anticipation";
 import { REVIEW_XP, previewIntervals, review, type Rating } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "./ports";
 
@@ -95,5 +97,37 @@ export function makeGradeCard(deps: Deps) {
     });
     await deps.awardXp({ userId: input.userId, source: "review", sourceId: logId, amount: REVIEW_XP });
     return { dueCount: await deps.cards.countDue(input.userId, now), xpAwarded: REVIEW_XP };
+  };
+}
+
+export function makeGetAnticipationStatus(deps: Pick<Deps, "cards" | "clock">) {
+  return async function getAnticipationStatus(userId: string, timezone: string): Promise<AnticipationStatus> {
+    const now = deps.clock.now();
+    const [anticipationsToday, upcoming] = await Promise.all([
+      deps.cards.listAnticipations(userId, startOfLocalDay(now, timezone)),
+      deps.cards.countUpcoming(userId, now),
+    ]);
+    return anticipationStatus({ anticipationsToday, upcoming, now });
+  };
+}
+
+export function makeAnticipateReview(deps: Pick<Deps, "cards" | "clock" | "ids">) {
+  const getStatus = makeGetAnticipationStatus(deps);
+  return async function anticipateReview(userId: string, timezone: string): Promise<{ moved: number }> {
+    const status = await getStatus(userId, timezone);
+    if (!status.available) {
+      throw new AppError(
+        "INVALID_INPUT",
+        status.upcoming === 0
+          ? "Não há cartões futuros para antecipar."
+          : status.availableAt
+            ? "A próxima antecipação ainda não foi liberada."
+            : "Você já usou todas as antecipações de hoje.",
+      );
+    }
+    const now = deps.clock.now();
+    const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH);
+    await deps.cards.recordAnticipation({ id: deps.ids.next(), userId, cardsMoved: moved, createdAt: now });
+    return { moved };
   };
 }

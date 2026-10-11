@@ -24,7 +24,14 @@ import {
 } from "@/modules/catalog";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
-import { makeAddCards, makeCountDueCards, makeGradeCard, makeListDueCards } from "@/modules/flashcards";
+import {
+  makeAddCards,
+  makeAnticipateReview,
+  makeCountDueCards,
+  makeGetAnticipationStatus,
+  makeGradeCard,
+  makeListDueCards,
+} from "@/modules/flashcards";
 import { DrizzleCardRepository } from "@/modules/flashcards/infrastructure/drizzle-card-repository";
 import {
   makeAwardXp,
@@ -376,6 +383,8 @@ export function buildContainer(options: ContainerOptions) {
     listDueCards: makeListDueCards({ cards, clock }),
     countDueCards: makeCountDueCards({ cards, clock }),
     gradeCard: makeGradeCard({ cards, clock, ids, awardXp }),
+    getAnticipationStatus: makeGetAnticipationStatus({ cards, clock }),
+    anticipateReview: makeAnticipateReview({ cards, clock, ids }),
     addCards,
 
     saveApiKey: makeSaveApiKey({

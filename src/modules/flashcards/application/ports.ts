@@ -26,6 +26,15 @@ export interface CardRepository {
   ): Promise<number>;
   bringForward(userId: string, learningItemIds: string[], now: Date): Promise<void>;
   listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]>;
+  countUpcoming(userId: string, now: Date): Promise<number>;
+  pullSoonestForward(userId: string, now: Date, limit: number): Promise<number>;
+  listAnticipations(userId: string, since: Date): Promise<Date[]>;
+  recordAnticipation(entry: {
+    id: string;
+    userId: string;
+    cardsMoved: number;
+    createdAt: Date;
+  }): Promise<void>;
   countDue(userId: string, now: Date): Promise<number>;
   findState(userId: string, cardId: string): Promise<CardState | null>;
   saveReview(input: {
