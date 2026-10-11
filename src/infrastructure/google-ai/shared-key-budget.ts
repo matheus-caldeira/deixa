@@ -1,6 +1,5 @@
 import { and, eq, lt, sql } from "drizzle-orm";
 import type { LlmProvider } from "@/modules/learning";
-import type { LessonPlanner } from "@/modules/study";
 import type { TutorProvider } from "@/modules/conversations";
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
@@ -45,16 +44,6 @@ export function budgetedLlm(provider: LlmProvider, spend: Spend): LlmProvider {
     translateLines: async (lines) => {
       await spend();
       return provider.translateLines(lines);
-    },
-  };
-}
-
-export function budgetedPlanner(planner: LessonPlanner, spend: Spend): LessonPlanner {
-  return {
-    name: planner.name,
-    plan: async (input) => {
-      await spend();
-      return planner.plan(input);
     },
   };
 }

@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { getContainer } from "@/infrastructure/container";
 import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
+import { isAppError } from "@/shared/errors";
 import { LEVEL_NAMES } from "@/shared/levels";
 import { formatTimecode } from "@/shared/time";
 import { HomeScreen } from "@/ui/home/home-screen";
@@ -27,12 +28,17 @@ export default async function HomePage() {
     : "";
   const planStatus =
     script && context
-      ? await container.ensurePlan({
-          userId: user.id,
-          episodeId: context.episode.id,
-          level: user.preferences.level,
-          episodeLabel: `${context.media.title} · ${label}`,
-        })
+      ? await container
+          .ensurePlan({
+            userId: user.id,
+            episodeId: context.episode.id,
+            level: user.preferences.level,
+            episodeLabel: `${context.media.title} · ${label}`,
+          })
+          .catch((error: unknown) => {
+            if (isAppError(error)) return { status: "FAILED" as const, message: error.message };
+            throw error;
+          })
       : null;
   if (planStatus?.status === "PENDING" && planStatus.job) {
     const job = planStatus.job;
@@ -85,6 +91,7 @@ export default async function HomePage() {
         trailStatus:
           planStatus?.status === "PENDING" ? "pending" : planStatus?.status === "FAILED" ? "failed" : "ready",
         trailByAi: trail?.generatedByAi ?? false,
+        trailMessage: planStatus?.status === "FAILED" ? planStatus.message : null,
         missions: summary.missions,
       }}
     />

@@ -107,7 +107,7 @@ import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { testGeminiApiKey } from "./google-ai/gemini-client";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
 import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
-import { SharedKeyBudget, budgetedLlm, budgetedPlanner, budgetedTutor } from "./google-ai/shared-key-budget";
+import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./google-ai/shared-key-budget";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
@@ -127,7 +127,7 @@ export type ContainerOptions = {
   metadata?: MetadataProvider;
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
-  plannerForUser?: (userId: string) => Promise<LessonPlanner | null>;
+  plannerForUser?: (userId: string, usage: "charge" | "already-charged") => Promise<LessonPlanner | null>;
   tutorForUser?: (userId: string) => Promise<TutorProvider>;
   testApiKey?: ApiKeyTester;
 };
@@ -179,11 +179,10 @@ export function buildContainer(options: ContainerOptions) {
     });
   const resolvePlanner =
     options.plannerForUser ??
-    (async (userId: string): Promise<LessonPlanner | null> => {
+    (async (userId: string, usage: "charge" | "already-charged"): Promise<LessonPlanner | null> => {
       if (env.GEMINI_API_KEY) {
-        return budgetedPlanner(new GeminiLessonPlanner(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
-          sharedBudget.spend(userId),
-        );
+        if (usage === "charge") await sharedBudget.spend(userId);
+        return new GeminiLessonPlanner(env.GEMINI_API_KEY, env.GEMINI_MODEL);
       }
       const ownKey = await resolveApiKey(userId);
       return ownKey ? new GeminiLessonPlanner(ownKey, env.GEMINI_MODEL) : null;

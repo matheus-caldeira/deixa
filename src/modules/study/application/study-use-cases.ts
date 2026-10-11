@@ -81,7 +81,7 @@ export type StudyCollaborators = {
     episodeId: string,
     items: { cueId: string; translation: string | null }[],
   ) => Promise<number>;
-  resolvePlanner: (userId: string) => Promise<LessonPlanner | null>;
+  resolvePlanner: (userId: string, usage: "charge" | "already-charged") => Promise<LessonPlanner | null>;
   notify: (input: {
     userId: string;
     kind: "trail_ready" | "trail_failed";
@@ -158,7 +158,7 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
 
     const lines = await deps.loadLines(input.episodeId);
     if (!lines || lines.length === 0) throw new AppError("EPISODE_NOT_READY");
-    const planner = await deps.resolvePlanner(input.userId);
+    const planner = await deps.resolvePlanner(input.userId, "charge");
     if (!planner) {
       const plan = fallbackPlan(lines, input.level, input.episodeId);
       if (!plan) throw new AppError("EPISODE_NOT_READY");
@@ -189,7 +189,7 @@ export function makeGeneratePlan(
   return async function generatePlan(job: PlanJob): Promise<void> {
     try {
       const lines = await deps.loadLines(job.episodeId);
-      const planner = await deps.resolvePlanner(job.userId);
+      const planner = await deps.resolvePlanner(job.userId, "already-charged");
       if (!lines || lines.length === 0 || !planner) throw new AppError("EPISODE_NOT_READY");
       const raw = await planner.plan({
         level: job.level,

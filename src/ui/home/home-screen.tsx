@@ -39,6 +39,7 @@ export type HomeView = {
   studyHref: string | null;
   trailStatus: "ready" | "pending" | "failed";
   trailByAi: boolean;
+  trailMessage: string | null;
   missions: { icon: "cards" | "ear" | "chat"; title: string; value: number; max: number }[];
 };
 
@@ -190,7 +191,8 @@ export function HomeScreen({ view }: { view: HomeView }) {
         <section className="card col" style={{ gap: 10 }}>
           <b>Não deu para montar a trilha deste episódio</b>
           <p className="small muted">
-            A IA não respondeu a tempo. Suas marcações e revisões continuam funcionando.
+            {view.trailMessage ?? "A IA não respondeu a tempo."} Suas marcações e revisões continuam
+            funcionando.
           </p>
           <button className="btn" onClick={retryTrail} disabled={retrying}>
             {retrying ? "Tentando…" : "Tentar de novo"}

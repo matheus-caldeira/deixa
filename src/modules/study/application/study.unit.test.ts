@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
+import { AppError } from "@/shared/errors";
 import { SequentialIds } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
 import {
@@ -395,13 +396,17 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
     },
   };
   let activePlanner = planner;
+  let outOfBudget = false;
   const deps = {
     study,
     plans,
     clock,
     ids: new SequentialIds("at"),
     loadLines: async (episodeId: string) => (episodeId === "ep-1" ? LINES : null),
-    resolvePlanner: async () => activePlanner,
+    resolvePlanner: async (_userId: string, usage: "charge" | "already-charged") => {
+      if (usage === "charge" && outOfBudget) throw new AppError("LLM_FAILED", "limite diário");
+      return activePlanner;
+    },
     notify: async (notification: { userId: string; kind: string; title: string }) => {
       sent.push({ userId: notification.userId, kind: notification.kind, title: notification.title });
     },
@@ -433,6 +438,9 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
     clock,
     setPlanner: (next: LessonPlanner | null) => {
       activePlanner = next;
+    },
+    setOutOfBudget: (value: boolean) => {
+      outOfBudget = value;
     },
     ensure: makeEnsurePlan(deps),
     generate: makeGeneratePlan(deps),
@@ -516,6 +524,21 @@ describe("geração da trilha em segundo plano", () => {
     });
     await app.generate(job);
     expect(app.stored.get("ep-1:B1")?.plan).toBe(before);
+  });
+
+  it("conta sem saldo de IA recebe o aviso sem mexer na trilha compartilhada dos outros", async () => {
+    const app = setup();
+    app.setOutOfBudget(true);
+    await expect(app.ensure(job)).rejects.toMatchObject({ code: "LLM_FAILED" });
+    expect(app.stored.size).toBe(0);
+    await expect(app.ensure({ ...job, retry: true })).rejects.toMatchObject({ code: "LLM_FAILED" });
+    expect(app.stored.size).toBe(0);
+
+    app.setOutOfBudget(false);
+    await ready(app);
+    app.setOutOfBudget(true);
+    expect(await app.ensure({ ...job, userId: "lucas" })).toEqual({ status: "READY" });
+    expect(await app.ensure({ ...job, retry: true })).toEqual({ status: "READY" });
   });
 
   it("sem chave de IA, usa o plano de reserva na hora", async () => {
