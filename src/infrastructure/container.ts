@@ -94,6 +94,14 @@ import {
   type TrailLine,
 } from "@/modules/study";
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
+import {
+  makeImportFromSource,
+  makeSearchSubtitles,
+  type EpisodeSource,
+  type SubtitleSourceProvider,
+} from "@/modules/subtitle-sources";
+import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructure/drizzle-source-repository";
+import { FakeSubtitleSourceProvider } from "@/modules/subtitle-sources/infrastructure/fake-subtitle-source-provider";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
@@ -111,7 +119,9 @@ import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./google-ai/shared-
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
+import { OpenSubtitlesProvider } from "./opensubtitles/opensubtitles-provider";
 import { TmdbClient } from "./tmdb/client";
+import { tmdbNumericId } from "./tmdb/mapping";
 import { TmdbMetadataProvider } from "./tmdb/tmdb-metadata-provider";
 
 const MAX_AUDIO_GENERATIONS_PER_USER = 2;
@@ -125,6 +135,7 @@ export type ContainerOptions = {
   clock?: Clock;
   storage?: FileStorage;
   metadata?: MetadataProvider;
+  subtitleSource?: SubtitleSourceProvider;
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
   plannerForUser?: (userId: string, usage: "charge" | "already-charged") => Promise<LessonPlanner | null>;
@@ -159,6 +170,15 @@ export function buildContainer(options: ContainerOptions) {
           new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
         )
       : new FakeMetadataProvider());
+  const subtitleSource: SubtitleSourceProvider =
+    options.subtitleSource ??
+    (env.OPENSUBTITLES_API_KEY
+      ? new OpenSubtitlesProvider({
+          apiKey: env.OPENSUBTITLES_API_KEY,
+          username: env.OPENSUBTITLES_USERNAME,
+          password: env.OPENSUBTITLES_PASSWORD,
+        })
+      : new FakeSubtitleSourceProvider());
   const silentTts = new SilentTtsProvider();
   const tts: TtsProvider =
     options.tts ?? (env.KOKORO_URL ? new KokoroTtsProvider(env.KOKORO_URL) : silentTts);
@@ -360,8 +380,64 @@ export function buildContainer(options: ContainerOptions) {
     return cue && cue.language === "en" ? cue : null;
   }
 
+  const importEpisodeSubtitles = makeImportEpisodeSubtitles({
+    subtitles,
+    storage,
+    clock,
+    ids,
+    findEpisodeLocation: async (episodeId) => {
+      const context = await catalog.findEpisodeContext(episodeId);
+      if (!context) return null;
+      return {
+        episodeId,
+        mediaId: context.media.id,
+        mediaType: context.media.type,
+        seasonNumber: context.season.seasonNumber,
+      };
+    },
+  });
+  const findEpisodeSource = async (episodeId: string): Promise<EpisodeSource | null> => {
+    const context = await catalog.findEpisodeContext(episodeId);
+    if (!context) return null;
+    const tmdbId =
+      context.media.metadataProvider === "tmdb"
+        ? tmdbNumericId(context.media.type, context.media.externalId)
+        : null;
+    const reference = tmdbId ?? (subtitleSource.name === "fake" ? "0" : null);
+    const files = await subtitles.listFiles(episodeId);
+    return {
+      episodeId,
+      query:
+        reference === null
+          ? null
+          : context.media.type === "movie"
+            ? { kind: "movie", tmdbId: reference }
+            : {
+                kind: "episode",
+                showTmdbId: reference,
+                seasonNumber: context.season.seasonNumber,
+                episodeNumber: context.episode.episodeNumber,
+              },
+      existing: files.map((file) => ({
+        language: file.language,
+        externalFileId: file.origin?.externalFileId ?? null,
+      })),
+    };
+  };
+  const sourceDeps = {
+    provider: subtitleSource,
+    sources: new DrizzleSourceRepository(db),
+    clock,
+    findEpisodeSource,
+    readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {
+      const file = (await subtitles.listFiles(episodeId)).find((stored) => stored.language === language);
+      return file ? storage.read(file.storagePath) : null;
+    },
+    importSubtitles: importEpisodeSubtitles,
+  };
+
   return {
-    providers: { metadata: metadata.name, tts: tts.name },
+    providers: { metadata: metadata.name, tts: tts.name, subtitles: subtitleSource.name },
     devShortcuts: env.DEV_SHORTCUTS,
     secureSessionCookie: env.SESSION_COOKIE_SECURE,
     loginThrottle: new AttemptThrottle(MAX_LOGIN_FAILURES, LOGIN_WINDOW_MS, clock),
@@ -384,22 +460,14 @@ export function buildContainer(options: ContainerOptions) {
     listSeasons: (mediaId: string) => catalog.listSeasons(mediaId),
     getMediaById: (mediaId: string) => catalog.findMediaById(mediaId),
 
-    importEpisodeSubtitles: makeImportEpisodeSubtitles({
-      subtitles,
-      storage,
-      clock,
-      ids,
-      findEpisodeLocation: async (episodeId) => {
-        const context = await catalog.findEpisodeContext(episodeId);
-        if (!context) return null;
-        return {
-          episodeId,
-          mediaId: context.media.id,
-          mediaType: context.media.type,
-          seasonNumber: context.season.seasonNumber,
-        };
-      },
-    }),
+    importEpisodeSubtitles,
+    searchSubtitles: makeSearchSubtitles(sourceDeps),
+    importFromSource: makeImportFromSource(sourceDeps),
+    listSubtitleOrigins: async (episodeId: string) =>
+      (await subtitles.listFiles(episodeId)).map((file) => ({
+        language: file.language,
+        origin: file.origin,
+      })),
     getEpisodeScript,
 
     ensurePlan: makeEnsurePlan(studyDeps),

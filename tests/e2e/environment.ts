@@ -23,5 +23,8 @@ export function e2eEnvironment(): Record<string, string> {
     SESSION_COOKIE_SECURE: "false",
     GEMINI_MODEL: "",
     GEMINI_API_KEY: "",
+    OPENSUBTITLES_API_KEY: "",
+    OPENSUBTITLES_USERNAME: "",
+    OPENSUBTITLES_PASSWORD: "",
   };
 }
