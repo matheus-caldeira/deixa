@@ -1,4 +1,4 @@
-import { and, asc, eq, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import {
@@ -30,6 +30,20 @@ export class DrizzleCardRepository implements CardRepository {
       .onConflictDoNothing({ target: [userCards.userId, userCards.learningItemId] })
       .returning({ id: userCards.id });
     return inserted.length;
+  }
+
+  async bringForward(userId: string, learningItemIds: string[], now: Date): Promise<void> {
+    if (learningItemIds.length === 0) return;
+    await this.db
+      .update(userCards)
+      .set({ dueAt: now })
+      .where(
+        and(
+          eq(userCards.userId, userId),
+          inArray(userCards.learningItemId, learningItemIds),
+          gt(userCards.dueAt, now),
+        ),
+      );
   }
 
   async listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]> {

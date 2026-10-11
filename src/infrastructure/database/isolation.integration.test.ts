@@ -69,6 +69,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       metadata: new FakeMetadataProvider(),
       tts: new SilentTtsProvider(),
       llmForUser: async () => llm,
+      plannerForUser: async () => null,
       testApiKey: async () => true,
     });
     ana = (await app.signUp({ name: "Ana", email: "ana@example.com", password: "segredo123", level: "A1" }))

@@ -1,0 +1,332 @@
+{
+  "blocks": [
+    {
+      "title": "A Chuva Começa",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 1,
+          "translation": "nem me fale",
+          "distractors": [
+            "me conte sobre isso",
+            "fale-me a respeito",
+            "diga-me o que aconteceu"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 0,
+          "translation": "Sério? Acabou de começar a chover forte!",
+          "distractors": [
+            "seriously it just started boring rain",
+            "seriously it just started roaring rain"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "Nossas caixas vão ficar encharcadas, cara.",
+          "word": "soaked",
+          "distractors": [
+            "soaped",
+            "socked"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 4,
+          "translation": "Boa ideia. Esse tempo é muito azarado.",
+          "extraWords": [
+            "badly",
+            "luckily"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 3,
+          "translation": "Precisamos cobri-las. Pega aquela lona!"
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "muito azarado",
+          "distractors": [
+            "má sorte",
+            "sorte ruim",
+            "azar grande"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "A Dificuldade da Mudança",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 7,
+          "translation": "já estão me matando",
+          "distractors": [
+            "já estão me ferindo",
+            "já estão me destruindo",
+            "já estão me esgotando"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 8,
+          "translation": "Cuidado com aquela poça! Não escorregue.",
+          "distractors": [
+            "watch out for that pedal",
+            "watch out for that paddle"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 9,
+          "translation": "Quase perdi o controle desta caixa ali.",
+          "word": "grip",
+          "distractors": [
+            "gripe",
+            "trip"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 6,
+          "translation": "Este sofá é mais pesado do que parece.",
+          "extraWords": [
+            "looked",
+            "heavy"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 11,
+          "translation": "Graças a Deus. Estou totalmente encharcado agora."
+        },
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "totalmente encharcado",
+          "distractors": [
+            "completamente molhado",
+            "muito úmido",
+            "bastante molhado"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pausa e Reclamações",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 13,
+          "translation": "dormentes de frio",
+          "distractors": [
+            "insensíveis do frio",
+            "paralisadas pelo frio",
+            "congeladas pelo frio"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 12,
+          "translation": "Certo, pausa rápida. Estou congelando e cansado.",
+          "distractors": [
+            "i'm freezing and tried",
+            "i'm teasing and tired"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "Porque o universo odeia dias de mudança, obviamente.",
+          "word": "obviously",
+          "distractors": [
+            "obvious",
+            "obliviously"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 17,
+          "translation": "Pelo menos estamos quase terminando, aguenta firme.",
+          "extraWords": [
+            "hangs",
+            "therein"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 14,
+          "translation": "Por que não podia ter feito sol hoje?"
+        },
+        {
+          "kind": "meaning",
+          "line": 17,
+          "translation": "aguenta firme",
+          "distractors": [
+            "pendure-se lá",
+            "espere lá",
+            "mantenha-se lá"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "O Fim da Mudança",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 19,
+          "translation": "vocês são demais",
+          "distractors": [
+            "vocês arrasam",
+            "vocês balançam",
+            "vocês são rocha"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "Não teria conseguido sem vocês todos.",
+          "distractors": [
+            "couldn't have done it with you all",
+            "couldn't have done it without you fall"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 22,
+          "translation": "Parece perfeito. Minha conta por toda a sua ajuda.",
+          "word": "treat",
+          "distractors": [
+            "threat",
+            "street"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "Agora, pizza de comemoração e roupas secas.",
+          "extraWords": [
+            "celebrating",
+            "drying"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 23,
+          "translation": "Você é o melhor! Estou faminto. Vamos pedir."
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "estou faminto",
+          "distractors": [
+            "estou morrendo de fome",
+            "estou com muita fome",
+            "estou famélico"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "meaning",
+      "line": 4,
+      "translation": "boa ideia",
+      "distractors": [
+        "boa ligação",
+        "boa chamada",
+        "bom grito"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 1,
+      "translation": "Aff, nem me fale. Isso é terrível.",
+      "distractors": [
+        "ugh, tell me about him",
+        "ugh, tell me about it"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 18,
+      "translation": "Última caixa! Finalmente conseguimos entrar.",
+      "word": "finally",
+      "distractors": [
+        "fine",
+        "final"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 10,
+      "translation": "Só mais alguns itens grandes restando lá dentro.",
+      "extraWords": [
+        "leaving",
+        "inside"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 5,
+      "translation": "Vamos nos mexer mais rápido. A gente consegue!"
+    },
+    {
+      "kind": "meaning",
+      "line": 15,
+      "translation": "o universo odeia dias de mudança",
+      "distractors": [
+        "o universo detesta dias de mudança",
+        "o universo abomina dias de mudança",
+        "o universo não gosta de dias de mudança"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 16,
+      "translation": "Sério, este é o pior dia de mudança de todos.",
+      "distractors": [
+        "seriously, this is the worst moving day never",
+        "seriously, this is the worst moving day ever"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 19,
+      "translation": "Sim! Bate aqui, pessoal! Vocês são demais.",
+      "word": "high",
+      "distractors": [
+        "hi",
+        "heigh"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 2,
+      "translation": "Nossas caixas vão ficar encharcadas, cara.",
+      "extraWords": [
+        "soaking",
+        "mans"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 7,
+      "translation": "Minhas costas já estão me matando, cara."
+    }
+  ]
+}

@@ -1,0 +1,367 @@
+{
+  "blocks": [
+    {
+      "title": "Chuva Repentina e Caixas Molhadas",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "Sério? Acabou de começar a chover forte!",
+          "distractors": [
+            "com certeza? acabou de parar de chover forte!",
+            "de verdade? acabou de começar a nevar forte!",
+            "sério? acabou de começar a fazer sol!"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "Aff, nem me fale. Isso é terrível.",
+          "distractors": [
+            "ugh, tell me a boat it this is terrible",
+            "ugh, tell me about it this is terrible"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 2,
+          "translation": "Nossas caixas vão ficar encharcadas, cara.",
+          "extraWords": [
+            "soon",
+            "them"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 3,
+          "translation": "Precisamos cobri-las. Pega aquela lona!",
+          "word": "tarp",
+          "distractors": [
+            "trap",
+            "top",
+            "trip"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "Boa ideia. Esse tempo é muito azarado.",
+          "distractors": [
+            "boa ligação. esse tempo é muito bom!",
+            "boa ligação. esse tempo é muito azarado.",
+            "boa ideia. esse tempo é muito sortudo."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 5,
+          "translation": "Vamos nos mexer mais rápido. A gente consegue!",
+          "distractors": [
+            "let's move faster. we can chew this!",
+            "let's move faster. we can do that!"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Lutando com Itens Pesados",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 6,
+          "translation": "Este sofá é mais pesado do que parece.",
+          "word": "looks",
+          "distractors": [
+            "books",
+            "cooks",
+            "hooks"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 7,
+          "translation": "Minhas costas já estão me matando, cara.",
+          "distractors": [
+            "minha frente já está me matando, cara.",
+            "minhas costas já estão me curando, cara.",
+            "minhas costas ainda estão me matando, cara."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "Cuidado com aquela poça! Não escorregue.",
+          "extraWords": [
+            "fall",
+            "trip"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 9,
+          "translation": "Quase perdi o controle desta caixa ali.",
+          "distractors": [
+            "almost lost my trip on this box there",
+            "almost lost my grip on this fox there"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "Só mais alguns itens grandes restando lá dentro.",
+          "distractors": [
+            "apenas alguns itens pequenos restantes lá dentro.",
+            "apenas alguns itens grandes restantes lá fora.",
+            "apenas muitos itens grandes restantes lá dentro."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 11,
+          "translation": "Graças a Deus. Estou totalmente encharcado agora.",
+          "word": "drenched",
+          "distractors": [
+            "dry",
+            "dirty",
+            "dreamed"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pausa e Reclamações sobre o Clima",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "order",
+          "line": 12,
+          "translation": "Certo, pausa rápida. Estou congelando e cansado.",
+          "extraWords": [
+            "very",
+            "sleepy"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 13,
+          "translation": "Eu também. Minhas mãos estão dormentes de frio.",
+          "distractors": [
+            "eu também. meus pés estão dormentes de frio.",
+            "eu não. minhas mãos estão dormentes de frio.",
+            "eu também. minhas mãos estão quentes de frio."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 14,
+          "translation": "Por que não podia ter feito sol hoje?",
+          "word": "sunny",
+          "distractors": [
+            "funny",
+            "rainy",
+            "money"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 15,
+          "translation": "Porque o universo odeia dias de mudança, obviamente.",
+          "distractors": [
+            "because the universe hates moving daze, obviously",
+            "because the universe hates movie days, obviously"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 16,
+          "translation": "Sério, este é o pior dia de mudança de todos.",
+          "distractors": [
+            "sério, este é o melhor dia de mudança de todos.",
+            "sério, este é o pior dia de trabalho de todos.",
+            "sério, este é o pior dia de mudança de hoje."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 17,
+          "translation": "Pelo menos estamos quase terminando, aguenta firme.",
+          "extraWords": [
+            "just",
+            "here"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Fim da Mudança e Celebração",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "Última caixa! Finalmente conseguimos entrar.",
+          "distractors": [
+            "primeira caixa! finalmente conseguimos entrar.",
+            "última caixa! finalmente conseguimos sair.",
+            "última caixa! quase conseguimos entrar."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "Sim! Bate aqui, pessoal! Vocês são demais.",
+          "word": "rock",
+          "distractors": [
+            "roll",
+            "lock",
+            "talk"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "Não teria conseguido sem vocês todos.",
+          "distractors": [
+            "couldn't have done it with you all",
+            "couldn't have done it without you fall"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "Agora, pizza de comemoração e roupas secas.",
+          "extraWords": [
+            "new",
+            "cold"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 22,
+          "translation": "Parece perfeito. Eu pago por toda a sua ajuda.",
+          "distractors": [
+            "parece perfeito. minha conta por toda a sua ajuda.",
+            "parece ruim. eu pago por toda a sua ajuda.",
+            "parece perfeito. você paga por toda a sua ajuda."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 23,
+          "translation": "Você é o melhor! Estou faminto. Vamos pedir.",
+          "word": "starving",
+          "distractors": [
+            "sleeping",
+            "starting",
+            "starring"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "meaning",
+      "line": 1,
+      "translation": "Aff, nem me fale. Isso é terrível.",
+      "distractors": [
+        "uhm, me diga sobre isso. isso é ótimo.",
+        "ugh, me diga sobre isso. isso é terrível.",
+        "ugh, me fale sobre isso. isso é bom."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 4,
+      "translation": "Boa ideia. Esse tempo é muito azarado.",
+      "extraWords": [
+        "good",
+        "very"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 5,
+      "translation": "Vamos nos mexer mais rápido. A gente consegue!",
+      "word": "this",
+      "distractors": [
+        "that",
+        "them",
+        "then"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 6,
+      "translation": "Este sofá é mais pesado do que parece.",
+      "distractors": [
+        "this couch is heavier than it books",
+        "this couch is heavier than it locks"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 8,
+      "translation": "Cuidado com aquela poça! Não escorregue.",
+      "distractors": [
+        "cuidado com aquela poça! escorregue.",
+        "olhe para aquela poça! não escorregue.",
+        "cuidado com aquela poça! não caia."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 11,
+      "translation": "Graças a Deus. Estou totalmente encharcado agora.",
+      "extraWords": [
+        "very",
+        "wet"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 13,
+      "translation": "Eu também. Minhas mãos estão dormentes de frio.",
+      "word": "cold",
+      "distractors": [
+        "gold",
+        "call",
+        "hold"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 16,
+      "translation": "Sério, este é o pior dia de mudança de todos.",
+      "distractors": [
+        "seriously, this is the worst moving day never",
+        "seriously, this is the first moving day ever"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 17,
+      "translation": "Pelo menos estamos quase terminando, aguenta firme.",
+      "distractors": [
+        "no mínimo estamos quase terminando, aguenta firme.",
+        "pelo menos estamos quase começando, aguenta firme.",
+        "pelo menos estamos quase terminando, saia daí."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 19,
+      "translation": "Sim! Bate aqui, pessoal! Vocês são demais.",
+      "extraWords": [
+        "all",
+        "are"
+      ]
+    }
+  ]
+}

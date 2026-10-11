@@ -26,6 +26,7 @@
     "db:migrate": "tsx --env-file=.env src/infrastructure/database/migrate-cli.ts",
     "db:seed": "tsx --env-file=.env src/seed/main.ts",
     "db:reset": "node scripts/reset-dev-db.mjs && pnpm db:migrate && pnpm db:seed",
+    "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {

@@ -1,0 +1,369 @@
+{
+  "blocks": [
+    {
+      "title": "Dividindo as tarefas de casa",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "Sério? Suas roupas sujas ainda estão lá.",
+          "distractors": [
+            "com certeza? suas roupas novas ainda estão aqui",
+            "de verdade? suas roupas limpas estão ali",
+            "de fato? suas roupas velhas estão lá"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "Ah, qual é. Eu pego elas em um segundo.",
+          "distractors": [
+            "oh, come on. i'll pick it up in a sec",
+            "oh, come on. i'll pick them up in a set"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "Já faz três dias. A gente precisa dividir melhor as tarefas.",
+          "word": "split",
+          "distractors": [
+            "spill",
+            "spot",
+            "speak"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "Minha vez de limpar o banheiro, né?",
+          "extraWords": [
+            "now",
+            "always"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "E não esqueça de levar o lixo hoje.",
+          "distractors": [
+            "e não esqueça de trazer o lixo hoje",
+            "e não esqueça de pegar o lixo ontem",
+            "e não esqueça de deixar o lixo aqui"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 5,
+          "translation": "Entendi. Considere feito até de noite.",
+          "distractors": [
+            "got it. consider it done by light",
+            "got it. consider it fun by tonight"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "O desastre culinário",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "Que cheiro era aquele vindo da cozinha?",
+          "distractors": [
+            "que som era aquele vindo da cozinha",
+            "que luz era aquela vindo da cozinha",
+            "que cor era aquela vindo da cozinha"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "Minha tentativa de assar lasanha, pelo visto. Queimou.",
+          "word": "burned",
+          "distractors": [
+            "boring",
+            "broken",
+            "bought"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "Eu estava realmente ansioso para isso.",
+          "extraWords": [
+            "never",
+            "always"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 9,
+          "translation": "É, bom, definitivamente não está comestível agora.",
+          "distractors": [
+            "yeah, well, it's definitely not visible now",
+            "yeah, well, it's definitely not able now"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "Então, o que a gente vai jantar, afinal?",
+          "distractors": [
+            "então, o que a gente vai almoçar depois",
+            "então, o que a gente vai comer mais tarde",
+            "então, o que a gente vai beber agora"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 11,
+          "translation": "Parece que minhas habilidades culinárias estão enferrujadas.",
+          "word": "skills",
+          "distractors": [
+            "smells",
+            "spills",
+            "stills"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "O que vamos jantar?",
+      "startLine": 12,
+      "endLine": 15,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 12,
+          "translation": "A gente tem mais alguma coisa na geladeira?",
+          "distractors": [
+            "a gente tem alguma coisa na cozinha",
+            "a gente tem algo novo na geladeira",
+            "a gente tem mais alguma coisa no armário"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "Só algumas sobras velhas. Não muito apetitoso.",
+          "distractors": [
+            "just some old letters. not very appealing",
+            "just some old lovers. not very appealing"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 14,
+          "translation": "Credo, estou faminto. Eu realmente preciso de comida de verdade.",
+          "word": "starving",
+          "distractors": [
+            "starting",
+            "staring",
+            "sharing"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 15,
+          "translation": "Talvez a gente devesse só pedir comida hoje.",
+          "extraWords": [
+            "always",
+            "never"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "Eu realmente preciso de comida de verdade.",
+          "distractors": [
+            "eu realmente preciso de comida rápida",
+            "eu realmente preciso de comida quente",
+            "eu realmente preciso de comida fresca"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "A solução: pizza!",
+      "startLine": 16,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 16,
+          "translation": "Essa é uma ideia brilhante! O que você está a fim?",
+          "distractors": [
+            "essa é uma ideia boa! o que você está pensando",
+            "essa é uma ideia nova! o que você está fazendo",
+            "essa é uma ideia estranha! o que você está pedindo"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 17,
+          "translation": "Pizza parece incrível depois daquele desastre culinário.",
+          "word": "pizza",
+          "distractors": [
+            "pity",
+            "prize",
+            "piston"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 18,
+          "translation": "Tá bom, vou ligar pedindo uma pizza grande de calabresa.",
+          "distractors": [
+            "okay, i'll call for a large pepper pizza",
+            "okay, i'll call for a large pepperoni pisa"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 19,
+          "translation": "A gente divide o custo, né?",
+          "extraWords": [
+            "always",
+            "never"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 20,
+          "translation": "Minha conta pela lasanha queimada.",
+          "distractors": [
+            "meu presente pela lasanha queimada",
+            "minha vez pela lasanha queimada",
+            "minha culpa pela lasanha queimada"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 22,
+          "translation": "Você é o melhor. Eu estou com tanta fome agora.",
+          "word": "hungry",
+          "distractors": [
+            "angry",
+            "happy",
+            "hairy"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 23,
+          "translation": "Chega logo. Vamos assistir a um filme.",
+          "distractors": [
+            "it'll be here soon. let's watch a music",
+            "it'll be here soon. let's wash a movie"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "meaning",
+      "line": 1,
+      "translation": "Ah, qual é. Eu pego elas em um segundo.",
+      "distractors": [
+        "ah, não. eu pego elas em um minuto",
+        "ah, sim. eu pego elas em um instante",
+        "ah, por favor. eu pego elas em um dia"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 3,
+      "translation": "Eu sei, eu sei. Minha vez de limpar o banheiro, né?",
+      "word": "bathroom",
+      "distractors": [
+        "bedroom",
+        "kitchen",
+        "livingroom"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 5,
+      "translation": "Considere feito até de noite.",
+      "extraWords": [
+        "always",
+        "never"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 7,
+      "translation": "Minha tentativa de assar lasanha, pelo visto. Queimou.",
+      "distractors": [
+        "my attempt at making lasagna, apparently. it burned",
+        "my attempt at baking lasagna, apparently. it learned"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 9,
+      "translation": "É, bom, definitivamente não está comestível agora.",
+      "distractors": [
+        "é, bom, definitivamente não está visível agora",
+        "é, bom, definitivamente não está disponível agora",
+        "é, bom, definitivamente não está agradável agora"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 10,
+      "translation": "Então, o que a gente vai jantar, afinal?",
+      "word": "dinner",
+      "distractors": [
+        "lunch",
+        "breakfast",
+        "supper"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 13,
+      "translation": "Não muito apetitoso.",
+      "extraWords": [
+        "so",
+        "much"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 16,
+      "translation": "Essa é uma ideia brilhante! O que você está a fim?",
+      "distractors": [
+        "that's a brilliant idea! what are you saying",
+        "that's a brilliant idea! what are you playing"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 21,
+      "translation": "Não, vamos rachar. Tá tudo bem.",
+      "distractors": [
+        "sim, vamos rachar. não está bem",
+        "não, vamos pagar tudo. está bem",
+        "não, vamos dividir. não está bom"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 19,
+      "translation": "Show! A gente divide o custo, né?",
+      "word": "cost",
+      "distractors": [
+        "cold",
+        "coat",
+        "cash"
+      ]
+    }
+  ]
+}

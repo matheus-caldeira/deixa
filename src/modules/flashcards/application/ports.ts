@@ -24,6 +24,7 @@ export interface CardRepository {
     cards: { id: string; learningItemId: string; sourceKind: string }[],
     now: Date,
   ): Promise<number>;
+  bringForward(userId: string, learningItemIds: string[], now: Date): Promise<void>;
   listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]>;
   countDue(userId: string, now: Date): Promise<number>;
   findState(userId: string, cardId: string): Promise<CardState | null>;

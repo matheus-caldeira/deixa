@@ -1,0 +1,380 @@
+{
+  "blocks": [
+    {
+      "title": "Entrevista: Python e Ritmo",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "Ótimo. Você consegue lidar com ambientes de startup acelerados?",
+          "word": "handle",
+          "distractors": [
+            "hand",
+            "hang",
+            "huddle"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 3,
+          "translation": "Eu prospero sob pressão e prazos apertados.",
+          "distractors": [
+            "eu me escondo da pressão e prazos apertados",
+            "eu me canso com pressão e prazos apertados",
+            "eu desisto sob pressão e prazos apertados"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 4,
+          "translation": "A gente se move rápido aqui.",
+          "extraWords": [
+            "always"
+          ],
+          "distractors": [
+            "we",
+            "move",
+            "here",
+            "quickly"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "Eu usei bastante no meu papel anterior.",
+          "distractors": [
+            "i've used it extensively in my previous role",
+            "i've used it extensively in my previous roll"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 5,
+          "translation": "Estou pronto para o desafio, animado para aprender."
+        },
+        {
+          "kind": "meaning",
+          "line": 2,
+          "translation": "Você consegue lidar com ambientes de startup acelerados?",
+          "distractors": [
+            "você consegue lidar com ambientes de startup lentos",
+            "você consegue lidar com ambientes de startup calmos",
+            "você consegue lidar com ambientes de startup antigos"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Entrevista: Cultura e Rotina",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "order",
+          "line": 7,
+          "translation": "Sim. Como é a cultura da equipe aqui?",
+          "extraWords": [
+            "really"
+          ],
+          "distractors": [
+            "what's",
+            "the",
+            "team",
+            "culture",
+            "like",
+            "here"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 8,
+          "translation": "Valorizamos muito a comunicação aberta.",
+          "distractors": [
+            "evitamos a comunicação aberta",
+            "ignoramos a comunicação aberta",
+            "escondemos a comunicação aberta"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 9,
+          "translation": "Isso parece fantástico. Como é um dia típico?",
+          "distractors": [
+            "that sounds fantastic what's a typical day",
+            "that founds fantastic what's a typical day"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 11,
+          "translation": "Estou realmente impressionado com sua empresa.",
+          "word": "impressed",
+          "distractors": [
+            "expressed",
+            "depressed",
+            "pressed"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 6,
+          "translation": "Você tem alguma pergunta para mim?"
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "Varia. Principalmente codificação, reuniões e brainstorming.",
+          "distractors": [
+            "é fixo principalmente codificação reuniões e brainstorming",
+            "é sempre o mesmo principalmente codificação reuniões e brainstorming",
+            "é raro principalmente codificação reuniões e brainstorming"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pós-Entrevista: Reação Inicial",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 12,
+          "translation": "Foi bem!",
+          "distractors": [
+            "foi mal",
+            "foi estranho",
+            "foi difícil"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "Massa! Me conta tudo. Como foi?",
+          "distractors": [
+            "awesome tell me everything how'd it go",
+            "awesome tell me everything how did it go"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "Mandei bem.",
+          "distractors": [
+            "errei",
+            "falhei",
+            "desisti"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "Você teve uma boa impressão deles?",
+          "word": "vibe",
+          "distractors": [
+            "vice",
+            "vine",
+            "view"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 16,
+          "translation": "Sim, a cultura da equipe parece bem legal, na verdade.",
+          "extraWords": [
+            "really"
+          ],
+          "distractors": [
+            "yeah",
+            "the",
+            "team",
+            "culture",
+            "sounds",
+            "pretty",
+            "cool",
+            "actually"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 17,
+          "translation": "Que ótimo! Espero que você consiga o emprego, amigo."
+        }
+      ]
+    },
+    {
+      "title": "Pós-Entrevista: Esperanças e Próximos Passos",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "Estou torcendo os dedos agora.",
+          "distractors": [
+            "estou cruzando os braços agora",
+            "estou coçando os dedos agora",
+            "estou esticando os dedos agora"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 19,
+          "translation": "Você é um candidato forte. Eles teriam sorte.",
+          "distractors": [
+            "you're a strong candidate they'd be lucky",
+            "you're a strong candidate they be lucky"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 20,
+          "translation": "Parece ser a certa.",
+          "extraWords": [
+            "just"
+          ],
+          "distractors": [
+            "it",
+            "feels",
+            "right"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 22,
+          "translation": "Eles entrarão em contato comigo na próxima semana para feedback.",
+          "word": "contact",
+          "distractors": [
+            "contract",
+            "contest",
+            "context"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "Me mantenha informado.",
+          "distractors": [
+            "me mantenha quieto",
+            "me mantenha ocupado",
+            "me mantenha esperando"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 21,
+          "translation": "Torcendo por você! Qual o próximo passo?"
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "blank",
+      "line": 0,
+      "translation": "Então, me fale sobre sua experiência com Python.",
+      "word": "experience",
+      "distractors": [
+        "experiment",
+        "expertise",
+        "expression"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 3,
+      "translation": "Com certeza. Eu prospero sob pressão e prazos apertados.",
+      "extraWords": [
+        "always"
+      ],
+      "distractors": [
+        "absolutely",
+        "i",
+        "thrive",
+        "under",
+        "pressure",
+        "and",
+        "tight",
+        "deadlines"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 6,
+      "translation": "Você tem alguma pergunta para mim?",
+      "distractors": [
+        "você tem alguma resposta para mim",
+        "você tem alguma opinião para mim",
+        "você tem alguma ideia para mim"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 8,
+      "translation": "Bem colaborativa. Valorizamos muito a comunicação aberta.",
+      "distractors": [
+        "very collaborative we value open communication a lot",
+        "very collaborative we follow open communication a lot"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 11,
+      "translation": "Obrigado. Estou realmente impressionado com sua empresa."
+    },
+    {
+      "kind": "blank",
+      "line": 13,
+      "translation": "Massa! Me conta tudo. Como foi?",
+      "word": "everything",
+      "distractors": [
+        "everywhere",
+        "everyone",
+        "everytime"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 15,
+      "translation": "Você teve uma boa impressão deles?",
+      "distractors": [
+        "você teve uma boa visão deles",
+        "você teve uma boa conversa com eles",
+        "você teve uma boa sensação deles"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 17,
+      "translation": "Que ótimo! Espero que você consiga o emprego, amigo.",
+      "distractors": [
+        "that's great hope you get the job buddy",
+        "that's great hope you got a job buddy"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 19,
+      "translation": "Você é um candidato forte. Eles teriam sorte.",
+      "extraWords": [
+        "really"
+      ],
+      "distractors": [
+        "you're",
+        "a",
+        "strong",
+        "candidate",
+        "they'd",
+        "be",
+        "lucky"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 23,
+      "translation": "Beleza, me mantenha informado. Vamos comemorar depois!"
+    }
+  ]
+}

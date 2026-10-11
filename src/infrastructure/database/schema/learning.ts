@@ -219,7 +219,27 @@ export const lessonAttempts = pgTable(
     xp: integer("xp").notNull(),
     seconds: integer("seconds").notNull(),
     replay: boolean("replay").notNull(),
+    passed: boolean("passed").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [index("lesson_attempts_user_episode").on(table.userId, table.episodeId)],
+);
+
+export const lessonPlans = pgTable(
+  "lesson_plans",
+  {
+    id: uuid("id").primaryKey(),
+    episodeId: uuid("episode_id")
+      .notNull()
+      .references(() => episodes.id, { onDelete: "cascade" }),
+    level: text("level").notNull(),
+    status: text("status").notNull(),
+    provider: text("provider"),
+    plan: jsonb("plan"),
+    failureReason: text("failure_reason"),
+    requestedBy: uuid("requested_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [uniqueIndex("lesson_plans_episode_level").on(table.episodeId, table.level)],
 );

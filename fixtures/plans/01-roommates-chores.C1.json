@@ -1,0 +1,286 @@
+{
+  "blocks": [
+    {
+      "title": "Dividindo as Tarefas",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "ah, qual é. eu pego elas em um segundo.",
+          "distractors": [
+            "oh, come on i'll pick them up in a set",
+            "oh, come on i'll pick them up in a sack"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "já faz três dias. a gente precisa dividir melhor as tarefas.",
+          "word": "split",
+          "distractors": [
+            "splat",
+            "spill",
+            "slit"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "eu sei, eu sei. minha vez de limpar o banheiro, né?",
+          "extraWords": [
+            "now",
+            "then"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 4,
+          "translation": "e não esqueça de levar o lixo hoje."
+        },
+        {
+          "kind": "meaning",
+          "line": 5,
+          "translation": "considere feito até de noite.",
+          "distractors": [
+            "pense que está pronto para hoje à noite",
+            "imagine que estará feito até o fim do dia",
+            "entenda que será terminado antes da noite"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 0,
+          "translation": "sério? suas roupas sujas ainda estão lá.",
+          "distractors": [
+            "seriously your dirty clothes are still here",
+            "seriously your dirty clothes are still fair"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Desastre Culinário",
+      "startLine": 6,
+      "endLine": 15,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "minha tentativa de assar lasanha, pelo visto. queimou.",
+          "word": "attempt",
+          "distractors": [
+            "attemp",
+            "attend",
+            "exempt"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 8,
+          "translation": "eu estava realmente ansioso para isso.",
+          "distractors": [
+            "eu estava realmente olhando para isso",
+            "eu estava realmente buscando isso",
+            "eu estava realmente observando isso"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 9,
+          "translation": "é, bom, definitivamente não está comestível agora.",
+          "extraWords": [
+            "ever",
+            "never"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 11,
+          "translation": "parece que minhas habilidades culinárias estão enferrujadas.",
+          "distractors": [
+            "looks like my cooking skills are trusty",
+            "looks like my cooking skills are dusty"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 14,
+          "translation": "credo, estou faminto. eu realmente preciso de comida de verdade."
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "eu também. talvez a gente devesse só pedir comida hoje.",
+          "word": "order",
+          "distractors": [
+            "older",
+            "odor",
+            "ardor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "A Salvação da Pizza",
+      "startLine": 16,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 16,
+          "translation": "o que você está a fim?",
+          "distractors": [
+            "o que você está pedindo",
+            "o que você está procurando",
+            "o que você está querendo"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 17,
+          "translation": "pizza parece incrível depois daquele desastre culinário.",
+          "word": "culinary",
+          "distractors": [
+            "cullinary",
+            "colinary",
+            "calinary"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 19,
+          "translation": "show! a gente divide o custo, né?",
+          "extraWords": [
+            "pay",
+            "share"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "claro. minha conta pela lasanha queimada.",
+          "distractors": [
+            "my treat for the burn lasagna",
+            "my treat for the burn last night"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 21,
+          "translation": "não, vamos rachar. tá tudo bem."
+        },
+        {
+          "kind": "meaning",
+          "line": 21,
+          "translation": "vamos rachar.",
+          "distractors": [
+            "vamos pela metade",
+            "vamos dividir em duas partes",
+            "vamos por partes"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 23,
+          "translation": "chega logo. vamos assistir a um filme.",
+          "distractors": [
+            "it'll be here soon let's watch a new",
+            "it'll be here soon let's watch a move"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "order",
+      "line": 0,
+      "translation": "sério? suas roupas sujas ainda estão lá.",
+      "extraWords": [
+        "always",
+        "here"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 1,
+      "translation": "ah, qual é. eu pego elas em um segundo.",
+      "word": "sec",
+      "distractors": [
+        "set",
+        "sack",
+        "seek"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 2,
+      "translation": "a gente precisa dividir melhor as tarefas.",
+      "distractors": [
+        "a gente precisa separar melhor as tarefas",
+        "a gente precisa cortar melhor as tarefas",
+        "a gente precisa partir melhor as tarefas"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 5,
+      "translation": "entendi. considere feito até de noite."
+    },
+    {
+      "kind": "listen",
+      "line": 6,
+      "translation": "que cheiro era aquele vindo da cozinha?",
+      "distractors": [
+        "what was that spell coming from the kitchen",
+        "what was that smell coming from the chicken"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 11,
+      "translation": "parece que minhas habilidades culinárias estão enferrujadas.",
+      "word": "rusty",
+      "distractors": [
+        "trusty",
+        "dusty",
+        "crusty"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 13,
+      "translation": "só algumas sobras velhas. não muito apetitoso.",
+      "extraWords": [
+        "much",
+        "good"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 15,
+      "translation": "talvez a gente devesse só pedir comida hoje.",
+      "distractors": [
+        "talvez a gente devesse só pedir para entrar hoje",
+        "talvez a gente devesse só pedir para dentro hoje",
+        "talvez a gente devesse só organizar a entrada hoje"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 18,
+      "translation": "tá bom, vou ligar pedindo uma pizza grande de calabresa."
+    },
+    {
+      "kind": "listen",
+      "line": 22,
+      "translation": "você é o melhor. eu estou com tanta fome agora.",
+      "distractors": [
+        "you're the best i'm so angry right now",
+        "you're the best i'm so hungry right know"
+      ]
+    }
+  ]
+}

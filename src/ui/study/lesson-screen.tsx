@@ -115,17 +115,27 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               fontWeight="700"
               fill="var(--cue)"
             >
-              CENA {view.nodeIndex + 1} · OK
+              {result.passed ? `BLOCO ${view.nodeIndex + 1} · OK` : `BLOCO ${view.nodeIndex + 1} · DE NOVO`}
             </text>
           </svg>
           <div className="col" style={{ gap: 6, alignItems: "center" }}>
-            <h1>{result.accuracy === 100 ? "Cena perfeita!" : "Cena concluída!"}</h1>
+            <h1>
+              {!result.passed
+                ? "Ainda não foi desta vez"
+                : result.episodeCompleted
+                  ? "Episódio concluído!"
+                  : result.accuracy === 100
+                    ? "Bloco perfeito!"
+                    : "Bloco concluído!"}
+            </h1>
             <p className="muted">
-              {result.replay
-                ? result.xp > 0
-                  ? "Lição repetida: XP reduzido pela metade."
-                  : "Lição repetida várias vezes hoje: sem XP desta vez."
-                : `Episódio em ${result.progressPercent}%.`}
+              {!result.passed
+                ? `Você precisa de ${result.requiredAccuracy}% de acerto para concluir este bloco. Sem XP desta vez.`
+                : result.replay
+                  ? result.xp > 0
+                    ? "Bloco repetido: XP reduzido pela metade."
+                    : "Bloco repetido várias vezes hoje: sem XP desta vez."
+                  : `Episódio em ${result.progressPercent}%.`}
             </p>
           </div>
           <div className="donestats">
@@ -156,15 +166,32 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             </p>
           ) : null}
         </div>
-        <div className="lfoot">
+        <div className="lfoot col" style={{ gap: 12 }}>
+          {!result.passed ? (
+            <button
+              className="btn wide"
+              onClick={() => {
+                setResult(null);
+                setPosition(0);
+                setPhase("ask");
+                setSelected(null);
+                setBuilt([]);
+                setText("");
+                setAnswers([]);
+                startedAt.current = Date.now();
+              }}
+            >
+              Tentar de novo
+            </button>
+          ) : null}
           <button
-            className="btn wide"
+            className={`btn wide ${result.passed ? "" : "ghost"}`}
             onClick={() => {
               router.push(backHref);
               router.refresh();
             }}
           >
-            Continuar
+            {result.passed ? "Continuar" : "Voltar ao início"}
           </button>
         </div>
       </div>
@@ -241,7 +268,9 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   if (exercise.kind === "intro") {
     body = (
       <>
-        <span className="eyebrow">Fala da cena · {view.level}</span>
+        <span className="eyebrow">
+          {view.title} · {view.level}
+        </span>
         <div className="cuebox">
           <div className="tcode">
             <span>{formatTimecode(exercise.startMs)}</span>

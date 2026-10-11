@@ -16,6 +16,8 @@ export const SEED_DIALOGUES = [
   "08-surprise-party",
 ] as const;
 
+export const SEED_PLAN_LEVELS: readonly CefrLevel[] = ["A1", "B1", "C1"];
+
 export type EpisodeKey = `${string}-${number}-${number}`;
 
 export type SeedProfile = {

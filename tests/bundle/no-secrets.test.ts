@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const STATIC_DIR = ".next/static";
-const SECRET_NAMES = ["TMDB_READ_ACCESS_TOKEN", "TMDB_API_KEY", "AI_CREDENTIALS_MASTER_KEY"] as const;
+const SECRET_NAMES = [
+  "TMDB_READ_ACCESS_TOKEN",
+  "TMDB_API_KEY",
+  "AI_CREDENTIALS_MASTER_KEY",
+  "GEMINI_API_KEY",
+] as const;
 const MIN_SECRET_LENGTH = 16;
 
 function filesUnder(directory: string): string[] {

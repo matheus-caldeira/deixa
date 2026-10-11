@@ -27,6 +27,7 @@ async function main(): Promise<void> {
       logger: silentLogger,
       tts: new SilentTtsProvider(),
       llmForUser: async () => fakeLlm,
+      plannerForUser: async () => null,
     });
     await runSeed({
       container,

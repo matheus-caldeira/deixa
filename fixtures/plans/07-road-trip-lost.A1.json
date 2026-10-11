@@ -1,0 +1,364 @@
+{
+  "blocks": [
+    {
+      "title": "O GPS falha e eles se perdem",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "estamos quase lá?",
+          "distractors": [
+            "estamos indo para lá?",
+            "estamos chegando lá?",
+            "estamos em algum lugar?"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "deve estar perto",
+          "distractors": [
+            "should be cold",
+            "should be clothes"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "a tela está preta",
+          "word": "black",
+          "distractors": [
+            "back",
+            "block",
+            "blick"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "não é possível!",
+          "extraWords": [
+            "now",
+            "weigh"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "parece que travou totalmente",
+          "distractors": [
+            "parece que caiu totalmente",
+            "parece que quebrou totalmente",
+            "parece que parou totalmente"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 5,
+          "translation": "estamos perdidos no meio do nada",
+          "distractors": [
+            "we're lost in the middle of now here",
+            "we're lost in the middle of no wear"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Sem sinal e preocupação",
+      "startLine": 6,
+      "endLine": 10,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "tem sinal?",
+          "distractors": [
+            "tem um sinal?",
+            "tem um sino?",
+            "tem uma senha?"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "nenhum sinal em lugar nenhum",
+          "word": "bars",
+          "distractors": [
+            "bears",
+            "cars",
+            "boys"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 8,
+          "translation": "estamos totalmente encalhados",
+          "distractors": [
+            "we're totally branded",
+            "we're totally sanded"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 9,
+          "translation": "não se preocupe",
+          "extraWords": [
+            "front",
+            "free"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "minha bexiga está prestes a explodir",
+          "distractors": [
+            "minha bexiga está prestes a estourar",
+            "minha bexiga está prestes a quebrar",
+            "minha bexiga está prestes a vazar"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 9,
+          "translation": "vamos achar um posto de gasolina logo",
+          "distractors": [
+            "we'll find a glass station soon",
+            "we'll find a fast station soon"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Encontram um posto e sentem alívio",
+      "startLine": 11,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "aquilo é uma placa de posto?",
+          "distractors": [
+            "aquilo é um sinal de posto?",
+            "aquilo é um posto de gasolina?",
+            "aquilo é um posto de sinal?"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 12,
+          "translation": "encosta, encosta!",
+          "word": "pull",
+          "distractors": [
+            "pool",
+            "full",
+            "pal"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "vou pedir informações lá dentro",
+          "distractors": [
+            "i'm going to ask for elections inside",
+            "i'm going to ask for detections inside"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 14,
+          "translation": "estou faminto",
+          "extraWords": [
+            "starting",
+            "served"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 15,
+          "translation": "volto já com boas notícias",
+          "distractors": [
+            "volto já com notícias boas",
+            "volto já com novas notícias",
+            "volto já com notícias ruins"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 17,
+          "translation": "que alívio, no entanto",
+          "distractors": [
+            "what a belief though",
+            "what a relief throw"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Boas notícias e seguem viagem",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "não estamos muito longe",
+          "distractors": [
+            "não estamos tão longe",
+            "não estamos muito perto",
+            "não estamos muito fora"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "como a gente chega lá?",
+          "word": "get",
+          "distractors": [
+            "got",
+            "let",
+            "jet"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "só mais algumas curvas",
+          "distractors": [
+            "just a few more terms",
+            "just a few more towns"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "e você pegou os lanches?",
+          "extraWords": [
+            "gets",
+            "snakes"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 22,
+          "translation": "enchi de salgadinhos e refrigerantes pra gente",
+          "distractors": [
+            "carreguei salgadinhos e refrigerantes pra gente",
+            "comi salgadinhos e refrigerantes pra gente",
+            "comprei salgadinhos e refrigerantes pra gente"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 23,
+          "translation": "você é um salvador!",
+          "distractors": [
+            "you're a life saver",
+            "you're a life shaver"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 0,
+      "translation": "estou começando a sentir fome",
+      "distractors": [
+        "i'm getting angry",
+        "i'm getting hurry"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 2,
+      "translation": "não está funcionando",
+      "distractors": [
+        "não está trabalhando",
+        "não está andando",
+        "não está ligado"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 5,
+      "translation": "estamos perdidos no meio do nada",
+      "word": "lost",
+      "distractors": [
+        "last",
+        "least",
+        "lust"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 7,
+      "translation": "zona morta",
+      "distractors": [
+        "zona de morte",
+        "zona escura",
+        "zona vazia"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 8,
+      "translation": "isso é simplesmente ótimo",
+      "extraWords": [
+        "grape",
+        "jest"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 10,
+      "translation": "espero que sim",
+      "distractors": [
+        "i hold so",
+        "i hope snow"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 12,
+      "translation": "graças a deus",
+      "distractors": [
+        "obrigado deus",
+        "obrigado bondade",
+        "graças à bondade"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 14,
+      "translation": "e pega uns lanches pra gente, por favor",
+      "word": "snacks",
+      "distractors": [
+        "snakes",
+        "stack",
+        "smacks"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 18,
+      "translation": "boas notícias!",
+      "extraWords": [
+        "new",
+        "goods"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 23,
+      "translation": "vamos pegar a estrada!",
+      "distractors": [
+        "vamos bater na estrada!",
+        "vamos para a estrada!",
+        "vamos acertar a estrada!"
+      ]
+    }
+  ]
+}

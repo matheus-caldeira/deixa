@@ -1,0 +1,327 @@
+{
+  "blocks": [
+    {
+      "title": "Correndo para o portão",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "corre vamos perder nosso voo",
+          "distractors": [
+            "corra vamos atrasar nosso voo",
+            "corra vamos adiar nosso voo",
+            "corra vamos cancelar nosso voo"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 2,
+          "translation": "portão 24, se apressa! o embarque fecha logo",
+          "word": "hurry",
+          "distractors": [
+            "harry",
+            "happy"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 4,
+          "translation": "ufa conseguimos bem na hora h",
+          "extraWords": [
+            "then",
+            "now"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 5,
+          "translation": "essa foi por pouco meu coração está batendo forte",
+          "distractors": [
+            "that was close my heart is sounding",
+            "that was cold my heart is pounding"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 1,
+          "translation": "estou correndo o mais rápido que posso cara"
+        }
+      ]
+    },
+    {
+      "title": "Esperando para embarcar",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "não acredito que quase perdemos",
+          "distractors": [
+            "não posso acreditar que quase achamos",
+            "não consigo pensar que quase perdemos",
+            "não devo crer que quase perdemos"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "que bom que corremos como loucos",
+          "word": "crazy",
+          "distractors": [
+            "craze",
+            "crispy"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "agora é só esperar nossa fileira embarcar",
+          "extraWords": [
+            "then",
+            "soon"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 11,
+          "translation": "pelo menos temos assentos na janela olhe lá fora",
+          "distractors": [
+            "at least we have window seats look now",
+            "at least we have window sheets look out"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 9,
+          "translation": "estou tão pronto para estas férias porém"
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "eu também só preciso relaxar depois desse sprint",
+          "distractors": [
+            "eu também só preciso dormir depois desse sprint",
+            "eu também só preciso comer depois desse sprint",
+            "eu também só preciso trabalhar depois desse sprint"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "A mala perdida",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 12,
+          "translation": "cadê minha mala não estou vendo ela",
+          "word": "suitcase",
+          "distractors": [
+            "suit case",
+            "sweetcase"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 15,
+          "translation": "ah não parece que sua mala está perdida",
+          "distractors": [
+            "ah não parece que sua mala está achada",
+            "ah não parece que sua mala está segura",
+            "ah não parece que sua mala está aqui"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 17,
+          "translation": "não entre em pânico ainda vamos falar com alguém",
+          "extraWords": [
+            "always",
+            "never"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "a minha está aqui você checou todas as etiquetas",
+          "distractors": [
+            "mine's here did you check all the bags",
+            "mine's hear did you check all the tags"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 16,
+          "translation": "sério isso é ótimo credo"
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "sim com certeza não está nesta esteira",
+          "distractors": [
+            "sim com certeza está nesta esteira",
+            "sim com certeza está nesta caixa",
+            "sim com certeza não está nesta prateleira"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Reportando a bagagem",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 18,
+          "translation": "com licença não consigo encontrar minha bagagem",
+          "word": "luggage",
+          "distractors": [
+            "luggages",
+            "lucky"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 22,
+          "translation": "que incomodação que saco",
+          "distractors": [
+            "isso é uma alegria que bom",
+            "isso é uma surpresa que legal",
+            "isso é uma vergonha que pena"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 23,
+          "translation": "pelo menos eles estão ajudando vamos torcer para que apareça",
+          "extraWords": [
+            "down",
+            "away"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 19,
+          "translation": "posso ver sua etiqueta de bagagem por favor",
+          "distractors": [
+            "can i see your baggage claim back please",
+            "can i see your baggage train tag please"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 20,
+          "translation": "aqui está é uma mala de rodinhas preta"
+        },
+        {
+          "kind": "meaning",
+          "line": 21,
+          "translation": "certo vamos registrar um relatório para você",
+          "distractors": [
+            "certo vamos arquivar um relatório para você",
+            "certo vamos ignorar um relatório para você",
+            "certo vamos cancelar um relatório para você"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "blank",
+      "line": 0,
+      "translation": "corre a gente vai perder nosso voo",
+      "word": "miss",
+      "distractors": [
+        "mist",
+        "mass"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 3,
+      "translation": "minha passagem está no meu celular peguei",
+      "distractors": [
+        "minha passagem está no meu celular perdi",
+        "minha passagem está no meu celular esqueci",
+        "minha passagem está no meu celular achei"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 4,
+      "translation": "ufa conseguimos bem na hora h",
+      "distractors": [
+        "phew made it just in the nick of crime",
+        "phew made it just in the pick of time"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 5,
+      "translation": "meu coração está batendo forte",
+      "extraWords": [
+        "always",
+        "never"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 9,
+      "translation": "estou tão pronto para estas férias porém",
+      "word": "ready",
+      "distractors": [
+        "read",
+        "really"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 11,
+      "translation": "pelo menos temos assentos na janela olhe lá fora",
+      "distractors": [
+        "no mínimo temos assentos na janela olhe lá fora",
+        "finalmente temos assentos na janela olhe lá fora",
+        "por último temos assentos na janela olhe lá fora"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 12,
+      "translation": "cadê minha mala não estou vendo ela"
+    },
+    {
+      "kind": "order",
+      "line": 15,
+      "translation": "parece que sua mala está perdida",
+      "extraWords": [
+        "found",
+        "here"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 17,
+      "translation": "não entre em pânico ainda vamos falar com alguém",
+      "distractors": [
+        "don't panic yet let's walk to someone",
+        "don't panic yet let's talk to no one"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 22,
+      "translation": "que incomodação que saco",
+      "word": "pain",
+      "distractors": [
+        "pane",
+        "pen"
+      ]
+    }
+  ]
+}

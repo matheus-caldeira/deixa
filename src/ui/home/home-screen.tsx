@@ -13,6 +13,9 @@ import {
   PlayIcon,
   type IconName,
 } from "../icons";
+import { useRouter } from "next/navigation";
+import { useEffect, useTransition } from "react";
+import { retryTrailAction } from "@/app/actions/study";
 import { useToast } from "../shell/toast";
 
 export type HomeView = {
@@ -34,10 +37,13 @@ export type HomeView = {
   dueCount: number;
   trail: { index: number; tc: string; nm: string; ic: IconName; state: "done" | "current" | "locked" }[];
   studyHref: string | null;
+  trailStatus: "ready" | "pending" | "failed";
+  trailByAi: boolean;
   missions: { icon: "cards" | "ear" | "chat"; title: string; value: number; max: number }[];
 };
 
 const MISSION_ICONS = { cards: CardsIcon, ear: EarIcon, chat: ChatIcon };
+const TRAIL_POLL_MS = 4000;
 const RING_RADIUS = 30;
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
 
@@ -74,7 +80,25 @@ function GoalRing({ value, max }: { value: number; max: number }) {
 
 export function HomeScreen({ view }: { view: HomeView }) {
   const toast = useToast();
+  const router = useRouter();
+  const [retrying, startRetry] = useTransition();
   const goalMet = view.xpToday >= view.dailyGoal;
+
+  useEffect(() => {
+    if (view.trailStatus !== "pending") return;
+    const timer = setInterval(() => router.refresh(), TRAIL_POLL_MS);
+    return () => clearInterval(timer);
+  }, [router, view.trailStatus]);
+
+  const retryTrail = () => {
+    if (!view.current) return;
+    const episodeId = view.current.episodeId;
+    startRetry(async () => {
+      const result = await retryTrailAction(episodeId).catch(() => null);
+      if (!result?.ok) toast(result?.message ?? "Não deu para falar com o servidor.");
+      router.refresh();
+    });
+  };
 
   return (
     <>
@@ -110,6 +134,10 @@ export function HomeScreen({ view }: { view: HomeView }) {
             <Link className="btn cue wide" href={view.studyHref}>
               <PlayIcon width={18} height={18} /> Continuar estudando
             </Link>
+          ) : view.trailStatus === "pending" ? (
+            <button className="btn cue wide" disabled>
+              Montando sua trilha…
+            </button>
           ) : null}
           {view.current.ready ? (
             <Link className="btn onDark wide" href={`/read/${view.current.episodeId}`}>
@@ -145,15 +173,42 @@ export function HomeScreen({ view }: { view: HomeView }) {
         </div>
       </section>
 
+      {view.trailStatus === "pending" ? (
+        <section className="card col" style={{ gap: 10 }}>
+          <div className="pstep run">
+            <span className="s" />
+            <b>Montando sua trilha com IA</b>
+            <span className="small muted mono">{view.level}</span>
+          </div>
+          <p className="small muted">
+            A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de
+            um minuto; avisamos no sino quando terminar.
+          </p>
+        </section>
+      ) : null}
+      {view.trailStatus === "failed" ? (
+        <section className="card col" style={{ gap: 10 }}>
+          <b>Não deu para montar a trilha deste episódio</b>
+          <p className="small muted">
+            A IA não respondeu a tempo. Suas marcações e revisões continuam funcionando.
+          </p>
+          <button className="btn" onClick={retryTrail} disabled={retrying}>
+            {retrying ? "Tentando…" : "Tentar de novo"}
+          </button>
+        </section>
+      ) : null}
       {view.trail.length > 0 ? (
         <section className="col" style={{ gap: 4 }}>
           <div className="sec-h">
             <h2>Trilha do episódio</h2>
             <span className="chip brand">
-              {view.level} · {view.levelName}
+              {view.level} · {view.trailByAi ? "feita por IA" : view.levelName}
             </span>
           </div>
-          <p className="small muted">Cada parada é uma cena da legenda, marcada pelo tempo do episódio.</p>
+          <p className="small muted">
+            Cada bloco junta as falas de um trecho do episódio. Você precisa de 70% de acerto para liberar o
+            próximo.
+          </p>
           <div className="trail">
             {view.trail.map((node, index) => {
               const state = node.state === "current" ? "cur" : node.state === "locked" ? "lock" : "done";
@@ -165,7 +220,7 @@ export function HomeScreen({ view }: { view: HomeView }) {
                     <button
                       className="dot"
                       aria-label={`${node.nm} (bloqueada)`}
-                      onClick={() => toast("Conclua a cena anterior para liberar esta.")}
+                      onClick={() => toast("Conclua o bloco anterior para liberar este.")}
                     >
                       <LockIcon />
                     </button>

@@ -22,5 +22,6 @@ export function e2eEnvironment(): Record<string, string> {
     DEV_SHORTCUTS: "true",
     SESSION_COOKIE_SECURE: "false",
     GEMINI_MODEL: "",
+    GEMINI_API_KEY: "",
   };
 }

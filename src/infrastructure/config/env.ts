@@ -18,6 +18,7 @@ const envSchema = z.object({
   TMDB_READ_ACCESS_TOKEN: optionalText,
   KOKORO_URL: z.preprocess(blankAsUndefined, z.url().optional()),
   DATA_DIR: z.preprocess(blankAsUndefined, z.string().default("data")),
+  GEMINI_API_KEY: optionalText,
   GEMINI_MODEL: z.preprocess(blankAsUndefined, z.string().default("gemini-2.5-flash")),
   SESSION_COOKIE_SECURE: z.preprocess(
     blankAsUndefined,

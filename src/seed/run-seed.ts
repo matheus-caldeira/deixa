@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
 import type { Container } from "@/infrastructure/container";
@@ -22,6 +23,7 @@ import {
 import { fakeExternalId } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import type { CueMarks } from "@/modules/highlights";
 import { defaultPreferences } from "@/modules/identity";
+import { assemblePlan } from "@/modules/study";
 import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { systemClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
@@ -32,6 +34,7 @@ import {
   SEED_DIALOGUES,
   SEED_EMAIL_SUFFIX,
   SEED_PASSWORD,
+  SEED_PLAN_LEVELS,
   SEED_PROFILES,
   SEED_WORKS,
   SHARED_MARKS,
@@ -40,6 +43,7 @@ import {
 
 const SEED_HISTORY_DAYS = 60;
 const DIALOGUES_DIR = "fixtures/dialogues";
+const PLANS_DIR = "fixtures/plans";
 
 export async function runSeed(input: {
   container: Container;
@@ -95,6 +99,7 @@ export async function runSeed(input: {
   const loadSeasonEpisodes = makeLoadSeasonEpisodes(catalogDeps);
   const dialogues = await Promise.all(
     SEED_DIALOGUES.map(async (name) => ({
+      name,
       english: {
         filename: `${name}.en.srt`,
         bytes: new Uint8Array(await readFile(`${DIALOGUES_DIR}/${name}.en.srt`)),
@@ -106,6 +111,33 @@ export async function runSeed(input: {
     })),
   );
   let importedEpisodes = 0;
+  let seededPlans = 0;
+
+  async function seedPlans(episodeId: string, dialogueName: string): Promise<void> {
+    const script = await container.getEpisodeScript(episodeId);
+    if (!script) return;
+    const lines = script.lines.map((line) => ({
+      cueId: line.cueId,
+      startMs: line.startMs,
+      text: line.text,
+      sceneIndex: line.sceneIndex,
+      translation: line.translationSource === "subtitle_pt" ? line.translation : null,
+    }));
+    for (const level of SEED_PLAN_LEVELS) {
+      const path = `${PLANS_DIR}/${dialogueName}.${level}.json`;
+      if (!existsSync(path)) continue;
+      const plan = assemblePlan({
+        raw: JSON.parse(await readFile(path, "utf8")),
+        lines,
+        level,
+        seed: episodeId,
+        provider: "gemini",
+      });
+      if (!plan) continue;
+      await container.savePlan({ id: ids.next(), episodeId, level, plan, now });
+      seededPlans += 1;
+    }
+  }
 
   const episodeIdByKey = new Map<EpisodeKey, string>();
   for (const work of SEED_WORKS) {
@@ -139,16 +171,22 @@ export async function runSeed(input: {
       importedEpisodes += 1;
       if (!dialogue) continue;
       const alreadyImported = (await container.getEpisodeScript(episodeId)) !== null;
-      if (alreadyImported) continue;
+      if (alreadyImported) {
+        await seedPlans(episodeId, dialogue.name);
+        continue;
+      }
       await container.importEpisodeSubtitles({
         userId: uploaderId,
         episodeId,
         english: dialogue.english,
         portuguese: state === "READY_PT" ? dialogue.portuguese : undefined,
       });
+      await seedPlans(episodeId, dialogue.name);
     }
   }
-  log(`obras: ${SEED_WORKS.length} via ${metadata.name}, episódios cadastrados: ${episodeIdByKey.size}`);
+  log(
+    `obras: ${SEED_WORKS.length} via ${metadata.name}, episódios cadastrados: ${episodeIdByKey.size}, trilhas prontas: ${seededPlans}`,
+  );
 
   async function marksFor(
     episodeId: string,
@@ -269,7 +307,13 @@ export async function runSeed(input: {
     const currentEpisodeId = episodeIdByKey.get(profile.currentEpisode);
     if (currentEpisodeId) {
       await container.updatePreferences(userId, { currentEpisodeId });
-      const trail = await container.getTrail(userId, currentEpisodeId);
+      await container.ensurePlan({
+        userId,
+        episodeId: currentEpisodeId,
+        level: profile.level,
+        episodeLabel: "",
+      });
+      const trail = await container.getTrail(userId, currentEpisodeId, profile.level);
       const alreadyStudied = trail.nodes.some((node) => node.state === "done");
       for (let nodeIndex = 0; !alreadyStudied && nodeIndex < profile.scenesDone; nodeIndex += 1) {
         await db.insert(lessonAttempts).values({
@@ -283,6 +327,7 @@ export async function runSeed(input: {
           xp: 0,
           seconds: 180,
           replay: false,
+          passed: true,
           createdAt: new Date(now.getTime() - (profile.scenesDone - nodeIndex) * 3_600_000),
         });
       }

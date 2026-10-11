@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getContainer } from "@/infrastructure/container";
 import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
 import { LEVEL_NAMES } from "@/shared/levels";
@@ -21,7 +22,26 @@ export default async function HomePage() {
   ]);
   const script =
     context?.episode.status === "READY" ? await container.getEpisodeScript(context.episode.id) : null;
-  const trail = script ? await container.getTrail(user.id, context?.episode.id ?? "") : null;
+  const label = context
+    ? episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)
+    : "";
+  const planStatus =
+    script && context
+      ? await container.ensurePlan({
+          userId: user.id,
+          episodeId: context.episode.id,
+          level: user.preferences.level,
+          episodeLabel: `${context.media.title} · ${label}`,
+        })
+      : null;
+  if (planStatus?.status === "PENDING" && planStatus.job) {
+    const job = planStatus.job;
+    after(() => container.generatePlan(job));
+  }
+  const trail =
+    planStatus?.status === "READY" && context
+      ? await container.getTrail(user.id, context.episode.id, user.preferences.level)
+      : null;
   const progress = overview.inProgress.find((entry) => entry.episodeId === currentId)?.progressPercent ?? 0;
 
   return (
@@ -62,6 +82,9 @@ export default async function HomePage() {
           trail && context
             ? `/study/${context.episode.id}/${trail.currentIndex ?? Math.max(0, trail.nodes.length - 1)}`
             : null,
+        trailStatus:
+          planStatus?.status === "PENDING" ? "pending" : planStatus?.status === "FAILED" ? "failed" : "ready",
+        trailByAi: trail?.generatedByAi ?? false,
         missions: summary.missions,
       }}
     />

@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { episodeLabel } from "@/modules/catalog";
 import { z } from "zod";
 import type { LessonResult } from "@/modules/study";
 import { AppError } from "@/shared/errors";
@@ -36,5 +38,28 @@ export async function completeLessonAction(input: unknown): Promise<ActionResult
     await app().settleMissions(user.id, user.preferences.timezone);
     revalidatePath("/", "layout");
     return result;
+  });
+}
+
+export async function retryTrailAction(episodeId: unknown): Promise<ActionResult<{ status: string }>> {
+  const user = await requireUser();
+  return runAction("retryTrail", async () => {
+    const parsed = z.uuid().safeParse(episodeId);
+    if (!parsed.success) throw new AppError("EPISODE_NOT_FOUND");
+    const context = await app().getEpisodeContext(parsed.data);
+    if (!context) throw new AppError("EPISODE_NOT_FOUND");
+    const status = await app().ensurePlan({
+      userId: user.id,
+      episodeId: parsed.data,
+      level: user.preferences.level,
+      episodeLabel: `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`,
+      retry: true,
+    });
+    if (status.status === "PENDING" && status.job) {
+      const job = status.job;
+      after(() => app().generatePlan(job));
+    }
+    revalidatePath("/");
+    return { status: status.status };
   });
 }

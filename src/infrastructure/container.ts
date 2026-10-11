@@ -65,7 +65,15 @@ import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/dri
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { makeGetInbox, makeMarkNotificationsRead, makeNotify } from "@/modules/notifications";
 import { DrizzleNotificationRepository } from "@/modules/notifications/infrastructure/drizzle-notification-repository";
-import { makeCompleteLesson, makeGetTrail, makeStartLesson, type TrailLine } from "@/modules/study";
+import {
+  makeCompleteLesson,
+  makeEnsurePlan,
+  makeGeneratePlan,
+  makeGetTrail,
+  makeStartLesson,
+  type LessonPlanner,
+  type TrailLine,
+} from "@/modules/study";
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
@@ -76,6 +84,7 @@ import type { FileStorage } from "@/shared/storage";
 import { tokenize } from "@/shared/text";
 import { getEnv, hasTmdbCredentials, type Env } from "./config/env";
 import { openDatabase, type Database } from "./database/client";
+import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { GeminiLlmProvider, testGeminiApiKey } from "./google-ai/gemini-llm-provider";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
@@ -96,6 +105,7 @@ export type ContainerOptions = {
   metadata?: MetadataProvider;
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
+  plannerForUser?: (userId: string) => Promise<LessonPlanner | null>;
   testApiKey?: ApiKeyTester;
 };
 
@@ -137,7 +147,14 @@ export function buildContainer(options: ContainerOptions) {
     options.llmForUser ??
     (async (userId: string): Promise<LlmProvider> => {
       const apiKey = await resolveApiKey(userId);
-      return apiKey ? new GeminiLlmProvider(apiKey, env.GEMINI_MODEL) : fakeLlm;
+      const key = apiKey ?? env.GEMINI_API_KEY;
+      return key ? new GeminiLlmProvider(key, env.GEMINI_MODEL) : fakeLlm;
+    });
+  const resolvePlanner =
+    options.plannerForUser ??
+    (async (userId: string): Promise<LessonPlanner | null> => {
+      const key = env.GEMINI_API_KEY ?? (await resolveApiKey(userId));
+      return key ? new GeminiLessonPlanner(key, env.GEMINI_MODEL) : null;
     });
 
   const sessionDeps = {
@@ -183,7 +200,11 @@ export function buildContainer(options: ContainerOptions) {
     }));
   }
 
-  async function queueLinesForReview(userId: string, episodeId: string, cueIds: string[]): Promise<number> {
+  async function queueLinesForReview(
+    userId: string,
+    episodeId: string,
+    items: { cueId: string; translation: string | null }[],
+  ): Promise<number> {
     const script = await getEpisodeScript(episodeId);
     if (!script) return 0;
     const reusable = new Map(
@@ -193,9 +214,11 @@ export function buildContainer(options: ContainerOptions) {
       ]),
     );
     const itemIds: string[] = [];
-    for (const cueId of cueIds) {
+    for (const { cueId, translation } of items) {
       const line = script.lines.find((candidate) => candidate.cueId === cueId);
-      if (!line || !line.translation || line.translationSource !== "subtitle_pt") continue;
+      const fromSubtitle = line?.translationSource === "subtitle_pt" ? line.translation : null;
+      const meaning = fromSubtitle ?? translation;
+      if (!line || !meaning) continue;
       const endToken = tokenize(line.text).length - 1;
       const known = reusable.get(`${cueId}:0:${endToken}`);
       if (known) {
@@ -203,6 +226,7 @@ export function buildContainer(options: ContainerOptions) {
         continue;
       }
       const id = ids.next();
+      const source = fromSubtitle ? ("subtitle_pt" as const) : ("llm" as const);
       await learning.createItem({
         id,
         episodeId,
@@ -219,14 +243,14 @@ export function buildContainer(options: ContainerOptions) {
           term: line.text,
           itemType: "sentence",
           difficulty: "B1",
-          meaning: line.translation,
-          meaningSource: "subtitle_pt",
+          meaning,
+          meaningSource: source,
           pronunciation: null,
           exampleEnglish: null,
           examplePortuguese: null,
           lineText: line.text,
-          lineTranslation: line.translation,
-          lineTranslationSource: "subtitle_pt",
+          lineTranslation: meaning,
+          lineTranslationSource: source,
           startMs: line.startMs,
           endMs: line.endMs,
           reusedItemId: null,
@@ -234,14 +258,19 @@ export function buildContainer(options: ContainerOptions) {
       });
       itemIds.push(id);
     }
-    return addCards(
+    const created = await addCards(
       userId,
       itemIds.map((learningItemId) => ({ learningItemId, sourceKind: "lesson_error" })),
     );
+    await cards.bringForward(userId, itemIds, clock.now());
+    return Math.max(created, itemIds.length);
   }
 
   const studyDeps = {
     study,
+    plans: study,
+    resolvePlanner,
+    notify,
     clock,
     ids,
     loadLines: loadTrailLines,
@@ -300,6 +329,9 @@ export function buildContainer(options: ContainerOptions) {
     }),
     getEpisodeScript,
 
+    ensurePlan: makeEnsurePlan(studyDeps),
+    generatePlan: makeGeneratePlan(studyDeps),
+    savePlan: (input: Parameters<typeof study.saveReady>[0]) => study.saveReady(input),
     getTrail: makeGetTrail(studyDeps),
     startLesson: makeStartLesson(studyDeps),
     completeLesson: makeCompleteLesson(studyDeps),

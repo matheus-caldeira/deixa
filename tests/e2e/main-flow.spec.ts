@@ -149,23 +149,33 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
 
   await page.goto("/");
   await expect(page.getByText("COMEÇAR")).toBeVisible();
+  await expect(page.getByText(/70% de acerto para liberar o próximo/)).toBeVisible();
   await page.getByRole("link", { name: "Continuar estudando" }).click();
   await expect(page).toHaveURL(/\/study\/.+\/2$/);
-  for (let step = 0; step < 8; step += 1) {
-    const finished = page.getByText(/Cena (perfeita|concluída)!/);
+  const finished = page.getByRole("heading", { name: /Ainda não foi desta vez|Bloco (perfeito|concluído)!/ });
+  for (let step = 0; step < 12; step += 1) {
     await expect(finished.or(page.getByRole("button", { name: /^(Verificar|Entendi)$/ }))).toBeVisible();
     if (await finished.isVisible()) break;
+    for (const option of await page.locator(".opt").all()) {
+      expect(await option.innerText()).toBe((await option.innerText()).toLowerCase());
+    }
     if ((await page.locator(".opt").count()) > 0) await page.locator(".opt").first().click();
     else if ((await page.locator(".bank .tok").count()) > 0) await page.locator(".bank .tok").first().click();
     else if ((await page.locator("textarea").count()) > 0) await page.locator("textarea").fill("teste");
     await page.getByRole("button", { name: /^(Verificar|Entendi)$/ }).click();
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
   }
-  await expect(page.getByText(/Cena (perfeita|concluída)!/)).toBeVisible();
-  await expect(page.locator(".dstat").first()).toContainText(/\+\d+/);
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(finished).toBeVisible();
+  if (await page.getByRole("heading", { name: "Ainda não foi desta vez" }).isVisible()) {
+    await expect(page.getByText(/Você precisa de 70% de acerto/)).toBeVisible();
+    await expect(page.locator(".dstat").first()).toContainText("+0");
+    await expect(page.getByRole("button", { name: "Tentar de novo" })).toBeVisible();
+    await page.getByRole("button", { name: "Voltar ao início" }).click();
+  } else {
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  }
   await expect(page.getByRole("button", { name: "Perfil de Matheus" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Desafio final" })).toBeVisible();
+  await expect(page.getByText("Desafio final")).toBeVisible();
 
   await page.getByRole("link", { name: /XP hoje/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Quem está estudando" })).toBeVisible();

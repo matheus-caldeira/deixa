@@ -1,0 +1,302 @@
+{
+  "blocks": [
+    {
+      "title": "Primeiro Encontro e Bebidas",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "prazer em conhecê-lo",
+          "distractors": [
+            "bom te ver de novo",
+            "legal te encontrar aqui",
+            "prazer em te ajudar"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 2,
+          "translation": "então, o que você vai beber hoje à noite?",
+          "distractors": [
+            "so, what are you thinking tonight?",
+            "so, what are you doing tonight?"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 4,
+          "translation": "boa escolha. acho que vou tomar uma cerveja.",
+          "extraWords": [
+            "drink",
+            "water"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 5,
+          "translation": "este lugar é bem aconchegante, não é?",
+          "word": "cozy",
+          "distractors": [
+            "crazy",
+            "easy"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 1,
+          "translation": "ótimo finalmente conhecê-la",
+          "distractors": [
+            "ótimo te ver de novo",
+            "ótimo te encontrar",
+            "ótimo te ajudar"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 3,
+          "translation": "vou pedir um copo de água com gás, por favor.",
+          "distractors": [
+            "i'll get a glass of sparkling wine, please",
+            "i'll get a glass of sparkling soda, please"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Interesses em Comum",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "o que você geralmente faz para se divertir?",
+          "distractors": [
+            "o que você costuma fazer?",
+            "o que você gosta de fazer?",
+            "o que você sempre faz?"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 7,
+          "translation": "eu adoro fazer trilhas e experimentar receitas novas.",
+          "distractors": [
+            "i love biking and trying new recipes",
+            "i love hiking and buying new recipes"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "eu gosto de fazer trilhas também, na verdade.",
+          "extraWords": [
+            "really",
+            "always"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 9,
+          "translation": "qual sua trilha favorita por aqui?",
+          "word": "favorite",
+          "distractors": [
+            "famous",
+            "first"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "isso é uma grande coincidência",
+          "distractors": [
+            "isso é uma boa ideia",
+            "isso é uma coisa boa",
+            "isso é uma surpresa"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 10,
+          "translation": "eu gosto daquela perto do farol antigo.",
+          "distractors": [
+            "i like the one up by the old house",
+            "i like the one up by the old light"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Contando Sobre o Encontro",
+      "startLine": 12,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 12,
+          "translation": "meu encontro ontem à noite foi demais!",
+          "distractors": [
+            "minha noite ontem foi ótima!",
+            "meu encontro ontem à noite foi bom!",
+            "minha data ontem à noite foi incrível!"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "não é possível! me conta tudo, mana!",
+          "distractors": [
+            "no way! tell me everything, please!",
+            "no way! tell me everything, miss!"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 14,
+          "translation": "ele era tão charmoso e genuinamente interessante.",
+          "extraWords": [
+            "very",
+            "always"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 17,
+          "translation": "ah, que fofo! parece promissor.",
+          "word": "sweet",
+          "distractors": [
+            "sweat",
+            "seat"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 19,
+          "translation": "então, quando é o segundo encontro?",
+          "distractors": [
+            "então, quando é o próximo encontro?",
+            "então, quando será o segundo?",
+            "então, quando é a próxima data?"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "ele já perguntou! vamos no próximo sábado.",
+          "distractors": [
+            "he already asked! we're going next sunday",
+            "he already asked! we're going next friday"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 22,
+          "translation": "estou muito animada. isso pode ser algo.",
+          "extraWords": [
+            "very",
+            "nice"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "meaning",
+      "line": 5,
+      "translation": "este lugar é bem aconchegante, não é?",
+      "distractors": [
+        "este lugar é bem legal, não é?",
+        "este lugar é bem pequeno, não é?",
+        "este lugar é bem novo, não é?"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 1,
+      "translation": "e você é a maya? ótimo finalmente conhecê-la.",
+      "distractors": [
+        "and you're maya? great to finally eat",
+        "and you're maya? great to finally speak"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 2,
+      "translation": "então, o que você vai beber hoje à noite?",
+      "extraWords": [
+        "eat",
+        "now"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 4,
+      "translation": "boa escolha. acho que vou tomar uma cerveja.",
+      "word": "beer",
+      "distractors": [
+        "bear",
+        "dear"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 7,
+      "translation": "eu adoro fazer trilhas e experimentar receitas novas.",
+      "distractors": [
+        "eu gosto de caminhar e cozinhar",
+        "eu amo trilhas e novas receitas",
+        "eu adoro andar e provar coisas"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 8,
+      "translation": "ah, legal! eu gosto de fazer trilhas também, na verdade.",
+      "distractors": [
+        "oh, cool! i'm into biking too, actually",
+        "oh, cool! i'm into hiding too, actually"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 9,
+      "translation": "não é possível! qual sua trilha favorita por aqui?",
+      "extraWords": [
+        "best",
+        "path"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 16,
+      "translation": "trilhas, culinária, viagens... a gente tinha tanta coisa em comum.",
+      "word": "common",
+      "distractors": [
+        "coming",
+        "company"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 21,
+      "translation": "eu sabia que vocês se dariam bem.",
+      "distractors": [
+        "eu sabia que vocês se dariam mal",
+        "eu sabia que vocês se encontrariam",
+        "eu sabia que vocês se ajudariam"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 23,
+      "translation": "me mantenha informada. não omita nenhum detalhe!",
+      "distractors": [
+        "keep me updated. don't leave out any dates!",
+        "keep me updated. don't leave out any deals!"
+      ]
+    }
+  ]
+}

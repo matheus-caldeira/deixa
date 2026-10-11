@@ -39,6 +39,7 @@ async function prepare(): Promise<void> {
         db: handle.db,
         logger: silentLogger,
         llmForUser: async () => fakeLlm,
+        plannerForUser: async () => null,
       }),
       db: handle.db,
       catalog: new DrizzleCatalogRepository(handle.db),

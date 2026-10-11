@@ -1,0 +1,326 @@
+{
+  "blocks": [
+    {
+      "title": "A corrida para o voo",
+      "startLine": 0,
+      "endLine": 7,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "Ufa, conseguimos! Bem na hora H.",
+          "distractors": [
+            "ufa, conseguimos! no último segundo",
+            "ufa, conseguimos! em tempo recorde",
+            "ufa, conseguimos! quase perdemos o prazo"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 5,
+          "translation": "Essa foi por pouco! Meu coração está batendo forte.",
+          "distractors": [
+            "that was close! my heart is founding",
+            "that was close! my heart is sounding"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "Que bom que corremos como loucos.",
+          "word": "crazy",
+          "distractors": [
+            "lazy",
+            "hazy",
+            "brazy"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 2,
+          "translation": "Portão 24, se apressa! O embarque fecha logo.",
+          "extraWords": [
+            "now",
+            "then"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 0,
+          "translation": "Corre! A gente vai perder nosso voo!"
+        },
+        {
+          "kind": "listen",
+          "line": 6,
+          "translation": "Não acredito que quase perdemos.",
+          "distractors": [
+            "can't believe we almost missed it",
+            "can't believe we almost kissed it"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 1,
+          "translation": "Estou correndo o mais rápido que posso, cara!",
+          "word": "fast",
+          "distractors": [
+            "last",
+            "feast",
+            "fist"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Alívio e expectativa",
+      "startLine": 8,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 9,
+          "translation": "Estou tão pronto para estas férias, porém.",
+          "distractors": [
+            "estou tão pronto para estas férias, agora",
+            "estou tão pronto para estas férias, sempre",
+            "estou tão pronto para estas férias, então"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 11,
+          "translation": "Pelo menos temos assentos na janela! Olhe lá fora.",
+          "distractors": [
+            "at least we have window seats! look out",
+            "at least we have window seats! hook out"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 10,
+          "translation": "Eu também. Só preciso relaxar depois desse sprint.",
+          "word": "sprint",
+          "distractors": [
+            "print",
+            "splint",
+            "sprout"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "Agora é só esperar nossa fileira embarcar.",
+          "extraWords": [
+            "just",
+            "then"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 9,
+          "translation": "Estou tão pronto para estas férias, porém."
+        }
+      ]
+    },
+    {
+      "title": "A mala perdida",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 16,
+          "translation": "Sério? Isso é ótimo. Credo.",
+          "distractors": [
+            "sério? isso é terrível. credo",
+            "sério? isso é perfeito. credo",
+            "sério? isso é excelente. credo"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 15,
+          "translation": "Ah, não. Parece que sua mala está perdida.",
+          "distractors": [
+            "oh no. looks like your bag is crossed",
+            "oh no. looks like your bag is tossed"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 14,
+          "translation": "Sim, com certeza não está nesta esteira.",
+          "word": "carousel",
+          "distractors": [
+            "carrousel",
+            "carosel",
+            "carousal"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 13,
+          "translation": "A minha está aqui. Você checou todas as etiquetas?",
+          "extraWords": [
+            "have",
+            "your"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 12,
+          "translation": "Cadê minha mala? Não estou vendo ela."
+        },
+        {
+          "kind": "listen",
+          "line": 17,
+          "translation": "Não entre em pânico ainda. Vamos falar com alguém.",
+          "distractors": [
+            "don't panic yet. let's talk to someone",
+            "don't panic yet. let's walk to someone"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Resolvendo o problema",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 22,
+          "translation": "Que incomodação. Que saco.",
+          "distractors": [
+            "que facilidade. que prazer",
+            "que alegria. que diversão",
+            "que sorte. que descanso"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 23,
+          "translation": "Pelo menos eles estão ajudando. Vamos torcer para que apareça.",
+          "distractors": [
+            "at least they're helping. let's hope it burns up",
+            "at least they're helping. let's hope it firms up"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "Posso ver sua etiqueta de bagagem, por favor?",
+          "word": "claim",
+          "distractors": [
+            "climb",
+            "clean",
+            "calm"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "Certo, vamos registrar um relatório para você.",
+          "extraWords": [
+            "then",
+            "just"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 18,
+          "translation": "Com licença, não consigo encontrar minha bagagem."
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "Aqui está. É uma mala de rodinhas preta.",
+          "distractors": [
+            "here it is. it's a black roller bag",
+            "here it is. it's a black caller bag"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "type",
+      "line": 4,
+      "translation": "Ufa, conseguimos! Bem na hora H."
+    },
+    {
+      "kind": "blank",
+      "line": 5,
+      "translation": "Essa foi por pouco! Meu coração está batendo forte.",
+      "word": "pounding",
+      "distractors": [
+        "founding",
+        "sounding",
+        "rounding"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 7,
+      "translation": "Que bom que corremos como loucos.",
+      "extraWords": [
+        "so",
+        "much"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 11,
+      "translation": "Pelo menos temos assentos na janela! Olhe lá fora.",
+      "word": "window",
+      "distractors": [
+        "windo",
+        "winder",
+        "winedow"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 16,
+      "translation": "Sério? Isso é ótimo. Credo."
+    },
+    {
+      "kind": "order",
+      "line": 15,
+      "translation": "Ah, não. Parece que sua mala está perdida.",
+      "extraWords": [
+        "now",
+        "really"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 22,
+      "translation": "Que incomodação. Que saco.",
+      "distractors": [
+        "this is such a hassle. what a pain",
+        "this is such a tassel. what a pain"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 1,
+      "translation": "Estou correndo o mais rápido que posso, cara!",
+      "extraWords": [
+        "so",
+        "very"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 10,
+      "translation": "Eu também. Só preciso relaxar depois desse sprint."
+    },
+    {
+      "kind": "type",
+      "line": 19,
+      "translation": "Posso ver sua etiqueta de bagagem, por favor?"
+    }
+  ]
+}

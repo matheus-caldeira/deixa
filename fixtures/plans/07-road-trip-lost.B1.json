@@ -1,0 +1,344 @@
+{
+  "blocks": [
+    {
+      "title": "O GPS falha",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "quase lá",
+          "distractors": [
+            "quase aqui",
+            "quase perto",
+            "quase pronto"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 1,
+          "translation": "deixa eu checar o gps",
+          "word": "check",
+          "distractors": [
+            "cheque",
+            "chick",
+            "chuck"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 2,
+          "translation": "a tela está preta",
+          "extraWords": [
+            "the",
+            "dark"
+          ],
+          "answer": "screen is black"
+        },
+        {
+          "kind": "listen",
+          "line": 3,
+          "translation": "não é possível",
+          "distractors": [
+            "no weigh",
+            "know way"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 4,
+          "translation": "parece que travou totalmente"
+        },
+        {
+          "kind": "meaning",
+          "line": 5,
+          "translation": "no meio do nada",
+          "distractors": [
+            "no meio da estrada",
+            "no meio do caminho",
+            "no meio de lugar nenhum"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Perdidos e sem sinal",
+      "startLine": 6,
+      "endLine": 10,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "zona morta",
+          "word": "dead",
+          "distractors": [
+            "dad",
+            "did",
+            "date"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 8,
+          "translation": "totalmente encalhados",
+          "distractors": [
+            "totalmente perdidos",
+            "totalmente parados",
+            "totalmente presos"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 9,
+          "translation": "não se preocupe",
+          "extraWords": [
+            "not",
+            "worry"
+          ],
+          "answer": "don't fret"
+        },
+        {
+          "kind": "listen",
+          "line": 10,
+          "translation": "minha bexiga está prestes a explodir",
+          "distractors": [
+            "my blatter is about to burst",
+            "my ladder is about to burst"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 6,
+          "translation": "tem sinal para usar o mapa do meu celular"
+        },
+        {
+          "kind": "meaning",
+          "line": 7,
+          "translation": "nenhum sinal em lugar nenhum",
+          "distractors": [
+            "nenhuma barra em lugar nenhum",
+            "nenhum bar em lugar nenhum",
+            "nenhuma cerca em lugar nenhum"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Um posto de gasolina!",
+      "startLine": 11,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "lá na frente",
+          "distractors": [
+            "lá em cima",
+            "lá atrás",
+            "lá adiante"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 12,
+          "translation": "encosta, encosta",
+          "word": "pull",
+          "distractors": [
+            "pool",
+            "pal",
+            "pill"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 13,
+          "translation": "pedir informações",
+          "extraWords": [
+            "the",
+            "help"
+          ],
+          "answer": "ask for directions"
+        },
+        {
+          "kind": "listen",
+          "line": 14,
+          "translation": "estou faminto",
+          "distractors": [
+            "i'm starting",
+            "i'm carving"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 15,
+          "translation": "volto já com boas notícias"
+        },
+        {
+          "kind": "meaning",
+          "line": 17,
+          "translation": "que alívio",
+          "distractors": [
+            "que relevo",
+            "que relevância",
+            "que refrigério"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Boas notícias e lanches",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "não estamos muito longe",
+          "distractors": [
+            "não muito perto",
+            "não muito difícil",
+            "não muito fora"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 20,
+          "translation": "depois direto",
+          "word": "ahead",
+          "distractors": [
+            "head",
+            "aide",
+            "aid"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "você pegou os lanches",
+          "extraWords": [
+            "some",
+            "buy"
+          ],
+          "answer": "get the snacks"
+        },
+        {
+          "kind": "listen",
+          "line": 22,
+          "translation": "enchi de salgadinhos e refrigerantes pra gente",
+          "distractors": [
+            "loaded up on ships and sodas for us",
+            "loaded on chips and sodas for us"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 23,
+          "translation": "vamos pegar a estrada"
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "pegar a estrada",
+          "distractors": [
+            "bater na estrada",
+            "atingir a estrada",
+            "acertar a estrada"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "meaning",
+      "line": 1,
+      "translation": "deve estar perto",
+      "distractors": [
+        "deve ser perto",
+        "deve estar fechado",
+        "deve ser fechado"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 3,
+      "translation": "tenta reiniciar rápido",
+      "word": "quickly",
+      "distractors": [
+        "quick",
+        "quicky",
+        "quikly"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 5,
+      "translation": "perdidos no meio",
+      "extraWords": [
+        "of",
+        "nowhere"
+      ],
+      "answer": "lost in the middle"
+    },
+    {
+      "kind": "listen",
+      "line": 8,
+      "translation": "estamos totalmente encalhados",
+      "distractors": [
+        "we're totally branded",
+        "we're totally sanded"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 9,
+      "translation": "não se preocupe"
+    },
+    {
+      "kind": "meaning",
+      "line": 10,
+      "translation": "prestes a explodir",
+      "distractors": [
+        "quase explodir",
+        "pronto para explodir",
+        "a ponto de estourar"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 12,
+      "translation": "graças a deus",
+      "word": "goodness",
+      "distractors": [
+        "goodnes",
+        "goodens",
+        "goodnesss"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 14,
+      "translation": "pega uns lanches pra gente",
+      "extraWords": [
+        "for",
+        "please"
+      ],
+      "answer": "grab us some snacks"
+    },
+    {
+      "kind": "listen",
+      "line": 18,
+      "translation": "não estamos muito longe",
+      "distractors": [
+        "we're not too far of",
+        "we're not too far on"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 23,
+      "translation": "você é um salvador"
+    }
+  ]
+}

@@ -1,0 +1,325 @@
+{
+  "blocks": [
+    {
+      "title": "Abertura da Entrevista",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 1,
+          "translation": "eu usei bastante no meu papel anterior",
+          "word": "extensively",
+          "distractors": [
+            "expansively",
+            "intensively"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 2,
+          "translation": "você consegue lidar com ambientes de startup acelerados",
+          "distractors": [
+            "can you handle fast-paced startup experiments",
+            "can you handle fast-paced startup movements"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "eu prospero sob pressão e prazos apertados",
+          "extraWords": [
+            "often",
+            "always"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 4,
+          "translation": "a gente se move rápido aqui"
+        },
+        {
+          "kind": "meaning",
+          "line": 5,
+          "translation": "estou pronto para o desafio, animado para aprender",
+          "distractors": [
+            "estou preparado para a competição",
+            "estou apto para a dificuldade",
+            "estou disposto para a provocação"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 3,
+          "translation": "com certeza",
+          "distractors": [
+            "absolutely not",
+            "absolutely sure"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Cultura e Rotina",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 7,
+          "translation": "como é a cultura da equipe aqui",
+          "word": "culture",
+          "distractors": [
+            "cooler",
+            "color"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "valorizamos muito a comunicação aberta",
+          "extraWords": [
+            "always",
+            "highly"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 9,
+          "translation": "isso parece fantástico"
+        },
+        {
+          "kind": "listen",
+          "line": 10,
+          "translation": "varia",
+          "distractors": [
+            "it carries",
+            "it buries"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "estou realmente impressionado com sua empresa",
+          "distractors": [
+            "estou realmente impactado por sua empresa",
+            "estou realmente afetado por sua empresa",
+            "estou realmente influenciado por sua empresa"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 8,
+          "translation": "bem colaborativa"
+        }
+      ]
+    },
+    {
+      "title": "Pós-Entrevista: Relato",
+      "startLine": 12,
+      "endLine": 16,
+      "exercises": [
+        {
+          "kind": "listen",
+          "line": 12,
+          "translation": "foi bem",
+          "distractors": [
+            "it went wild",
+            "it went whale"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 13,
+          "translation": "como foi"
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "mandei bem",
+          "distractors": [
+            "preguei isso",
+            "acertei o alvo",
+            "fixei isso"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "você teve uma boa impressão deles",
+          "word": "vibe",
+          "distractors": [
+            "five",
+            "hive"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 16,
+          "translation": "parece bem legal, na verdade",
+          "extraWords": [
+            "really",
+            "quite"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 14,
+          "translation": "trabalhar rápido",
+          "distractors": [
+            "working first",
+            "working past"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pós-Entrevista: Torcida",
+      "startLine": 17,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "estou torcendo os dedos agora",
+          "distractors": [
+            "estou cruzando meus dedos agora",
+            "estou unindo meus dedos agora",
+            "estou entrelaçando meus dedos agora"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "você é um candidato forte",
+          "word": "strong",
+          "distractors": [
+            "wrong",
+            "strung"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 20,
+          "translation": "parece ser a certa"
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "torcendo por você",
+          "extraWords": [
+            "always",
+            "just"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 22,
+          "translation": "para feedback",
+          "distractors": [
+            "for feed back",
+            "for feed pack"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "me mantenha informado",
+          "distractors": [
+            "me mantenha publicado",
+            "me mantenha atualizado",
+            "me mantenha afixado"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 17,
+          "translation": "espero que você consiga o emprego"
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "order",
+      "line": 0,
+      "translation": "me fale sobre sua experiência com python",
+      "extraWords": [
+        "just",
+        "then"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 2,
+      "translation": "ambientes de startup acelerados",
+      "word": "fast-paced",
+      "distractors": [
+        "fast-passed",
+        "face-paced"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 4,
+      "translation": "bom saber",
+      "distractors": [
+        "good to here",
+        "good to fear"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 6,
+      "translation": "você tem alguma pergunta para mim"
+    },
+    {
+      "kind": "meaning",
+      "line": 8,
+      "translation": "comunicação aberta",
+      "distractors": [
+        "comunicação livre",
+        "comunicação desimpedida",
+        "comunicação franca"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 10,
+      "translation": "principalmente codificação, reuniões e brainstorming",
+      "extraWords": [
+        "often",
+        "also"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 12,
+      "translation": "acabei a entrevista",
+      "word": "finished",
+      "distractors": [
+        "finishing",
+        "fished"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 15,
+      "translation": "você teve uma boa impressão deles"
+    },
+    {
+      "kind": "listen",
+      "line": 19,
+      "translation": "eles teriam sorte",
+      "distractors": [
+        "they'd be lucky",
+        "they'd be lovely"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 23,
+      "translation": "vamos comemorar depois"
+    }
+  ]
+}

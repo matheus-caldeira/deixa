@@ -1,0 +1,361 @@
+{
+  "blocks": [
+    {
+      "title": "A Entrevista Começa",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "Então, me fale sobre sua experiência com Python.",
+          "distractors": [
+            "então, me diga sua opinião sobre python",
+            "então, me conte sobre seu projeto com python",
+            "então, me explique sua dificuldade com python"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 1,
+          "translation": "Eu usei bastante no meu papel anterior.",
+          "word": "used",
+          "distractors": [
+            "use",
+            "uses"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 2,
+          "translation": "Ótimo. Você consegue lidar com ambientes de startup acelerados?",
+          "distractors": [
+            "great. can you handle fast-paced start-up environments?",
+            "great. can you handle fast-paced start-up environment?"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "Com certeza. Eu prospero sob pressão e prazos apertados.",
+          "extraWords": [
+            "always",
+            "never"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "Bom saber. A gente se move rápido aqui.",
+          "distractors": [
+            "bom ouvir. nós nos mudamos rapidamente aqui",
+            "bom ver. nós nos movemos devagar aqui",
+            "bom falar. nós nos mudamos para cá"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 5,
+          "translation": "Estou pronto para o desafio, animado para aprender.",
+          "word": "ready",
+          "distractors": [
+            "read",
+            "ride"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Perguntas do Candidato",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "Você tem alguma pergunta para mim?",
+          "distractors": [
+            "você tem alguma resposta para mim?",
+            "você tem alguma dúvida sobre mim?",
+            "você tem alguma sugestão para mim?"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 7,
+          "translation": "Sim. Como é a cultura da equipe aqui?",
+          "extraWords": [
+            "what",
+            "where"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 8,
+          "translation": "Bem colaborativa. Valorizamos muito a comunicação aberta.",
+          "word": "value",
+          "distractors": [
+            "values",
+            "valued"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 9,
+          "translation": "Isso parece fantástico. Como é um dia típico?",
+          "distractors": [
+            "that sounds fantastic. what's a typical play?",
+            "that sounds fantastic. what's a typical way?"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "Varia. Principalmente codificação, reuniões e brainstorming.",
+          "distractors": [
+            "é variado. principalmente codificação, encontros e ideias",
+            "varia. principalmente codificação, encontros e discussões",
+            "é variado. principalmente codificação, reuniões e pensamentos"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 11,
+          "translation": "Obrigado. Estou realmente impressionado com sua empresa.",
+          "word": "impressed",
+          "distractors": [
+            "impress",
+            "impressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Pós-Entrevista",
+      "startLine": 12,
+      "endLine": 16,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 12,
+          "translation": "E aí, acabei a entrevista. Foi bem!",
+          "distractors": [
+            "ei, acabei a reunião. foi bom!",
+            "olá, terminei a conversa. foi bem!",
+            "oi, finalizei a entrevista. foi legal!"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 13,
+          "translation": "Massa! Me conta tudo. Como foi?",
+          "extraWords": [
+            "what",
+            "when"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 14,
+          "translation": "Eles perguntaram sobre Python e trabalhar rápido. Mandei bem.",
+          "word": "asked",
+          "distractors": [
+            "ask",
+            "asking"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 15,
+          "translation": "Legal! Você teve uma boa impressão deles?",
+          "distractors": [
+            "nice! did you get a good buy from them?",
+            "nice! did you get a good five from them?"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 16,
+          "translation": "Sim, a cultura da equipe parece bem legal, na verdade.",
+          "distractors": [
+            "sim, a cultura do time soa bem legal, de fato",
+            "sim, a cultura da equipe parece bem fria, na verdade",
+            "sim, a cultura do time soa bem boa, de fato"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Torcendo Pelo Emprego",
+      "startLine": 17,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "blank",
+          "line": 17,
+          "translation": "Que ótimo! Espero que você consiga o emprego, amigo.",
+          "word": "hope",
+          "distractors": [
+            "hop",
+            "home"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 18,
+          "translation": "Obrigado! Estou torcendo os dedos agora.",
+          "distractors": [
+            "obrigado! estou cruzando meus dedos agora",
+            "obrigado! estou segurando meus dedos agora",
+            "obrigado! estou apertando meus dedos agora"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 19,
+          "translation": "Você é um candidato forte. Eles teriam sorte.",
+          "extraWords": [
+            "very",
+            "always"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 20,
+          "translation": "Eu realmente quero essa vaga. Parece ser a certa.",
+          "distractors": [
+            "i really want this one. it feels light.",
+            "i really want this one. it feels bright."
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 21,
+          "translation": "Torcendo por você! Qual o próximo passo?",
+          "distractors": [
+            "dedos cruzados para você! o que vem depois?",
+            "mãos cruzadas para você! qual o próximo?",
+            "dedos torcidos para você! o que é o próximo?"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 22,
+          "translation": "Eles entrarão em contato comigo na próxima semana para feedback.",
+          "word": "contact",
+          "distractors": [
+            "contract",
+            "context"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 23,
+          "translation": "Beleza, me mantenha informado. Vamos comemorar depois!",
+          "extraWords": [
+            "always",
+            "never"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 0,
+      "translation": "Então, me fale sobre sua experiência com Python.",
+      "distractors": [
+        "so, tell me about your experience with pilot.",
+        "so, tell me about your experience with fighting."
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 2,
+      "translation": "Ótimo. Você consegue lidar com ambientes de startup acelerados?",
+      "word": "handle",
+      "distractors": [
+        "hand",
+        "hands"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 4,
+      "translation": "Bom saber. A gente se move rápido aqui.",
+      "extraWords": [
+        "slowly",
+        "always"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 6,
+      "translation": "Você tem alguma pergunta para mim?",
+      "word": "any",
+      "distractors": [
+        "many",
+        "my"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 8,
+      "translation": "Bem colaborativa. Valorizamos muito a comunicação aberta.",
+      "distractors": [
+        "muito colaborativa. valorizamos a comunicação aberta",
+        "bem colaborativa. gostamos muito da comunicação aberta",
+        "muito colaborativa. apreciamos a comunicação aberta"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 10,
+      "translation": "Varia. Principalmente codificação, reuniões e brainstorming.",
+      "extraWords": [
+        "always",
+        "never"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 12,
+      "translation": "E aí, acabei a entrevista. Foi bem!",
+      "word": "finished",
+      "distractors": [
+        "finish",
+        "finishes"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 14,
+      "translation": "Eles perguntaram sobre Python e trabalhar rápido. Mandei bem.",
+      "distractors": [
+        "eles perguntaram sobre python e trabalhar devagar. mandei bem",
+        "eles falaram sobre python e trabalhar rápido. acertei",
+        "eles perguntaram sobre python e trabalhar rápido. errei"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 16,
+      "translation": "Sim, a cultura da equipe parece bem legal, na verdade.",
+      "word": "pretty",
+      "distractors": [
+        "party",
+        "pity"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 18,
+      "translation": "Obrigado! Estou torcendo os dedos agora.",
+      "distractors": [
+        "thanks! i'm crossing my fingers out.",
+        "thanks! i'm crossing my fingers down."
+      ]
+    }
+  ]
+}

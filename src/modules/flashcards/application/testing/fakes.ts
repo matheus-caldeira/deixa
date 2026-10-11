@@ -31,6 +31,13 @@ export class InMemoryCards implements CardRepository {
     return created;
   }
 
+  async bringForward(userId: string, learningItemIds: string[], now: Date): Promise<void> {
+    for (const row of this.rows) {
+      if (row.userId === userId && learningItemIds.includes(row.learningItemId) && row.dueAt > now)
+        row.dueAt = now;
+    }
+  }
+
   private due(userId: string, now: Date): Row[] {
     return this.rows
       .filter((row) => row.userId === userId && row.dueAt <= now)
