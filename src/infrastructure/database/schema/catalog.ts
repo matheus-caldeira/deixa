@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -89,9 +91,18 @@ export const subtitleFiles = pgTable(
     originalFilename: text("original_filename").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
     uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+    source: text("source").notNull().default("upload"),
+    externalFileId: text("external_file_id"),
+    releaseName: text("release_name"),
+    sourceAuthor: text("source_author"),
+    hearingImpaired: boolean("hearing_impaired"),
+    fps: doublePrecision("fps"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
+    uniqueIndex("subtitle_files_external")
+      .on(table.source, table.externalFileId)
+      .where(sql`${table.externalFileId} is not null`),
     uniqueIndex("subtitle_files_dedupe").on(
       table.episodeId,
       table.language,
@@ -182,3 +193,20 @@ export const audioAssets = pgTable(
   },
   (table) => [uniqueIndex("audio_assets_hash_voice").on(table.textHash, table.voiceId)],
 );
+
+export const subtitleSearchCache = pgTable("subtitle_search_cache", {
+  episodeId: uuid("episode_id")
+    .primaryKey()
+    .references(() => episodes.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  languages: text("languages").notNull(),
+  resultsJson: jsonb("results_json").notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+});
+
+export const externalApiQuota = pgTable("external_api_quota", {
+  provider: text("provider").primaryKey(),
+  remaining: integer("remaining").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});

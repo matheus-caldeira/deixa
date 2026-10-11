@@ -40,6 +40,17 @@ export class DrizzleSubtitleRepository implements SubtitleRepository {
       language: toLanguage(row.language),
       sha256: row.sha256,
       storagePath: row.storagePath,
+      origin:
+        row.source === "opensubtitles" && row.externalFileId
+          ? {
+              source: "opensubtitles" as const,
+              externalFileId: row.externalFileId,
+              releaseName: row.releaseName,
+              author: row.sourceAuthor,
+              hearingImpaired: row.hearingImpaired,
+              fps: row.fps,
+            }
+          : null,
     }));
   }
 
@@ -120,6 +131,12 @@ export class DrizzleSubtitleRepository implements SubtitleRepository {
           originalFilename: file.originalFilename,
           sizeBytes: file.sizeBytes,
           uploadedBy: record.userId,
+          source: file.origin?.source ?? "upload",
+          externalFileId: file.origin?.externalFileId ?? null,
+          releaseName: file.origin?.releaseName ?? null,
+          sourceAuthor: file.origin?.author ?? null,
+          hearingImpaired: file.origin?.hearingImpaired ?? null,
+          fps: file.origin?.fps ?? null,
           createdAt: record.now,
         });
         for (const batch of chunks(file.cues)) {

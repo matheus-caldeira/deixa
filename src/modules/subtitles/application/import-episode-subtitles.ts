@@ -17,10 +17,11 @@ import type {
   NewSubtitleFile,
   ProcessingStep,
   StoredCue,
+  SubtitleOrigin,
   SubtitleRepository,
 } from "./ports";
 
-export type UploadedSubtitle = { filename: string; bytes: Uint8Array };
+export type UploadedSubtitle = { filename: string; bytes: Uint8Array; origin?: SubtitleOrigin };
 
 export type ImportResult = {
   outcome: "PROCESSED" | "DUPLICATE";
@@ -143,6 +144,7 @@ export function makeImportEpisodeSubtitles(deps: {
           language: "en",
           sha256: english.sha256,
           storagePath,
+          origin: english.upload.origin ?? null,
           originalFilename: english.upload.filename,
           sizeBytes: english.upload.bytes.byteLength,
           cues: englishCues,
@@ -162,6 +164,7 @@ export function makeImportEpisodeSubtitles(deps: {
           language: "pt-BR",
           sha256: portuguese.sha256,
           storagePath,
+          origin: portuguese.upload.origin ?? null,
           originalFilename: portuguese.upload.filename,
           sizeBytes: portuguese.upload.bytes.byteLength,
           cues: portugueseCues,

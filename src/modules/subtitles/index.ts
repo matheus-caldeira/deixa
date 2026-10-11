@@ -8,6 +8,7 @@ export type {
   StoredAlignment,
   StoredCue,
   StoredSubtitleFile,
+  SubtitleOrigin,
   SubtitleRepository,
 } from "./application/ports";
 export {
