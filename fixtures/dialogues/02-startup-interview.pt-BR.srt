@@ -1,0 +1,92 @@
+1
+00:00:51,430 --> 00:00:54,370
+Então, me fale sobre sua experiência com Python.
+
+2
+00:00:55,010 --> 00:00:57,970
+Eu usei bastante no meu papel anterior.
+
+3
+00:00:58,820 --> 00:01:01,490
+Ótimo. Você consegue lidar com ambientes de startup acelerados?
+
+4
+00:01:02,080 --> 00:01:05,100
+Com certeza. Eu prospero sob pressão e prazos apertados.
+
+5
+00:01:05,860 --> 00:01:08,620
+Bom saber. A gente se move rápido aqui.
+
+6
+00:01:09,200 --> 00:01:12,150
+Estou pronto para o desafio, animado para aprender.
+
+7
+00:04:20,450 --> 00:04:23,140
+Você tem alguma pergunta para mim?
+
+8
+00:04:23,810 --> 00:04:26,490
+Sim. Como é a cultura da equipe aqui?
+
+9
+00:04:27,150 --> 00:04:30,250
+Bem colaborativa. Valorizamos muito a comunicação aberta.
+
+10
+00:04:30,930 --> 00:04:33,570
+Isso parece fantástico. Como é um dia típico?
+
+11
+00:04:34,280 --> 00:04:37,060
+Varia. Principalmente codificação, reuniões e brainstorming.
+
+12
+00:04:37,800 --> 00:04:40,390
+Obrigado. Estou realmente impressionado com sua empresa.
+
+13
+00:08:08,290 --> 00:08:11,430
+E aí, acabei a entrevista. Foi bem!
+
+14
+00:08:12,100 --> 00:08:14,740
+Massa! Me conta tudo. Como foi?
+
+15
+00:08:15,450 --> 00:08:18,720
+Eles perguntaram sobre Python e trabalhar rápido. Mandei bem.
+
+16
+00:08:19,470 --> 00:08:22,690
+Legal! Você teve uma boa impressão deles?
+
+17
+00:08:23,310 --> 00:08:26,320
+Sim, a cultura da equipe parece bem legal, na verdade.
+
+18
+00:08:27,060 --> 00:08:30,070
+Que ótimo! Espero que você consiga o emprego, amigo.
+
+19
+00:12:22,310 --> 00:12:24,790
+Obrigado! Estou torcendo os dedos agora.
+
+20
+00:12:25,610 --> 00:12:28,340
+Você é um candidato forte. Eles teriam sorte.
+
+21
+00:12:28,920 --> 00:12:31,860
+Eu realmente quero essa vaga. Parece ser a certa.
+
+22
+00:12:32,640 --> 00:12:35,120
+Torcendo por você! Qual o próximo passo?
+
+23
+00:12:39,200 --> 00:12:42,010
+Beleza, me mantenha informado. Vamos comemorar depois!
+

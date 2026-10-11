@@ -1,0 +1,96 @@
+1
+00:01:06,000 --> 00:01:08,720
+Are we almost there? I'm getting hungry.
+
+2
+00:01:09,420 --> 00:01:12,400
+Should be close. Let me check the GPS.
+
+3
+00:01:13,100 --> 00:01:16,080
+Uh oh. It's not working. Screen is black.
+
+4
+00:01:16,780 --> 00:01:19,500
+What? No way! Try restarting it quickly.
+
+5
+00:01:20,200 --> 00:01:22,920
+Still nothing. Looks like it totally crashed.
+
+6
+00:01:23,620 --> 00:01:26,600
+Great. We're lost in the middle of nowhere.
+
+7
+00:04:45,000 --> 00:04:48,240
+Is there a signal to use my phone map?
+
+8
+00:04:48,940 --> 00:04:51,400
+Nope. Dead zone. No bars anywhere.
+
+9
+00:04:52,100 --> 00:04:54,820
+This is just great. We're totally stranded.
+
+10
+00:04:55,520 --> 00:04:58,500
+Don't fret. We'll find a gas station soon.
+
+11
+00:04:59,200 --> 00:05:02,440
+I hope so. My bladder is about to burst.
+
+12
+00:05:03,140 --> 00:05:06,380
+Look! Up ahead! Is that a gas station sign?
+
+13
+00:08:28,000 --> 00:08:30,720
+Yes! Thank goodness. Pull over, pull over!
+
+14
+00:08:31,420 --> 00:08:34,400
+Finally! I'm going to ask for directions inside.
+
+15
+00:08:35,100 --> 00:08:38,080
+And grab us some snacks, please. I'm starving.
+
+16
+00:08:38,780 --> 00:08:41,760
+Got it. Be right back with good news.
+
+17
+00:08:42,460 --> 00:08:45,440
+Don't forget a map if they have one.
+
+18
+00:08:46,140 --> 00:08:48,860
+Will do. Phew, what a relief though.
+
+19
+00:12:52,000 --> 00:12:54,980
+Okay, good news! We're not too far off.
+
+20
+00:12:55,680 --> 00:12:58,660
+Really? Thank god! How do we get there?
+
+21
+00:12:59,360 --> 00:13:02,340
+Just a few more turns, then straight ahead.
+
+22
+00:13:03,040 --> 00:13:05,760
+Awesome! And did you get the snacks?
+
+23
+00:13:06,460 --> 00:13:09,440
+Loaded up on chips and sodas for us.
+
+24
+00:13:10,140 --> 00:13:12,860
+You're a lifesaver! Let's hit the road!
+

@@ -5,6 +5,17 @@ import type { CefrLevel } from "@/shared/levels";
 export const SEED_EMAIL_SUFFIX = "@deixa.example";
 export const SEED_PASSWORD = "deixa1234";
 
+export const SEED_DIALOGUES = [
+  "01-roommates-chores",
+  "02-startup-interview",
+  "03-airport-drama",
+  "04-first-date-story",
+  "05-office-deadline",
+  "06-rainy-move",
+  "07-road-trip-lost",
+  "08-surprise-party",
+] as const;
+
 export type EpisodeKey = `${string}-${number}-${number}`;
 
 export type SeedProfile = {
@@ -18,7 +29,7 @@ export type SeedProfile = {
   currentEpisode: EpisodeKey;
   scenesDone: number;
   progress: Record<EpisodeKey, number>;
-  premarks: [number, string][];
+  premarks: [number, number, number][];
   prelines: number[];
   reviews: { en: string; pt: string; episode: EpisodeKey }[];
   history: { streak: number; xpToday: number; totalXp: number };
@@ -45,11 +56,11 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     scenesDone: 1,
     progress: { "friends-1-1": 100, "friends-1-2": 35, "prada-0-1": 10 },
     premarks: [
-      [0, "tonight"],
-      [6, "disaster"],
-      [12, "college"],
-      [14, "pretend"],
-      [20, "tomorrow"],
+      [0, 1, 1],
+      [6, 2, 2],
+      [12, 0, 0],
+      [14, 3, 3],
+      [20, 1, 1],
     ],
     prelines: [8],
     reviews: [
@@ -95,10 +106,10 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
       "office-1-1": 45,
     },
     premarks: [
-      [1, "catch up on"],
-      [9, "picked up the tab"],
-      [10, "beat yourself up"],
-      [16, "ran into"],
+      [1, 2, 4],
+      [9, 1, 3],
+      [10, 0, 2],
+      [16, 2, 3],
     ],
     prelines: [22],
     reviews: [
@@ -143,9 +154,9 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
       "socialnetwork-0-1": 55,
     },
     premarks: [
-      [15, "play it cool"],
-      [4, "first round's on me"],
-      [19, "dude"],
+      [15, 1, 3],
+      [4, 0, 2],
+      [19, 0, 0],
     ],
     prelines: [],
     reviews: [
@@ -271,18 +282,18 @@ export const SEED_WORKS: readonly {
 export const SHARED_MARKS: readonly {
   episode: EpisodeKey;
   by: string[];
-  marks: [number, string][];
+  marks: [number, number, number][];
   lines: number[];
 }[] = [
   {
     episode: "himym-1-3",
     by: ["ana", "lucas"],
     marks: [
-      [1, "catch up on"],
-      [9, "picked up the tab"],
-      [10, "beat yourself up"],
+      [1, 2, 4],
+      [9, 1, 3],
+      [10, 0, 2],
     ],
     lines: [],
   },
-  { episode: "himym-1-3", by: ["lucas"], marks: [[15, "play it cool"]], lines: [] },
+  { episode: "himym-1-3", by: ["lucas"], marks: [[15, 1, 3]], lines: [] },
 ];

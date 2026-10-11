@@ -26,9 +26,10 @@ import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { systemClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
 import { uuidGenerator } from "@/shared/ids";
-import { cleanToken, normalizeTerm, tokenize } from "@/shared/text";
+import { normalizeTerm, tokenize } from "@/shared/text";
 import { MS_PER_DAY } from "@/shared/time";
 import {
+  SEED_DIALOGUES,
   SEED_EMAIL_SUFFIX,
   SEED_PASSWORD,
   SEED_PROFILES,
@@ -38,19 +39,7 @@ import {
 } from "./data";
 
 const SEED_HISTORY_DAYS = 60;
-const ENGLISH_FIXTURE = "fixtures/sample.en.srt";
-const PORTUGUESE_FIXTURE = "fixtures/sample.pt-BR.srt";
-
-function tokenIndexesOf(text: string, phrase: string): number[] {
-  const tokens = tokenize(text).map((token) => cleanToken(token).toLowerCase());
-  const words = phrase.toLowerCase().split(" ");
-  for (let start = 0; start <= tokens.length - words.length; start += 1) {
-    if (words.every((word, offset) => tokens[start + offset] === word)) {
-      return words.map((_, offset) => start + offset);
-    }
-  }
-  return [];
-}
+const DIALOGUES_DIR = "fixtures/dialogues";
 
 export async function runSeed(input: {
   container: Container;
@@ -104,11 +93,19 @@ export async function runSeed(input: {
   }
   const registerWork = makeRegisterWork(catalogDeps);
   const loadSeasonEpisodes = makeLoadSeasonEpisodes(catalogDeps);
-  const english = { filename: "sample.en.srt", bytes: new Uint8Array(await readFile(ENGLISH_FIXTURE)) };
-  const portuguese = {
-    filename: "sample.pt-BR.srt",
-    bytes: new Uint8Array(await readFile(PORTUGUESE_FIXTURE)),
-  };
+  const dialogues = await Promise.all(
+    SEED_DIALOGUES.map(async (name) => ({
+      english: {
+        filename: `${name}.en.srt`,
+        bytes: new Uint8Array(await readFile(`${DIALOGUES_DIR}/${name}.en.srt`)),
+      },
+      portuguese: {
+        filename: `${name}.pt-BR.srt`,
+        bytes: new Uint8Array(await readFile(`${DIALOGUES_DIR}/${name}.pt-BR.srt`)),
+      },
+    })),
+  );
+  let importedEpisodes = 0;
 
   const episodeIdByKey = new Map<EpisodeKey, string>();
   for (const work of SEED_WORKS) {
@@ -138,11 +135,16 @@ export async function runSeed(input: {
         await db.update(episodes).set({ status: state }).where(eq(episodes.id, episodeId));
         continue;
       }
+      const dialogue = dialogues[importedEpisodes % dialogues.length];
+      importedEpisodes += 1;
+      if (!dialogue) continue;
+      const alreadyImported = (await container.getEpisodeScript(episodeId)) !== null;
+      if (alreadyImported) continue;
       await container.importEpisodeSubtitles({
         userId: uploaderId,
         episodeId,
-        english,
-        portuguese: state === "READY_PT" ? portuguese : undefined,
+        english: dialogue.english,
+        portuguese: state === "READY_PT" ? dialogue.portuguese : undefined,
       });
     }
   }
@@ -150,7 +152,7 @@ export async function runSeed(input: {
 
   async function marksFor(
     episodeId: string,
-    phrases: [number, string][],
+    ranges: [number, number, number][],
     lines: number[],
   ): Promise<CueMarks[]> {
     const script = await container.getEpisodeScript(episodeId);
@@ -163,10 +165,10 @@ export async function runSeed(input: {
       byCue.set(line.cueId, existing);
       return existing;
     };
-    for (const [lineIndex, phrase] of phrases) {
+    for (const [lineIndex, startToken, endToken] of ranges) {
       const mark = entry(lineIndex);
-      const line = script.lines[lineIndex];
-      if (mark && line) mark.tokens.push(...tokenIndexesOf(line.text, phrase));
+      if (!mark) continue;
+      for (let token = startToken; token <= endToken; token += 1) mark.tokens.push(token);
     }
     for (const lineIndex of lines) {
       const mark = entry(lineIndex);
