@@ -1,0 +1,374 @@
+{
+  "blocks": [
+    {
+      "title": "Preparativos da festa",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "lembrem-se, é uma festa surpresa para o chris",
+          "distractors": [
+            "lembrem-se, é uma festa normal para o chris",
+            "esqueceram, é uma festa surpresa para o chris",
+            "lembrem-se, é um aniversário para o chris"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 1,
+          "translation": "entendido! sem gafes, sigilo absoluto",
+          "words": [
+            "sigilo",
+            "entendido",
+            "sem",
+            "gafes",
+            "absoluto"
+          ],
+          "extraWords": [
+            "total"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 2,
+          "translation": "você já enviou todos os convites?",
+          "distractors": [
+            "você já recebeu todos os convites?",
+            "você já comprou todos os convites?",
+            "você já leu todos os convites?"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 3,
+          "translation": "sim, todos confirmaram para sábado à noite",
+          "word": "confirmed",
+          "distractors": [
+            "invited",
+            "informed",
+            "expected"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "ótimo. agora, e a situação do bolo?",
+          "distractors": [
+            "ruim. agora, e a situação do bolo?",
+            "ótimo. agora, e o plano do bolo?",
+            "ótimo. agora, e o sabor do bolo?"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 5,
+          "translation": "eu pego no sábado à tarde",
+          "text": "i'll pick it up on saturday afternoon"
+        }
+      ]
+    },
+    {
+      "title": "Quase pegos!",
+      "startLine": 6,
+      "endLine": 16,
+      "exercises": [
+        {
+          "kind": "order",
+          "line": 6,
+          "translation": "onde a gente vai se esconder quando ele chegar?",
+          "words": [
+            "onde",
+            "se",
+            "vai",
+            "esconder",
+            "chegar",
+            "a",
+            "gente",
+            "quando",
+            "ele"
+          ],
+          "extraWords": [
+            "estamos"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 7,
+          "translation": "todo mundo na sala de estar, luzes apagadas",
+          "distractors": [
+            "todo mundo na cozinha, luzes acesas",
+            "todo mundo no quarto, luzes apagadas",
+            "todo mundo na sala de estar, luzes acesas"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 8,
+          "translation": "o chris está quase em casa! rápido, apaguem as luzes!",
+          "distractors": [
+            "the chris is almost home! quick, turn on the lights!",
+            "chris is almost home! quick, turn off the lights!"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 9,
+          "translation": "espera, estou ouvindo passos. já é ele?",
+          "word": "footsteps",
+          "distractors": [
+            "handsteps",
+            "headsteps",
+            "heartsteps"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "shh! fiquem super quietos, todo mundo",
+          "distractors": [
+            "shh! fiquem super barulhentos, todo mundo",
+            "shh! fiquem super quietos, alguém",
+            "shh! fiquem um pouco quietos, todo mundo"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 11,
+          "translation": "meu coração está batendo forte! isso é intenso",
+          "words": [
+            "meu",
+            "coração",
+            "está",
+            "batendo",
+            "forte",
+            "isso",
+            "é",
+            "intenso"
+          ],
+          "extraWords": [
+            "muito"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 12,
+          "translation": "eita, ele está abrindo a porta. preparem-se!",
+          "word": "opening",
+          "distractors": [
+            "closing",
+            "holding",
+            "seeing"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "ufa! essa foi por pouco, quase fomos pegos",
+          "distractors": [
+            "ufa! essa foi fácil, quase fomos pegos",
+            "ufa! essa foi por muito, quase fomos pegos",
+            "ufa! essa foi por pouco, quase nos pegaram"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 15,
+          "translation": "ele literalmente espiou bem dentro do quarto!",
+          "text": "he literally peered right into the room!"
+        }
+      ]
+    },
+    {
+      "title": "Plano refeito",
+      "startLine": 17,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 17,
+          "translation": "certo, alarme falso. vamos reiniciar o plano",
+          "distractors": [
+            "certo, alarme real. vamos continuar o plano",
+            "certo, alarme falso. vamos esquecer o plano",
+            "errado, alarme falso. vamos reiniciar o plano"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 18,
+          "translation": "ele saiu de novo para o supermercado agora",
+          "word": "groceries",
+          "distractors": [
+            "parties",
+            "journeys",
+            "stories"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 19,
+          "translation": "perfeito! mais tempo para arrumar tudo",
+          "words": [
+            "perfeito",
+            "mais",
+            "tempo",
+            "para",
+            "arrumar",
+            "tudo"
+          ],
+          "extraWords": [
+            "agora"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 20,
+          "translation": "lembrem-se, nada de espiar quando ele voltar",
+          "distractors": [
+            "esqueceram, nada de espiar quando ele voltar",
+            "lembrem-se, nada de olhar quando ele voltar",
+            "lembrem-se, tudo de espiar quando ele voltar"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 21,
+          "translation": "entendido! essa surpresa vai ser épica",
+          "text": "got it! this surprise will be epic"
+        },
+        {
+          "kind": "blank",
+          "line": 22,
+          "translation": "ele nunca vai desconfiar de nada. confie em mim",
+          "word": "suspect",
+          "distractors": [
+            "respect",
+            "protect",
+            "expect"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "mal posso esperar para ver a cara dele! tão animado!",
+          "distractors": [
+            "mal posso esperar para ver a casa dele! tão animado!",
+            "mal posso esperar para ouvir a cara dele! tão animado!",
+            "mal posso esperar para ver a cara dele! tão cansado!"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 8,
+      "translation": "o chris está quase em casa! rápido, apaguem as luzes!",
+      "distractors": [
+        "chris is almost home! quick, turn on the lights!",
+        "the chris is almost home! quick, turn off the lights!"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 1,
+      "translation": "entendido! sem gafes, sigilo absoluto",
+      "words": [
+        "sigilo",
+        "entendido",
+        "sem",
+        "gafes",
+        "absoluto"
+      ],
+      "extraWords": [
+        "total"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 15,
+      "translation": "ele literalmente espiou bem dentro do quarto!",
+      "distractors": [
+        "ele literalmente correu bem dentro do quarto!",
+        "ele figurativamente espiou bem dentro do quarto!",
+        "ele literalmente espiou bem fora do quarto!"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 18,
+      "translation": "ele saiu de novo para o supermercado agora",
+      "word": "groceries",
+      "distractors": [
+        "parties",
+        "journeys",
+        "stories"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 21,
+      "translation": "entendido! essa surpresa vai ser épica",
+      "text": "got it! this surprise will be epic"
+    },
+    {
+      "kind": "meaning",
+      "line": 11,
+      "translation": "meu coração está batendo forte! isso é intenso",
+      "distractors": [
+        "meu coração está parado! isso é intenso",
+        "meu coração está batendo forte! isso é fácil",
+        "meu coração está batendo fraco! isso é intenso"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 6,
+      "translation": "onde a gente vai se esconder quando ele chegar?",
+      "words": [
+        "onde",
+        "se",
+        "vai",
+        "esconder",
+        "chegar",
+        "a",
+        "gente",
+        "quando",
+        "ele"
+      ],
+      "extraWords": [
+        "estamos"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 14,
+      "translation": "ufa! essa foi por pouco, quase fomos pegos",
+      "word": "call",
+      "distractors": [
+        "ball",
+        "fall",
+        "tall"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 5,
+      "translation": "eu pego no sábado à tarde",
+      "text": "i'll pick it up on saturday afternoon"
+    },
+    {
+      "kind": "meaning",
+      "line": 23,
+      "translation": "mal posso esperar para ver a cara dele! tão animado!",
+      "distractors": [
+        "mal posso esperar para ver a casa dele! tão animado!",
+        "mal posso esperar para ver a cara dele! tão cansado!",
+        "mal posso esperar para ouvir a cara dele! tão animado!"
+      ]
+    }
+  ]
+}

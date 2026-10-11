@@ -207,6 +207,22 @@ describe("fila de revisão", () => {
     });
   });
 
+  it("dois pedidos simultâneos de antecipação contam como um só", async () => {
+    const tz = "America/Sao_Paulo";
+    const items = Array.from({ length: 12 }, (_, index) => ({
+      learningItemId: `i-${index}`,
+      sourceKind: "curated",
+    }));
+    await app.addCards("ana", items);
+    for (const card of (await app.listDue("ana")).cards) {
+      await app.grade({ userId: "ana", cardId: card.cardId, rating: "good" });
+    }
+    const results = await Promise.allSettled([app.anticipate("ana", tz), app.anticipate("ana", tz)]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect((await app.status("ana", tz)).usedToday).toBe(1);
+    expect(await app.countDue("ana")).toBe(10);
+  });
+
   it("a antecipação de um usuário não mexe nos cartões do outro e tem teto diário", async () => {
     const tz = "America/Sao_Paulo";
     await app.addCards("ana", [{ learningItemId: "a", sourceKind: "curated" }]);

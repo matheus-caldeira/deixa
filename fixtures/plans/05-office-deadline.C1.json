@@ -1,0 +1,332 @@
+{
+  "blocks": [
+    {
+      "title": "Novo Projeto e Prazo Apertado",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "certo equipe, um grande projeto acabou de chegar",
+          "distractors": [
+            "ok pessoal, um grande projeto chegou",
+            "tudo bem time, um grande projeto foi entregue",
+            "certo grupo, um grande projeto foi iniciado"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "como está o cronograma, chefe?",
+          "distractors": [
+            "qual a linha do tempo, chefe?",
+            "como está o cronograma, chefe?"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 2,
+          "translation": "apertado. precisamos entregar até sexta-feira.",
+          "distractors": [
+            "precisamos",
+            "sexta-feira"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 3,
+          "translation": "sexta-feira? são só três dias!",
+          "word": "days",
+          "distractors": [
+            "weeks",
+            "hours"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 4,
+          "translation": "eu sei que é ambicioso. vamos fazer acontecer.",
+          "distractors": [
+            "eu sei que é difícil. vamos tentar fazer funcionar.",
+            "eu sei que é desafiador. vamos conseguir.",
+            "eu sei que é complicado. vamos fazer dar certo."
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 5,
+          "translation": "faremos o nosso melhor, mas isso é forçar a barra."
+        }
+      ]
+    },
+    {
+      "title": "Reações ao Prazo e Soluções",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "você ouviu aquilo? sexta-feira para tudo!",
+          "distractors": [
+            "você ouviu isso? sexta-feira para o projeto todo!",
+            "você ouviu aquilo? sexta-feira para o trabalho todo!",
+            "você ouviu aquilo? sexta-feira para a entrega!"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 7,
+          "translation": "pois é, né? é completamente insano.",
+          "distractors": [
+            "eu sei, né? é totalmente insano.",
+            "pois é, né? é completamente loucura."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 8,
+          "translation": "como a gente vai conseguir fazer isso?",
+          "word": "pull",
+          "distractors": [
+            "push",
+            "get"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 9,
+          "translation": "teremos que fazer hora extra, provavelmente a noite toda.",
+          "distractors": [
+            "hora",
+            "noite"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 10,
+          "translation": "minha vida social está oficialmente em espera então.",
+          "distractors": [
+            "minha vida social está cancelada então.",
+            "minha vida social está suspensa então.",
+            "minha vida social está adiada então."
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 11,
+          "translation": "nem me fale. vamos ter um trabalhão."
+        }
+      ]
+    },
+    {
+      "title": "Estresse e Estratégias",
+      "startLine": 12,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "listen",
+          "line": 12,
+          "translation": "você acredita nesse prazo? é uma loucura!",
+          "distractors": [
+            "você acredita nesse prazo? é insano!",
+            "você acredita nessa data? é uma loucura!"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 13,
+          "translation": "eu já estou me sentindo estressado com isso.",
+          "distractors": [
+            "eu já estou ficando ansioso com isso.",
+            "eu já estou preocupado com isso.",
+            "eu já estou tenso com isso."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 14,
+          "translation": "pausa para o café necessária. preciso de um momento.",
+          "distractors": [
+            "café",
+            "momento"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "o mesmo aqui. eu posso virar a noite.",
+          "word": "all-nighter",
+          "distractors": [
+            "all-nighter",
+            "all-nighter"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 16,
+          "translation": "esse projeto vai me matar."
+        },
+        {
+          "kind": "meaning",
+          "line": 17,
+          "translation": "não diga isso! a gente vai superar isso, de alguma forma.",
+          "distractors": [
+            "não diga isso! a gente vai conseguir, de alguma forma.",
+            "não fale isso! a gente vai passar por isso, de alguma forma.",
+            "não diga isso! a gente vai vencer isso, de alguma forma."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Foco e Colaboração",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "order",
+          "line": 18,
+          "translation": "só precisamos priorizar e focar.",
+          "distractors": [
+            "priorizar",
+            "focar"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "sim, dividir em tarefas menores.",
+          "word": "tasks",
+          "distractors": [
+            "tasks",
+            "tasks"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 20,
+          "translation": "e delegar o que pudermos, claro.",
+          "distractors": [
+            "e distribuir o que pudermos, claro.",
+            "e passar adiante o que pudermos, claro.",
+            "e atribuir o que pudermos, claro."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 21,
+          "translation": "boa ideia. duas cabeças pensam melhor que uma.",
+          "distractors": [
+            "boa ideia. duas cabeças são melhores que uma.",
+            "boa ideia. duas mentes pensam melhor que uma."
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 22,
+          "translation": "vamos pegar um quadro branco e fazer um brainstorming agora."
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "certo, vamos nessa. força total!",
+          "distractors": [
+            "ok, vamos lá. vamos conseguir!",
+            "certo, vamos fazer. força total!",
+            "ok, vamos nessa. força total!"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 9,
+      "translation": "teremos que fazer hora extra, provavelmente a noite toda.",
+      "distractors": [
+        "teremos que fazer hora extra, provavelmente a noite toda.",
+        "teremos que fazer hora extra, provavelmente a noite toda."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 4,
+      "translation": "eu sei que é ambicioso. vamos fazer acontecer.",
+      "distractors": [
+        "fazer",
+        "acontecer"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 17,
+      "translation": "não diga isso! a gente vai superar isso, de alguma forma.",
+      "word": "through",
+      "distractors": [
+        "through",
+        "through"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 11,
+      "translation": "nem me fale. vamos ter um trabalhão.",
+      "distractors": [
+        "nem me fale. vamos ter um desafio.",
+        "nem me fale. vamos ter um problema.",
+        "nem me fale. vamos ter uma tarefa difícil."
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 2,
+      "translation": "apertado. precisamos entregar até sexta-feira."
+    },
+    {
+      "kind": "listen",
+      "line": 21,
+      "translation": "boa ideia. duas cabeças pensam melhor que uma.",
+      "distractors": [
+        "boa ideia. duas cabeças pensam melhor que uma.",
+        "boa ideia. duas cabeças pensam melhor que uma."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 15,
+      "translation": "o mesmo aqui. eu posso virar a noite.",
+      "distractors": [
+        "noite",
+        "virar"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 5,
+      "translation": "faremos o nosso melhor, mas isso é forçar a barra.",
+      "word": "pushing",
+      "distractors": [
+        "pushing",
+        "pushing"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 19,
+      "translation": "sim, dividir em tarefas menores.",
+      "distractors": [
+        "sim, dividir em tarefas menores.",
+        "sim, dividir em tarefas menores.",
+        "sim, dividir em tarefas menores."
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 12,
+      "translation": "você acredita nesse prazo? é uma loucura!"
+    }
+  ]
+}

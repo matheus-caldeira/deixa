@@ -1,12 +1,9 @@
-import { AppError } from "@/shared/errors";
 import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
 import type { LessonPlanner, PlannerLine } from "@/modules/study";
 import { levelBand } from "@/modules/study";
+import { generateGeminiJson } from "./gemini-client";
 
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const TIMEOUT_MS = 150_000;
-const RETRYABLE_STATUS = [429, 500, 503];
-const RETRY_WAITS_MS = [8000, 20_000, 40_000];
 
 const BAND_GUIDE = {
   beginner:
@@ -45,8 +42,6 @@ Responda só com JSON neste formato:
 {"blocks":[{"title":"...","startLine":0,"endLine":5,"exercises":[{"kind":"meaning","line":0,"translation":"...","distractors":["...","...","..."]}]}],"finalExercises":[...]}`;
 }
 
-type GeminiResponse = { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-
 export class GeminiLessonPlanner implements LessonPlanner {
   readonly name = "gemini" as const;
 
@@ -55,33 +50,14 @@ export class GeminiLessonPlanner implements LessonPlanner {
     private readonly model: string,
   ) {}
 
-  private async request(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<Response> {
-    return fetch(`${BASE_URL}/models/${encodeURIComponent(this.model)}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": this.apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: instructions(input.level, input.lines.length) }] },
-        contents: [{ role: "user", parts: [{ text: JSON.stringify(input.lines) }] }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.4 },
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+  plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown> {
+    return generateGeminiJson({
+      apiKey: this.apiKey,
+      model: this.model,
+      system: instructions(input.level, input.lines.length),
+      turns: [{ role: "user", parts: [{ text: JSON.stringify(input.lines) }] }],
+      timeoutMs: TIMEOUT_MS,
+      temperature: 0.4,
     });
-  }
-
-  async plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown> {
-    let response = await this.request(input);
-    for (const waitMs of RETRY_WAITS_MS) {
-      if (!RETRYABLE_STATUS.includes(response.status)) break;
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-      response = await this.request(input);
-    }
-    if (!response.ok) throw new AppError("LLM_FAILED", `A IA respondeu com erro (${response.status}).`);
-    const body = (await response.json()) as GeminiResponse;
-    const text = body.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("") ?? "";
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new AppError("LLM_INVALID_OUTPUT", "A IA devolveu uma resposta fora do formato.");
-    }
   }
 }

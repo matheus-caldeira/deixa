@@ -86,13 +86,25 @@ export class DrizzleCardRepository implements CardRepository {
     return rows.map((row) => row.createdAt);
   }
 
-  async recordAnticipation(entry: {
+  async claimAnticipation(entry: {
     id: string;
     userId: string;
-    cardsMoved: number;
+    day: string;
+    ordinal: number;
     createdAt: Date;
-  }): Promise<void> {
-    await this.db.insert(reviewAnticipations).values(entry);
+  }): Promise<boolean> {
+    const inserted = await this.db
+      .insert(reviewAnticipations)
+      .values({ ...entry, cardsMoved: 0 })
+      .onConflictDoNothing({
+        target: [reviewAnticipations.userId, reviewAnticipations.day, reviewAnticipations.ordinal],
+      })
+      .returning({ id: reviewAnticipations.id });
+    return inserted.length > 0;
+  }
+
+  async setAnticipationResult(id: string, cardsMoved: number): Promise<void> {
+    await this.db.update(reviewAnticipations).set({ cardsMoved }).where(eq(reviewAnticipations.id, id));
   }
 
   async listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]> {

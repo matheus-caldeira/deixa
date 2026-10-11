@@ -1,7 +1,7 @@
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
-import { startOfLocalDay } from "@/shared/time";
+import { localDateKey, startOfLocalDay } from "@/shared/time";
 import { ANTICIPATION_BATCH, anticipationStatus, type AnticipationStatus } from "../domain/anticipation";
 import { REVIEW_XP, previewIntervals, review, type Rating } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "./ports";
@@ -126,8 +126,17 @@ export function makeAnticipateReview(deps: Pick<Deps, "cards" | "clock" | "ids">
       );
     }
     const now = deps.clock.now();
+    const id = deps.ids.next();
+    const claimed = await deps.cards.claimAnticipation({
+      id,
+      userId,
+      day: localDateKey(now, timezone),
+      ordinal: status.usedToday + 1,
+      createdAt: now,
+    });
+    if (!claimed) throw new AppError("INVALID_INPUT", "Essa antecipação já foi usada. Atualize a tela.");
     const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH);
-    await deps.cards.recordAnticipation({ id: deps.ids.next(), userId, cardsMoved: moved, createdAt: now });
+    await deps.cards.setAnticipationResult(id, moved);
     return { moved };
   };
 }

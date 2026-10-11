@@ -1,0 +1,326 @@
+{
+  "blocks": [
+    {
+      "title": "Chegada e Pedidos",
+      "startLine": 0,
+      "endLine": 5,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "Oi! Você deve ser o Liam. Prazer em conhecê-lo.",
+          "distractors": [
+            "oi! você é o liam? legal te conhecer.",
+            "olá! você é o liam? é um prazer te conhecer.",
+            "oi! você é o liam? é bom te encontrar."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 1,
+          "translation": "E você é a Maya? Ótimo finalmente conhecê-la.",
+          "distractors": [
+            "e você é a maya? ótimo finalmente conhecer.",
+            "e você é a maya? ótimo em finalmente conhecer."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 2,
+          "translation": "Então, o que você vai beber hoje à noite?",
+          "extraWords": [
+            "beber",
+            "você"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 3,
+          "translation": "Vou pedir um copo de água com gás, por favor.",
+          "word": "sparkling",
+          "distractors": [
+            "sparkle",
+            "sparkled",
+            "sparkles"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 4,
+          "translation": "Boa escolha. Acho que vou tomar uma cerveja."
+        },
+        {
+          "kind": "meaning",
+          "line": 5,
+          "translation": "Este lugar é bem aconchegante, não é?",
+          "distractors": [
+            "este lugar é muito confortável, não é?",
+            "este lugar é bem agradável, não é?",
+            "este lugar é bem íntimo, não é?"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Interesses em Comum",
+      "startLine": 6,
+      "endLine": 11,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 6,
+          "translation": "Então, o que você geralmente faz para se divertir?",
+          "distractors": [
+            "então, o que você costuma fazer para se divertir?",
+            "então, o que você faz por diversão normalmente?",
+            "então, o que você faz para se divertir normalmente?"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 7,
+          "translation": "Eu adoro fazer trilhas e experimentar receitas novas.",
+          "distractors": [
+            "eu adoro fazer trilhas e experimentar novas receitas.",
+            "eu amo fazer trilhas e experimentar receitas novas."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 8,
+          "translation": "Ah, legal! Eu gosto de fazer trilhas também, na verdade.",
+          "extraWords": [
+            "legal",
+            "gosto"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 9,
+          "translation": "Não é possível! Qual sua trilha favorita por aqui?",
+          "word": "favorite",
+          "distractors": [
+            "favourite",
+            "favored",
+            "favourite"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 10,
+          "translation": "Eu gosto daquela perto do farol antigo."
+        },
+        {
+          "kind": "meaning",
+          "line": 11,
+          "translation": "Eu também! Isso é uma grande coincidência.",
+          "distractors": [
+            "eu também! isso é uma coincidência e tanto.",
+            "eu também! isso é uma coincidência notável.",
+            "eu também! isso é uma coincidência enorme."
+          ]
+        }
+      ]
+    },
+    {
+      "title": "O Encontro Perfeito",
+      "startLine": 12,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 12,
+          "translation": "Adivinha? Meu encontro ontem à noite foi demais!",
+          "distractors": [
+            "adivinha? meu encontro ontem à noite foi ótimo!",
+            "adivinha? meu encontro ontem à noite foi incrível!",
+            "adivinha? meu encontro ontem à noite foi fantástico!"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 13,
+          "translation": "Não é possível! Me conta tudo, mana!",
+          "distractors": [
+            "não é possível! me conta tudo, irmã!",
+            "não acredito! me conta tudo, mana!"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 14,
+          "translation": "Ele era tão charmoso e genuinamente interessante.",
+          "extraWords": [
+            "era",
+            "ele"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 15,
+          "translation": "Isso é fantástico! Sobre o que vocês conversaram?",
+          "word": "talked",
+          "distractors": [
+            "talk",
+            "talking",
+            "talks"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 16,
+          "translation": "Trilhas, culinária, viagens... A gente tinha tanta coisa em comum."
+        },
+        {
+          "kind": "meaning",
+          "line": 17,
+          "translation": "Ah, que fofo! Parece promissor.",
+          "distractors": [
+            "ah, que adorável! parece promissor.",
+            "ah, que gentil! parece promissor.",
+            "ah, que legal! parece promissor."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 18,
+          "translation": "Ele é bem bonito também, o que ajuda bastante.",
+          "distractors": [
+            "ele é muito bonito também, o que ajuda bastante.",
+            "ele é bem bonito também, o que ajuda muito."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 19,
+          "translation": "Claro! Então, quando é o segundo encontro?",
+          "word": "second",
+          "distractors": [
+            "secondly",
+            "seconds",
+            "secund"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 20,
+          "translation": "Ele já perguntou! Vamos no próximo sábado."
+        },
+        {
+          "kind": "order",
+          "line": 21,
+          "translation": "Eba! Eu sabia que vocês se dariam bem.",
+          "extraWords": [
+            "sabia",
+            "vocês"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 22,
+          "translation": "Eu estou realmente animada. Isso pode ser algo.",
+          "distractors": [
+            "eu estou muito animada. isso pode ser algo.",
+            "eu estou genuinamente animada. isso pode ser algo.",
+            "eu estou bastante animada. isso pode ser algo."
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 23,
+          "translation": "Me mantenha informada. Não omita nenhum detalhe!"
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 3,
+      "translation": "Vou pedir um copo de água com gás, por favor.",
+      "distractors": [
+        "vou pedir um copo de água com gás, por favor.",
+        "vou pedir um copo de água com gás, por favor."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 7,
+      "translation": "Eu adoro fazer trilhas e experimentar receitas novas.",
+      "extraWords": [
+        "adoro",
+        "novas"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 10,
+      "translation": "Eu gosto daquela perto do farol antigo.",
+      "word": "lighthouse",
+      "distractors": [
+        "light house",
+        "lightouse",
+        "light house"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 14,
+      "translation": "Ele era tão charmoso e genuinamente interessante.",
+      "distractors": [
+        "ele era tão encantador e verdadeiramente interessante.",
+        "ele era tão cativante e autenticamente interessante.",
+        "ele era tão simpático e sinceramente interessante."
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 16,
+      "translation": "Trilhas, culinária, viagens... A gente tinha tanta coisa em comum."
+    },
+    {
+      "kind": "listen",
+      "line": 18,
+      "translation": "Ele é bem bonito também, o que ajuda bastante.",
+      "distractors": [
+        "ele é bem bonito também, o que ajuda bastante.",
+        "ele é bem bonito também, o que ajuda muito."
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 20,
+      "translation": "Ele já perguntou! Vamos no próximo sábado.",
+      "extraWords": [
+        "ele",
+        "perguntou"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 21,
+      "translation": "Eba! Eu sabia que vocês se dariam bem.",
+      "word": "hit",
+      "distractors": [
+        "hit",
+        "hit",
+        "hit"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 22,
+      "translation": "Eu estou realmente animada. Isso pode ser algo.",
+      "distractors": [
+        "eu estou genuinamente animada. isso pode ser algo.",
+        "eu estou verdadeiramente animada. isso pode ser algo.",
+        "eu estou profundamente animada. isso pode ser algo."
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 23,
+      "translation": "Me mantenha informada. Não omita nenhum detalhe!"
+    }
+  ]
+}

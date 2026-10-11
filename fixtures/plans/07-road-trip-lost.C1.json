@@ -1,0 +1,290 @@
+{
+  "blocks": [
+    {
+      "title": "Perdidos e sem sinal",
+      "startLine": 0,
+      "endLine": 7,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 0,
+          "translation": "Estamos quase lá? Estou começando a sentir fome.",
+          "distractors": [
+            "Estamos quase lá? Estou ficando com sede.",
+            "Estamos quase lá? Estou ficando entediado.",
+            "Estamos quase lá? Estou ficando cansado."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 2,
+          "translation": "Eita. Não está funcionando. A tela está preta.",
+          "distractors": [
+            "eita não está funcionando a tela está preta",
+            "eita não está funcionando a tela está branca"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 3,
+          "translation": "O quê? Não é possível! Tenta reiniciar rápido.",
+          "extraWords": [
+            "try",
+            "it"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 4,
+          "translation": "Ainda nada. Parece que travou totalmente.",
+          "word": "nothing",
+          "distractors": [
+            "something",
+            "anything"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 5,
+          "translation": "Ótimo. Estamos perdidos no meio do nada.",
+          "distractors": [
+            "Ótimo. Estamos perdidos em um lugar movimentado.",
+            "Ótimo. Estamos perdidos em um lugar conhecido.",
+            "Ótimo. Estamos perdidos em um lugar seguro."
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 6,
+          "translation": "Tem sinal para usar o mapa do meu celular?",
+          "distractors": [
+            "tem sinal para usar o mapa do meu celular",
+            "tem sinal para usar meu celular"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 7,
+          "translation": "Não. Zona morta. Nenhum sinal em lugar nenhum."
+        }
+      ]
+    },
+    {
+      "title": "Socorro à vista",
+      "startLine": 8,
+      "endLine": 17,
+      "exercises": [
+        {
+          "kind": "meaning",
+          "line": 8,
+          "translation": "Isso é simplesmente ótimo. Estamos totalmente encalhados.",
+          "distractors": [
+            "Isso é simplesmente ótimo. Estamos totalmente perdidos.",
+            "Isso é simplesmente ótimo. Estamos totalmente atrasados.",
+            "Isso é simplesmente ótimo. Estamos totalmente presos."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 9,
+          "translation": "Não se preocupe. Vamos achar um posto de gasolina logo.",
+          "extraWords": [
+            "go",
+            "will"
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 10,
+          "translation": "Espero que sim. Minha bexiga está prestes a explodir.",
+          "word": "bladder",
+          "distractors": [
+            "stomach",
+            "head"
+          ]
+        },
+        {
+          "kind": "listen",
+          "line": 11,
+          "translation": "Olha! Lá na frente! Aquilo é uma placa de posto?",
+          "distractors": [
+            "olha lá na frente aquilo é uma placa de posto",
+            "olha lá na frente aquilo é um posto"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 12,
+          "translation": "Sim! Graças a Deus. Encosta, encosta!"
+        },
+        {
+          "kind": "meaning",
+          "line": 14,
+          "translation": "E pega uns lanches pra gente, por favor. Estou faminto.",
+          "distractors": [
+            "E pega uns lanches pra gente, por favor. Estou com sede.",
+            "E pega uns lanches pra gente, por favor. Estou cansado.",
+            "E pega uns lanches pra gente, por favor. Estou com fome."
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 16,
+          "translation": "Não esqueça um mapa se eles tiverem um.",
+          "extraWords": [
+            "map",
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Informações e lanches",
+      "startLine": 18,
+      "endLine": 23,
+      "exercises": [
+        {
+          "kind": "listen",
+          "line": 18,
+          "translation": "Certo, boas notícias! Não estamos muito longe.",
+          "distractors": [
+            "certo boas notícias não estamos muito longe",
+            "certo boas notícias estamos muito longe"
+          ]
+        },
+        {
+          "kind": "type",
+          "line": 19,
+          "translation": "Sério? Graças a Deus! Como a gente chega lá?"
+        },
+        {
+          "kind": "meaning",
+          "line": 20,
+          "translation": "Só mais algumas curvas, depois direto.",
+          "distractors": [
+            "Só mais algumas curvas, depois virando.",
+            "Só mais algumas curvas, depois voltando.",
+            "Só mais algumas curvas, depois parado."
+          ]
+        },
+        {
+          "kind": "blank",
+          "line": 21,
+          "translation": "Fantástico! E você pegou os lanches?",
+          "word": "snacks",
+          "distractors": [
+            "drinks",
+            "meals"
+          ]
+        },
+        {
+          "kind": "order",
+          "line": 22,
+          "translation": "Enchi de salgadinhos e refrigerantes pra gente.",
+          "extraWords": [
+            "chips",
+            "and"
+          ]
+        },
+        {
+          "kind": "meaning",
+          "line": 23,
+          "translation": "Você é um salvador! Vamos pegar a estrada!",
+          "distractors": [
+            "Você é um salvador! Vamos pegar o ônibus!",
+            "Você é um salvador! Vamos pegar o trem!",
+            "Você é um salvador! Vamos pegar o avião!"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalExercises": [
+    {
+      "kind": "listen",
+      "line": 1,
+      "translation": "Deve estar perto. Deixa eu checar o GPS.",
+      "distractors": [
+        "deve estar perto deixa eu checar o gps",
+        "deve estar perto deixa eu checar o celular"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 4,
+      "translation": "Ainda nada. Parece que travou totalmente."
+    },
+    {
+      "kind": "order",
+      "line": 5,
+      "translation": "Ótimo. Estamos perdidos no meio do nada.",
+      "extraWords": [
+        "we",
+        "are"
+      ]
+    },
+    {
+      "kind": "blank",
+      "line": 9,
+      "translation": "Não se preocupe. Vamos achar um posto de gasolina logo.",
+      "word": "fret",
+      "distractors": [
+        "worry",
+        "cry"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 11,
+      "translation": "Olha! Lá na frente! Aquilo é uma placa de posto?",
+      "distractors": [
+        "Olha! Lá na frente! Aquilo é um sinal de posto?",
+        "Olha! Lá na frente! Aquilo é um posto?",
+        "Olha! Lá na frente! Aquilo é um aviso de posto?"
+      ]
+    },
+    {
+      "kind": "listen",
+      "line": 13,
+      "translation": "Finalmente! Vou pedir informações lá dentro.",
+      "distractors": [
+        "finalmente vou pedir informações lá dentro",
+        "finalmente vou pedir direções lá dentro"
+      ]
+    },
+    {
+      "kind": "type",
+      "line": 15,
+      "translation": "Entendido. Volto já com boas notícias."
+    },
+    {
+      "kind": "blank",
+      "line": 17,
+      "translation": "Pode deixar. Ufa, que alívio, no entanto.",
+      "word": "phew",
+      "distractors": [
+        "wow",
+        "ouch"
+      ]
+    },
+    {
+      "kind": "order",
+      "line": 20,
+      "translation": "Só mais algumas curvas, depois direto.",
+      "extraWords": [
+        "straight",
+        "ahead"
+      ]
+    },
+    {
+      "kind": "meaning",
+      "line": 22,
+      "translation": "Enchi de salgadinhos e refrigerantes pra gente.",
+      "distractors": [
+        "Enchi de salgadinhos e sucos pra gente.",
+        "Enchi de salgadinhos e água pra gente.",
+        "Enchi de salgadinhos e chás pra gente."
+      ]
+    }
+  ]
+}

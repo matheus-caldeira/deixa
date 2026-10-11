@@ -251,8 +251,13 @@ export const reviewAnticipations = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    day: text("day").notNull(),
+    ordinal: integer("ordinal").notNull(),
     cardsMoved: integer("cards_moved").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
-  (table) => [index("review_anticipations_user_created").on(table.userId, table.createdAt)],
+  (table) => [
+    index("review_anticipations_user_created").on(table.userId, table.createdAt),
+    uniqueIndex("review_anticipations_slot").on(table.userId, table.day, table.ordinal),
+  ],
 );
