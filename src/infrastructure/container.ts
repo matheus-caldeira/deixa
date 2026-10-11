@@ -107,6 +107,7 @@ import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { testGeminiApiKey } from "./google-ai/gemini-client";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
 import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
+import { SharedKeyBudget, budgetedLlm, budgetedPlanner, budgetedTutor } from "./google-ai/shared-key-budget";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
@@ -163,28 +164,41 @@ export function buildContainer(options: ContainerOptions) {
     options.tts ?? (env.KOKORO_URL ? new KokoroTtsProvider(env.KOKORO_URL) : silentTts);
 
   const cipher = new AesGcmCipher(env.AI_CREDENTIALS_MASTER_KEY);
+  const sharedBudget = new SharedKeyBudget(db, clock);
   const resolveApiKey = makeResolveApiKey({ credentials, cipher });
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
     options.llmForUser ??
     (async (userId: string): Promise<LlmProvider> => {
       const apiKey = await resolveApiKey(userId);
-      const key = apiKey ?? env.GEMINI_API_KEY;
-      return key ? new GeminiLlmProvider(key, env.GEMINI_MODEL) : fakeLlm;
+      if (apiKey) return new GeminiLlmProvider(apiKey, env.GEMINI_MODEL);
+      if (!env.GEMINI_API_KEY) return fakeLlm;
+      return budgetedLlm(new GeminiLlmProvider(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
+        sharedBudget.spend(userId),
+      );
     });
   const resolvePlanner =
     options.plannerForUser ??
     (async (userId: string): Promise<LessonPlanner | null> => {
-      const key = env.GEMINI_API_KEY ?? (await resolveApiKey(userId));
-      return key ? new GeminiLessonPlanner(key, env.GEMINI_MODEL) : null;
+      if (env.GEMINI_API_KEY) {
+        return budgetedPlanner(new GeminiLessonPlanner(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
+          sharedBudget.spend(userId),
+        );
+      }
+      const ownKey = await resolveApiKey(userId);
+      return ownKey ? new GeminiLessonPlanner(ownKey, env.GEMINI_MODEL) : null;
     });
 
   const fakeTutor = new FakeTutorProvider();
   const resolveTutor =
     options.tutorForUser ??
     (async (userId: string): Promise<TutorProvider> => {
-      const key = (await resolveApiKey(userId)) ?? env.GEMINI_API_KEY;
-      return key ? new GeminiTutorProvider(key, env.GEMINI_MODEL) : fakeTutor;
+      const ownKey = await resolveApiKey(userId);
+      if (ownKey) return new GeminiTutorProvider(ownKey, env.GEMINI_MODEL);
+      if (!env.GEMINI_API_KEY) return fakeTutor;
+      return budgetedTutor(new GeminiTutorProvider(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
+        sharedBudget.spend(userId),
+      );
     });
   const conversations = new DrizzleConversationRepository(db);
 

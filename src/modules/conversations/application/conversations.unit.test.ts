@@ -90,6 +90,20 @@ class InMemoryConversations implements ConversationRepository {
       .map(({ sessionId: _sessionId, ...turn }) => turn);
   }
 
+  readonly used = new Map<string, number>();
+
+  async claimUserTurn(userId: string, sessionId: string, max: number) {
+    if (!this.sessions.some((session) => session.id === sessionId && session.userId === userId)) return false;
+    const current = this.used.get(sessionId) ?? 0;
+    if (current >= max) return false;
+    this.used.set(sessionId, current + 1);
+    return true;
+  }
+
+  async releaseUserTurn(_userId: string, sessionId: string) {
+    this.used.set(sessionId, Math.max(0, (this.used.get(sessionId) ?? 0) - 1));
+  }
+
   async saveReview(userId: string, sessionId: string, review: ConversationReview) {
     const session = this.sessions.find(
       (candidate) => candidate.id === sessionId && candidate.userId === userId,
@@ -240,6 +254,36 @@ describe("conversa aberta com o tutor", () => {
       app.send({ userId: "ana", sessionId, level: "B1", message: { text: "one more" } }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
     expect((await app.get("ana", sessionId)).turnsLeft).toBe(0);
+  });
+
+  it("envios simultâneos não passam do limite, e uma falha do tutor devolve a vaga", async () => {
+    const { sessionId } = await app.start({
+      userId: "ana",
+      themeId: "daily",
+      customTopic: null,
+      level: "B1",
+    });
+    app.conversations.used.set(sessionId, MAX_USER_TURNS - 1);
+    const results = await Promise.allSettled(
+      [1, 2, 3].map((n) =>
+        app.send({ userId: "ana", sessionId, level: "B1", message: { text: `message ${n}` } }),
+      ),
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+
+    const failing: TutorProvider = {
+      name: "gemini",
+      reply: async () => {
+        throw new Error("rede");
+      },
+      review: async () => ({}),
+    };
+    const down = setup(failing);
+    const other = await down.start({ userId: "ana", themeId: "daily", customTopic: null, level: "B1" });
+    await expect(
+      down.send({ userId: "ana", sessionId: other.sessionId, level: "B1", message: { text: "hi" } }),
+    ).rejects.toMatchObject({ code: "LLM_FAILED" });
+    expect(down.conversations.used.get(other.sessionId)).toBe(0);
   });
 
   it("um usuário não lê, não escreve, não revisa nem ouve a conversa do outro", async () => {

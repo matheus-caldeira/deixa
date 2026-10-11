@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { conversationSessions, conversationTurns } from "@/infrastructure/database/schema";
@@ -119,6 +119,28 @@ export class DrizzleConversationRepository implements ConversationRepository {
         createdAt: row.createdAt,
       };
     });
+  }
+
+  async claimUserTurn(userId: string, sessionId: string, max: number): Promise<boolean> {
+    const claimed = await this.db
+      .update(conversationSessions)
+      .set({ userTurnsUsed: sql`${conversationSessions.userTurnsUsed} + 1` })
+      .where(
+        and(
+          eq(conversationSessions.id, sessionId),
+          eq(conversationSessions.userId, userId),
+          lt(conversationSessions.userTurnsUsed, max),
+        ),
+      )
+      .returning({ id: conversationSessions.id });
+    return claimed.length > 0;
+  }
+
+  async releaseUserTurn(userId: string, sessionId: string): Promise<void> {
+    await this.db
+      .update(conversationSessions)
+      .set({ userTurnsUsed: sql`greatest(${conversationSessions.userTurnsUsed} - 1, 0)` })
+      .where(and(eq(conversationSessions.id, sessionId), eq(conversationSessions.userId, userId)));
   }
 
   async saveReview(userId: string, sessionId: string, review: ConversationReview, now: Date): Promise<void> {

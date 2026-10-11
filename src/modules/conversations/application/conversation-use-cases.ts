@@ -58,6 +58,8 @@ export interface ConversationRepository {
     now: Date;
   }): Promise<void>;
   listTurns(sessionId: string): Promise<Turn[]>;
+  claimUserTurn(userId: string, sessionId: string, max: number): Promise<boolean>;
+  releaseUserTurn(userId: string, sessionId: string): Promise<void>;
   saveReview(userId: string, sessionId: string, review: ConversationReview, now: Date): Promise<void>;
   findTurnText(userId: string, turnId: string): Promise<string | null>;
 }
@@ -162,9 +164,10 @@ export function makeSendMessage(deps: Deps) {
     }
 
     const turns = await deps.conversations.listTurns(input.sessionId);
-    if (turns.filter((turn) => turn.role === "user").length >= MAX_USER_TURNS) {
+    if (!(await deps.conversations.claimUserTurn(input.userId, input.sessionId, MAX_USER_TURNS))) {
       throw new AppError("INVALID_INPUT", "Esta conversa chegou ao limite. Revise-a e comece outra.");
     }
+    const release = () => deps.conversations.releaseUserTurn(input.userId, input.sessionId);
 
     const tutor = await deps.resolveTutor(input.userId);
     let raw: unknown;
@@ -176,14 +179,20 @@ export function makeSendMessage(deps: Deps) {
         message: input.message,
       });
     } catch (error) {
+      await release();
       if (isAppError(error)) throw error;
       throw new AppError("LLM_FAILED", "O tutor não respondeu. Tente de novo em instantes.");
     }
     const parsed = tutorReplySchema.safeParse(raw);
-    if (!parsed.success)
+    if (!parsed.success) {
+      await release();
       throw new AppError("LLM_INVALID_OUTPUT", "O tutor devolveu uma resposta fora do formato.");
+    }
     const userText = "text" in input.message ? input.message.text.trim() : parsed.data.transcript;
-    if (!userText) throw new AppError("LLM_INVALID_OUTPUT", "Não deu para entender o áudio. Tente de novo.");
+    if (!userText) {
+      await release();
+      throw new AppError("LLM_INVALID_OUTPUT", "Não deu para entender o áudio. Tente de novo.");
+    }
 
     const now = deps.clock.now();
     const userTurn: Turn = {
