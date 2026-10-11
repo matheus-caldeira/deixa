@@ -8,6 +8,7 @@ import {
 } from "../domain/ranking";
 import { FakeSubtitleSourceProvider } from "../infrastructure/fake-subtitle-source-provider";
 import {
+  REFRESH_INTERVAL_MINUTES,
   SEARCH_CACHE_HOURS,
   makeImportFromSource,
   makeSearchSubtitles,
@@ -56,6 +57,15 @@ describe("ranqueamento de legendas", () => {
       "pt-par",
     ]);
     expect(ranking.english.map((item) => item.fileId)).toEqual(["en-pop", "en-par"]);
+  });
+
+  it("nome genérico, sem marca de release, não conta como mesmo release", () => {
+    const ranking = rankCandidates([
+      candidate({ fileId: "en", language: "en", release: '"Friends" (1994)' }),
+      candidate({ fileId: "pt", language: "pt-BR", release: '"Friends" (1994)' }),
+    ]);
+    expect(ranking.suggestion).toMatchObject({ sameRelease: false, english: { fileId: "en" } });
+    expect(ranking.suggestion.portuguese?.fileId).toBe("pt");
   });
 
   it("sem par do mesmo release, usa o melhor de cada idioma por downloads e avaliação", () => {
@@ -144,7 +154,8 @@ class InMemorySources implements SourceRepository {
   }
 }
 
-function setup(provider: SubtitleSourceProvider = new FakeSubtitleSourceProvider()) {
+function setup(options: { provider?: SubtitleSourceProvider; userDailyDownloads?: number } = {}) {
+  const provider = options.provider ?? new FakeSubtitleSourceProvider();
   const sources = new InMemorySources();
   const clock = new FixedClock("2026-10-11T12:00:00Z");
   const episodes = new Map<string, EpisodeSource>([
@@ -160,8 +171,11 @@ function setup(provider: SubtitleSourceProvider = new FakeSubtitleSourceProvider
   ]);
   const stored = new Map<string, Uint8Array>();
   const imported: { userId: string; english: ImportedFile; portuguese?: ImportedFile }[] = [];
+  const spentByUser = new Map<string, number>();
   const deps = {
     provider,
+    countUserDownloads: async (userId: string) => spentByUser.get(userId) ?? 0,
+    userDailyDownloads: options.userDailyDownloads ?? 10,
     sources,
     clock,
     findEpisodeSource: async (episodeId: string) => episodes.get(episodeId) ?? null,
@@ -177,6 +191,8 @@ function setup(provider: SubtitleSourceProvider = new FakeSubtitleSourceProvider
       const episode = episodes.get(input.episodeId);
       for (const file of [input.english, input.portuguese]) {
         if (!file || !episode) continue;
+        if (!stored.has(`${input.episodeId}:${file === input.english ? "en" : "pt-BR"}`))
+          spentByUser.set(input.userId, (spentByUser.get(input.userId) ?? 0) + 1);
         const language: SourceLanguage = file === input.english ? "en" : "pt-BR";
         stored.set(`${input.episodeId}:${language}`, file.bytes);
         if (!episode.existing.some((known) => known.language === language)) {
@@ -216,6 +232,7 @@ describe("busca de legendas com cache", () => {
     expect((await app.search({ episodeId: "ep-1" })).cached).toBe(true);
     expect(fake().calls.search).toBe(1);
 
+    app.clock.advanceMs((REFRESH_INTERVAL_MINUTES + 1) * 60_000);
     await app.search({ episodeId: "ep-1", refresh: true });
     expect(fake().calls.search).toBe(2);
     app.clock.advanceMs((SEARCH_CACHE_HOURS + 1) * 3_600_000);
@@ -397,5 +414,41 @@ describe("cota conhecida", () => {
     );
     app.clock.advanceMs(2 * 3_600_000);
     expect((await app.search({ episodeId: "ep-1" })).quota).toBeNull();
+  });
+});
+
+describe("limites por usuário", () => {
+  it("cada usuário tem um teto próprio de downloads por dia, mesmo com pedidos simultâneos", async () => {
+    const app = setup({ userDailyDownloads: 2 });
+    const fake = app.provider as FakeSubtitleSourceProvider;
+    app.episodes.set("ep-2", {
+      episodeId: "ep-2",
+      query: { kind: "episode", showTmdbId: "1396", seasonNumber: 1, episodeNumber: 2 },
+      existing: [],
+    });
+    await app.search({ episodeId: "ep-1" });
+    await app.search({ episodeId: "ep-2" });
+    const pair = { englishFileId: "fake-en-1", portugueseFileId: "fake-pt-1" };
+    const results = await Promise.allSettled([
+      app.importFrom({ userId: "ana", episodeId: "ep-1", ...pair }),
+      app.importFrom({ userId: "ana", episodeId: "ep-2", ...pair }),
+    ]);
+    expect(results.map((result) => result.status)).toEqual(["fulfilled", "rejected"]);
+    expect(results[1]).toMatchObject({ reason: { code: "SUBTITLE_SOURCE_QUOTA" } });
+    expect(fake.calls.download).toBe(2);
+
+    const other = await app.importFrom({ userId: "lucas", episodeId: "ep-2", ...pair });
+    expect(other.downloadsUsed).toBe(2);
+  });
+
+  it("buscar de novo em seguida não repete a chamada à fonte", async () => {
+    const app = setup();
+    const fake = app.provider as FakeSubtitleSourceProvider;
+    await app.search({ episodeId: "ep-1" });
+    expect((await app.search({ episodeId: "ep-1", refresh: true })).cached).toBe(true);
+    expect(fake.calls.search).toBe(1);
+    app.clock.advanceMs((REFRESH_INTERVAL_MINUTES + 1) * 60_000);
+    expect((await app.search({ episodeId: "ep-1", refresh: true })).cached).toBe(false);
+    expect(fake.calls.search).toBe(2);
   });
 });

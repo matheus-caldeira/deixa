@@ -1,5 +1,6 @@
 export * from "./domain/ranking";
 export {
+  REFRESH_INTERVAL_MINUTES,
   SEARCH_CACHE_HOURS,
   SourceQuotaExceeded,
   makeImportFromSource,

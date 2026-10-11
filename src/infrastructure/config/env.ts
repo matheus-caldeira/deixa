@@ -19,6 +19,10 @@ const envSchema = z.object({
   OPENSUBTITLES_API_KEY: optionalText,
   OPENSUBTITLES_USERNAME: optionalText,
   OPENSUBTITLES_PASSWORD: optionalText,
+  SUBTITLE_DOWNLOADS_PER_USER_PER_DAY: z.preprocess(
+    blankAsUndefined,
+    z.coerce.number().int().min(0).max(1000).default(10),
+  ),
   KOKORO_URL: z.preprocess(blankAsUndefined, z.url().optional()),
   DATA_DIR: z.preprocess(blankAsUndefined, z.string().default("data")),
   GEMINI_API_KEY: optionalText,

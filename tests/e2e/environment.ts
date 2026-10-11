@@ -26,5 +26,6 @@ export function e2eEnvironment(): Record<string, string> {
     OPENSUBTITLES_API_KEY: "",
     OPENSUBTITLES_USERNAME: "",
     OPENSUBTITLES_PASSWORD: "",
+    SUBTITLE_DOWNLOADS_PER_USER_PER_DAY: "",
   };
 }

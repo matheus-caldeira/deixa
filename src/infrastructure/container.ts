@@ -424,9 +424,12 @@ export function buildContainer(options: ContainerOptions) {
       })),
     };
   };
+  const sourceRepository = new DrizzleSourceRepository(db);
   const sourceDeps = {
     provider: subtitleSource,
-    sources: new DrizzleSourceRepository(db),
+    sources: sourceRepository,
+    countUserDownloads: (userId: string, since: Date) => sourceRepository.countUserDownloads(userId, since),
+    userDailyDownloads: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
     clock,
     findEpisodeSource,
     readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {

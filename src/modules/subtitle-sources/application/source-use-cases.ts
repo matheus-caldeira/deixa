@@ -67,6 +67,8 @@ type Deps = {
     english: ImportedFile;
     portuguese?: ImportedFile;
   }) => Promise<ImportOutcome>;
+  countUserDownloads: (userId: string, since: Date) => Promise<number>;
+  userDailyDownloads: number;
   clock: Clock;
 };
 
@@ -77,6 +79,9 @@ export type ImportOutcome = {
 };
 
 export const SEARCH_CACHE_HOURS = 24;
+export const REFRESH_INTERVAL_MINUTES = 10;
+const MS_PER_MINUTE = 60 * 1000;
+const USER_WINDOW_HOURS = 24;
 const QUOTA_MEMORY_HOURS = 24;
 const MS_PER_HOUR = 60 * 60 * 1000;
 const MAX_SUBTITLE_BYTES = 5_000_000;
@@ -108,7 +113,9 @@ export function makeSearchSubtitles(
     const quota = currentQuota(await deps.sources.getQuota(deps.provider.name), now);
     const cached = await deps.sources.getCachedSearch(input.episodeId, deps.provider.name);
     const fresh = cached && now.getTime() - cached.fetchedAt.getTime() < SEARCH_CACHE_HOURS * MS_PER_HOUR;
-    if (cached && fresh && !input.refresh) {
+    const recent =
+      cached && now.getTime() - cached.fetchedAt.getTime() < REFRESH_INTERVAL_MINUTES * MS_PER_MINUTE;
+    if (cached && (recent || (fresh && !input.refresh))) {
       return {
         provider: deps.provider.name,
         ranking: rankCandidates(cached.candidates),
@@ -183,12 +190,25 @@ export function makeImportFromSource(deps: Deps) {
     };
   }
 
-  return async function importFromSource(input: {
-    userId: string;
-    episodeId: string;
-    englishFileId: string;
-    portugueseFileId: string | null;
-  }): Promise<ImportOutcome & { downloadsUsed: number; quota: SourceQuota | null }> {
+  type Input = { userId: string; episodeId: string; englishFileId: string; portugueseFileId: string | null };
+  type Output = ImportOutcome & { downloadsUsed: number; quota: SourceQuota | null };
+  const queues = new Map<string, Promise<unknown>>();
+
+  return function importFromSource(input: Input): Promise<Output> {
+    const previous = queues.get(input.userId) ?? Promise.resolve();
+    const run = previous.then(
+      () => importNow(input),
+      () => importNow(input),
+    );
+    const settled = run.catch(() => undefined);
+    queues.set(input.userId, settled);
+    void settled.then(() => {
+      if (queues.get(input.userId) === settled) queues.delete(input.userId);
+    });
+    return run;
+  };
+
+  async function importNow(input: Input): Promise<Output> {
     const episode = await deps.findEpisodeSource(input.episodeId);
     if (!episode) throw new AppError("EPISODE_NOT_FOUND");
     const cached = await deps.sources.getCachedSearch(input.episodeId, deps.provider.name);
@@ -209,6 +229,14 @@ export function makeImportFromSource(deps: Deps) {
     ).length;
     const known = currentQuota(await deps.sources.getQuota(deps.provider.name), deps.clock.now());
     if (known && needed > known.remaining) throw new SourceQuotaExceeded(known);
+    const since = new Date(deps.clock.now().getTime() - USER_WINDOW_HOURS * MS_PER_HOUR);
+    const used = needed > 0 ? await deps.countUserDownloads(input.userId, since) : 0;
+    if (used + needed > deps.userDailyDownloads) {
+      throw new AppError(
+        "SUBTITLE_SOURCE_QUOTA",
+        `Você já usou ${used} de ${deps.userDailyDownloads} downloads nas últimas 24 horas. Envie o arquivo manualmente ou tente depois.`,
+      );
+    }
 
     const downloads = { count: 0 };
     const englishFile = await obtain(episode, english, downloads);
@@ -221,5 +249,5 @@ export function makeImportFromSource(deps: Deps) {
     });
     const quota = currentQuota(await deps.sources.getQuota(deps.provider.name), deps.clock.now());
     return { ...outcome, downloadsUsed: downloads.count, quota };
-  };
+  }
 }

@@ -54,6 +54,14 @@ export function normalizeRelease(name: string): string {
     .join(".");
 }
 
+const RELEASE_MARKER =
+  /(^|\.)(s\d{1,2}e\d{1,3}|\d{3,4}p|web|webrip|hdtv|bluray|brrip|bdrip|dvdrip|x264|x265|h264|h265|xvid|hevc)(\.|$)/;
+
+export function releaseKey(name: string): string {
+  const normalized = normalizeRelease(name);
+  return RELEASE_MARKER.test(normalized) ? normalized : "";
+}
+
 function mostCommonFps(candidates: readonly SubtitleCandidate[]): number | null {
   const votes = new Map<number, number>();
   for (const candidate of candidates) {
@@ -96,11 +104,11 @@ export function rankCandidates(candidates: readonly SubtitleCandidate[]): Rankin
 
   const portugueseByRelease = new Map<string, SubtitleCandidate>();
   for (const candidate of portuguese) {
-    const key = normalizeRelease(candidate.release);
+    const key = releaseKey(candidate.release);
     if (key !== "" && !portugueseByRelease.has(key)) portugueseByRelease.set(key, candidate);
   }
   const pairs = english.flatMap((candidate) => {
-    const match = portugueseByRelease.get(normalizeRelease(candidate.release));
+    const match = portugueseByRelease.get(releaseKey(candidate.release));
     return match ? [{ english: candidate, portuguese: match }] : [];
   });
   const usablePairs = pairs.filter(
