@@ -77,6 +77,7 @@ export const highlightCardBatches = pgTable(
     llmCalls: integer("llm_calls").notNull(),
     llmProvider: text("llm_provider").notNull(),
     draft: jsonb("draft").notNull(),
+    failureReason: text("failure_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [index("highlight_card_batches_user").on(table.userId)],

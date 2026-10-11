@@ -53,13 +53,18 @@ import { DrizzleIdentityRepository } from "@/modules/identity/infrastructure/dri
 import {
   makeConfirmCardBatch,
   makeGenerateCardDrafts,
+  makeGetCardBatch,
   makeGetSpeakableItemText,
   makeListCatalogSuggestions,
+  makeProcessCardBatch,
+  makeRequestCardDrafts,
   makeTranslateCue,
   type LlmProvider,
 } from "@/modules/learning";
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
+import { makeGetInbox, makeMarkNotificationsRead, makeNotify } from "@/modules/notifications";
+import { DrizzleNotificationRepository } from "@/modules/notifications/infrastructure/drizzle-notification-repository";
 import { makeCompleteLesson, makeGetTrail, makeStartLesson, type TrailLine } from "@/modules/study";
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
@@ -111,6 +116,8 @@ export function buildContainer(options: ContainerOptions) {
   const audioAssets = new DrizzleAudioAssetRepository(db);
   const gamification = new DrizzleGamificationRepository(db);
   const study = new DrizzleStudyRepository(db);
+  const notificationRepository = new DrizzleNotificationRepository(db);
+  const notify = makeNotify({ notifications: notificationRepository, clock, ids });
 
   const metadata: MetadataProvider =
     options.metadata ??
@@ -161,6 +168,8 @@ export function buildContainer(options: ContainerOptions) {
     awardXp,
     resolveLlm,
   };
+
+  const generateCardDrafts = makeGenerateCardDrafts(learningDeps);
 
   async function loadTrailLines(episodeId: string): Promise<TrailLine[] | null> {
     const script = await getEpisodeScript(episodeId);
@@ -298,7 +307,13 @@ export function buildContainer(options: ContainerOptions) {
     getReadingView: makeGetReadingView(highlightDeps),
     syncHighlights: makeSyncHighlights(highlightDeps),
 
-    generateCardDrafts: makeGenerateCardDrafts(learningDeps),
+    generateCardDrafts,
+    requestCardDrafts: makeRequestCardDrafts({ learning, clock, ids }),
+    processCardBatch: makeProcessCardBatch({ learning, generate: generateCardDrafts, notify }),
+    getCardBatch: makeGetCardBatch({ learning, clock }),
+    notify,
+    getInbox: makeGetInbox({ notifications: notificationRepository }),
+    markNotificationsRead: makeMarkNotificationsRead({ notifications: notificationRepository }),
     confirmCardBatch: makeConfirmCardBatch(learningDeps),
     listCatalogSuggestions: makeListCatalogSuggestions({ learning }),
     getSpeakableItemText: makeGetSpeakableItemText({ learning }),

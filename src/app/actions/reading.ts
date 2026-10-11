@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
-import type { CardDraft, ConfirmedBatch } from "@/modules/learning";
+import { episodeLabel } from "@/modules/catalog";
+import type { CardBatchState, ConfirmedBatch } from "@/modules/learning";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
@@ -29,14 +31,6 @@ export type SavedHighlightView = {
   carded: boolean;
 };
 
-export type GeneratedCardsView = {
-  batchId: string;
-  drafts: CardDraft[];
-  steps: { label: string; detail: string }[];
-  translationsFromSubtitle: number;
-  simulated: boolean;
-};
-
 async function sync(
   userId: string,
   input: unknown,
@@ -61,22 +55,35 @@ export async function syncHighlightsAction(input: unknown): Promise<ActionResult
   return runAction("syncHighlights", async () => (await sync(user.id, input)).highlights);
 }
 
-export async function generateCardsAction(input: unknown): Promise<ActionResult<GeneratedCardsView>> {
+export async function startCardGenerationAction(input: unknown): Promise<ActionResult<{ batchId: string }>> {
   const user = await requireUser();
-  return runAction("generateCards", async () => {
+  return runAction("startCardGeneration", async () => {
     const { episodeId } = await sync(user.id, input);
-    const generated = await app().generateCardDrafts({
+    const context = await app().getEpisodeContext(episodeId);
+    if (!context) throw new AppError("EPISODE_NOT_FOUND");
+    const { batchId } = await app().requestCardDrafts({ userId: user.id, episodeId });
+    const job = {
       userId: user.id,
       episodeId,
+      batchId,
       learnerLevel: user.preferences.level,
-    });
-    return {
-      batchId: generated.batchId,
-      drafts: generated.drafts,
-      steps: generated.steps,
-      translationsFromSubtitle: generated.translationsFromSubtitle,
-      simulated: generated.llmProvider === "fake",
+      episodeLabel: `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`,
     };
+    after(() => app().processCardBatch(job));
+    return { batchId };
+  });
+}
+
+export async function getCardBatchAction(batchId: unknown): Promise<ActionResult<CardBatchState>> {
+  const user = await requireUser();
+  return runAction("getCardBatch", async () => {
+    const parsed = idSchema.safeParse(batchId);
+    if (!parsed.success) throw new AppError("BATCH_NOT_FOUND");
+    const state = await app().getCardBatch(user.id, parsed.data);
+    if (state.status === "DRAFT") {
+      await app().markNotificationsRead(user.id, { href: `/read/${state.episodeId}?batch=${state.batchId}` });
+    }
+    return state;
   });
 }
 

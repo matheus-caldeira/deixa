@@ -7,6 +7,12 @@ import {
   makeGetSpeakableItemText,
   makeListCatalogSuggestions,
 } from "./confirm-card-batch";
+import {
+  CARD_BATCH_TIMEOUT_MS,
+  makeGetCardBatch,
+  makeProcessCardBatch,
+  makeRequestCardDrafts,
+} from "./card-batch-jobs";
 import { makeGenerateCardDrafts } from "./generate-card-drafts";
 import type { LlmProvider, PendingHighlight, ScriptLineForCards } from "./ports";
 import { makeTranslateCue } from "./translate-cue";
@@ -348,6 +354,87 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
     await expect(
       app.confirm({ userId: "ana", batchId: "inexistente", keepKeys: [], scope: "private" }),
     ).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
+  });
+});
+
+describe("geração em segundo plano", () => {
+  function background(llm: LlmProvider = new FakeLlmProvider()) {
+    const base = setup(llm);
+    const clock = new FixedClock("2026-10-10T12:00:00Z");
+    const sent: { userId: string; kind: string; title: string; href: string }[] = [];
+    const deps = { learning: base.learning, clock, ids: new SequentialIds("job") };
+    return {
+      ...base,
+      clock,
+      sent,
+      request: makeRequestCardDrafts(deps),
+      state: makeGetCardBatch(deps),
+      process: makeProcessCardBatch({
+        learning: base.learning,
+        generate: base.generate,
+        notify: async (notification) => {
+          sent.push(notification);
+        },
+      }),
+    };
+  }
+  const job = {
+    userId: "ana",
+    episodeId: "ep-1",
+    learnerLevel: "A1" as const,
+    episodeLabel: "Friends · T1 · E1",
+  };
+
+  it("responde na hora com o lote pendente e avisa quando os cards ficam prontos", async () => {
+    const app = background();
+    app.spy.setPending("ana", [PHRASE, WORD]);
+    const { batchId } = await app.request(job);
+    expect(await app.state("ana", batchId)).toMatchObject({ status: "PENDING" });
+
+    await app.process({ ...job, batchId });
+    const ready = await app.state("ana", batchId);
+    expect(ready).toMatchObject({ status: "DRAFT", simulated: true, translationsFromSubtitle: 2 });
+    expect(ready.status === "DRAFT" ? ready.drafts.map((draft) => draft.term) : []).toEqual([
+      "picked up the tab",
+      "overthink",
+    ]);
+    expect(app.sent).toEqual([
+      expect.objectContaining({
+        userId: "ana",
+        kind: "cards_ready",
+        title: "Seus cards estão prontos",
+        href: `/read/ep-1?batch=${batchId}`,
+      }),
+    ]);
+    await app.confirm({ userId: "ana", batchId, keepKeys: ["h-phrase"], scope: "private" });
+    expect(await app.state("ana", batchId)).toMatchObject({ status: "SAVED" });
+  });
+
+  it("registra a falha, avisa o usuário e não deixa o lote travado", async () => {
+    const offline: LlmProvider = {
+      name: "gemini",
+      explainTerms: async () => {
+        throw new Error("timeout");
+      },
+      translateLines: async () => [],
+    };
+    const app = background(offline);
+    app.spy.setPending("ana", [PHRASE]);
+    const { batchId } = await app.request(job);
+    await app.process({ ...job, batchId });
+    expect(await app.state("ana", batchId)).toMatchObject({
+      status: "FAILED",
+      message: "A IA não respondeu. Tente de novo em instantes.",
+    });
+    expect(app.sent[0]).toMatchObject({ kind: "cards_failed", href: "/read/ep-1" });
+  });
+
+  it("considera falho o lote que ficou pendente além do limite e esconde lotes de outro usuário", async () => {
+    const app = background();
+    const { batchId } = await app.request(job);
+    await expect(app.state("lucas", batchId)).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
+    app.clock.advanceMs(CARD_BATCH_TIMEOUT_MS + 1000);
+    expect(await app.state("ana", batchId)).toMatchObject({ status: "FAILED" });
   });
 });
 

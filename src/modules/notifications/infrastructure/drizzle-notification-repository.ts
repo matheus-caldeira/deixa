@@ -1,0 +1,70 @@
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
+import type { Database } from "@/infrastructure/database/client";
+import { notifications } from "@/infrastructure/database/schema";
+import type {
+  NewNotification,
+  Notification,
+  NotificationKind,
+  NotificationRepository,
+} from "../application/notifications";
+
+const KINDS: readonly NotificationKind[] = ["cards_ready", "cards_failed", "trail_ready", "trail_failed"];
+
+export class DrizzleNotificationRepository implements NotificationRepository {
+  constructor(private readonly db: Database) {}
+
+  async insert(notification: NewNotification): Promise<void> {
+    await this.db.insert(notifications).values(notification);
+  }
+
+  async listRecent(userId: string, limit: number): Promise<Notification[]> {
+    const rows = await this.db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+    return rows.map((row) => ({
+      id: row.id,
+      kind: KINDS.find((kind) => kind === row.kind) ?? "cards_ready",
+      title: row.title,
+      body: row.body,
+      href: row.href,
+      read: row.readAt !== null,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async countUnread(userId: string): Promise<number> {
+    const [row] = await this.db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    return row?.total ?? 0;
+  }
+
+  async markRead(userId: string, notificationId: string): Promise<void> {
+    if (!z.uuid().safeParse(notificationId).success) return;
+    await this.db
+      .update(notifications)
+      .set({ readAt: new Date() })
+      .where(and(eq(notifications.userId, userId), eq(notifications.id, notificationId)));
+  }
+
+  async markAllRead(userId: string): Promise<void> {
+    await this.db
+      .update(notifications)
+      .set({ readAt: new Date() })
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+  }
+
+  async markReadByHref(userId: string, href: string): Promise<void> {
+    await this.db
+      .update(notifications)
+      .set({ readAt: new Date() })
+      .where(
+        and(eq(notifications.userId, userId), eq(notifications.href, href), isNull(notifications.readAt)),
+      );
+  }
+}

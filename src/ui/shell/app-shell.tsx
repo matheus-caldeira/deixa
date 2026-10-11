@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { getInboxAction, type InboxView } from "@/app/actions/notifications";
 import type { CefrLevel } from "@/shared/levels";
 import { LEVEL_NAMES } from "@/shared/levels";
 import {
+  BellIcon,
   BoltIcon,
   CardsIcon,
   ChartIcon,
@@ -16,6 +18,7 @@ import {
   HomeIcon,
 } from "../icons";
 import { UploadSheet } from "../catalog/upload-sheet";
+import { NotificationsSheet } from "./notifications-sheet";
 import { ProfileSheet, type ProfileSheetData } from "./profile-sheet";
 
 export type ShellData = {
@@ -49,12 +52,34 @@ const TABS = [
 
 const SCROLL_THRESHOLD = 4;
 
-type Sheet = { kind: "profile" } | { kind: "upload"; mediaId?: string } | null;
+type Sheet = { kind: "profile" } | { kind: "notifications" } | { kind: "upload"; mediaId?: string } | null;
+const INBOX_REFRESH_MS = 15_000;
+const EMPTY_INBOX: InboxView = { unread: 0, items: [] };
 
 export function AppShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
   const pathname = usePathname();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [inbox, setInbox] = useState<InboxView>(EMPTY_INBOX);
+
+  const refreshInbox = useCallback(() => {
+    getInboxAction()
+      .then((result) => {
+        if (result.ok) setInbox(result.data);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const first = setTimeout(refreshInbox, 0);
+    const timer = setInterval(refreshInbox, INBOX_REFRESH_MS);
+    window.addEventListener("focus", refreshInbox);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+      window.removeEventListener("focus", refreshInbox);
+    };
+  }, [refreshInbox]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD);
@@ -87,6 +112,17 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           {data.level}
         </Link>
         <span className="spacer" />
+        <button
+          className="stat bell"
+          onClick={() => {
+            refreshInbox();
+            setSheet({ kind: "notifications" });
+          }}
+          aria-label={inbox.unread > 0 ? `Notificações: ${inbox.unread} novas` : "Notificações"}
+        >
+          <BellIcon />
+          {inbox.unread > 0 ? <span className="badge">{inbox.unread}</span> : null}
+        </button>
         <Link
           className="stat"
           href="/people"
@@ -121,6 +157,9 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         ))}
       </nav>
       {sheet?.kind === "profile" ? <ProfileSheet data={data.profile} onClose={() => setSheet(null)} /> : null}
+      {sheet?.kind === "notifications" ? (
+        <NotificationsSheet inbox={inbox} onChange={refreshInbox} onClose={() => setSheet(null)} />
+      ) : null}
       {sheet?.kind === "upload" ? (
         <UploadSheet
           mediaId={sheet.mediaId}

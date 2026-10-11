@@ -160,6 +160,7 @@ export function makeGenerateCardDrafts(deps: Deps) {
     userId: string;
     episodeId: string;
     learnerLevel: CefrLevel;
+    batchId?: string;
   }): Promise<GeneratedDrafts> {
     const script = await deps.loadScript(input.episodeId);
     if (!script) throw new AppError("EPISODE_NOT_READY");
@@ -228,7 +229,7 @@ export function makeGenerateCardDrafts(deps: Deps) {
     const reusedCount = drafts.filter((draft) => draft.reusedItemId !== null).length;
     const expressions = drafts.filter((draft) => draft.kind === "phrase").length;
 
-    const batchId = deps.ids.next();
+    const batchId = input.batchId ?? deps.ids.next();
     await deps.learning.saveDraftBatch({
       id: batchId,
       userId: input.userId,

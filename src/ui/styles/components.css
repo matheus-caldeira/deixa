@@ -2181,3 +2181,26 @@
     border-radius: 4px;
   }
 }
+
+@layer components {
+  .stat.bell {
+    position: relative;
+    padding: 6px 9px;
+  }
+  .stat.bell .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--bad);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    font-family: var(--f-mono);
+  }
+}

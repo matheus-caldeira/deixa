@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   confirmCardsAction,
-  generateCardsAction,
+  getCardBatchAction,
+  startCardGenerationAction,
   syncHighlightsAction,
   translateCueAction,
-  type GeneratedCardsView,
   type SavedHighlightView,
 } from "@/app/actions/reading";
 import { tokenRuns } from "@/modules/highlights";
-import { ITEM_TYPE_LABELS } from "@/modules/learning";
+import { ITEM_TYPE_LABELS, type CardDraft } from "@/modules/learning";
 import type { DisplayMode } from "@/shared/levels";
 import { formatTimecode } from "@/shared/time";
 import { BackIcon, CheckIcon, MarkerIcon, SearchIcon, SoundIcon, SparkIcon, XIcon } from "../icons";
@@ -43,6 +43,14 @@ export type ReadView = {
   highlights: SavedHighlightView[];
   suggestions: { cueId: string; startToken: number; endToken: number; term: string }[];
   cachedAudioCueIds: string[];
+  openBatchId: string | null;
+};
+
+type GeneratedCards = {
+  batchId: string;
+  drafts: CardDraft[];
+  translationsFromSubtitle: number;
+  simulated: boolean;
 };
 
 const MODES: { key: DisplayMode; label: string }[] = [
@@ -59,6 +67,7 @@ const GENERATION_STEPS = [
 ];
 const SYNC_DELAY_MS = 700;
 const STEP_MS = 450;
+const POLL_MS = 1500;
 
 type Stage = "read" | "generating";
 type Marks = Record<string, number[]>;
@@ -95,9 +104,10 @@ export function ReadScreen({ view }: { view: ReadView }) {
   >({});
   const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [stage, setStage] = useState<Stage>("read");
+  const [stage, setStage] = useState<Stage>(view.openBatchId ? "generating" : "read");
+  const [batchId, setBatchId] = useState<string | null>(view.openBatchId);
   const [step, setStep] = useState(0);
-  const [generated, setGenerated] = useState<GeneratedCardsView | null>(null);
+  const [generated, setGenerated] = useState<GeneratedCards | null>(null);
   const [removed, setRemoved] = useState<Set<string>>(() => new Set());
   const [scope, setScope] = useState<"private" | "catalog">("private");
   const [saving, setSaving] = useState(false);
@@ -192,18 +202,64 @@ export function ReadScreen({ view }: { view: ReadView }) {
     dirty.current = false;
     setStage("generating");
     setStep(0);
+    setGenerated(null);
+    setBatchId(null);
     setRemoved(new Set());
     window.scrollTo(0, 0);
-    startTransition(async () => {
-      const result = await generateCardsAction(payload());
-      if (!result.ok) {
+    startCardGenerationAction(payload())
+      .then((result) => {
+        if (result.ok) {
+          setBatchId(result.data.batchId);
+          return;
+        }
+        toast(result.message);
+        setStage("read");
+      })
+      .catch(() => {
+        toast("Não deu para falar com o servidor. Suas marcações estão salvas; tente de novo.");
+        setStage("read");
+      });
+  };
+
+  useEffect(() => {
+    if (stage !== "generating" || !batchId || generated) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      const result = await getCardBatchAction(batchId).catch(() => null);
+      if (cancelled) return;
+      if (result?.ok && result.data.status === "DRAFT") {
+        setGenerated({
+          batchId: result.data.batchId,
+          drafts: result.data.drafts,
+          translationsFromSubtitle: result.data.translationsFromSubtitle,
+          simulated: result.data.simulated,
+        });
+        return;
+      }
+      if (result?.ok && result.data.status === "FAILED") {
+        toast(result.data.message);
+        setStage("read");
+        return;
+      }
+      if (result?.ok && result.data.status === "SAVED") {
+        toast("Esses cards já foram salvos.");
+        setStage("read");
+        return;
+      }
+      if (result && !result.ok) {
         toast(result.message);
         setStage("read");
         return;
       }
-      setGenerated(result.data);
-    });
-  };
+      timer = setTimeout(poll, POLL_MS);
+    };
+    timer = setTimeout(poll, POLL_MS / 3);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [batchId, generated, stage, toast]);
 
   useEffect(() => {
     if (stage !== "generating") return;
@@ -219,29 +275,33 @@ export function ReadScreen({ view }: { view: ReadView }) {
   const save = () => {
     if (!generated) return;
     setSaving(true);
-    startTransition(async () => {
-      const result = await confirmCardsAction({
-        batchId: generated.batchId,
-        keepKeys: keptDrafts.map((draft) => draft.key),
-        scope,
+    confirmCardsAction({
+      batchId: generated.batchId,
+      keepKeys: keptDrafts.map((draft) => draft.key),
+      scope,
+    })
+      .then((result) => {
+        setSaving(false);
+        if (!result.ok) {
+          toast(result.message);
+          return;
+        }
+        toast(
+          `${result.data.cardsKept} cards na sua revisão${scope === "catalog" ? " e sugeridos no catálogo" : ""} · +${result.data.xpAwarded} XP`,
+        );
+        router.push("/review");
+        router.refresh();
+      })
+      .catch(() => {
+        setSaving(false);
+        toast("Não deu para falar com o servidor. Tente de novo.");
       });
-      setSaving(false);
-      if (!result.ok) {
-        toast(result.message);
-        return;
-      }
-      toast(
-        `${result.data.cardsKept} cards na sua revisão${scope === "catalog" ? " e sugeridos no catálogo" : ""} · +${result.data.xpAwarded} XP`,
-      );
-      router.push("/review");
-      router.refresh();
-    });
   };
 
   const generationFinished = stage === "generating" && generated !== null && step >= GENERATION_STEPS.length;
 
   if (stage === "generating" && !generationFinished) {
-    const steps = generated?.steps ?? GENERATION_STEPS.map((label) => ({ label, detail: "" }));
+    const steps = GENERATION_STEPS.map((label) => ({ label, detail: "" }));
     return (
       <div className="tx">
         <div className="done" style={{ justifyContent: "flex-start", paddingTop: 48 }}>
@@ -261,6 +321,19 @@ export function ReadScreen({ view }: { view: ReadView }) {
               );
             })}
           </div>
+          <p className="small muted">
+            Pode demorar um pouco quando há muitas marcações. Você não precisa esperar aqui: avisamos no sino
+            quando os cards estiverem prontos.
+          </p>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              setStage("read");
+              toast("Tudo certo. Avisamos no sino quando seus cards estiverem prontos.");
+            }}
+          >
+            Continuar lendo e me avisar
+          </button>
         </div>
       </div>
     );

@@ -9,9 +9,13 @@ import { requireUser } from "../../session";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReadPage(props: { params: Promise<{ episodeId: string }> }) {
+export default async function ReadPage(props: {
+  params: Promise<{ episodeId: string }>;
+  searchParams: Promise<{ batch?: string }>;
+}) {
   const user = await requireUser();
   const { episodeId } = await props.params;
+  const { batch } = await props.searchParams;
   if (!z.uuid().safeParse(episodeId).success) notFound();
   const container = getContainer();
   const context = await container.getEpisodeContext(episodeId);
@@ -29,6 +33,7 @@ export default async function ReadPage(props: { params: Promise<{ episodeId: str
   return (
     <ToastProvider>
       <ReadScreen
+        key={`${episodeId}:${batch ?? ""}`}
         view={{
           episodeId,
           backHref: `/catalog/${context.media.id}?season=${context.season.seasonNumber}`,
@@ -39,6 +44,7 @@ export default async function ReadPage(props: { params: Promise<{ episodeId: str
           defaultMode: defaultDisplayMode(user.preferences.level),
           audioSpeed: user.preferences.audioSpeed,
           cachedAudioCueIds,
+          openBatchId: batch && z.uuid().safeParse(batch).success ? batch : null,
           suggestions: suggestions.map(({ cueId, startToken, endToken, term }) => ({
             cueId,
             startToken,

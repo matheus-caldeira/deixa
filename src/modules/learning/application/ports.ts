@@ -32,8 +32,11 @@ export type NewLearningItem = {
 export type DraftBatch = {
   id: string;
   episodeId: string;
-  status: "DRAFT" | "SAVED";
+  status: "PENDING" | "DRAFT" | "SAVED" | "FAILED";
   drafts: CardDraft[];
+  llmProvider: string;
+  failureReason: string | null;
+  createdAt: Date;
 };
 
 export type CatalogSuggestion = {
@@ -58,6 +61,8 @@ export interface LearningRepository {
     llmProvider: string;
     now: Date;
   }): Promise<void>;
+  createPendingBatch(batch: { id: string; userId: string; episodeId: string; now: Date }): Promise<void>;
+  failBatch(batchId: string, reason: string): Promise<void>;
   getDraftBatch(userId: string, batchId: string): Promise<DraftBatch | null>;
   markBatchSaved(input: {
     userId: string;

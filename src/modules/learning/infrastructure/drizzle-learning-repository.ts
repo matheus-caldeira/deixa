@@ -26,6 +26,7 @@ import type {
 
 const LOCALE = "pt-BR";
 const ORIGIN_HIGHLIGHT = "user_highlight";
+const BATCH_STATUSES = ["PENDING", "DRAFT", "SAVED", "FAILED"] as const;
 
 const toItemType = (value: string): ItemType => ITEM_TYPES.find((type) => type === value) ?? "expression";
 const toSource = (value: string | null): TranslationSource =>
@@ -135,18 +136,58 @@ export class DrizzleLearningRepository implements LearningRepository {
     llmProvider: string;
     now: Date;
   }): Promise<void> {
+    const values = {
+      status: "DRAFT",
+      highlightsCount: batch.highlightsCount,
+      llmCalls: batch.llmCalls,
+      llmProvider: batch.llmProvider,
+      draft: batch.drafts,
+    };
+    await this.db
+      .insert(highlightCardBatches)
+      .values({
+        id: batch.id,
+        userId: batch.userId,
+        episodeId: batch.episodeId,
+        cardsCreated: 0,
+        createdAt: batch.now,
+        ...values,
+      })
+      .onConflictDoUpdate({
+        target: highlightCardBatches.id,
+        set: values,
+        setWhere: and(
+          eq(highlightCardBatches.userId, batch.userId),
+          eq(highlightCardBatches.status, "PENDING"),
+        ),
+      });
+  }
+
+  async createPendingBatch(batch: {
+    id: string;
+    userId: string;
+    episodeId: string;
+    now: Date;
+  }): Promise<void> {
     await this.db.insert(highlightCardBatches).values({
       id: batch.id,
       userId: batch.userId,
       episodeId: batch.episodeId,
-      status: "DRAFT",
-      highlightsCount: batch.highlightsCount,
+      status: "PENDING",
+      highlightsCount: 0,
       cardsCreated: 0,
-      llmCalls: batch.llmCalls,
-      llmProvider: batch.llmProvider,
-      draft: batch.drafts,
+      llmCalls: 0,
+      llmProvider: "nenhum",
+      draft: [],
       createdAt: batch.now,
     });
+  }
+
+  async failBatch(batchId: string, reason: string): Promise<void> {
+    await this.db
+      .update(highlightCardBatches)
+      .set({ status: "FAILED", failureReason: reason.slice(0, 300) })
+      .where(and(eq(highlightCardBatches.id, batchId), eq(highlightCardBatches.status, "PENDING")));
   }
 
   async getDraftBatch(userId: string, batchId: string): Promise<DraftBatch | null> {
@@ -161,8 +202,11 @@ export class DrizzleLearningRepository implements LearningRepository {
     return {
       id: row.id,
       episodeId: row.episodeId,
-      status: row.status === "SAVED" ? "SAVED" : "DRAFT",
+      status: BATCH_STATUSES.find((status) => status === row.status) ?? "FAILED",
       drafts: drafts.success ? drafts.data : [],
+      llmProvider: row.llmProvider,
+      failureReason: row.failureReason,
+      createdAt: row.createdAt,
     };
   }
 

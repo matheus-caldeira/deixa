@@ -12,6 +12,7 @@ import type {
 
 type StoredItem = ReusableItem & { episodeId: string };
 type StoredBatch = DraftBatch & { userId: string; llmCalls: number; scope: CardScope | null };
+const EPOCH = new Date("2026-10-10T12:00:00Z");
 
 export class InMemoryLearning implements LearningRepository {
   readonly items: StoredItem[] = [];
@@ -57,13 +58,52 @@ export class InMemoryLearning implements LearningRepository {
     }
   }
 
+  async createPendingBatch(batch: {
+    id: string;
+    userId: string;
+    episodeId: string;
+    now: Date;
+  }): Promise<void> {
+    this.batches.push({
+      id: batch.id,
+      userId: batch.userId,
+      episodeId: batch.episodeId,
+      status: "PENDING",
+      drafts: [],
+      llmCalls: 0,
+      llmProvider: "nenhum",
+      failureReason: null,
+      createdAt: batch.now,
+      scope: null,
+    });
+  }
+
+  async failBatch(batchId: string, reason: string): Promise<void> {
+    const batch = this.batches.find((candidate) => candidate.id === batchId);
+    if (batch && batch.status === "PENDING") {
+      batch.status = "FAILED";
+      batch.failureReason = reason;
+    }
+  }
+
   async saveDraftBatch(batch: {
     id: string;
     userId: string;
     episodeId: string;
     drafts: CardDraft[];
     llmCalls: number;
+    llmProvider: string;
   }): Promise<void> {
+    const existing = this.batches.find(
+      (candidate) => candidate.id === batch.id && candidate.userId === batch.userId,
+    );
+    if (existing) {
+      existing.status = "DRAFT";
+      existing.drafts = batch.drafts;
+      existing.llmCalls = batch.llmCalls;
+      existing.llmProvider = batch.llmProvider;
+      return;
+    }
     this.batches.push({
       id: batch.id,
       userId: batch.userId,
@@ -71,15 +111,18 @@ export class InMemoryLearning implements LearningRepository {
       status: "DRAFT",
       drafts: batch.drafts,
       llmCalls: batch.llmCalls,
+      llmProvider: batch.llmProvider,
+      failureReason: null,
+      createdAt: EPOCH,
       scope: null,
     });
   }
 
   async getDraftBatch(userId: string, batchId: string): Promise<DraftBatch | null> {
     const batch = this.batches.find((candidate) => candidate.id === batchId && candidate.userId === userId);
-    return batch
-      ? { id: batch.id, episodeId: batch.episodeId, status: batch.status, drafts: batch.drafts }
-      : null;
+    if (!batch) return null;
+    const { userId: _userId, llmCalls: _llmCalls, scope: _scope, ...view } = batch;
+    return view;
   }
 
   async markBatchSaved(input: { userId: string; batchId: string; scope: CardScope }): Promise<void> {
