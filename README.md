@@ -8,7 +8,7 @@ transforma as marcações em cards de revisão.
 - Protótipo aprovado da interface: [`deixa.html`](deixa.html)
 - Plano da etapa: [`docs/PLAN.md`](docs/PLAN.md) · Diário de decisões: [`docs/DECISIONS.md`](docs/DECISIONS.md)
 
-Esta etapa cobre as fases **01 · Fundação e catálogo** e **02 · Leitura e marcador**.
+Feito até aqui: fases **01 · Fundação e catálogo** e **02 · Leitura e marcador**, o núcleo da **03** (trilha e sessão de estudo, sem IA) e o núcleo da **04** (XP, sequência, missões e progresso calculados).
 
 ## Requisitos
 
@@ -22,11 +22,11 @@ pnpm setup:env          # cria ou completa o .env com valores de desenvolvimento
 docker compose up -d    # Postgres (porta 1442) e Kokoro (porta 1881)
 pnpm db:migrate         # aplica as migrações
 pnpm db:seed            # perfis, obras e episódios de demonstração (pode rodar de novo)
-pnpm dev                # http://localhost:1300
+pnpm dev                # http://localhost:1300 e http://<IP da máquina>:1300
 ```
 
-Para testar pelo celular na mesma rede: `pnpm build && pnpm start` e abra `http://<IP da máquina>:1300`.
-A aplicação escuta em `0.0.0.0`; Postgres e Kokoro ficam só em `127.0.0.1`.
+Para testar pelo celular na mesma rede, abra `http://<IP da máquina>:1300` (vale para `pnpm dev` e para
+`pnpm build && pnpm start`). A aplicação escuta em `0.0.0.0`; Postgres e Kokoro ficam só em `127.0.0.1`.
 
 A imagem do Kokoro tem cerca de 8 GB; o primeiro `docker compose up` demora. Sem ela, comente o serviço ou deixe
 `KOKORO_URL` vazio: o áudio vira um WAV curto de silêncio e o resto funciona.
@@ -76,11 +76,14 @@ Todos com a mesma senha de desenvolvimento: **`deixa1234`**
 | Matheus | `matheus@deixa.example` | B1    | How I Met Your Mother |
 | Lucas   | `lucas@deixa.example`   | C1    | Ted Lasso             |
 
-Com `DEV_SHORTCUTS=true`, a tela de entrada mostra os três perfis: toque em um e digite a senha. Também dá para
-criar uma conta nova em "Criar conta".
+A tela de entrada pede e-mail e senha e tem "Criar conta". Ela não lista as contas existentes.
 
-Os episódios do seed usam um **diálogo fictício** (o mesmo do protótipo), nunca legendas reais. Obras reais entram
-pelo cadastro com o TMDB e pelo envio das suas legendas; em [`fixtures/`](fixtures/) há um par EN/PT de exemplo.
+Todo o catálogo vem do TMDB: o seed cadastra as sete obras pela API (títulos em pt-BR, pôster, imagem de fundo e
+imagem de cada episódio). O **texto** dos episódios do seed é um diálogo fictício (o mesmo do protótipo), nunca
+legendas reais; em [`fixtures/`](fixtures/) há o par EN/PT usado. Sem credenciais do TMDB, o seed e a busca caem
+num provider de demonstração, sem fotos.
+
+`pnpm db:reset` apaga o banco de desenvolvimento e os arquivos em `data/`, migra e semeia de novo.
 
 ## O que dá para fazer
 
@@ -92,7 +95,15 @@ pelo cadastro com o TMDB e pelo envio das suas legendas; em [`fixtures/`](fixtur
 - Ouvir cada fala: o áudio é gerado no primeiro toque (Kokoro) e servido do cache depois.
 - Configurar a chave do Google AI no perfil. Sem chave, as explicações dos cards são simuladas.
 
-Início (trilha e missões), Conversar e Progresso mostram dados de demonstração nesta etapa.
+- Estudar: "Continuar estudando" abre a lição da cena atual da trilha, com exercícios montados das falas do
+  episódio e misturados conforme o nível (significado, escuta, montar a frase, lacuna, digitação e ditado). A
+  correção e o XP são calculados no servidor; repetir rende metade e para de render depois de duas repetições no dia.
+- Sequência, XP do dia e da semana, mapa de dias estudados e missões são calculados dos eventos de XP, no fuso da
+  conta. Tocar no XP ou na sequência abre "Quem está estudando", com nome, nível, ofensiva e XP de cada conta.
+- Instalar como aplicativo (PWA): manifesto, ícones e service worker online-first. O service worker só registra em
+  HTTPS ou em `localhost`; pelo IP da rede em HTTP dá para "Adicionar à tela de início", mas sem cache offline.
+
+Conversar, percentual de nível, habilidades e erros recorrentes ainda mostram dados de demonstração.
 
 ## Comandos
 

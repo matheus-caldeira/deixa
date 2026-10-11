@@ -17,7 +17,7 @@ export default async function ProgressPage() {
         levelPct: summary.levelPct,
         nextStep: summary.nextStep,
         streak: summary.streak,
-        longest: summary.longest,
+        longest: summary.longestStreak,
         totalXp: summary.totalXp,
         learned: summary.learned,
         accuracy: summary.accuracy,

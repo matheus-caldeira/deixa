@@ -1,9 +1,10 @@
 export * from "./domain/profile";
-export type { SnapshotRepository, XpRepository } from "./application/ports";
+export * from "./domain/activity";
+export type { ActivityCounts, SnapshotRepository, XpRepository } from "./application/ports";
 export {
   makeAwardXp,
   makeGetProfileSummary,
-  makeGetTagline,
   makeSaveSnapshot,
+  makeSettleMissions,
   type ProfileSummary,
 } from "./application/profile-use-cases";

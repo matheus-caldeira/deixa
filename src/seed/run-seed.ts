@@ -27,6 +27,7 @@ import { systemClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
 import { uuidGenerator } from "@/shared/ids";
 import { cleanToken, normalizeTerm, tokenize } from "@/shared/text";
+import { MS_PER_DAY } from "@/shared/time";
 import {
   SEED_EMAIL_SUFFIX,
   SEED_PASSWORD,
@@ -36,6 +37,7 @@ import {
   type EpisodeKey,
 } from "./data";
 
+const SEED_HISTORY_DAYS = 60;
 const ENGLISH_FIXTURE = "fixtures/sample.en.srt";
 const PORTUGUESE_FIXTURE = "fixtures/sample.pt-BR.srt";
 
@@ -173,6 +175,42 @@ export async function runSeed(input: {
     return [...byCue.values()];
   }
 
+  async function seedXpHistory(userId: string, profile: (typeof SEED_PROFILES)[number]): Promise<void> {
+    const goal = profile.dailyGoal;
+    const metToday = profile.history.xpToday >= goal;
+    const streakDaysBeforeToday = metToday ? profile.history.streak - 1 : profile.history.streak;
+    let seeded = 0;
+    const award = async (daysAgo: number, amount: number) => {
+      if (amount <= 0) return;
+      seeded += amount;
+      await container.awardXp({
+        userId,
+        source: "seed",
+        sourceId: `day-${daysAgo}`,
+        amount,
+        at: new Date(now.getTime() - daysAgo * MS_PER_DAY),
+      });
+    };
+    await award(0, profile.history.xpToday);
+    for (let daysAgo = 1; daysAgo < SEED_HISTORY_DAYS; daysAgo += 1) {
+      const variation = ((daysAgo * 37) % 5) * Math.round(goal / 10);
+      if (daysAgo <= streakDaysBeforeToday) await award(daysAgo, goal + variation);
+      else if (daysAgo === streakDaysBeforeToday + 1) await award(daysAgo, 0);
+      else
+        await award(
+          daysAgo,
+          daysAgo % 3 === 0 ? 0 : daysAgo % 3 === 1 ? Math.round(goal / 2) : goal + variation,
+        );
+    }
+    await container.awardXp({
+      userId,
+      source: "seed",
+      sourceId: "historico",
+      amount: Math.max(0, profile.history.totalXp - seeded),
+      at: new Date(now.getTime() - (SEED_HISTORY_DAYS + 30) * MS_PER_DAY),
+    });
+  }
+
   for (const shared of SHARED_MARKS) {
     const episodeId = episodeIdByKey.get(shared.episode);
     if (!episodeId) continue;
@@ -221,6 +259,7 @@ export async function runSeed(input: {
     const userId = userIdBySlug.get(profile.slug);
     if (!userId) continue;
     await container.saveSnapshot(userId, profile.snapshot);
+    await seedXpHistory(userId, profile);
     for (const [key, percent] of Object.entries(profile.progress) as [EpisodeKey, number][]) {
       const episodeId = episodeIdByKey.get(key);
       if (episodeId) await catalog.upsert(userId, episodeId, percent, now);

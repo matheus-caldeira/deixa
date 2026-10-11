@@ -13,7 +13,7 @@ export type ProgressView = {
   dailyGoal: number;
   goalMet: boolean;
   weekly: number[];
-  heat: string;
+  heat: number[];
   skills: { name: string; percent: number }[];
   achievements: { id: string; title: string; detail: string; icon: IconName; unlocked: boolean }[];
 };
@@ -27,7 +27,6 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
   const current = levelIndex(view.level);
   const upcoming = nextLevel(view.level);
   const highest = Math.max(...view.weekly, view.dailyGoal, 1);
-  const heat = [...view.heat].map(Number);
   const unlocked = view.achievements.filter((achievement) => achievement.unlocked).length;
 
   return (
@@ -114,10 +113,13 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
           <span className="small muted">últimas 5 semanas</span>
         </div>
         <div className="heat">
-          {heat.map((level, index) => (
-            <i key={index} className={`h${level}`} title={HEAT_TITLES[level]} />
+          {view.heat.map((level, index) => (
+            <i
+              key={index}
+              className={`h${level} ${index === view.heat.length - 1 ? "today" : ""}`}
+              title={HEAT_TITLES[level]}
+            />
           ))}
-          <i className={`h${view.goalMet ? 3 : 1} today`} title="hoje" />
         </div>
       </section>
       <section className="card col" style={{ gap: 12 }}>

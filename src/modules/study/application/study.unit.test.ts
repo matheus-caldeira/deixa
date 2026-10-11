@@ -159,6 +159,7 @@ describe("exercícios da lição", () => {
 function setup() {
   const attempts: LessonAttempt[] = [];
   const xp: { userId: string; amount: number }[] = [];
+  const paidKeys = new Set<string>();
   const progress = new Map<string, number>();
   const queued: { userId: string; cueIds: string[] }[] = [];
   const study: StudyRepository = {
@@ -174,7 +175,10 @@ function setup() {
     clock,
     ids: new SequentialIds("at"),
     loadLines: async (episodeId: string) => (episodeId === "ep-1" ? LINES : null),
-    awardXp: async (input: { userId: string; amount: number }) => {
+    awardXp: async (input: { userId: string; source: string; sourceId: string; amount: number }) => {
+      const key = `${input.userId}:${input.source}:${input.sourceId}`;
+      if (paidKeys.has(key)) return;
+      paidKeys.add(key);
       xp.push({ userId: input.userId, amount: input.amount });
     },
     saveProgress: async (userId: string, episodeId: string, percent: number) => {
@@ -266,6 +270,16 @@ describe("sessão de estudo", () => {
     expect((await app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 })).xp).toBe(
       Math.round(first.xp / 2),
     );
+  });
+
+  it("dois envios simultâneos da mesma lição pagam o XP uma única vez", async () => {
+    const lesson = await app.start({ ...base, nodeIndex: 0 });
+    const answers = lesson.exercises.map(rightAnswer);
+    const [first, second] = await Promise.all([
+      app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 }),
+      app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 }),
+    ]);
+    expect(app.xp).toEqual([{ userId: "ana", amount: Math.max(first.xp, second.xp) }]);
   });
 
   it("o progresso de um usuário não mexe na trilha do outro", async () => {

@@ -1,29 +1,13 @@
 import { z } from "zod";
 import type { CefrLevel } from "@/shared/levels";
 
-const trailIcons = ["quote", "coffee", "ear", "pen", "chest", "beer", "brief"] as const;
-const missionIcons = ["cards", "ear", "chat"] as const;
-
 export const profileSnapshotSchema = z.object({
   tagline: z.string(),
   levelPct: z.number(),
-  streak: z.number(),
-  longest: z.number(),
-  freezes: z.number(),
-  xpToday: z.number(),
-  totalXp: z.number(),
-  learned: z.number(),
+  learnedBase: z.number(),
   accuracy: z.number(),
-  weekly: z.array(z.number()).length(7),
-  heat: z.string(),
   skills: z.array(z.object({ name: z.string(), percent: z.number() })),
   achievements: z.array(z.string()),
-  heroLine: z.string(),
-  nodeDone: z.number(),
-  trail: z.array(z.object({ tc: z.string(), nm: z.string(), ic: z.enum(trailIcons) })),
-  missions: z.array(
-    z.object({ icon: z.enum(missionIcons), title: z.string(), value: z.number(), max: z.number() }),
-  ),
   recurringErrors: z.array(z.object({ label: z.string(), count: z.string() })),
   nextStep: z.string(),
 });
@@ -33,15 +17,8 @@ export type ProfileSnapshot = z.infer<typeof profileSnapshotSchema>;
 export const EMPTY_SNAPSHOT: ProfileSnapshot = {
   tagline: "",
   levelPct: 0,
-  streak: 0,
-  longest: 0,
-  freezes: 0,
-  xpToday: 0,
-  totalXp: 0,
-  learned: 0,
+  learnedBase: 0,
   accuracy: 0,
-  weekly: [0, 0, 0, 0, 0, 0, 0],
-  heat: "0".repeat(34),
   skills: [
     { name: "Escuta", percent: 0 },
     { name: "Vocabulário", percent: 0 },
@@ -49,10 +26,6 @@ export const EMPTY_SNAPSHOT: ProfileSnapshot = {
     { name: "Conversação", percent: 0 },
   ],
   achievements: [],
-  heroLine: "",
-  nodeDone: 0,
-  trail: [],
-  missions: [],
   recurringErrors: [],
   nextStep: "Próximo passo: ler um episódio e marcar o que você não entendeu.",
 };

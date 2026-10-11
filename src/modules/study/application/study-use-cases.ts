@@ -2,7 +2,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
-import { startOfLocalDay } from "@/shared/time";
+import { localDateKey, startOfLocalDay } from "@/shared/time";
 import { buildLesson, gradeAnswer, lessonXp, type Answer, type Exercise } from "../domain/exercises";
 import {
   buildTrail,
@@ -171,8 +171,11 @@ export function makeCompleteLesson(deps: Deps) {
       replay,
       createdAt: now,
     });
-    if (xp > 0)
-      await deps.awardXp({ userId: input.userId, source: "lesson", sourceId: attemptId, amount: xp });
+    const nodeKey = `${input.episodeId}:${input.nodeIndex}`;
+    const sourceId = replay
+      ? `${nodeKey}:${localDateKey(now, input.timezone)}:repeticao-${replaysToday + 1}`
+      : `${nodeKey}:primeira`;
+    if (xp > 0) await deps.awardXp({ userId: input.userId, source: "lesson", sourceId, amount: xp });
 
     const nowCompleted = new Set([...completed, input.nodeIndex]);
     const progressPercent = trailProgressPercent(nodes.length, nowCompleted);

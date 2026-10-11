@@ -26,7 +26,12 @@ import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizz
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { makeAddCards, makeCountDueCards, makeGradeCard, makeListDueCards } from "@/modules/flashcards";
 import { DrizzleCardRepository } from "@/modules/flashcards/infrastructure/drizzle-card-repository";
-import { makeAwardXp, makeGetProfileSummary, makeGetTagline, makeSaveSnapshot } from "@/modules/gamification";
+import {
+  makeAwardXp,
+  makeGetProfileSummary,
+  makeSaveSnapshot,
+  makeSettleMissions,
+} from "@/modules/gamification";
 import { DrizzleGamificationRepository } from "@/modules/gamification/infrastructure/drizzle-gamification-repository";
 import {
   makeGetReadingView,
@@ -347,8 +352,13 @@ export function buildContainer(options: ContainerOptions) {
     }),
     listCachedSpeech: makeListCachedSpeech({ assets: audioAssets, primary: tts }),
 
-    getProfileSummary: makeGetProfileSummary({ xp: gamification, snapshots: gamification, clock }),
-    getTagline: makeGetTagline({ snapshots: gamification }),
+    getProfileSummary: makeGetProfileSummary({
+      xp: gamification,
+      snapshots: gamification,
+      counts: gamification,
+      clock,
+    }),
+    settleMissions: makeSettleMissions({ xp: gamification, counts: gamification, clock, ids }),
     saveSnapshot: makeSaveSnapshot({ snapshots: gamification, clock }),
     awardXp,
   };

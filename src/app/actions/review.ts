@@ -21,7 +21,8 @@ export async function gradeCardAction(
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     const result = await app().gradeCard({ userId: user.id, ...parsed.data });
-    revalidatePath("/");
+    await app().settleMissions(user.id, user.preferences.timezone);
+    revalidatePath("/", "layout");
     return result;
   });
 }

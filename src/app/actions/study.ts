@@ -33,6 +33,7 @@ export async function completeLessonAction(input: unknown): Promise<ActionResult
       timezone: user.preferences.timezone,
       ...parsed.data,
     });
+    await app().settleMissions(user.id, user.preferences.timezone);
     revalidatePath("/", "layout");
     return result;
   });

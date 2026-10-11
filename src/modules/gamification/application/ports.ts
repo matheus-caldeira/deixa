@@ -1,3 +1,4 @@
+import type { DailyXp } from "../domain/activity";
 import type { ProfileSnapshot } from "../domain/profile";
 
 export interface XpRepository {
@@ -9,11 +10,17 @@ export interface XpRepository {
     amount: number;
     createdAt: Date;
   }): Promise<boolean>;
-  sumSince(userId: string, since: Date): Promise<number>;
-  total(userId: string): Promise<number>;
+  dailyTotals(userId: string, timeZone: string): Promise<DailyXp[]>;
 }
 
 export interface SnapshotRepository {
   get(userId: string): Promise<ProfileSnapshot | null>;
   upsert(userId: string, snapshot: ProfileSnapshot, now: Date): Promise<void>;
+}
+
+export interface ActivityCounts {
+  reviewsSince(userId: string, since: Date): Promise<number>;
+  lessonsSince(userId: string, since: Date): Promise<number>;
+  lessonsEver(userId: string): Promise<number>;
+  cardsOwned(userId: string): Promise<number>;
 }

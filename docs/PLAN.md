@@ -34,3 +34,21 @@ Atualizado conforme o trabalho avança. `[x]` concluído, `[ ]` pendente.
 - Roteiro e busca de transcrição por IA (o campo aparece desabilitado no envio).
 - Worker separado: a importação roda dentro da requisição.
 - Troca de versão de uma legenda já publicada.
+
+## Segunda rodada (pedidos depois do primeiro teste no celular)
+
+| #   | Tarefa                                                                    | Critério de pronto                                             | Estado |
+| --- | ------------------------------------------------------------------------- | -------------------------------------------------------------- | ------ |
+| 22  | Fotos do TMDB (pôster, fundo, imagem de episódio) e catálogo só pelo TMDB | Seed cadastra pela API; cadastro manual removido               | [x]    |
+| 23  | "Continuar estudando": trilha por cenas e sessão de estudo por nível      | Lição completa no e2e; XP no servidor, sem XP ilimitado        | [x]    |
+| 24  | PWA online-first                                                          | Manifesto, ícones, service worker sem guardar páginas de conta | [x]    |
+| 25  | Folha de perfil fecha e não rola a página atrás; sem seleção de texto     | Botão de fechar coberto no e2e                                 | [x]    |
+| 26  | Entrada só com e-mail e senha, mais "Criar conta"                         | Sem lista de perfis                                            | [x]    |
+| 27  | Tela "Quem está estudando" ao tocar em XP ou sequência                    | Nome, nível, ofensiva e XP                                     | [x]    |
+| 28  | Gamificação calculada: sequência, XP, semana, mapa de dias, missões       | Unitários do cálculo no fuso da conta                          | [x]    |
+
+## Próximo
+
+- Fase 03 restante: seleção pedagógica e explicações por IA sobre a mesma trilha, worker separado, áudio em lote, roteiro.
+- Fase 04 restante: percentual de nível, habilidades, erros recorrentes e demais conquistas com fonte real.
+- Fase 05: tutor por texto.
