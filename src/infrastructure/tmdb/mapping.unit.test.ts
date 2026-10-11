@@ -46,6 +46,7 @@ describe("mapeamento da resposta do TMDB", () => {
         overview: "Sinopse.",
         year: 2005,
         posterPath: "/a.jpg",
+        backdropPath: null,
       },
       {
         provider: "tmdb",
@@ -56,6 +57,7 @@ describe("mapeamento da resposta do TMDB", () => {
         overview: "",
         year: null,
         posterPath: null,
+        backdropPath: null,
       },
     ]);
   });
@@ -112,6 +114,7 @@ describe("mapeamento da resposta do TMDB", () => {
       overview: "Plot in English.",
       year: 2005,
       posterPath: "/a.jpg",
+      backdropPath: null,
       runtimeMinutes: 22,
       seasons: [
         { seasonNumber: 0, title: "Especiais", episodeCount: 3 },
@@ -152,11 +155,11 @@ describe("mapeamento da resposta do TMDB", () => {
     });
     expect(seasonNeedsEnglishFallback(localized)).toBe(true);
     expect(mapSeasonEpisodes(localized, english)).toEqual([
-      { episodeNumber: 1, title: "Piloto", overview: "Começo.", runtimeMinutes: 22 },
-      { episodeNumber: 2, title: "Second One", overview: "More.", runtimeMinutes: 21 },
+      { episodeNumber: 1, title: "Piloto", overview: "Começo.", runtimeMinutes: 22, stillPath: null },
+      { episodeNumber: 2, title: "Second One", overview: "More.", runtimeMinutes: 21, stillPath: null },
     ]);
     expect(mapSeasonEpisodes(seasonDetailsSchema.parse({ episodes: [{ episode_number: 3 }] }))).toEqual([
-      { episodeNumber: 3, title: "Episódio 3", overview: "", runtimeMinutes: null },
+      { episodeNumber: 3, title: "Episódio 3", overview: "", runtimeMinutes: null, stillPath: null },
     ]);
   });
 

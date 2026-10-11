@@ -17,7 +17,6 @@ export type {
 export { makeRegisterWork, makeRefreshWork } from "./application/register-work";
 export { makeLoadSeasonEpisodes } from "./application/load-season-episodes";
 export { makeSearchWorks, type WorkSearchResult } from "./application/search-works";
-export { makeCreateManualWork, makeEnsureManualEpisode } from "./application/manual-work";
 export {
   makeGetCatalogOverview,
   makeGetEpisodeContext,

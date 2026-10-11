@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   CardsIcon,
@@ -25,6 +26,7 @@ export type HomeView = {
     line: string;
     progressPercent: number;
     ready: boolean;
+    imageUrl: string | null;
   } | null;
   xpToday: number;
   dailyGoal: number;
@@ -79,7 +81,18 @@ export function HomeScreen({ view }: { view: HomeView }) {
   return (
     <>
       {view.current ? (
-        <section className="hero">
+        <section className={`hero ${view.current.imageUrl ? "photo" : ""}`}>
+          {view.current.imageUrl ? (
+            <Image
+              className="bg"
+              src={view.current.imageUrl}
+              alt=""
+              width={780}
+              height={439}
+              sizes="(max-width: 480px) 100vw, 480px"
+              priority
+            />
+          ) : null}
           <div className="col" style={{ gap: 4, minWidth: 0 }}>
             <span className="eyebrow">
               Continuar · {view.current.mediaTitle} · {view.current.label}

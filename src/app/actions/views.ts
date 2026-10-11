@@ -28,7 +28,6 @@ export type UploadTargetView = {
   overview: string;
   posterUrl: string | null;
   posterColors: PosterColors;
-  manual: boolean;
   seasons: { seasonNumber: number; title: string; episodeCount: number | null }[];
   movieEpisode: UploadEpisodeView | null;
 };

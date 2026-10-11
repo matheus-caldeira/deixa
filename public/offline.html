@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sem conexão</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0e1018; color: #edeff7; font-family: system-ui, sans-serif; text-align: center; padding: 24px; }
+      b { display: inline-block; background: #000; color: #ffc63a; padding: 2px 10px; border-radius: 8px; font-size: 28px; }
+      p { color: #9aa1b9; max-width: 320px; }
+      button { font: inherit; font-weight: 800; padding: 14px 18px; border: 0; border-radius: 14px; background: #6e80ff; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div>
+      <b>sem conexão</b>
+      <p>Não deu para falar com o servidor. As telas e os áudios que você já abriu continuam disponíveis; o resto volta quando a conexão voltar.</p>
+      <button onclick="location.reload()">Tentar de novo</button>
+    </div>
+  </body>
+</html>

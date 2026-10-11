@@ -40,7 +40,6 @@ async function toTarget(media: MediaItem, seasons: Season[]): Promise<UploadTarg
     overview: media.overview,
     posterUrl: posterUrl(media.posterPath),
     posterColors: media.posterColors,
-    manual: media.metadataProvider === "manual",
     seasons: seasons.map((season) => ({
       seasonNumber: season.seasonNumber,
       title: season.title,
@@ -100,27 +99,6 @@ export async function openUploadTargetAction(mediaId: unknown): Promise<ActionRe
   });
 }
 
-export async function createManualWorkAction(input: unknown): Promise<ActionResult<UploadTargetView>> {
-  const user = await requireUser();
-  return runAction("createManualWork", async () => {
-    const parsed = z
-      .object({
-        title: z.string().max(120),
-        type: mediaTypeSchema,
-        year: z.number().int().min(1900).max(2100).nullable(),
-      })
-      .safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const { mediaId } = await app().createManualWork({ userId: user.id, ...parsed.data });
-    if (parsed.data.type === "movie")
-      await app().ensureManualEpisode({ mediaId, seasonNumber: 0, episodeNumber: 1 });
-    const media = await app().getMediaById(mediaId);
-    if (!media) throw new AppError("MEDIA_NOT_FOUND");
-    revalidatePath("/catalog");
-    return toTarget(media, await listAllSeasons(mediaId, media));
-  });
-}
-
 export async function loadEpisodesAction(input: unknown): Promise<ActionResult<UploadEpisodeView[]>> {
   await requireUser();
   return runAction("loadEpisodes", async () => {
@@ -153,29 +131,17 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
     const fields = z
       .object({
         mediaId: idSchema,
-        episodeId: idSchema.optional(),
-        seasonNumber: z.coerce.number().int().min(0).max(999).optional(),
-        episodeNumber: z.coerce.number().int().min(1).max(999).optional(),
+        episodeId: idSchema,
         useSample: z.enum(["true", "false"]).default("false"),
       })
       .safeParse({
         mediaId: form.get("mediaId"),
-        episodeId: form.get("episodeId") || undefined,
-        seasonNumber: form.get("seasonNumber") || undefined,
-        episodeNumber: form.get("episodeNumber") || undefined,
+        episodeId: form.get("episodeId"),
         useSample: form.get("useSample") || undefined,
       });
     if (!fields.success) throw new AppError("INVALID_INPUT");
 
-    let episodeId = fields.data.episodeId;
-    if (!episodeId) {
-      const ensured = await app().ensureManualEpisode({
-        mediaId: fields.data.mediaId,
-        seasonNumber: fields.data.seasonNumber ?? 1,
-        episodeNumber: fields.data.episodeNumber ?? 1,
-      });
-      episodeId = ensured.episodeId;
-    }
+    const episodeId = fields.data.episodeId;
     const context = await app().getEpisodeContext(episodeId);
     if (!context || context.media.id !== fields.data.mediaId) throw new AppError("EPISODE_NOT_FOUND");
     if (!fields.data.episodeId && context.media.metadataProvider !== "manual")

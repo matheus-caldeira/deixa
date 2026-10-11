@@ -22,14 +22,14 @@ async function captureApp(browser, scheme) {
   const page = await context.newPage();
   await page.goto(`${BASE_URL}/login`);
   await shoot(page, "app-01-login", scheme);
-  await page.getByRole("button", { name: new RegExp(`^. ${PROFILE} `) }).click();
+  await page.getByLabel("E-mail").fill(`${PROFILE.toLowerCase()}@deixa.example`);
   await page.getByLabel("Senha").fill(PASSWORD);
-  await page.getByRole("button", { name: `Entrar como ${PROFILE}` }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await page.getByRole("button", { name: `Perfil de ${PROFILE}` }).waitFor();
   await shoot(page, "app-02-home", scheme);
   await page.goto(`${BASE_URL}/catalog`);
   await shoot(page, "app-03-explore", scheme);
-  await page.getByRole("link", { name: "How I Met Your Mother" }).first().click();
+  await page.locator(".ptile").nth(1).click();
   await page.getByRole("heading", { level: 1 }).waitFor();
   await shoot(page, "app-04-detail", scheme);
   await page

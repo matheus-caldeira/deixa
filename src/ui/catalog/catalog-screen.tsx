@@ -115,7 +115,7 @@ export function CatalogScreen({ tiles, inProgress }: { tiles: CatalogTile[]; inP
         ) : (
           <p className="muted">
             {needle
-              ? `Nada encontrado para "${query}". Você pode cadastrar o título abaixo.`
+              ? `Nada encontrado para "${query}". Você pode buscar no TMDB e adicionar abaixo.`
               : "O catálogo ainda está vazio. Adicione o primeiro episódio abaixo."}
           </p>
         )}

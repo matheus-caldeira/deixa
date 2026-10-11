@@ -87,14 +87,24 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           {data.level}
         </Link>
         <span className="spacer" />
-        <span className="stat" title="Sequência">
+        <Link
+          className="stat"
+          href="/people"
+          title="Sequência"
+          aria-label={`Sequência de ${data.streak} dias: ver quem está estudando`}
+        >
           {data.goalMet ? <FlameIcon /> : <FlameOffIcon />}
           {data.streak}
-        </span>
-        <span className="stat" title="XP hoje">
+        </Link>
+        <Link
+          className="stat"
+          href="/people"
+          title="XP hoje"
+          aria-label={`${data.xpToday} XP hoje: ver quem está estudando`}
+        >
           <BoltIcon />
           {data.xpToday}
-        </span>
+        </Link>
       </header>
       <main className="main">{children}</main>
       <nav className="nav" aria-label="Áreas">

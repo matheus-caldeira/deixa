@@ -16,6 +16,7 @@ export const searchMultiSchema = z.object({
         first_air_date: text,
         release_date: text,
         poster_path: text,
+        backdrop_path: text,
       }),
     )
     .default([]),
@@ -28,6 +29,7 @@ export const tvDetailsSchema = z.object({
   overview: text,
   first_air_date: text,
   poster_path: text,
+  backdrop_path: text,
   episode_run_time: z.array(z.number()).nullish(),
   seasons: z
     .array(
@@ -48,6 +50,7 @@ export const seasonDetailsSchema = z.object({
         name: text,
         overview: text,
         runtime: z.number().nullish(),
+        still_path: text,
       }),
     )
     .default([]),
@@ -60,6 +63,7 @@ export const movieDetailsSchema = z.object({
   overview: text,
   release_date: text,
   poster_path: text,
+  backdrop_path: text,
   runtime: z.number().nullish(),
 });
 

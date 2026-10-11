@@ -13,6 +13,8 @@ export const MOVIE_EPISODE_TITLE = "Filme completo";
 export const DEFAULT_LEVEL_RANGE: readonly [CefrLevel, CefrLevel] = ["B1", "B2"];
 export const METADATA_MAX_AGE_DAYS = 7;
 export const TMDB_POSTER_BASE_URL = "https://image.tmdb.org/t/p/w342";
+export const TMDB_BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w780";
+export const TMDB_STILL_BASE_URL = "https://image.tmdb.org/t/p/w300";
 
 export type MediaItem = {
   id: string;
@@ -24,6 +26,7 @@ export type MediaItem = {
   metadataProvider: MetadataSource;
   externalId: string;
   posterPath: string | null;
+  backdropPath: string | null;
   posterColors: PosterColors;
   levelMin: CefrLevel;
   levelMax: CefrLevel;
@@ -48,6 +51,7 @@ export type Episode = {
   title: string;
   overview: string;
   durationSeconds: number | null;
+  stillPath: string | null;
   status: EpisodeStatus;
   failureReason: string | null;
   cueCount: number;
@@ -87,4 +91,12 @@ export function episodeLabel(type: MediaType, seasonNumber: number, episodeNumbe
 
 export function posterUrl(posterPath: string | null): string | null {
   return posterPath ? `${TMDB_POSTER_BASE_URL}${posterPath}` : null;
+}
+
+export function backdropUrl(backdropPath: string | null): string | null {
+  return backdropPath ? `${TMDB_BACKDROP_BASE_URL}${backdropPath}` : null;
+}
+
+export function stillUrl(stillPath: string | null): string | null {
+  return stillPath ? `${TMDB_STILL_BASE_URL}${stillPath}` : null;
 }

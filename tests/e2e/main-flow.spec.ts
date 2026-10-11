@@ -6,14 +6,19 @@ const PORTUGUESE = "fixtures/sample.pt-BR.srt";
 
 async function signIn(page: Page, name: string) {
   await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(`^. ${name} `) }).click();
+  await expect(page.getByRole("button", { name: /Ana|Matheus|Lucas/ })).toHaveCount(0);
+  await page.getByLabel("E-mail").fill(`${name.toLowerCase()}@deixa.example`);
   await page.getByLabel("Senha").fill(PASSWORD);
-  await page.getByRole("button", { name: `Entrar como ${name}` }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page.getByRole("button", { name: `Perfil de ${name}` })).toBeVisible();
 }
 
 async function signOut(page: Page, name: string) {
   await page.goto("/");
+  await page.getByRole("button", { name: `Perfil de ${name}` }).click();
+  const profile = page.getByRole("dialog", { name: "Perfil e configurações" });
+  await profile.getByRole("button", { name: "Fechar" }).click();
+  await expect(profile).toHaveCount(0);
   await page.getByRole("button", { name: `Perfil de ${name}` }).click();
   await page.getByRole("button", { name: "Trocar de perfil" }).click();
   await expect(page).toHaveURL(/\/login$/);
@@ -141,6 +146,12 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.goto(readUrl);
   await expect(page.getByTestId("mark-count")).toHaveText("0");
   await expect(page.locator(".w.mk")).toHaveCount(3);
+
+  await page.goto("/");
+  await page.getByRole("link", { name: /XP hoje/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Quem está estudando" })).toBeVisible();
+  await expect(page.getByText("41 dias")).toBeVisible();
+  await expect(page.getByText("você", { exact: true })).toHaveCount(1);
 
   await signOut(page, "Matheus");
   await signIn(page, "Ana");

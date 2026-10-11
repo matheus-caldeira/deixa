@@ -11,7 +11,6 @@ import {
 import { FakeMetadataProvider, fakeExternalId } from "../infrastructure/fake-metadata-provider";
 import { makeGetCatalogOverview, makeGetMediaDetail, makeStartEpisode } from "./browse-catalog";
 import { makeLoadSeasonEpisodes } from "./load-season-episodes";
-import { makeCreateManualWork, makeEnsureManualEpisode } from "./manual-work";
 import { makeRefreshWork, makeRegisterWork } from "./register-work";
 import { makeSearchWorks } from "./search-works";
 import { InMemoryCatalog } from "./testing/fakes";
@@ -30,8 +29,6 @@ function setup() {
     refreshWork: makeRefreshWork(deps),
     loadSeasonEpisodes: makeLoadSeasonEpisodes(deps),
     searchWorks: makeSearchWorks(deps),
-    createManualWork: makeCreateManualWork(deps),
-    ensureManualEpisode: makeEnsureManualEpisode(deps),
     getCatalogOverview: makeGetCatalogOverview(deps),
     getMediaDetail: makeGetMediaDetail(deps),
     startEpisode: makeStartEpisode(deps),
@@ -171,43 +168,6 @@ describe("catálogo", () => {
     expect(office?.catalogMediaId).toEqual(expect.any(String));
     expect(prada?.catalogMediaId).toBeNull();
     expect(await app.searchWorks(" a ")).toEqual([]);
-  });
-
-  it("permite cadastro manual quando a obra não existe no provider", async () => {
-    const { mediaId } = await app.createManualWork({
-      userId: "u1",
-      title: " Série Caseira ",
-      type: "series",
-      year: 2024,
-    });
-    const first = await app.ensureManualEpisode({ mediaId, seasonNumber: 2, episodeNumber: 3 });
-    const again = await app.ensureManualEpisode({ mediaId, seasonNumber: 2, episodeNumber: 3 });
-    expect(again.episodeId).toBe(first.episodeId);
-    const detail = await app.getMediaDetail("u1", mediaId);
-    expect(detail.media).toMatchObject({ title: "Série Caseira", metadataProvider: "manual" });
-    expect(detail.seasons[0]?.episodes[0]).toMatchObject({ episodeNumber: 3, title: "Episódio 3" });
-    await expect(
-      app.createManualWork({ userId: "u1", title: "  ", type: "movie", year: null }),
-    ).rejects.toMatchObject({
-      code: "INVALID_INPUT",
-    });
-    expect(await app.refreshWork({ mediaId, force: true })).toEqual({ refreshed: false });
-  });
-
-  it("não cria temporada nem episódio avulso em obra que veio do provider", async () => {
-    const { mediaId } = await app.registerWork({
-      userId: "u1",
-      type: "series",
-      externalId: fakeExternalId("suits"),
-    });
-    const seasonsBefore = (await app.catalog.listSeasons(mediaId)).length;
-    await expect(
-      app.ensureManualEpisode({ mediaId, seasonNumber: 9, episodeNumber: 9 }),
-    ).rejects.toMatchObject({
-      code: "EPISODE_NOT_FOUND",
-    });
-    expect((await app.catalog.listSeasons(mediaId)).length).toBe(seasonsBefore);
-    expect(app.catalog.episodes.size).toBe(0);
   });
 
   it("mostra o progresso só de quem está logado", async () => {

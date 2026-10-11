@@ -37,6 +37,7 @@ export function makeLoadSeasonEpisodes(deps: {
             title: episode.title,
             overview: episode.overview,
             durationSeconds: episode.runtimeMinutes ? episode.runtimeMinutes * SECONDS_PER_MINUTE : null,
+            stillPath: episode.stillPath ?? null,
           })),
           deps.clock.now(),
         );

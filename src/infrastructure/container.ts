@@ -12,8 +12,6 @@ import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/driz
 import { PerUserGate } from "@/modules/audio/infrastructure/per-user-gate";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
 import {
-  makeCreateManualWork,
-  makeEnsureManualEpisode,
   makeGetCatalogOverview,
   makeGetEpisodeContext,
   makeGetMediaDetail,
@@ -171,14 +169,12 @@ export function buildContainer(options: ContainerOptions) {
     signOut: makeSignOut(sessionDeps),
     getSessionUser: makeGetSessionUser(sessionDeps),
     updatePreferences: makeUpdatePreferences({ preferences: identity }),
-    listShortcutProfiles: (emailSuffix: string) => identity.listByEmailSuffix(emailSuffix),
+    listPeople: () => identity.listByEmailSuffix(""),
 
     searchWorks: makeSearchWorks(catalogDeps),
     registerWork: makeRegisterWork(catalogDeps),
     refreshWork: makeRefreshWork(catalogDeps),
     loadSeasonEpisodes: makeLoadSeasonEpisodes(catalogDeps),
-    createManualWork: makeCreateManualWork(catalogDeps),
-    ensureManualEpisode: makeEnsureManualEpisode(catalogDeps),
     getCatalogOverview: makeGetCatalogOverview(catalogDeps),
     getMediaDetail: makeGetMediaDetail(catalogDeps),
     getEpisodeContext: makeGetEpisodeContext(catalogDeps),

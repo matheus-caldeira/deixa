@@ -19,6 +19,7 @@ export type WorkSummary = {
   overview: string;
   year: number | null;
   posterPath: string | null;
+  backdropPath?: string | null;
   posterColors?: PosterColors;
 };
 
@@ -36,6 +37,7 @@ export type EpisodeMetadata = {
   title: string;
   overview: string;
   runtimeMinutes: number | null;
+  stillPath?: string | null;
 };
 
 export interface MetadataProvider {
@@ -55,6 +57,7 @@ export type MediaUpsert = {
   metadataProvider: MetadataSource;
   externalId: string;
   posterPath: string | null;
+  backdropPath: string | null;
   posterColors: PosterColors;
   levelMin: CefrLevel;
   levelMax: CefrLevel;
@@ -71,6 +74,7 @@ export type EpisodeUpsert = {
   title: string;
   overview: string;
   durationSeconds: number | null;
+  stillPath: string | null;
 };
 
 export type CatalogEntry = { media: MediaItem; readyEpisodes: number };

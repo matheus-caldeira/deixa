@@ -235,13 +235,21 @@ export type SeedEpisodeState = "READY_PT" | "READY_EN" | "PROCESSING" | "NEEDS_R
 
 export const SEED_WORKS: readonly {
   slug: string;
+  title: string;
+  year: number;
   type: "series" | "movie";
+  levels: readonly [CefrLevel, CefrLevel];
+  accent: string;
   uploader: string;
   episodes: Record<EpisodeKey, SeedEpisodeState>;
 }[] = [
   {
     slug: "friends",
+    title: "Friends",
+    year: 1994,
     type: "series",
+    levels: ["A1", "B1"],
+    accent: "EUA",
     uploader: "matheus",
     episodes: {
       "friends-1-1": "READY_PT",
@@ -252,7 +260,11 @@ export const SEED_WORKS: readonly {
   },
   {
     slug: "himym",
+    title: "How I Met Your Mother",
+    year: 2005,
     type: "series",
+    levels: ["A2", "B2"],
+    accent: "EUA",
     uploader: "matheus",
     episodes: {
       "himym-1-1": "READY_PT",
@@ -264,19 +276,54 @@ export const SEED_WORKS: readonly {
   },
   {
     slug: "office",
+    title: "The Office",
+    year: 2005,
     type: "series",
+    levels: ["B1", "C1"],
+    accent: "EUA",
     uploader: "lucas",
     episodes: { "office-1-1": "READY_PT", "office-1-2": "READY_EN", "office-1-3": "PROCESSING" },
   },
   {
     slug: "tedlasso",
+    title: "Ted Lasso",
+    year: 2020,
     type: "series",
+    levels: ["B2", "C2"],
+    accent: "EUA + Reino Unido",
     uploader: "lucas",
     episodes: { "tedlasso-1-1": "READY_PT", "tedlasso-1-2": "READY_PT", "tedlasso-1-3": "READY_EN" },
   },
-  { slug: "bb", type: "series", uploader: "lucas", episodes: { "bb-1-1": "READY_EN" } },
-  { slug: "prada", type: "movie", uploader: "ana", episodes: { "prada-0-1": "READY_PT" } },
-  { slug: "socialnetwork", type: "movie", uploader: "lucas", episodes: { "socialnetwork-0-1": "READY_EN" } },
+  {
+    slug: "bb",
+    title: "Breaking Bad",
+    year: 2008,
+    type: "series",
+    levels: ["B2", "C1"],
+    accent: "EUA",
+    uploader: "lucas",
+    episodes: { "bb-1-1": "READY_EN" },
+  },
+  {
+    slug: "prada",
+    title: "The Devil Wears Prada",
+    year: 2006,
+    type: "movie",
+    levels: ["B1", "B2"],
+    accent: "EUA",
+    uploader: "ana",
+    episodes: { "prada-0-1": "READY_PT" },
+  },
+  {
+    slug: "socialnetwork",
+    title: "The Social Network",
+    year: 2010,
+    type: "movie",
+    levels: ["C1", "C2"],
+    accent: "EUA",
+    uploader: "lucas",
+    episodes: { "socialnetwork-0-1": "READY_EN" },
+  },
 ];
 
 export const SHARED_MARKS: readonly {

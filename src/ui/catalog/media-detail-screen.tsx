@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -22,11 +23,13 @@ export type EpisodeRow = {
   durationMinutes: number | null;
   progressPercent: number | null;
   failureReason: string | null;
+  stillUrl: string | null;
 };
 
 export type MediaDetailView = {
   id: string;
   poster: PosterData;
+  backdropUrl: string | null;
   overview: string;
   fit: LevelFit;
   levelRange: string;
@@ -99,7 +102,19 @@ export function MediaDetailScreen({
       <Link className="back" href="/catalog">
         <BackIcon /> Explorar
       </Link>
-      <div className="dhead">
+      {media.backdropUrl ? (
+        <div className="dback">
+          <Image
+            src={media.backdropUrl}
+            alt=""
+            width={780}
+            height={439}
+            sizes="(max-width: 480px) 100vw, 480px"
+            priority
+          />
+        </div>
+      ) : null}
+      <div className={`dhead ${media.backdropUrl ? "over" : ""}`}>
         <Poster media={media.poster} sizes="110px" />
         <div className="col" style={{ gap: 8, minWidth: 0 }}>
           <h1 style={{ fontSize: 24, lineHeight: 1.1 }}>{media.poster.title}</h1>

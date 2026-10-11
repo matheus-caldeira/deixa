@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import { logger } from "@/infrastructure/logger/logger";
-import { posterUrl } from "@/modules/catalog";
+import { backdropUrl, posterUrl, stillUrl } from "@/modules/catalog";
 import { isAppError } from "@/shared/errors";
 import { fitFor } from "@/shared/levels";
 import { MediaDetailScreen } from "@/ui/catalog/media-detail-screen";
@@ -46,6 +46,7 @@ export default async function MediaDetailPage(props: {
           posterUrl: posterUrl(media.posterPath),
           posterColors: media.posterColors,
         },
+        backdropUrl: backdropUrl(media.backdropPath),
         overview: media.overview,
         fit: fitFor(user.preferences.level, media.levelMin, media.levelMax),
         levelRange: `${media.levelMin}–${media.levelMax}`,
@@ -67,6 +68,7 @@ export default async function MediaDetailPage(props: {
               : null,
             progressPercent: episode.progressPercent,
             failureReason: episode.failureReason,
+            stillUrl: stillUrl(episode.stillPath),
           })),
         })),
       }}

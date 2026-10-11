@@ -1,5 +1,5 @@
 import { getContainer } from "@/infrastructure/container";
-import { episodeLabel } from "@/modules/catalog";
+import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
 import { LEVEL_NAMES } from "@/shared/levels";
 import { HomeScreen } from "@/ui/home/home-screen";
 import { requireUser } from "../session";
@@ -40,6 +40,9 @@ export default async function HomePage() {
               line: summary.heroLine || script?.lines[0]?.text || "",
               progressPercent: progress,
               ready: context.episode.status === "READY",
+              imageUrl:
+                stillUrl(context.episode.stillPath)?.replace("/w300/", "/w780/") ??
+                backdropUrl(context.media.backdropPath),
             }
           : null,
         xpToday: summary.xpToday,

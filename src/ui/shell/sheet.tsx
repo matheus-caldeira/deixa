@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { XIcon } from "../icons";
 
 export function Sheet({
   label,
@@ -16,7 +17,11 @@ export function Sheet({
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.documentElement.classList.add("sheet-open");
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.documentElement.classList.remove("sheet-open");
+    };
   }, [onClose]);
 
   return (
@@ -27,7 +32,13 @@ export function Sheet({
       }}
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={label}>
-        <div className="grab" />
+        <div className="sheet-top">
+          <span style={{ width: 36 }} />
+          <div className="grab" />
+          <button className="iconbtn" onClick={onClose} aria-label="Fechar">
+            <XIcon />
+          </button>
+        </div>
         {children}
       </div>
     </div>

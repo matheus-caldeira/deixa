@@ -6,6 +6,7 @@ import { openDatabase } from "@/infrastructure/database/client";
 import { runMigrations } from "@/infrastructure/database/migrate";
 import { silentLogger } from "@/infrastructure/logger/logger";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
+import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { runSeed } from "@/seed/run-seed";
 import { E2E_DATA_DIR, e2eEnvironment } from "./environment";
@@ -41,6 +42,7 @@ async function prepare(): Promise<void> {
       }),
       db: handle.db,
       catalog: new DrizzleCatalogRepository(handle.db),
+      metadata: new FakeMetadataProvider(),
       log: () => undefined,
     });
   } finally {

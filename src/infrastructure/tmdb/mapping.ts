@@ -55,6 +55,7 @@ export function mapSearchResults(localized: TmdbSearchMulti, english?: TmdbSearc
         overview: firstFilled(result.overview, fallback?.overview),
         year: yearOf(isSeries ? result.first_air_date : result.release_date),
         posterPath: firstFilled(result.poster_path, fallback?.poster_path) || null,
+        backdropPath: firstFilled(result.backdrop_path, fallback?.backdrop_path) || null,
       },
     ];
   });
@@ -74,6 +75,7 @@ export function mapTvDetails(localized: TmdbTvDetails, english?: TmdbTvDetails):
     overview: firstFilled(localized.overview, english?.overview),
     year: yearOf(localized.first_air_date ?? english?.first_air_date),
     posterPath: firstFilled(localized.poster_path, english?.poster_path) || null,
+    backdropPath: firstFilled(localized.backdrop_path, english?.backdrop_path) || null,
     runtimeMinutes: runtime,
     seasons: localized.seasons.map((season) => ({
       seasonNumber: season.season_number,
@@ -99,6 +101,7 @@ export function mapMovieDetails(localized: TmdbMovieDetails, english?: TmdbMovie
     overview: firstFilled(localized.overview, english?.overview),
     year: yearOf(localized.release_date ?? english?.release_date),
     posterPath: firstFilled(localized.poster_path, english?.poster_path) || null,
+    backdropPath: firstFilled(localized.backdrop_path, english?.backdrop_path) || null,
     runtimeMinutes: localized.runtime ?? english?.runtime ?? null,
     seasons: [],
   };
@@ -118,6 +121,7 @@ export function mapSeasonEpisodes(
       title: firstFilled(episode.name, fallback?.name, `Episódio ${episode.episode_number}`),
       overview: firstFilled(episode.overview, fallback?.overview),
       runtimeMinutes: episode.runtime ?? fallback?.runtime ?? null,
+      stillPath: firstFilled(episode.still_path, fallback?.still_path) || null,
     };
   });
 }

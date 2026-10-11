@@ -5,6 +5,7 @@ import type { Database } from "@/infrastructure/database/client";
 import {
   episodes,
   learningItemExplanations,
+  mediaItems,
   learningItems,
   userCards,
   userPreferences,
@@ -15,11 +16,9 @@ import {
   makeRegisterWork,
   type CatalogRepository,
   type EpisodeProgressRepository,
+  type MetadataProvider,
 } from "@/modules/catalog";
-import {
-  FakeMetadataProvider,
-  fakeExternalId,
-} from "@/modules/catalog/infrastructure/fake-metadata-provider";
+import { fakeExternalId } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import type { CueMarks } from "@/modules/highlights";
 import { defaultPreferences } from "@/modules/identity";
 import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
@@ -54,9 +53,10 @@ export async function runSeed(input: {
   container: Container;
   db: Database;
   catalog: CatalogRepository & EpisodeProgressRepository;
+  metadata: MetadataProvider;
   log: (message: string) => void;
 }): Promise<void> {
-  const { container, db, catalog, log } = input;
+  const { container, db, catalog, metadata, log } = input;
   const clock = systemClock;
   const ids = uuidGenerator;
   const now = clock.now();
@@ -87,8 +87,18 @@ export async function runSeed(input: {
   }
   log(`perfis: ${[...userIdBySlug.keys()].join(", ")}`);
 
-  const fakeMetadata = new FakeMetadataProvider();
-  const catalogDeps = { catalog, metadata: fakeMetadata, clock, ids };
+  const catalogDeps = { catalog, metadata, clock, ids };
+
+  async function externalIdOf(work: (typeof SEED_WORKS)[number]): Promise<string | null> {
+    if (metadata.name === "fake") return fakeExternalId(work.slug);
+    const found = await metadata.searchWorks(work.title);
+    const sameType = found.filter((candidate) => candidate.type === work.type);
+    const exact =
+      sameType.find((candidate) => candidate.originalTitle === work.title && candidate.year === work.year) ??
+      sameType.find((candidate) => candidate.year === work.year) ??
+      sameType[0];
+    return exact?.externalId ?? null;
+  }
   const registerWork = makeRegisterWork(catalogDeps);
   const loadSeasonEpisodes = makeLoadSeasonEpisodes(catalogDeps);
   const english = { filename: "sample.en.srt", bytes: new Uint8Array(await readFile(ENGLISH_FIXTURE)) };
@@ -100,12 +110,19 @@ export async function runSeed(input: {
   const episodeIdByKey = new Map<EpisodeKey, string>();
   for (const work of SEED_WORKS) {
     const uploaderId = userIdBySlug.get(work.uploader) ?? null;
-    const { mediaId } = await registerWork({
-      userId: uploaderId,
-      type: work.type,
-      externalId: fakeExternalId(work.slug),
-    });
+    const externalId = await externalIdOf(work);
+    if (!externalId) {
+      log(`obra não encontrada no provider: ${work.title}`);
+      continue;
+    }
+    const { mediaId } = await registerWork({ userId: uploaderId, type: work.type, externalId });
+    await db
+      .update(mediaItems)
+      .set({ levelMin: work.levels[0], levelMax: work.levels[1], accent: work.accent })
+      .where(eq(mediaItems.id, mediaId));
+    const wantedSeasons = new Set(Object.keys(work.episodes).map((key) => Number(key.split("-")[1])));
     for (const season of await catalog.listSeasons(mediaId)) {
+      if (!wantedSeasons.has(season.seasonNumber)) continue;
       const loaded = await loadSeasonEpisodes({ mediaId, seasonNumber: season.seasonNumber });
       for (const episode of loaded.episodes) {
         episodeIdByKey.set(`${work.slug}-${season.seasonNumber}-${episode.episodeNumber}`, episode.id);
@@ -126,7 +143,7 @@ export async function runSeed(input: {
       });
     }
   }
-  log(`obras: ${SEED_WORKS.length}, episódios cadastrados: ${episodeIdByKey.size}`);
+  log(`obras: ${SEED_WORKS.length} via ${metadata.name}, episódios cadastrados: ${episodeIdByKey.size}`);
 
   async function marksFor(
     episodeId: string,

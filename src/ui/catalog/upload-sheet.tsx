@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
-  createManualWorkAction,
   loadEpisodesAction,
   openUploadTargetAction,
   searchWorksAction,
@@ -28,7 +27,7 @@ const STATUS_LABEL: Record<string, string> = {
   NONE: "sem legenda",
 };
 
-type Stage = "search" | "manual" | "files" | "processing";
+type Stage = "search" | "files" | "processing";
 
 function Slot(props: {
   tag: string;
@@ -81,11 +80,6 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
   const [seasonNumber, setSeasonNumber] = useState<number | null>(null);
   const [episodes, setEpisodes] = useState<UploadEpisodeView[]>([]);
   const [episodeId, setEpisodeId] = useState("");
-  const [manualSeason, setManualSeason] = useState(1);
-  const [manualEpisode, setManualEpisode] = useState(1);
-  const [manualTitle, setManualTitle] = useState("");
-  const [manualType, setManualType] = useState<"series" | "movie">("series");
-  const [manualYear, setManualYear] = useState("");
   const [english, setEnglish] = useState<File | null>(null);
   const [portuguese, setPortuguese] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -147,7 +141,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
         return;
       }
       const first = next.seasons[0];
-      if (first && !next.manual) pickSeason(next.mediaId, first.seasonNumber);
+      if (first) pickSeason(next.mediaId, first.seasonNumber);
     },
     [pickSeason],
   );
@@ -174,19 +168,6 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
     });
   }
 
-  function createManual() {
-    startTransition(async () => {
-      const year = Number(manualYear);
-      const result = await createManualWorkAction({
-        title: manualTitle,
-        type: manualType,
-        year: Number.isInteger(year) && year > 0 ? year : null,
-      });
-      if (result.ok) applyTarget(result.data);
-      else setError(result.message);
-    });
-  }
-
   function pickFile(setter: (file: File | null) => void, file: File | null) {
     if (file && !/\.srt$/i.test(file.name)) {
       setError("Envie um arquivo .srt. Outros formatos ainda não são aceitos.");
@@ -204,12 +185,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
     if (!target) return;
     const form = new FormData();
     form.set("mediaId", target.mediaId);
-    if (target.manual && target.type === "series") {
-      form.set("seasonNumber", String(manualSeason));
-      form.set("episodeNumber", String(manualEpisode));
-    } else if (episodeId) {
-      form.set("episodeId", episodeId);
-    }
+    form.set("episodeId", episodeId);
     form.set("useSample", String(useSample));
     if (english) form.set("english", english);
     if (portuguese) form.set("portuguese", portuguese);
@@ -226,7 +202,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
     });
   }
 
-  const hasEpisode = target ? (target.manual && target.type === "series") || episodeId !== "" : false;
+  const hasEpisode = episodeId !== "";
   const finished = outcome !== null && revealed >= outcome.steps.length;
 
   return (
@@ -277,65 +253,14 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
               </button>
             ))}
             {searched && results.length === 0 && !error ? (
-              <p className="small muted">Nada encontrado para &quot;{query}&quot;.</p>
+              <p className="small muted">
+                Nada encontrado no TMDB para &quot;{query}&quot;. Tente o título original.
+              </p>
             ) : null}
           </div>
           {error ? <p className="formerr">{error}</p> : null}
           <button className="btn wide" onClick={continueWithSelected} disabled={!selected || pending}>
             Continuar
-          </button>
-          <button
-            className="link"
-            style={{ alignSelf: "center" }}
-            onClick={() => {
-              setManualTitle(query);
-              setStage("manual");
-              setError("");
-            }}
-          >
-            Não encontrou? Cadastrar manualmente
-          </button>
-        </>
-      ) : null}
-
-      {stage === "manual" ? (
-        <>
-          <h2 style={{ fontSize: 22 }}>Cadastro manual</h2>
-          <p className="small muted">
-            Para obras que não aparecem na busca. Você envia as legendas no próximo passo.
-          </p>
-          <div className="field">
-            <label htmlFor="manual-title">Título</label>
-            <input
-              id="manual-title"
-              value={manualTitle}
-              onChange={(event) => setManualTitle(event.target.value)}
-              maxLength={120}
-            />
-          </div>
-          <div className="seg">
-            <button className={manualType === "series" ? "on" : ""} onClick={() => setManualType("series")}>
-              Série
-            </button>
-            <button className={manualType === "movie" ? "on" : ""} onClick={() => setManualType("movie")}>
-              Filme
-            </button>
-          </div>
-          <div className="field">
-            <label htmlFor="manual-year">Ano (opcional)</label>
-            <input
-              id="manual-year"
-              value={manualYear}
-              onChange={(event) => setManualYear(event.target.value.replace(/\D/g, "").slice(0, 4))}
-              inputMode="numeric"
-            />
-          </div>
-          {error ? <p className="formerr">{error}</p> : null}
-          <button className="btn wide" onClick={createManual} disabled={pending || manualTitle.trim() === ""}>
-            Continuar
-          </button>
-          <button className="link" style={{ alignSelf: "center" }} onClick={() => setStage("search")}>
-            Voltar para a busca
           </button>
         </>
       ) : null}
@@ -385,34 +310,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             Com a legenda em português, a tradução das falas não passa pela IA.
           </p>
 
-          {target.type === "series" && target.manual ? (
-            <div className="row">
-              <div className="field" style={{ flex: 1 }}>
-                <label htmlFor="manual-season">Temporada</label>
-                <input
-                  id="manual-season"
-                  type="number"
-                  min={1}
-                  value={manualSeason}
-                  inputMode="numeric"
-                  onChange={(event) => setManualSeason(Math.max(1, Number(event.target.value) || 1))}
-                />
-              </div>
-              <div className="field" style={{ flex: 1 }}>
-                <label htmlFor="manual-episode">Episódio</label>
-                <input
-                  id="manual-episode"
-                  type="number"
-                  min={1}
-                  value={manualEpisode}
-                  inputMode="numeric"
-                  onChange={(event) => setManualEpisode(Math.max(1, Number(event.target.value) || 1))}
-                />
-              </div>
-            </div>
-          ) : null}
-
-          {target.type === "series" && !target.manual ? (
+          {target.type === "series" ? (
             <div className="row" style={{ alignItems: "flex-start" }}>
               <div className="field" style={{ flex: 1, minWidth: 0 }}>
                 <label htmlFor="upload-season">Temporada</label>

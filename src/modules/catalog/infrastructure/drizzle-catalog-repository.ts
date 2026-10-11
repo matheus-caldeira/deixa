@@ -71,6 +71,7 @@ function toMedia(row: MediaRow, uploaderName: string | null): MediaItem {
       row.metadataProvider === "tmdb" || row.metadataProvider === "fake" ? row.metadataProvider : "manual",
     externalId: row.externalId,
     posterPath: row.posterPath,
+    backdropPath: row.backdropPath,
     posterColors: toPosterColors(row.posterColors, row.title),
     levelMin: isCefrLevel(row.levelMin) ? row.levelMin : "B1",
     levelMax: isCefrLevel(row.levelMax) ? row.levelMax : "B2",
@@ -99,6 +100,7 @@ function toEpisode(row: EpisodeRow, hasPortuguese: boolean): Episode {
     title: row.title,
     overview: row.overview,
     durationSeconds: row.durationSeconds,
+    stillPath: row.stillPath,
     status: EPISODE_STATUSES.find((status) => status === row.status) ?? "NONE",
     failureReason: row.failureReason,
     cueCount: row.cueCount,
@@ -145,6 +147,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
         metadataProvider: input.metadataProvider,
         externalId: input.externalId,
         posterPath: input.posterPath,
+        backdropPath: input.backdropPath,
         posterColors: input.posterColors,
         levelMin: input.levelMin,
         levelMax: input.levelMax,
@@ -161,6 +164,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
           overview: input.overview,
           year: input.year,
           posterPath: input.posterPath,
+          backdropPath: input.backdropPath,
           metadataSyncedAt: input.syncedAt,
         },
       })
@@ -204,6 +208,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
               title: sql`excluded.title`,
               overview: sql`excluded.overview`,
               durationSeconds: sql`coalesce(excluded.duration_seconds, ${episodes.durationSeconds})`,
+              stillPath: sql`coalesce(excluded.still_path, ${episodes.stillPath})`,
             },
           });
       }
