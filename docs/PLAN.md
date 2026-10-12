@@ -122,6 +122,14 @@ Branch `feat/database-setup`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 
 | 64  | Catálogo fixo com identificadores reais do TMDB              | `fixtures/catalog.json` versionado; teste unitário                     | [x]    |
 | 65  | Seed sem `.env`: catálogo fixo, legendas e trilhas fictícias | Rodado num banco novo sem variáveis: 7 obras, 15 episódios, 45 trilhas | [x]    |
 
+## Etapa 7: configurações do servidor no banco
+
+| Nº  | Item                                                 | Critério de pronto                                          | Estado |
+| --- | ---------------------------------------------------- | ----------------------------------------------------------- | ------ |
+| 66  | Tabela `app_settings` e casos de uso só para o admin | Testes unitários; migração 0014                             | [x]    |
+| 67  | Seção de configurações do servidor no perfil         | E2E: valor inválido recusado, valor salvo persiste          | [x]    |
+| 68  | Mudança vale sem reiniciar                           | Conferido: tirar o Kokoro troca a voz para silêncio na hora | [x]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

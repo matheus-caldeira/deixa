@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function LearningLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const container = getContainer();
-  const [summary, credentials, metadataProvider] = await Promise.all([
+  const [summary, credentials, metadataProvider, settings] = await Promise.all([
     container.getProfileSummary({
       userId: user.id,
       dailyGoal: user.preferences.dailyGoal,
@@ -17,6 +17,7 @@ export default async function LearningLayout({ children }: { children: React.Rea
     }),
     container.getCredentialOverview({ userId: user.id, isAdmin: user.isAdmin }),
     container.metadataNameFor(user.id),
+    user.isAdmin ? container.getSettings() : Promise.resolve(null),
   ]);
   const unreadable = unreadableCredentials(credentials);
   return (
@@ -40,6 +41,7 @@ export default async function LearningLayout({ children }: { children: React.Rea
             audioSpeed: user.preferences.audioSpeed,
             isAdmin: user.isAdmin,
             credentials,
+            settings,
             metadataProvider,
           },
         }}

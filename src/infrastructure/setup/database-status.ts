@@ -1,4 +1,4 @@
-import { pingDatabase, resolveDatabaseUrl } from "../container";
+import { pingDatabase, refreshSettings, resolveDatabaseUrl } from "../container";
 import { runMigrations } from "../database/migrate";
 import { describeConnectionError } from "./database-probe";
 
@@ -20,6 +20,7 @@ async function check(url: string): Promise<DatabaseStatus> {
       migratedUrl = url;
     }
     await pingDatabase(url);
+    await refreshSettings();
     return { state: "ready" };
   } catch (error) {
     return { state: "unreachable", reason: describeConnectionError(error) };

@@ -5,10 +5,12 @@ import { useState, useTransition } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { updatePreferencesAction } from "@/app/actions/profile";
 import type { ServiceOverview } from "@/modules/ai-credentials";
+import type { AppSettings } from "@/modules/settings";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "@/modules/identity";
 import type { CefrLevel } from "@/shared/levels";
 import { LEVEL_NAMES } from "@/shared/levels";
 import { CredentialCard } from "./credential-card";
+import { ServerSettingsCard } from "./server-settings-card";
 import { Sheet } from "./sheet";
 import { useToast } from "./toast";
 
@@ -21,6 +23,7 @@ export type ProfileSheetData = {
   audioSpeed: number;
   isAdmin: boolean;
   credentials: ServiceOverview[];
+  settings: AppSettings | null;
   metadataProvider: string;
 };
 
@@ -140,6 +143,8 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
           ))}
         </div>
       ) : null}
+
+      {data.settings ? <ServerSettingsCard initial={data.settings} /> : null}
 
       <form action={signOutAction}>
         <button className="btn ghost wide" type="submit">

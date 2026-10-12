@@ -158,8 +158,12 @@ Feito em 12/10/2026 (branch `feat/user-credentials`):
 
 Falta:
 
-- [ ] Tabela `app_settings` para o resto do `.env` (modelo do Gemini, teto de downloads, endereço do Kokoro,
-      atalhos de desenvolvimento) e remoção das chaves globais do `.env`.
+- [x] Tabela `app_settings` (12/10/2026): modelo do Gemini, teto diário de downloads de legenda e endereço do
+      Kokoro, editados pelo administrador no perfil. Valor do banco vence o do `.env`, que vence o padrão.
+      Mudar um valor recria o container na requisição seguinte.
+- [ ] Continuam fora do banco, de propósito: `DATA_DIR`, `SESSION_COOKIE_SECURE`, `DEV_SHORTCUTS` (são da
+      instalação, não do uso) e o login opcional do OpenSubtitles (nunca validado com conta real).
+- [ ] As chaves globais ainda podem vir do `.env`; remover essa reserva quando o assistente existir.
 - [ ] Assistente de primeira abertura: cria o dono do computador (admin), pede as chaves com link para onde
       obter cada uma, permite pular.
 - [ ] Tela para o administrador promover outra conta.

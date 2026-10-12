@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { CREDENTIAL_SERVICES, type StoredState } from "@/modules/ai-credentials";
+import { refreshSettings } from "@/infrastructure/container";
+import type { AppSettings } from "@/modules/settings";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
@@ -57,5 +59,18 @@ export async function removeCredentialAction(input: unknown): Promise<ActionResu
     await app().removeCredential({ actor: { userId: user.id, isAdmin: user.isAdmin }, ...parsed.data });
     revalidatePath("/", "layout");
     return null;
+  });
+}
+
+export async function updateSettingsAction(input: unknown): Promise<ActionResult<AppSettings>> {
+  const user = await requireUser();
+  return runAction("updateSettings", async () => {
+    const saved = await app().updateSettings({
+      actor: { userId: user.id, isAdmin: user.isAdmin },
+      values: input,
+    });
+    await refreshSettings();
+    revalidatePath("/", "layout");
+    return saved;
   });
 }

@@ -116,6 +116,8 @@ import {
 } from "@/modules/recommendations";
 import { DrizzleRecommendationRepository } from "@/modules/recommendations/infrastructure/drizzle-recommendation-repository";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
+import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
+import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
@@ -168,10 +170,21 @@ export type ContainerOptions = {
   suggestionWriterForUser?: (userId: string) => Promise<SuggestionWriter | null>;
   testCredential?: CredentialTester;
   masterKey?: string;
+  settings?: AppSettings;
 };
+
+export function settingsFromEnvironment(env: Env): AppSettings {
+  return {
+    geminiModel: env.GEMINI_MODEL,
+    subtitleDownloadsPerUserPerDay: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
+    kokoroUrl: env.KOKORO_URL ?? null,
+  };
+}
 
 export function buildContainer(options: ContainerOptions) {
   const { env, db } = options;
+  const settingDefaults = settingsFromEnvironment(env);
+  const settings = options.settings ?? settingDefaults;
   const log = options.logger ?? defaultLogger;
   const clock = options.clock ?? systemClock;
   const ids = uuidGenerator;
@@ -192,7 +205,7 @@ export function buildContainer(options: ContainerOptions) {
 
   const silentTts = new SilentTtsProvider();
   const tts: TtsProvider =
-    options.tts ?? (env.KOKORO_URL ? new KokoroTtsProvider(env.KOKORO_URL) : silentTts);
+    options.tts ?? (settings.kokoroUrl ? new KokoroTtsProvider(settings.kokoroUrl) : silentTts);
 
   const masterKey = options.masterKey ?? env.AI_CREDENTIALS_MASTER_KEY;
   if (!masterKey) throw new Error("chave mestra ausente");
@@ -266,7 +279,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<LlmProvider> => {
       const access = await geminiAccessFor(userId);
       if (!access) return fakeLlm;
-      const provider = new GeminiLlmProvider(access.apiKey, env.GEMINI_MODEL);
+      const provider = new GeminiLlmProvider(access.apiKey, settings.geminiModel);
       return access.shared ? budgetedLlm(provider, () => sharedBudget.spend(userId)) : provider;
     });
   const resolvePlanner =
@@ -275,7 +288,7 @@ export function buildContainer(options: ContainerOptions) {
       const access = await geminiAccessFor(userId);
       if (!access) return null;
       if (access.shared && usage === "charge") await sharedBudget.spend(userId);
-      return new GeminiLessonPlanner(access.apiKey, env.GEMINI_MODEL);
+      return new GeminiLessonPlanner(access.apiKey, settings.geminiModel);
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -284,7 +297,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<TutorProvider> => {
       const access = await geminiAccessFor(userId);
       if (!access) return fakeTutor;
-      const tutor = new GeminiTutorProvider(access.apiKey, env.GEMINI_MODEL);
+      const tutor = new GeminiTutorProvider(access.apiKey, settings.geminiModel);
       return access.shared ? budgetedTutor(tutor, () => sharedBudget.spend(userId)) : tutor;
     });
   const conversations = new DrizzleConversationRepository(db);
@@ -312,7 +325,7 @@ export function buildContainer(options: ContainerOptions) {
       const access = await geminiAccessFor(userId);
       if (!access) return null;
       if (access.shared) await sharedBudget.spend(userId);
-      return new GeminiSuggestionWriter(access.apiKey, env.GEMINI_MODEL);
+      return new GeminiSuggestionWriter(access.apiKey, settings.geminiModel);
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),
@@ -554,7 +567,7 @@ export function buildContainer(options: ContainerOptions) {
       provider: access.provider,
       quotaKey: access.quotaKey,
       sources: sourceRepository,
-      userDailyDownloads: access.ownKey ? UNLIMITED_DOWNLOADS : env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
+      userDailyDownloads: access.ownKey ? UNLIMITED_DOWNLOADS : settings.subtitleDownloadsPerUserPerDay,
       clock,
       findEpisodeSource: (episodeId: string) => findEpisodeSource(access.provider, episodeId),
       readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {
@@ -575,6 +588,7 @@ export function buildContainer(options: ContainerOptions) {
     sourceUseCases.set(key, created);
     return created;
   }
+  const settingsDeps = { settings: new DrizzleSettingsRepository(db), defaults: settingDefaults, clock };
   const credentialDeps = {
     credentials,
     cipher,
@@ -694,6 +708,8 @@ export function buildContainer(options: ContainerOptions) {
     anticipateReview: makeAnticipateReview({ cards, clock, ids }),
     addCards,
 
+    getSettings: makeGetSettings(settingsDeps),
+    updateSettings: makeUpdateSettings(settingsDeps),
     saveCredential: makeSaveCredential(credentialDeps),
     removeCredential: makeRemoveCredential(credentialDeps),
     getCredentialOverview: makeGetCredentialOverview(credentialDeps),
@@ -756,14 +772,26 @@ function activeDatabase(url: string): DatabaseHandle {
   return handle;
 }
 
+let settingsSnapshot: { url: string; values: AppSettings; stamp: string } | undefined;
+let containerSettings: string | undefined;
+
 export async function pingDatabase(url: string): Promise<void> {
   await activeDatabase(url).db.execute(sql`select 1`);
+}
+
+export async function refreshSettings(): Promise<void> {
+  const url = resolveDatabaseUrl();
+  if (!url) return;
+  const stored = await new DrizzleSettingsRepository(activeDatabase(url).db).load();
+  const values = mergeSettings(settingsFromEnvironment(getEnv()), stored);
+  settingsSnapshot = { url, values, stamp: JSON.stringify(values) };
 }
 
 export function getContainer(): Container {
   const url = resolveDatabaseUrl();
   if (!url) throw new DatabaseNotConfigured();
-  if (!container || containerUrl !== url) {
+  const snapshot = settingsSnapshot?.url === url ? settingsSnapshot : undefined;
+  if (!container || containerUrl !== url || containerSettings !== snapshot?.stamp) {
     const env = getEnv();
     const masterKey = loadMasterKey({
       fromEnvironment: env.AI_CREDENTIALS_MASTER_KEY,
@@ -772,8 +800,14 @@ export function getContainer(): Container {
     if (masterKey.origin === "created" || masterKey.origin === "replaced") {
       defaultLogger.warn("master_key.generated", { origin: masterKey.origin });
     }
-    container = buildContainer({ env, db: activeDatabase(url).db, masterKey: masterKey.value });
+    container = buildContainer({
+      env,
+      db: activeDatabase(url).db,
+      masterKey: masterKey.value,
+      settings: snapshot?.values,
+    });
     containerUrl = url;
+    containerSettings = snapshot?.stamp;
   }
   return container;
 }

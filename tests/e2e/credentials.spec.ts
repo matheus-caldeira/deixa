@@ -18,6 +18,7 @@ test("perfil: três chaves por usuário; chaves globais só para o administrador
   for (const service of SERVICES)
     await expect(sheet.getByLabel(`Chave: ${service}`, { exact: true })).toBeVisible();
   await expect(sheet.getByText("Chaves globais (administrador)")).toHaveCount(0);
+  await expect(sheet.getByText("Configurações do servidor (administrador)")).toHaveCount(0);
   await expect(sheet.getByLabel("Chave: TMDB global")).toHaveCount(0);
 
   await sheet.getByLabel("Chave: TMDB", { exact: true }).fill("chave curta");
@@ -36,4 +37,15 @@ test("perfil: três chaves por usuário; chaves globais só para o administrador
   await adminSheet.getByLabel("Chave: OpenSubtitles global", { exact: true }).fill("com espaço!");
   await adminSheet.getByRole("button", { name: "Testar e salvar: OpenSubtitles global" }).click();
   await expect(adminSheet.getByText(/A chave de API do OpenSubtitles tem só letras e números/)).toBeVisible();
+
+  await expect(adminSheet.getByLabel("Modelo do Gemini")).toHaveValue("gemini-2.5-flash");
+  await adminSheet.getByLabel("Downloads de legenda por conta, por dia").fill("5000");
+  await adminSheet.getByRole("button", { name: "Salvar configurações" }).click();
+  await expect(adminSheet.getByText(/downloads entre 0 e 1000/)).toBeVisible();
+  await adminSheet.getByLabel("Downloads de legenda por conta, por dia").fill("37");
+  await adminSheet.getByRole("button", { name: "Salvar configurações" }).click();
+  await expect(page.getByText("Configurações do servidor salvas.")).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Perfil de Matheus" }).click();
+  await expect(adminSheet.getByLabel("Downloads de legenda por conta, por dia")).toHaveValue("37");
 });

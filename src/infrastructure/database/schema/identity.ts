@@ -66,6 +66,13 @@ export const appCredentials = pgTable("app_credentials", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
 export const progressSnapshots = pgTable("progress_snapshots", {
   userId: uuid("user_id")
     .primaryKey()
