@@ -28,7 +28,7 @@ function sendTo(input: {
   url: string;
   method: "GET" | "POST";
   body?: string;
-  timeoutMs: number;
+  signal: AbortSignal;
   target: ResolvedAddress;
 }): Promise<PinnedResponse> {
   return new Promise((resolve, reject) => {
@@ -38,6 +38,7 @@ function sendTo(input: {
       url,
       {
         method: input.method,
+        signal: input.signal,
         lookup: pinnedLookup(input.target),
         headers: input.body
           ? { "content-type": "application/json", "content-length": Buffer.byteLength(input.body) }
@@ -61,7 +62,6 @@ function sendTo(input: {
         response.on("error", reject);
       },
     );
-    request.setTimeout(input.timeoutMs, () => request.destroy(new Error("Kokoro não respondeu a tempo")));
     request.on("error", reject);
     request.end(input.body);
   });
@@ -86,17 +86,30 @@ export class KokoroTtsProvider implements TtsProvider {
     body?: string;
     timeoutMs: number;
   }): Promise<PinnedResponse> {
-    const targets = await resolveAllowedAddresses(this.baseUrl);
+    const signal = AbortSignal.timeout(request.timeoutMs);
+    const expired = new Promise<never>((_resolve, reject) => {
+      signal.addEventListener("abort", () => reject(new Error("Kokoro não respondeu a tempo")), {
+        once: true,
+      });
+    });
+    expired.catch(() => undefined);
+    const targets = await Promise.race([resolveAllowedAddresses(this.baseUrl), expired]);
     if (targets.length === 0) {
       throw new Error("o endereço do Kokoro não é deste computador nem de uma rede privada");
     }
     let failure: unknown = new Error("Kokoro sem endereço para conectar");
     for (const target of targets) {
       try {
-        return await sendTo({ ...request, url: `${this.baseUrl}${request.path}`, target });
+        return await sendTo({
+          url: `${this.baseUrl}${request.path}`,
+          method: request.method,
+          body: request.body,
+          signal,
+          target,
+        });
       } catch (error) {
         failure = error;
-        if (!CONNECTION_ERRORS.has((error as { code?: string }).code ?? "")) throw error;
+        if (signal.aborted || !CONNECTION_ERRORS.has((error as { code?: string }).code ?? "")) throw error;
       }
     }
     throw failure;
