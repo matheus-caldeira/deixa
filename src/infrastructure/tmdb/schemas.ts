@@ -67,6 +67,33 @@ export const movieDetailsSchema = z.object({
   runtime: z.number().nullish(),
 });
 
+export const workListSchema = z.object({
+  results: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: text,
+        title: text,
+        original_name: text,
+        original_title: text,
+        overview: text,
+        first_air_date: text,
+        release_date: text,
+        poster_path: text,
+        backdrop_path: text,
+        genre_ids: z.array(z.number()).nullish(),
+        original_language: text,
+        popularity: z.number().nullish(),
+      }),
+    )
+    .default([]),
+});
+
+export const genreListSchema = z.object({
+  genres: z.array(z.object({ id: z.number(), name: z.string() })).default([]),
+});
+
+export type TmdbWorkList = z.infer<typeof workListSchema>;
 export type TmdbSearchMulti = z.infer<typeof searchMultiSchema>;
 export type TmdbTvDetails = z.infer<typeof tvDetailsSchema>;
 export type TmdbSeasonDetails = z.infer<typeof seasonDetailsSchema>;

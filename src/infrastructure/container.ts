@@ -102,6 +102,16 @@ import {
 } from "@/modules/subtitle-sources";
 import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructure/drizzle-source-repository";
 import { FakeSubtitleSourceProvider } from "@/modules/subtitle-sources/infrastructure/fake-subtitle-source-provider";
+import {
+  makeAcceptRecommendation,
+  makeDismissRecommendation,
+  makeGetRecommendations,
+  makeRefreshRecommendations,
+  type EmbeddingProvider,
+  type SuggestionWriter,
+} from "@/modules/recommendations";
+import { DrizzleRecommendationRepository } from "@/modules/recommendations/infrastructure/drizzle-recommendation-repository";
+import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
@@ -111,9 +121,11 @@ import type { FileStorage } from "@/shared/storage";
 import { tokenize } from "@/shared/text";
 import { getEnv, hasTmdbCredentials, type Env } from "./config/env";
 import { openDatabase, type Database } from "./database/client";
+import { GeminiEmbeddingProvider } from "./google-ai/gemini-embedding-provider";
 import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { testGeminiApiKey } from "./google-ai/gemini-client";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
+import { GeminiSuggestionWriter } from "./google-ai/gemini-suggestion-writer";
 import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
 import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./google-ai/shared-key-budget";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
@@ -140,6 +152,8 @@ export type ContainerOptions = {
   llmForUser?: (userId: string) => Promise<LlmProvider>;
   plannerForUser?: (userId: string, usage: "charge" | "already-charged") => Promise<LessonPlanner | null>;
   tutorForUser?: (userId: string) => Promise<TutorProvider>;
+  embeddingForUser?: (userId: string) => Promise<EmbeddingProvider>;
+  suggestionWriterForUser?: (userId: string) => Promise<SuggestionWriter | null>;
   testApiKey?: ApiKeyTester;
 };
 
@@ -220,6 +234,32 @@ export function buildContainer(options: ContainerOptions) {
       );
     });
   const conversations = new DrizzleConversationRepository(db);
+
+  const localEmbedding = new HashEmbeddingProvider();
+  const resolveEmbedding =
+    options.embeddingForUser ??
+    (async (userId: string): Promise<EmbeddingProvider> => {
+      const apiKey = (await resolveApiKey(userId)) ?? env.GEMINI_API_KEY;
+      return apiKey ? new GeminiEmbeddingProvider(apiKey) : localEmbedding;
+    });
+  const resolveSuggestionWriter =
+    options.suggestionWriterForUser ??
+    (async (userId: string): Promise<SuggestionWriter | null> => {
+      const ownKey = await resolveApiKey(userId);
+      if (ownKey) return new GeminiSuggestionWriter(ownKey, env.GEMINI_MODEL);
+      if (!env.GEMINI_API_KEY) return null;
+      await sharedBudget.spend(userId);
+      return new GeminiSuggestionWriter(env.GEMINI_API_KEY, env.GEMINI_MODEL);
+    });
+  const recommendationDeps = {
+    repository: new DrizzleRecommendationRepository(db),
+    candidates: metadata,
+    resolveEmbedding,
+    localEmbedding,
+    resolveWriter: resolveSuggestionWriter,
+    clock,
+    onFallback: (stage: string, reason: string) => log.warn("recommendations.fallback", { stage, reason }),
+  };
 
   const sessionDeps = {
     users: identity,
@@ -539,6 +579,13 @@ export function buildContainer(options: ContainerOptions) {
     }),
     getKeyStatus: makeGetKeyStatus({ credentials, cipher }),
     removeApiKey: makeRemoveApiKey({ credentials }),
+
+    getRecommendations: makeGetRecommendations(recommendationDeps),
+    refreshRecommendations: makeRefreshRecommendations(recommendationDeps),
+    dismissRecommendation: makeDismissRecommendation(recommendationDeps),
+    acceptRecommendation: makeAcceptRecommendation(recommendationDeps),
+    findRecommendation: (userId: string, workKey: string) =>
+      recommendationDeps.repository.findSuggestion(userId, workKey),
 
     getSpeechAudio: makeGetSpeechAudio({
       assets: audioAssets,

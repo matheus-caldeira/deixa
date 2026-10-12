@@ -6,6 +6,7 @@ import type { LevelFit } from "@/shared/levels";
 import { PlusIcon, SearchIcon, UploadIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
+import { SuggestionsSection, type SuggestionsView } from "./suggestions-section";
 
 export type CatalogTile = PosterData & { id: string; fit: LevelFit; levelRange: string };
 export type InProgressTile = {
@@ -31,7 +32,15 @@ export const FIT_CHIP: Record<LevelFit, { label: string; className: string }> = 
   easy: { label: "Tranquilo", className: "" },
 };
 
-export function CatalogScreen({ tiles, inProgress }: { tiles: CatalogTile[]; inProgress: InProgressTile[] }) {
+export function CatalogScreen({
+  tiles,
+  inProgress,
+  suggestions,
+}: {
+  tiles: CatalogTile[];
+  inProgress: InProgressTile[];
+  suggestions: SuggestionsView;
+}) {
   const { openUpload } = useShell();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -100,6 +109,7 @@ export function CatalogScreen({ tiles, inProgress }: { tiles: CatalogTile[]; inP
           </div>
         </section>
       ) : null}
+      {!needle && filter === "all" ? <SuggestionsSection view={suggestions} /> : null}
       <section className="col" style={{ gap: 10 }}>
         <div className="sec-h">
           <h2 style={{ fontSize: 18 }}>Catálogo</h2>

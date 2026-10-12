@@ -23,6 +23,12 @@ export type WorkSummary = {
   posterColors?: PosterColors;
 };
 
+export type WorkCandidate = WorkSummary & {
+  genres: string[];
+  originalLanguage: string | null;
+  popularity: number;
+};
+
 export type SeasonSummary = { seasonNumber: number; title: string; episodeCount: number | null };
 
 export type WorkDetails = WorkSummary & {
@@ -45,6 +51,8 @@ export interface MetadataProvider {
   searchWorks(query: string): Promise<WorkSummary[]>;
   getWork(type: MediaType, externalId: string): Promise<WorkDetails>;
   getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]>;
+  listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]>;
+  listPopularWorks(): Promise<WorkCandidate[]>;
 }
 
 export type MediaUpsert = {

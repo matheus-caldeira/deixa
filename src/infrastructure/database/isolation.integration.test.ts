@@ -8,6 +8,7 @@ import {
 } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
+import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import { InMemoryFileStorage } from "@/shared/storage";
 import { parseEnv } from "../config/env";
 import { buildContainer, type Container } from "../container";
@@ -20,6 +21,7 @@ import {
   subtitleCues,
   subtitleFiles,
   userAiCredentials,
+  workEmbeddings,
   xpEvents,
 } from "./schema";
 
@@ -70,6 +72,8 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       tts: new SilentTtsProvider(),
       llmForUser: async () => llm,
       plannerForUser: async () => null,
+      embeddingForUser: async () => new HashEmbeddingProvider(),
+      suggestionWriterForUser: async () => null,
       testApiKey: async () => true,
     });
     ana = (await app.signUp({ name: "Ana", email: "ana@example.com", password: "segredo123", level: "A1" }))
@@ -215,5 +219,42 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       accent: "US",
     });
     expect([first.cache, second.cache]).toEqual(["miss", "hit"]);
+  });
+
+  it("sugestões saem do estudo de cada um: lista, recusa e vetores não vazam entre usuários", async () => {
+    await app.startEpisode(ana, episodeId);
+    expect(await app.getRecommendations({ userId: ana, level: "A1" })).toMatchObject({
+      status: "pending",
+      refresh: true,
+    });
+    const [first, second] = await Promise.all([
+      app.refreshRecommendations({ userId: ana, level: "A1" }),
+      app.refreshRecommendations({ userId: ana, level: "A1" }),
+    ]);
+    expect([first.refreshed, second.refreshed].filter(Boolean)).toHaveLength(1);
+
+    const forAna = await app.getRecommendations({ userId: ana, level: "A1" });
+    expect(forAna).toMatchObject({ status: "ready", refresh: false, writtenByAi: false });
+    expect(forAna.items.length).toBeGreaterThan(0);
+    expect(forAna.items.map((item) => item.externalId)).not.toContain(fakeExternalId("suits"));
+    expect(forAna.insight).toContain("pouco estudo");
+    const forLucas = await app.getRecommendations({ userId: lucas, level: "C1" });
+    expect(forLucas).toMatchObject({ status: "pending", items: [] });
+
+    const refused = forAna.items[0];
+    if (!refused) throw new Error("sugestão esperada");
+    await expect(
+      app.dismissRecommendation({ userId: lucas, workKey: refused.workKey }),
+    ).rejects.toMatchObject({ code: "MEDIA_NOT_FOUND" });
+    expect(await app.findRecommendation(lucas, refused.workKey)).toBeNull();
+    await app.dismissRecommendation({ userId: ana, workKey: refused.workKey });
+    const afterRefusal = await app.getRecommendations({ userId: ana, level: "A1" });
+    expect(afterRefusal.items.map((item) => item.workKey)).not.toContain(refused.workKey);
+
+    await app.refreshRecommendations({ userId: lucas, level: "C1" });
+    const lucasItems = (await app.getRecommendations({ userId: lucas, level: "C1" })).items;
+    expect(lucasItems.map((item) => item.workKey)).toContain(refused.workKey);
+    const [vectors] = await handle.db.select({ total: count() }).from(workEmbeddings);
+    expect(vectors?.total).toBeGreaterThan(0);
   });
 });

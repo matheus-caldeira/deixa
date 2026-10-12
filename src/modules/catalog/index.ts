@@ -11,6 +11,7 @@ export type {
   MetadataProvider,
   SeasonSummary,
   SeasonUpsert,
+  WorkCandidate,
   WorkDetails,
   WorkSummary,
 } from "./application/ports";

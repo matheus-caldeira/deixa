@@ -1,7 +1,13 @@
 import { AppError } from "@/shared/errors";
 import type { CefrLevel } from "@/shared/levels";
 import type { MediaType, PosterColors } from "../domain/catalog";
-import type { EpisodeMetadata, MetadataProvider, WorkDetails, WorkSummary } from "../application/ports";
+import type {
+  EpisodeMetadata,
+  MetadataProvider,
+  WorkCandidate,
+  WorkDetails,
+  WorkSummary,
+} from "../application/ports";
 
 type FakeWork = {
   slug: string;
@@ -13,6 +19,7 @@ type FakeWork = {
   colors: PosterColors;
   overview: string;
   runtimeMinutes: number;
+  genres: readonly string[];
   seasons: Record<number, string[]>;
 };
 
@@ -28,6 +35,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     overview:
       "Seis amigos em Nova York. Diálogo lento, situações do dia a dia e muita repetição: ótimo para começar.",
     runtimeMinutes: 22,
+    genres: ["Comédia"],
     seasons: {
       1: [
         "The One Where Monica Gets a Roommate",
@@ -49,6 +57,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     overview:
       "Ted conta aos filhos como conheceu a mãe deles. Gírias de bar, expressões informais e falas rápidas.",
     runtimeMinutes: 22,
+    genres: ["Comédia", "Romance"],
     seasons: {
       1: ["Pilot", "Purple Giraffe", "Sweet Taste of Liberty", "Return of the Shirt", "Okay Awesome"],
       2: ["Where Were We?"],
@@ -64,6 +73,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#E9E4D8", c2: "#5A6B7D", fg: "#1D2430" },
     overview: "Documentário falso num escritório. Humor constrangedor, ironia e linguagem corporativa.",
     runtimeMinutes: 22,
+    genres: ["Comédia"],
     seasons: { 1: ["Pilot", "Diversity Day", "Health Care"] },
   },
   {
@@ -77,6 +87,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     overview:
       "Um técnico americano num clube inglês. Contraste de sotaques, gírias britânicas e muita ironia.",
     runtimeMinutes: 30,
+    genres: ["Comédia", "Drama"],
     seasons: { 1: ["Pilot", "Biscuits", "Trent Crimm: The Independent"] },
   },
   {
@@ -89,6 +100,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#1E3B1A", c2: "#C9D86B", fg: "#fff" },
     overview: "Professor de química vira fabricante de drogas. Vocabulário técnico, tensão e falas curtas.",
     runtimeMinutes: 48,
+    genres: ["Drama", "Crime"],
     seasons: { 1: ["Pilot", "Cat's in the Bag..."] },
   },
   {
@@ -102,6 +114,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     overview:
       "Uma jornalista recém-formada vira assistente de uma editora temida. Inglês de trabalho, moda e pressão.",
     runtimeMinutes: 109,
+    genres: ["Comédia", "Drama"],
     seasons: {},
   },
   {
@@ -114,6 +127,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#0D1B2A", c2: "#4C8BF5", fg: "#fff" },
     overview: "A criação de uma rede social. Diálogos muito rápidos e densos: desafio de escuta.",
     runtimeMinutes: 120,
+    genres: ["Drama", "História"],
     seasons: {},
   },
   {
@@ -126,6 +140,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#3BA3D9", c2: "#F7E26B", fg: "#fff" },
     overview: "Três núcleos de uma mesma família contados em formato de falso documentário.",
     runtimeMinutes: 22,
+    genres: ["Comédia", "Família"],
     seasons: {
       1: ["Pilot", "The Bicycle Thief", "Come Fly with Me", "The Incident", "Coal Digger"],
       2: ["The Old Wagon", "The Kiss"],
@@ -141,6 +156,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#1A2A4F", c2: "#F2C94C", fg: "#fff" },
     overview: "O dia a dia de uma delegacia do Brooklyn, com piadas rápidas e muito trocadilho.",
     runtimeMinutes: 22,
+    genres: ["Comédia", "Crime"],
     seasons: { 1: ["Pilot", "The Tagger", "The Slump"] },
   },
   {
@@ -153,6 +169,7 @@ const FAKE_WORKS: readonly FakeWork[] = [
     colors: { c1: "#20262E", c2: "#C7A76C", fg: "#fff" },
     overview: "Um escritório de advocacia em Nova York. Inglês jurídico, negociações e respostas afiadas.",
     runtimeMinutes: 43,
+    genres: ["Drama", "Crime"],
     seasons: { 1: ["Pilot", "Errors and Omissions", "Inside Track"] },
   },
 ];
@@ -170,6 +187,15 @@ function toSummary(work: FakeWork): WorkSummary {
     year: work.year,
     posterPath: null,
     posterColors: work.colors,
+  };
+}
+
+function toCandidate(work: FakeWork, position: number): WorkCandidate {
+  return {
+    ...toSummary(work),
+    genres: [...work.genres],
+    originalLanguage: "en",
+    popularity: FAKE_WORKS.length - position,
   };
 }
 
@@ -204,6 +230,20 @@ export class FakeMetadataProvider implements MetadataProvider {
         episodeCount: titles.length,
       })),
     };
+  }
+
+  async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
+    const origin = FAKE_WORKS.find((work) => `${EXTERNAL_PREFIX}${work.slug}` === externalId);
+    if (!origin || origin.type !== type) return [];
+    return FAKE_WORKS.flatMap((work, position) =>
+      work !== origin && work.genres.some((genre) => origin.genres.includes(genre))
+        ? [toCandidate(work, position)]
+        : [],
+    );
+  }
+
+  async listPopularWorks(): Promise<WorkCandidate[]> {
+    return FAKE_WORKS.map(toCandidate);
   }
 
   async getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]> {

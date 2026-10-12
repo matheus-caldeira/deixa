@@ -1,5 +1,11 @@
-import type { EpisodeMetadata, WorkDetails, WorkSummary } from "@/modules/catalog";
-import type { TmdbMovieDetails, TmdbSearchMulti, TmdbSeasonDetails, TmdbTvDetails } from "./schemas";
+import type { EpisodeMetadata, MediaType, WorkCandidate, WorkDetails, WorkSummary } from "@/modules/catalog";
+import type {
+  TmdbMovieDetails,
+  TmdbSearchMulti,
+  TmdbSeasonDetails,
+  TmdbTvDetails,
+  TmdbWorkList,
+} from "./schemas";
 
 const KIND_BY_TYPE = { series: "tv", movie: "movie" } as const;
 
@@ -56,6 +62,36 @@ export function mapSearchResults(localized: TmdbSearchMulti, english?: TmdbSearc
         year: yearOf(isSeries ? result.first_air_date : result.release_date),
         posterPath: firstFilled(result.poster_path, fallback?.poster_path) || null,
         backdropPath: firstFilled(result.backdrop_path, fallback?.backdrop_path) || null,
+      },
+    ];
+  });
+}
+
+export function mapWorkList(
+  type: MediaType,
+  list: TmdbWorkList,
+  genreNames: ReadonlyMap<number, string>,
+): WorkCandidate[] {
+  const isSeries = type === "series";
+  return list.results.flatMap((result) => {
+    const originalTitle = filled(isSeries ? result.original_name : result.original_title);
+    const title = firstFilled(isSeries ? result.name : result.title, originalTitle);
+    const overview = filled(result.overview);
+    if (title === "" || overview === "") return [];
+    return [
+      {
+        provider: "tmdb" as const,
+        externalId: tmdbExternalId(type, result.id),
+        type,
+        title,
+        originalTitle: originalTitle || title,
+        overview,
+        year: yearOf(isSeries ? result.first_air_date : result.release_date),
+        posterPath: filled(result.poster_path) || null,
+        backdropPath: filled(result.backdrop_path) || null,
+        genres: (result.genre_ids ?? []).flatMap((id) => genreNames.get(id) ?? []),
+        originalLanguage: filled(result.original_language) || null,
+        popularity: result.popularity ?? 0,
       },
     ];
   });

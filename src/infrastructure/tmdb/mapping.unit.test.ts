@@ -172,3 +172,43 @@ describe("mapeamento da resposta do TMDB", () => {
     expect(tmdbNumericId("series", "550")).toBeNull();
   });
 });
+
+describe("lista de obras candidatas do TMDB", () => {
+  it("traduz gêneros, guarda idioma e popularidade e descarta obra sem título ou sem sinopse", async () => {
+    const { mapWorkList } = await import("./mapping");
+    const { workListSchema } = await import("./schemas");
+    const list = workListSchema.parse({
+      results: [
+        {
+          id: 10,
+          name: "Série Fictícia",
+          original_name: "Fictional Show",
+          overview: "Uma sinopse inventada.",
+          first_air_date: "2019-03-01",
+          poster_path: "/p.jpg",
+          genre_ids: [18, 999],
+          original_language: "en",
+          popularity: 42.5,
+        },
+        { id: 11, name: "Sem sinopse", overview: "" },
+        { id: 12, overview: "Sem título." },
+      ],
+    });
+    expect(mapWorkList("series", list, new Map([[18, "Drama"]]))).toEqual([
+      {
+        provider: "tmdb",
+        externalId: "tv:10",
+        type: "series",
+        title: "Série Fictícia",
+        originalTitle: "Fictional Show",
+        overview: "Uma sinopse inventada.",
+        year: 2019,
+        posterPath: "/p.jpg",
+        backdropPath: null,
+        genres: ["Drama"],
+        originalLanguage: "en",
+        popularity: 42.5,
+      },
+    ]);
+  });
+});

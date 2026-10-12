@@ -647,6 +647,21 @@
   .cont .poster .pt {
     font-size: 11px;
   }
+  .sug {
+    align-items: start;
+    width: 290px;
+  }
+  .sug .why {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hint svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
   /* detail */
   .dhead {
     display: grid;
