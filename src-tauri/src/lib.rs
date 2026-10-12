@@ -1,5 +1,8 @@
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
 use std::time::Duration;
 
 use qrcode::render::svg;
@@ -19,6 +22,16 @@ const LOOPBACK: Ipv4Addr = Ipv4Addr::LOCALHOST;
 const IDENTITY_PATH: &str = "/manifest.webmanifest";
 const IDENTITY_MARK: &str = "Deixa";
 const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
+const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
+const SETUP_CODE_FILE: &str = "setup-code.txt";
+const SERVER_FOLDER: &str = "server";
+const SERVER_ENTRY: &str = "server.js";
+const NODE_BINARY: &str = if cfg!(windows) { "node.exe" } else { "node" };
+const START_ATTEMPTS: u32 = 150;
+const START_INTERVAL: Duration = Duration::from_millis(300);
+const STATUS_STARTING: &str = "Servidor: iniciando";
+const STATUS_BUSY: &str = "Servidor: a porta está ocupada por outro programa";
+const STATUS_MISSING: &str = "Servidor: arquivos do servidor não encontrados";
 const STATUS_UP: &str = "Servidor: no ar";
 const STATUS_DOWN: &str = "Servidor: fora do ar";
 
@@ -63,6 +76,137 @@ fn server_is_up() -> bool {
         .unwrap_or(false)
 }
 
+struct ServerProcess(Mutex<Option<Child>>);
+
+enum Startup {
+    AlreadyRunning,
+    Started,
+    PortBusy,
+    Missing,
+}
+
+fn port_is_taken() -> bool {
+    let address = SocketAddr::from((LOOPBACK, server_port()));
+    TcpStream::connect_timeout(&address, PROBE_TIMEOUT).is_ok()
+}
+
+fn data_home(app: &AppHandle) -> Option<PathBuf> {
+    match std::env::var(DATA_HOME_VARIABLE) {
+        Ok(custom) if !custom.trim().is_empty() => Some(PathBuf::from(custom)),
+        _ => app.path().app_data_dir().ok(),
+    }
+}
+
+fn first_existing(candidates: Vec<PathBuf>) -> Option<PathBuf> {
+    candidates.into_iter().find(|path| path.exists())
+}
+
+fn node_binary() -> Option<PathBuf> {
+    let beside_app = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(|folder| folder.join(NODE_BINARY)));
+    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
+    let from_development = std::fs::read_dir(development).ok().and_then(|entries| {
+        entries
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .find(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.starts_with("node-"))
+                    .unwrap_or(false)
+            })
+    });
+    if cfg!(debug_assertions) {
+        return first_existing(from_development.into_iter().chain(beside_app).collect());
+    }
+    first_existing(beside_app.into_iter().chain(from_development).collect())
+}
+
+fn server_folder(app: &AppHandle) -> Option<PathBuf> {
+    let bundled = app
+        .path()
+        .resource_dir()
+        .ok()
+        .map(|folder| folder.join(SERVER_FOLDER));
+    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SERVER_FOLDER);
+    let candidates: Vec<PathBuf> = if cfg!(debug_assertions) {
+        Some(development).into_iter().chain(bundled).collect()
+    } else {
+        bundled.into_iter().chain(Some(development)).collect()
+    };
+    first_existing(candidates).filter(|folder| folder.join(SERVER_ENTRY).exists())
+}
+
+fn start_server(app: &AppHandle) -> Startup {
+    if server_is_up() {
+        return Startup::AlreadyRunning;
+    }
+    if port_is_taken() {
+        return Startup::PortBusy;
+    }
+    let (Some(node), Some(folder), Some(home)) = (node_binary(), server_folder(app), data_home(app))
+    else {
+        return Startup::Missing;
+    };
+    if std::fs::create_dir_all(&home).is_err() {
+        return Startup::Missing;
+    }
+    let spawned = Command::new(node)
+        .arg(SERVER_ENTRY)
+        .current_dir(folder)
+        .env("NODE_ENV", "production")
+        .env("PORT", server_port().to_string())
+        .env("HOSTNAME", "0.0.0.0")
+        .env("DEIXA_CONFIG_DIR", &home)
+        .env("DATA_DIR", home.join("data"))
+        .env("SESSION_COOKIE_SECURE", "false")
+        .env_remove("DATABASE_URL")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+    match spawned {
+        Ok(child) => {
+            if let Ok(mut slot) = app.state::<ServerProcess>().0.lock() {
+                *slot = Some(child);
+            }
+            Startup::Started
+        }
+        Err(_) => Startup::Missing,
+    }
+}
+
+fn stop_server(app: &AppHandle) {
+    if let Ok(mut slot) = app.state::<ServerProcess>().0.lock() {
+        if let Some(mut child) = slot.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
+
+fn wait_until_up() -> bool {
+    for _ in 0..START_ATTEMPTS {
+        if server_is_up() {
+            return true;
+        }
+        std::thread::sleep(START_INTERVAL);
+    }
+    false
+}
+
+fn entry_url(app: &AppHandle) -> String {
+    let code = data_home(app)
+        .and_then(|home| std::fs::read_to_string(home.join(SETUP_CODE_FILE)).ok())
+        .map(|code| code.trim().to_string())
+        .filter(|code| !code.is_empty() && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'));
+    match code {
+        Some(code) => format!("{}/setup/unlock?code={}", local_url(), code),
+        None => local_url(),
+    }
+}
+
 fn is_app_page(url: &Url) -> bool {
     let from_server = url.scheme() == "http"
         && url.host_str() == Some(LOOPBACK.to_string().as_str())
@@ -79,7 +223,7 @@ fn show_main_window(app: &AppHandle) {
         return;
     }
     let target = if server_is_up() {
-        local_url()
+        entry_url(app)
             .parse()
             .map(WebviewUrl::External)
             .unwrap_or_else(|_| WebviewUrl::App("index.html".into()))
@@ -156,15 +300,32 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     }
     tray.build(app)?;
 
-    std::thread::spawn(move || loop {
-        let _ = status.set_text(if server_is_up() { STATUS_UP } else { STATUS_DOWN });
-        std::thread::sleep(STATUS_INTERVAL);
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        let _ = status.set_text(STATUS_STARTING);
+        let startup = start_server(&handle);
+        let trouble = match startup {
+            Startup::PortBusy => Some(STATUS_BUSY),
+            Startup::Missing => Some(STATUS_MISSING),
+            Startup::AlreadyRunning | Startup::Started => None,
+        };
+        if trouble.is_none() {
+            wait_until_up();
+        }
+        let opener = handle.clone();
+        let _ = handle.run_on_main_thread(move || show_main_window(&opener));
+        loop {
+            let text = if server_is_up() { STATUS_UP } else { trouble.unwrap_or(STATUS_DOWN) };
+            let _ = status.set_text(text);
+            std::thread::sleep(STATUS_INTERVAL);
+        }
     });
     Ok(())
 }
 
 pub fn run() {
     tauri::Builder::default()
+        .manage(ServerProcess(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))
@@ -173,7 +334,11 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             build_tray(app.handle())?;
-            show_main_window(app.handle());
+            let handle = app.handle().clone();
+            let _ = ctrlc::set_handler(move || {
+                stop_server(&handle);
+                handle.exit(0);
+            });
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -186,11 +351,13 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("falha ao iniciar a casca do Deixa")
-        .run(|_app, event| {
-            if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { api, code, .. } => {
                 if code.is_none() {
                     api.prevent_exit();
                 }
             }
+            tauri::RunEvent::Exit => stop_server(app),
+            _ => {}
         });
 }

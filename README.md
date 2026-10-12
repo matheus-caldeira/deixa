@@ -196,10 +196,15 @@ chave nenhuma, apenas do banco configurado (`DATABASE_URL` ou a tela `/setup`). 
 
 ## Casca nativa (em construção)
 
-`src-tauri/` tem um app Tauri que fica na bandeja do sistema e abre o Deixa numa janela própria, no navegador
-ou por QR code no celular. Precisa do Rust instalado e, por enquanto, do servidor já rodando:
+`src-tauri/` tem um app Tauri que fica na bandeja do sistema, sobe o servidor do Deixa e o abre numa janela
+própria, no navegador ou por QR code no celular. Precisa do Rust instalado.
 
 ```bash
-pnpm dev            # em um terminal
-pnpm desktop:run    # em outro
+pnpm desktop:server   # gera o servidor embutido (build do Next + Node) em src-tauri/
+pnpm desktop:run      # executa a casca em modo de desenvolvimento
+pnpm desktop:build    # gera o aplicativo instalável em src-tauri/target/release/bundle
 ```
+
+Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
+instalado (endereço do banco, chave mestra, legendas e áudio) ficam na pasta de dados do sistema, não na pasta
+do projeto.

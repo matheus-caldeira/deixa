@@ -13,3 +13,5 @@ screenshots/
 src-tauri/target/
 src-tauri/gen/
 src-tauri/icons/
+src-tauri/server/
+src-tauri/binaries/

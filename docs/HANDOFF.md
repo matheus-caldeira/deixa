@@ -140,7 +140,6 @@ Falta:
 - [ ] No pacote final, a pasta `src/infrastructure/database/migrations` precisa ir junto: as migrações são
       lidas a partir da pasta de execução.
 - [ ] Trocar de banco depois de configurado (hoje só editando ou apagando `database-url.txt`).
-- [ ] A casca Tauri deve ler `setup-code.txt` e destravar a tela sozinha na janela local.
 
 **B. Configuração no banco e assistente de primeira abertura**
 
@@ -204,19 +203,34 @@ foram clicados por automação; falta o teste manual.
 
 Falta:
 
-- [ ] **A casca ainda não sobe o servidor.** Hoje ela espera o servidor já rodando (`pnpm dev` ou
-      `pnpm start`). Próximo passo: `next.config` com `output: "standalone"`, binário do Node por plataforma
-      como sidecar, e a casca subindo, vigiando e encerrando o servidor. Levar junto a pasta de migrações e
-      `fixtures/`, e resolver o `sharp` do `next/image`.
-- [ ] Apontar `DEIXA_CONFIG_DIR` e `DATA_DIR` para o diretório de dados do usuário.
+- [x] **Servidor embutido (12/10/2026, branch `feat/embedded-server`).** `pnpm desktop:server` gera o build
+      `standalone` do Next em `src-tauri/server` (com estáticos, `public`, migrações e `fixtures`) e copia o
+      Node em uso para `src-tauri/binaries`. A casca sobe esse servidor ao abrir, espera ficar pronto, vigia o
+      estado e o encerra ao sair (inclusive por sinal de término). Se já houver um Deixa na porta, usa o que
+      está rodando; se a porta estiver ocupada por outro programa, avisa no menu.
+- [x] `DEIXA_CONFIG_DIR` e `DATA_DIR` apontam para o diretório de dados do app no sistema (trocável por
+      `DEIXA_APP_DIR`, usado nos testes).
+- [x] A casca destrava `/setup` sozinha: lê `setup-code.txt` e abre a janela por `/setup/unlock`.
+- [x] `pnpm desktop:build` gera `Deixa.app` (171 MB: 116 do Node, 51 do servidor). Conferido executando o
+      binário do pacote: sobe o servidor de dentro do próprio pacote e encerra junto.
+
+Limites desta etapa:
+
+- [ ] O Node embutido é uma cópia do Node instalado na máquina de build. Para distribuir, baixar o Node
+      oficial de cada plataforma no CI e avaliar reduzir o tamanho.
+- [ ] `next/image` fica sem otimização no build da casca (não há `sharp`); as imagens do TMDB vêm no tamanho
+      original pedido.
+- [ ] Dentro de `/Applications` a pasta do servidor é só leitura; o Next pode tentar gravar cache ali. Não
+      apareceu erro no teste, mas falta conferir com o app instalado de verdade.
+- [ ] Se a casca for morta à força, o servidor fica órfão; na abertura seguinte ela reaproveita o que achar.
+- [ ] O fluxo completo pelo app empacotado (configurar banco, criar conta, estudar) não foi percorrido; só a
+      subida do servidor e a chegada em `/setup`. O fluxo em si é coberto pelo e2e no servidor comum.
 - [ ] Sessão do dono: token de longa duração injetado só na janela local.
 - [ ] "Onde parei" no menu da bandeja (depende da sessão do dono).
 - [ ] Notificações nativas a partir da caixa de notificações do dono.
-- [ ] Destravar `/setup` sozinho, lendo `setup-code.txt`.
 - [ ] Início com o sistema (opcional) e detecção de porta ocupada.
 - [ ] Ícone monocromático para a barra de menus do macOS.
 - [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).
-- [ ] `pnpm desktop:build` gera o instalador, mas sem o servidor embutido ele ainda não serve para distribuir.
 
 **E. HTTPS na rede interna**
 
