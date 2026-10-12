@@ -191,7 +191,8 @@ Primeira etapa feita em 12/10/2026 (branch `feat/desktop-shell`, pasta `src-taur
       `pnpm desktop:check` só confere.
 - [x] Ícone na bandeja com menu: estado do servidor (atualizado a cada 5 s), "Abrir o Deixa", "Abrir no
       navegador", "Abrir no celular (QR code)" e "Sair".
-- [x] Janela própria apontando para `http://localhost:1300` (porta trocável por `DEIXA_PORT`). Fechar a
+- [x] Janela própria apontando para `http://127.0.0.1:1300` (porta trocável por `DEIXA_PORT`), aberta só
+      depois de confirmar pelo manifesto que quem responde é o Deixa; links externos vão para o navegador. Fechar a
       janela só a esconde; o app continua na bandeja. No macOS não aparece no Dock.
 - [x] Janela do QR code com o endereço da rede interna, gerado na própria casca.
 - [x] Instância única: abrir de novo só traz a janela existente.

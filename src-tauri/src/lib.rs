@@ -1,11 +1,12 @@
-use std::net::{SocketAddr, TcpStream};
+use std::io::{Read, Write};
+use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::time::Duration;
 
 use qrcode::render::svg;
 use qrcode::QrCode;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_opener::OpenerExt;
 
 const DEFAULT_PORT: u16 = 1300;
@@ -14,6 +15,10 @@ const MAIN_WINDOW: &str = "main";
 const QR_WINDOW: &str = "qr";
 const STATUS_INTERVAL: Duration = Duration::from_secs(5);
 const PROBE_TIMEOUT: Duration = Duration::from_millis(600);
+const LOOPBACK: Ipv4Addr = Ipv4Addr::LOCALHOST;
+const IDENTITY_PATH: &str = "/manifest.webmanifest";
+const IDENTITY_MARK: &str = "Deixa";
+const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const STATUS_UP: &str = "Servidor: no ar";
 const STATUS_DOWN: &str = "Servidor: fora do ar";
 
@@ -25,7 +30,7 @@ fn server_port() -> u16 {
 }
 
 fn local_url() -> String {
-    format!("http://localhost:{}", server_port())
+    format!("http://{}:{}", LOOPBACK, server_port())
 }
 
 fn network_url() -> String {
@@ -35,9 +40,35 @@ fn network_url() -> String {
     }
 }
 
+fn read_identity() -> Option<String> {
+    let address = SocketAddr::from((LOOPBACK, server_port()));
+    let mut stream = TcpStream::connect_timeout(&address, PROBE_TIMEOUT).ok()?;
+    stream.set_read_timeout(Some(PROBE_TIMEOUT)).ok()?;
+    stream.set_write_timeout(Some(PROBE_TIMEOUT)).ok()?;
+    let request = format!(
+        "GET {} HTTP/1.1\r\nHost: {}:{}\r\nAccept: application/json\r\nConnection: close\r\n\r\n",
+        IDENTITY_PATH,
+        LOOPBACK,
+        server_port()
+    );
+    stream.write_all(request.as_bytes()).ok()?;
+    let mut response = String::new();
+    stream.take(MAX_IDENTITY_BYTES).read_to_string(&mut response).ok()?;
+    Some(response)
+}
+
 fn server_is_up() -> bool {
-    let address = SocketAddr::from(([127, 0, 0, 1], server_port()));
-    TcpStream::connect_timeout(&address, PROBE_TIMEOUT).is_ok()
+    read_identity()
+        .map(|response| response.starts_with("HTTP/1.1 200") && response.contains(IDENTITY_MARK))
+        .unwrap_or(false)
+}
+
+fn is_app_page(url: &Url) -> bool {
+    let from_server = url.scheme() == "http"
+        && url.host_str() == Some(LOOPBACK.to_string().as_str())
+        && url.port() == Some(server_port());
+    let from_shell = url.scheme() == "tauri" || url.host_str() == Some("tauri.localhost");
+    from_server || from_shell
 }
 
 fn show_main_window(app: &AppHandle) {
@@ -55,7 +86,17 @@ fn show_main_window(app: &AppHandle) {
     } else {
         WebviewUrl::App("index.html".into())
     };
+    let opener = app.clone();
     let _ = WebviewWindowBuilder::new(app, MAIN_WINDOW, target)
+        .on_navigation(move |url| {
+            if is_app_page(url) {
+                return true;
+            }
+            if url.scheme() == "https" || url.scheme() == "http" {
+                let _ = opener.opener().open_url(url.as_str(), None::<&str>);
+            }
+            false
+        })
         .title("Deixa")
         .inner_size(430.0, 880.0)
         .min_inner_size(360.0, 600.0)

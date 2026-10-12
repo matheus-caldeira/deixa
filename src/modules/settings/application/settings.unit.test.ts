@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
-import { mergeSettings, type AppSettings, type SettingKey } from "../domain/settings";
+import { canonicalServiceUrl, mergeSettings, type AppSettings, type SettingKey } from "../domain/settings";
 import { makeGetSettings, makeUpdateSettings, type SettingsRepository } from "./settings-use-cases";
 
 const defaults: AppSettings = {
@@ -47,6 +47,17 @@ describe("configurações do servidor", () => {
     expect(await app.get()).toEqual(values);
   });
 
+  it("guarda o endereço do Kokoro na forma canônica, que é a mesma usada para conectar", async () => {
+    const app = setup();
+    const saved = await app.update({
+      actor: admin,
+      values: { ...defaults, kokoroUrl: "  HTTP://LocalHost:1881/api/// " },
+    });
+    expect(saved.kokoroUrl).toBe("http://localhost:1881/api");
+    expect(canonicalServiceUrl("http://[::1]:1881")).toBe("http://[::1]:1881");
+    expect(canonicalServiceUrl("http://192.168.1.20:1881/")).toBe("http://192.168.1.20:1881");
+  });
+
   it("recusa modelo fora do formato, quantidade fora da faixa e endereço que não é http", async () => {
     const app = setup();
     for (const values of [
@@ -60,6 +71,10 @@ describe("configurações do servidor", () => {
       { ...defaults, kokoroUrl: "http://usuario:senha@localhost:1881" },
       { ...defaults, kokoroUrl: "http://localhost:1881/?alvo=outro" },
       { ...defaults, kokoroUrl: "http://0.0.0.0:1881" },
+      { ...defaults, kokoroUrl: "http://2852039166/" },
+      { ...defaults, kokoroUrl: "http://0xa9.0xfe.0xa9.0xfe/" },
+      { ...defaults, kokoroUrl: "http://[::ffff:169.254.169.254]/" },
+      { ...defaults, kokoroUrl: "http://[fe80::1]:1881" },
       { geminiModel: "gemini-2.5-flash" },
     ]) {
       await expect(app.update({ actor: admin, values })).rejects.toMatchObject({ code: "INVALID_INPUT" });
