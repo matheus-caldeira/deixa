@@ -56,6 +56,10 @@ describe("configurações do servidor", () => {
       { ...defaults, subtitleDownloadsPerUserPerDay: 2.5 },
       { ...defaults, kokoroUrl: "file:///etc/passwd" },
       { ...defaults, kokoroUrl: "localhost:1881" },
+      { ...defaults, kokoroUrl: "http://169.254.169.254/latest/meta-data" },
+      { ...defaults, kokoroUrl: "http://usuario:senha@localhost:1881" },
+      { ...defaults, kokoroUrl: "http://localhost:1881/?alvo=outro" },
+      { ...defaults, kokoroUrl: "http://0.0.0.0:1881" },
       { geminiModel: "gemini-2.5-flash" },
     ]) {
       await expect(app.update({ actor: admin, values })).rejects.toMatchObject({ code: "INVALID_INPUT" });

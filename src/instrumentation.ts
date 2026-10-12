@@ -1,6 +1,6 @@
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { getContainer, resolveDatabaseUrl } = await import("@/infrastructure/container");
+  const { getContainer, refreshSettings, resolveDatabaseUrl } = await import("@/infrastructure/container");
   const { logger } = await import("@/infrastructure/logger/logger");
   if (!resolveDatabaseUrl()) {
     const { prepareSetupCode, SETUP_CODE_FILE } = await import("@/infrastructure/setup");
@@ -9,6 +9,7 @@ export async function register(): Promise<void> {
     return;
   }
   try {
+    await refreshSettings();
     const { providers, devShortcuts } = getContainer();
     logger.info("providers.active", {
       metadata: providers.metadata,

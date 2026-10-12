@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { getEnv } from "../config/env";
+import { refreshSettings } from "../container";
 import {
   SETUP_CODE_FILE,
   clearSetupCode,
@@ -66,5 +67,6 @@ export async function configureDatabase(
   saveDatabaseUrl(configDirectory(), result.url);
   clearSetupCode(configDirectory());
   forgetDatabaseStatus();
+  await refreshSettings();
   return result;
 }

@@ -759,6 +759,13 @@ export class DatabaseNotConfigured extends Error {
   }
 }
 
+export class SettingsNotLoaded extends Error {
+  constructor() {
+    super("configurações do servidor ainda não carregadas");
+    this.name = "SettingsNotLoaded";
+  }
+}
+
 export function resolveDatabaseUrl(): string | null {
   return getEnv().DATABASE_URL ?? readStoredDatabaseUrl(configDirectory());
 }
@@ -791,7 +798,8 @@ export function getContainer(): Container {
   const url = resolveDatabaseUrl();
   if (!url) throw new DatabaseNotConfigured();
   const snapshot = settingsSnapshot?.url === url ? settingsSnapshot : undefined;
-  if (!container || containerUrl !== url || containerSettings !== snapshot?.stamp) {
+  if (!snapshot) throw new SettingsNotLoaded();
+  if (!container || containerUrl !== url || containerSettings !== snapshot.stamp) {
     const env = getEnv();
     const masterKey = loadMasterKey({
       fromEnvironment: env.AI_CREDENTIALS_MASTER_KEY,
@@ -804,10 +812,10 @@ export function getContainer(): Container {
       env,
       db: activeDatabase(url).db,
       masterKey: masterKey.value,
-      settings: snapshot?.values,
+      settings: snapshot.values,
     });
     containerUrl = url;
-    containerSettings = snapshot?.stamp;
+    containerSettings = snapshot.stamp;
   }
   return container;
 }

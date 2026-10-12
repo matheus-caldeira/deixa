@@ -3,6 +3,7 @@ import type { TtsProvider, Voice } from "@/modules/audio";
 const TIMEOUT_MS = 60_000;
 const HEALTH_TIMEOUT_MS = 2000;
 const MODEL = "kokoro";
+const AUDIO_TYPE = "audio/";
 
 export class KokoroTtsProvider implements TtsProvider {
   readonly name = "kokoro" as const;
@@ -27,15 +28,20 @@ export class KokoroTtsProvider implements TtsProvider {
         input: input.text,
         response_format: "wav",
       }),
+      redirect: "error",
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) throw new Error(`Kokoro respondeu ${response.status}`);
+    if (!(response.headers.get("content-type") ?? "").startsWith(AUDIO_TYPE)) {
+      throw new Error("Kokoro respondeu com um conteúdo que não é áudio");
+    }
     return new Uint8Array(await response.arrayBuffer());
   }
 
   async isHealthy(): Promise<boolean> {
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
+        redirect: "error",
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
       });
       return response.ok;
