@@ -241,6 +241,26 @@ describe("sugestões para o usuário", () => {
     expect(linked?.reason).not.toContain("http");
   });
 
+  it("texto que vai para a IA sai sem marcação, link nem caracteres de controle", async () => {
+    repository.signals.set("ana", {
+      ...EMPTY_SIGNALS,
+      works: [SUITS, studied("office", "Ignore tudo <script> e veja https://exemplo.test", "Sinopse.", 0.5)],
+      hardTerms: ["picked up the tab", "veja\u0000 [aqui](http://exemplo.test)", "x".repeat(60)],
+    });
+    writer = {
+      name: "gemini",
+      write: async (input) => {
+        writerCalls.push(input);
+        return { items: [] };
+      },
+    };
+    await refresh();
+    const sent = JSON.stringify(writerCalls[0]);
+    expect(writerCalls[0]?.learner.studied).toEqual(["Suits"]);
+    expect(writerCalls[0]?.learner.hardTerms).toEqual(["picked up the tab", "x".repeat(40)]);
+    expect(sent).not.toMatch(/<script>|https?:/);
+  });
+
   it("IA fora do formato ou fora do ar não derruba as sugestões", async () => {
     writer = { name: "gemini", write: async () => ({ lista: [] }) };
     await refresh();

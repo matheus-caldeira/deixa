@@ -239,8 +239,18 @@ export function buildContainer(options: ContainerOptions) {
   const resolveEmbedding =
     options.embeddingForUser ??
     (async (userId: string): Promise<EmbeddingProvider> => {
-      const apiKey = (await resolveApiKey(userId)) ?? env.GEMINI_API_KEY;
-      return apiKey ? new GeminiEmbeddingProvider(apiKey) : localEmbedding;
+      const ownKey = await resolveApiKey(userId);
+      if (ownKey) return new GeminiEmbeddingProvider(ownKey);
+      if (!env.GEMINI_API_KEY) return localEmbedding;
+      const shared = new GeminiEmbeddingProvider(env.GEMINI_API_KEY);
+      return {
+        name: shared.name,
+        model: shared.model,
+        embed: async (texts) => {
+          await sharedBudget.spend(userId);
+          return shared.embed(texts);
+        },
+      };
     });
   const resolveSuggestionWriter =
     options.suggestionWriterForUser ??

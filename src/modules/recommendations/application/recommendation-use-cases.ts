@@ -211,6 +211,16 @@ function localReason(draft: Draft, studied: StudiedWork[], assessment: LearnerAs
   return `${opening}, e o nível estimado combina com o seu.`;
 }
 
+const MAX_TITLE_CHARS = 80;
+const MAX_TERM_CHARS = 40;
+const MAX_GENRE_CHARS = 30;
+
+const promptText = (value: string, maxLength: number): string =>
+  cleanLlmText(value.slice(0, maxLength), maxLength) ?? "";
+
+const promptList = (values: readonly string[], maxLength: number): string[] =>
+  values.map((value) => promptText(value, maxLength)).filter((value) => value.length > 0);
+
 const toPercent = (value: number | null): number | null =>
   value === null ? null : Math.round(value * PERCENT);
 
@@ -228,17 +238,23 @@ function writerInput(
       forgottenPercent: toPercent(assessment.againRate),
       marksPerHundredLines:
         assessment.marksPerHundred === null ? null : Math.round(assessment.marksPerHundred),
-      studied: studied.slice(0, MAX_STUDIED_IN_PROMPT).map((work) => work.title),
-      hardTerms: signals.hardTerms,
+      studied: promptList(
+        studied.slice(0, MAX_STUDIED_IN_PROMPT).map((work) => work.title),
+        MAX_TITLE_CHARS,
+      ),
+      hardTerms: promptList(signals.hardTerms, MAX_TERM_CHARS),
     },
     candidates: shortlist.map(({ work, ranked }) => ({
       key: workKeyOf(work),
-      title: work.originalTitle || work.title,
+      title: promptText(work.originalTitle || work.title, MAX_TITLE_CHARS),
       type: work.type,
       year: work.year,
-      genres: work.genres,
-      overview: work.overview.slice(0, MAX_OVERVIEW_CHARS),
-      closestStudied: ranked.closestIndex === null ? null : (studied[ranked.closestIndex]?.title ?? null),
+      genres: promptList(work.genres, MAX_GENRE_CHARS),
+      overview: promptText(work.overview, MAX_OVERVIEW_CHARS),
+      closestStudied:
+        ranked.closestIndex === null
+          ? null
+          : promptText(studied[ranked.closestIndex]?.title ?? "", MAX_TITLE_CHARS) || null,
     })),
     limit: MAX_SUGGESTIONS,
   };
