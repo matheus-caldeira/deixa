@@ -7,7 +7,7 @@ import {
   TESTED_MAJOR_VERSION,
   configureDatabase,
   getDatabaseStatus,
-  isSetupCode,
+  verifySetupCode,
 } from "@/infrastructure/setup";
 import { SETUP_COOKIE } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
@@ -42,7 +42,7 @@ function toUrl(input: z.infer<typeof connectionSchema>): string {
 export async function unlockSetupAction(code: unknown): Promise<ActionResult<null>> {
   if ((await getDatabaseStatus()).state === "ready") return { ok: false, message: ALREADY_READY };
   const parsed = z.string().max(40).safeParse(code);
-  if (!parsed.success || !isSetupCode(parsed.data)) {
+  if (!parsed.success || !(await verifySetupCode(parsed.data))) {
     return { ok: false, message: "Código incorreto. Confira o arquivo no computador onde o Deixa roda." };
   }
   (await cookies()).set(SETUP_COOKIE, parsed.data, {
@@ -60,7 +60,7 @@ export async function connectDatabaseAction(
   const status = await getDatabaseStatus();
   if (status.state === "ready") return { ok: false, message: ALREADY_READY };
   const store = await cookies();
-  if (!isSetupCode(store.get(SETUP_COOKIE)?.value)) return { ok: false, message: LOCKED };
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
   const parsed = connectionSchema.safeParse(input);
   if (!parsed.success) {
     return {

@@ -32,6 +32,15 @@ export function isSetupCode(candidate: string | undefined): boolean {
   return given.length === known.length && timingSafeEqual(given, known);
 }
 
+const WRONG_CODE_DELAY_MS = 1000;
+
+export async function verifySetupCode(candidate: string | undefined): Promise<boolean> {
+  if (candidate === undefined) return false;
+  if (isSetupCode(candidate)) return true;
+  await new Promise((resolve) => setTimeout(resolve, WRONG_CODE_DELAY_MS));
+  return false;
+}
+
 export function databaseComesFromEnvironment(): boolean {
   return Boolean(getEnv().DATABASE_URL);
 }
