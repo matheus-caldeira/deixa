@@ -210,7 +210,9 @@ Falta:
       está rodando; se a porta estiver ocupada por outro programa, avisa no menu.
 - [x] `DEIXA_CONFIG_DIR` e `DATA_DIR` apontam para o diretório de dados do app no sistema (trocável por
       `DEIXA_APP_DIR`, usado nos testes).
-- [x] A casca destrava `/setup` sozinha: lê `setup-code.txt` e abre a janela por `/setup/unlock`.
+- [x] A casca destrava `/setup` sozinha: lê `setup-code.txt` e abre a janela por `/setup/unlock`, só quando
+      o servidor foi iniciado por ela.
+- [x] O empacotamento confere que nenhum segredo do `.env` nem dos arquivos locais foi parar no pacote.
 - [x] `pnpm desktop:build` gera `Deixa.app` (171 MB: 116 do Node, 51 do servidor). Conferido executando o
       binário do pacote: sobe o servidor de dentro do próprio pacote e encerra junto.
 

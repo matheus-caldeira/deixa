@@ -27,6 +27,17 @@ const SETUP_CODE_FILE: &str = "setup-code.txt";
 const SERVER_FOLDER: &str = "server";
 const SERVER_ENTRY: &str = "server.js";
 const NODE_BINARY: &str = if cfg!(windows) { "node.exe" } else { "node" };
+const INHERITED_VARIABLES: [&str; 9] = [
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "SystemRoot",
+    "TMPDIR",
+    "TEMP",
+    "LANG",
+    "TZ",
+];
 const START_ATTEMPTS: u32 = 150;
 const START_INTERVAL: Duration = Duration::from_millis(300);
 const STATUS_STARTING: &str = "Servidor: iniciando";
@@ -97,16 +108,9 @@ fn data_home(app: &AppHandle) -> Option<PathBuf> {
     }
 }
 
-fn first_existing(candidates: Vec<PathBuf>) -> Option<PathBuf> {
-    candidates.into_iter().find(|path| path.exists())
-}
-
-fn node_binary() -> Option<PathBuf> {
-    let beside_app = std::env::current_exe()
-        .ok()
-        .and_then(|path| path.parent().map(|folder| folder.join(NODE_BINARY)));
-    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-    let from_development = std::fs::read_dir(development).ok().and_then(|entries| {
+fn development_node() -> Option<PathBuf> {
+    let folder = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
+    std::fs::read_dir(folder).ok().and_then(|entries| {
         entries
             .filter_map(Result::ok)
             .map(|entry| entry.path())
@@ -116,26 +120,29 @@ fn node_binary() -> Option<PathBuf> {
                     .map(|name| name.starts_with("node-"))
                     .unwrap_or(false)
             })
-    });
+    })
+}
+
+fn node_binary() -> Option<PathBuf> {
     if cfg!(debug_assertions) {
-        return first_existing(from_development.into_iter().chain(beside_app).collect());
+        return development_node();
     }
-    first_existing(beside_app.into_iter().chain(from_development).collect())
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(|folder| folder.join(NODE_BINARY)))
+        .filter(|path| path.exists())
 }
 
 fn server_folder(app: &AppHandle) -> Option<PathBuf> {
-    let bundled = app
-        .path()
-        .resource_dir()
-        .ok()
-        .map(|folder| folder.join(SERVER_FOLDER));
-    let development = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SERVER_FOLDER);
-    let candidates: Vec<PathBuf> = if cfg!(debug_assertions) {
-        Some(development).into_iter().chain(bundled).collect()
+    let folder = if cfg!(debug_assertions) {
+        Some(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(SERVER_FOLDER))
     } else {
-        bundled.into_iter().chain(Some(development)).collect()
+        app.path()
+            .resource_dir()
+            .ok()
+            .map(|resources| resources.join(SERVER_FOLDER))
     };
-    first_existing(candidates).filter(|folder| folder.join(SERVER_ENTRY).exists())
+    folder.filter(|path| path.join(SERVER_ENTRY).exists())
 }
 
 fn start_server(app: &AppHandle) -> Startup {
@@ -152,16 +159,20 @@ fn start_server(app: &AppHandle) -> Startup {
     if std::fs::create_dir_all(&home).is_err() {
         return Startup::Missing;
     }
-    let spawned = Command::new(node)
-        .arg(SERVER_ENTRY)
-        .current_dir(folder)
+    let mut command = Command::new(node);
+    command.arg(SERVER_ENTRY).current_dir(folder).env_clear();
+    for name in INHERITED_VARIABLES {
+        if let Ok(value) = std::env::var(name) {
+            command.env(name, value);
+        }
+    }
+    let spawned = command
         .env("NODE_ENV", "production")
         .env("PORT", server_port().to_string())
         .env("HOSTNAME", "0.0.0.0")
         .env("DEIXA_CONFIG_DIR", &home)
         .env("DATA_DIR", home.join("data"))
         .env("SESSION_COOKIE_SECURE", "false")
-        .env_remove("DATABASE_URL")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -196,7 +207,20 @@ fn wait_until_up() -> bool {
     false
 }
 
+fn owns_running_server(app: &AppHandle) -> bool {
+    match app.state::<ServerProcess>().0.lock() {
+        Ok(mut slot) => match slot.as_mut() {
+            Some(child) => matches!(child.try_wait(), Ok(None)),
+            None => false,
+        },
+        Err(_) => false,
+    }
+}
+
 fn entry_url(app: &AppHandle) -> String {
+    if !owns_running_server(app) {
+        return local_url();
+    }
     let code = data_home(app)
         .and_then(|home| std::fs::read_to_string(home.join(SETUP_CODE_FILE)).ok())
         .map(|code| code.trim().to_string())
