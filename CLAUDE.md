@@ -38,7 +38,8 @@ src/app/              (auth), (learning) com as cinco abas, read/[episodeId], ap
 src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
 src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastructure/ · index.ts
                       identity, catalog, subtitles, alignment, highlights, learning, flashcards,
-                      ai-credentials, audio, gamification
+                      ai-credentials, audio, gamification, study, notifications, conversations,
+                      subtitle-sources, recommendations
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, google-ai/, kokoro/, logger/, container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
 src/seed/             seed de demonstração

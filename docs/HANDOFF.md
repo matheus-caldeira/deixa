@@ -156,17 +156,27 @@ As etapas A a C valem mesmo sem a casca nativa e devem vir primeiro.
 - [ ] Antes de publicar: varredura de segredos em todo o histórico do git, escolha de licença, `README` de
       instalação, atribuição a TMDB e OpenSubtitles.
 - [ ] GitHub Actions com matriz Windows, Linux e macOS gerando instaladores e publicando o release.
-- [ ] Atualizador do Tauri apontando para os releases, com par de chaves de assinatura da atualização.
-- [ ] Assinatura de código: ver 3.5.
+- [ ] Aviso de versão nova consultando os releases do GitHub, com link para o download manual.
+- [ ] `README` com o passo de liberação do app não assinado em macOS e Windows (decisão em 3.4).
 
-### 3.4 Decisões em aberto (do Matheus)
+### 3.4 Decisões
 
-1. Janela própria ou só navegador ao clicar na bandeja. Recomendação: janela própria (webview) como padrão e
-   "Abrir no navegador" no menu.
-2. Voz: baixar o modelo sob demanda ou depender da voz do navegador.
-3. Licença do projeto.
-4. Pagar ou não a assinatura de código (macOS e Windows).
-5. Nome definitivo do produto ("Deixa" é provisório e vira nome de pacote, identificador e ícone).
+Tomadas pelo Matheus em 12/10/2026:
+
+1. Clicar na bandeja abre uma **janela própria**; o menu traz também "Abrir no navegador" e "Abrir pelo QR
+   code", que mostra o endereço da rede interna como QR para o celular.
+2. **Nenhuma assinatura de código paga.** O usuário baixa o instalador manualmente no GitHub. Consequências a
+   documentar no `README`: no macOS é preciso liberar o app em Ajustes → Privacidade e Segurança; no Windows,
+   "Mais informações → Executar assim mesmo". O app só **avisa** que há versão nova e abre a página do
+   release; atualização automática silenciosa fica fora.
+3. As sugestões personalizadas (seção 5) vieram antes do banco embutido e já estão prontas.
+
+Ainda em aberto:
+
+1. Voz: baixar o modelo sob demanda ou depender da voz do navegador.
+2. Licença do projeto.
+3. Nome definitivo do produto ("Deixa" é provisório e vira nome de pacote, identificador e ícone).
+4. Microfone no celular: ver 3.6.
 
 ### 3.5 Riscos conhecidos
 
@@ -184,6 +194,24 @@ As etapas A a C valem mesmo sem a casca nativa e devem vir primeiro.
 - **Direitos**: com instalação local, cada pessoa monta o próprio catálogo, o que reduz o problema de
   redistribuição de legendas; ainda assim o repositório e os releases nunca carregam legenda real.
 
+### 3.6 Microfone no celular sem HTTPS confiável
+
+Opções levantadas, da mais barata para a mais cara:
+
+1. **Ditado do teclado (já funciona).** O Conversar aceita texto, e o microfone do teclado do celular dita em
+   qualquer página, mesmo em HTTP. Não envia o áudio (não serve para avaliar pronúncia), mas destrava a
+   conversa falada hoje, sem código novo.
+2. **Autoridade certificadora local + QR code** (tarefa E). Funciona em iOS e Android, sem custo, com uma
+   instalação por aparelho. É o caminho recomendado.
+3. **App Android** (APK no release do GitHub, sem loja). O Tauri 2 gera Android. Atenção: um webview apontando
+   para `http://ip-da-rede` continua sem `getUserMedia`; o app precisa gravar pelo lado nativo e entregar o
+   áudio à página, ou servir a interface de uma origem própria. iOS fica de fora, porque exige conta paga.
+4. **Interface publicada em HTTPS (Vercel) falando com o servidor local.** Não recomendado: página HTTPS não
+   pode chamar `http://ip-da-rede` (conteúdo misto). O Chrome recente abre exceção para rede local mediante
+   permissão (a confirmar na versão vigente), o Safari do iOS não. Navegador também não varre a rede: a
+   descoberta teria de ser por QR code ou por um serviço de encontro na nuvem. E a interface atual depende de
+   server actions e renderização no servidor; teria de virar um cliente separado com API, CORS e token.
+
 ## 4. Regras que continuam valendo
 
 - Português do Brasil com acentuação; identificadores em inglês; código sem comentários (`pnpm lint:comments`).
@@ -193,3 +221,34 @@ As etapas A a C valem mesmo sem a casca nativa e devem vir primeiro.
 - Identidade do git herdada do `~/.gitconfig`; Conventional Commits; sem push, remote ou PR sem pedido.
 - Nenhuma instalação de software no sistema sem confirmação explícita (inclui a toolchain Rust do Tauri).
 - Portas na faixa 1XXX: app 1300, e2e 1310, Postgres 1442, Kokoro 1881.
+
+## 5. Sugestões personalizadas (entregue em 12/10/2026)
+
+Branch `feat/recommendations`. Módulo `src/modules/recommendations`.
+
+Como funciona:
+
+1. **Retrato do aluno**, só com dados da própria conta: obras estudadas (peso pelo progresso), acerto nos
+   exercícios e cards esquecidos nos últimos 30 dias, densidade de marcações e termos mais esquecidos. Disso
+   sai o desafio (subir, manter ou aliviar) e uma frase mostrada na tela.
+2. **Candidatas**: recomendações do TMDB para as três obras mais estudadas, mais as populares em inglês.
+   Saem as já estudadas, as recusadas e as já adicionadas.
+3. **Recuperação**: cada obra vira um vetor (Gemini `gemini-embedding-001` com 256 dimensões; sem chave, um
+   vetor local por hashing de palavras). Os vetores ficam em `work_embeddings` e não são gerados de novo. O
+   gosto é o centro ponderado das obras estudadas; a nota junta semelhança, adequação de nível e popularidade,
+   e afasta o que parece com o que foi recusado.
+4. **Geração**: as 14 melhores vão à IA com o retrato; ela ordena, estima a faixa de nível e escreve o motivo.
+   Saída validada com Zod; obra fora da lista é descartada. Sem IA, o motivo é montado localmente.
+5. **Ciclo**: refaz em segundo plano ao abrir o Explorar quando o estudo mudou e passaram 12 horas, ou depois
+   de 7 dias; "Atualizar" força (no máximo uma vez por minuto). "Não tenho interesse" e "Adicionar ao
+   catálogo" realimentam o gosto.
+
+O que ficou de fora e vale fazer depois:
+
+- [ ] Usar o retrato do aluno também na montagem das trilhas e no tutor (hoje só as sugestões usam).
+- [ ] Faixa de nível medida de verdade (vocabulário e velocidade das falas) quando a obra tiver legenda;
+      hoje é estimativa por gênero ou pela IA.
+- [ ] Guardar gêneros em `media_items` para enriquecer o vetor das obras estudadas.
+- [ ] Notificar quando surgirem sugestões novas.
+- [ ] Diversidade: hoje uma obra muito estudada puxa quase todas as sugestões para o mesmo gênero quando a
+      IA não está disponível.

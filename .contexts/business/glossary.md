@@ -38,6 +38,8 @@ Vocabulário único. Na interface, o termo em português; no código, o identifi
 | Meta do dia          | `daily_goal`                | XP a atingir no dia: Leve 50, Regular 100, Firme 150, Intenso 250    |
 | Chave de IA          | `user_ai_credential`        | Chave do Google AI (Gemini) do próprio usuário                       |
 | Tutor                | `tutor`                     | Conversa com IA por cenário                                          |
+| Sugestão             | `user_recommendation`       | Obra indicada ao usuário pelo gosto e pelo nível, com o motivo       |
+| Retrato do aluno     | `learner_assessment`        | Resumo do estudo recente que orienta o desafio das sugestões         |
 | Estado do episódio   | `episode.status`            | `NONE`, `UPLOADED`, `PROCESSING`, `READY`, `FAILED`, `NEEDS_REVIEW`  |
 
 ## Termos a evitar

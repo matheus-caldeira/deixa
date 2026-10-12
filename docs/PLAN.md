@@ -77,6 +77,19 @@ Detalhes em [STAGE-2-SUBTITLES.md](STAGE-2-SUBTITLES.md). Branch `feat/opensubti
 | 45  | Teto de downloads por usuário e intervalo para refazer a busca     | Testes unitários, inclusive pedidos simultâneos                       | [x]    |
 | 46  | Validação real                                                     | 1 episódio importado, 2 downloads gastos                              | [x]    |
 
+## Etapa 3: sugestões personalizadas
+
+Branch `feat/recommendations`. Descrição em [HANDOFF.md](HANDOFF.md), seção 5.
+
+| Nº  | Item                                                               | Critério de pronto                                              | Estado |
+| --- | ------------------------------------------------------------------ | --------------------------------------------------------------- | ------ |
+| 47  | Obras relacionadas e populares no `MetadataProvider`               | TMDB e fake; typecheck                                          | [x]    |
+| 48  | Retrato do aluno, vetores e ranqueamento                           | Testes unitários                                                | [x]    |
+| 49  | Atualização em segundo plano com IA opcional e reservas locais     | Testes unitários (IA inválida, vetores fora do ar, simultâneo)  | [x]    |
+| 50  | Tabelas de sugestões, recusas e vetores                            | Migração 0012; teste de isolamento no Postgres                  | [x]    |
+| 51  | "Para você" no Explorar: motivo, adicionar e "não tenho interesse" | E2E com provider falso                                          | [x]    |
+| 52  | Validação real                                                     | Sugestões com TMDB, vetores e texto do Gemini na conta de teste | [x]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.
