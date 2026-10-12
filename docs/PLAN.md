@@ -115,6 +115,13 @@ Branch `feat/database-setup`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 
 | 62  | Detecção de Postgres local e recomendação de instalar | Teste unitário da sondagem                               | [x]    |
 | 63  | Conectar, criar o banco, migrar e guardar o endereço  | E2E até a primeira conta, que vira administradora        | [x]    |
 
+## Etapa 6: seed sem credenciais
+
+| Nº  | Item                                                         | Critério de pronto                                                     | Estado |
+| --- | ------------------------------------------------------------ | ---------------------------------------------------------------------- | ------ |
+| 64  | Catálogo fixo com identificadores reais do TMDB              | `fixtures/catalog.json` versionado; teste unitário                     | [x]    |
+| 65  | Seed sem `.env`: catálogo fixo, legendas e trilhas fictícias | Rodado num banco novo sem variáveis: 7 obras, 15 episódios, 45 trilhas | [x]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

@@ -23,10 +23,11 @@
     "infra:up": "docker compose up -d --wait postgres && docker compose up -d kokoro",
     "infra:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/infrastructure/database/migrate-cli.ts",
-    "db:seed": "tsx --env-file=.env src/seed/main.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env src/infrastructure/database/migrate-cli.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/seed/main.ts",
     "db:reset": "node scripts/reset-dev-db.mjs && pnpm db:migrate && pnpm db:seed",
     "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
+    "fixtures:catalog": "tsx --env-file=.env scripts/generate-catalog-fixture.ts",
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {

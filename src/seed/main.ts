@@ -1,29 +1,36 @@
-import { getEnv, hasTmdbCredentials } from "@/infrastructure/config/env";
-import { TmdbClient } from "@/infrastructure/tmdb/client";
-import { TmdbMetadataProvider } from "@/infrastructure/tmdb/tmdb-metadata-provider";
-import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
-import { buildContainer } from "@/infrastructure/container";
+import { readFile } from "node:fs/promises";
+import { getEnv } from "@/infrastructure/config/env";
+import { configDirectory } from "@/infrastructure/config/local-config";
+import { loadMasterKey } from "@/infrastructure/config/master-key";
+import { buildContainer, resolveDatabaseUrl } from "@/infrastructure/container";
 import { openDatabase } from "@/infrastructure/database/client";
+import { runMigrations } from "@/infrastructure/database/migrate";
 import { silentLogger } from "@/infrastructure/logger/logger";
-import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
-import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
+import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
+import { StaticMetadataProvider } from "@/modules/catalog/infrastructure/static-metadata-provider";
+import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { runSeed } from "./run-seed";
+
+const CATALOG_FIXTURE = "fixtures/catalog.json";
 
 async function main(): Promise<void> {
   const env = getEnv();
-  if (!env.DATABASE_URL) throw new Error("DATABASE_URL ausente. Rode pnpm setup:env.");
-  const handle = openDatabase(env.DATABASE_URL);
+  const url = resolveDatabaseUrl();
+  if (!url) throw new Error("Banco não configurado: defina DATABASE_URL ou conclua a tela /setup.");
+  await runMigrations(url);
+  const handle = openDatabase(url);
   const fakeLlm = new FakeLlmProvider();
   try {
-    const metadata = hasTmdbCredentials(env)
-      ? new TmdbMetadataProvider(
-          new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
-        )
-      : new FakeMetadataProvider();
+    const metadata = new StaticMetadataProvider(JSON.parse(await readFile(CATALOG_FIXTURE, "utf8")));
+    const masterKey = loadMasterKey({
+      fromEnvironment: env.AI_CREDENTIALS_MASTER_KEY,
+      directory: configDirectory(),
+    });
     const container = buildContainer({
       env,
       metadata,
+      masterKey: masterKey.value,
       db: handle.db,
       logger: silentLogger,
       tts: new SilentTtsProvider(),

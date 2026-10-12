@@ -1,0 +1,798 @@
+{
+  "source": "tmdb",
+  "works": [
+    {
+      "slug": "friends",
+      "externalId": "tv:1668",
+      "type": "series",
+      "title": "Friends",
+      "originalTitle": "Friends",
+      "overview": "Seis amigos em Nova York. Diálogo lento, situações do dia a dia e muita repetição: ótimo para começar.",
+      "genres": [
+        "Comédia"
+      ],
+      "year": 1994,
+      "posterPath": "/2koX1xLkpTQM4IZebYvKysFW1Nh.jpg",
+      "backdropPath": "/l0qVZIpXtIo7km9u5Yqh0nKPOr5.jpg",
+      "runtimeMinutes": null,
+      "seasons": [
+        {
+          "seasonNumber": 0,
+          "title": "Temporada 0",
+          "episodeCount": 39,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 1,
+          "title": "Temporada 1",
+          "episodeCount": 24,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "title": "Aquele Onde Tudo Começou",
+              "runtimeMinutes": 23,
+              "stillPath": "/avlrGgZhwkszL6xxE2ThNFs3CZj.jpg"
+            },
+            {
+              "episodeNumber": 2,
+              "title": "Aquele Com o Ultrassom no Final",
+              "runtimeMinutes": 23,
+              "stillPath": "/1tkibWEdFUGVu74odpuiednNgMX.jpg"
+            },
+            {
+              "episodeNumber": 3,
+              "title": "Aquele Com o Dedão",
+              "runtimeMinutes": 23,
+              "stillPath": "/963xL8QC2In3dvb8ooWWA30M5JI.jpg"
+            },
+            {
+              "episodeNumber": 4,
+              "title": "Aquele Com George Stephanopoulus",
+              "runtimeMinutes": 23,
+              "stillPath": "/zydPvr4Fe7mZ1OnWmb1SPr84OD8.jpg"
+            },
+            {
+              "episodeNumber": 5,
+              "title": "Aquele Com o Sabão em Pó da Alemanha Oriental",
+              "runtimeMinutes": 23,
+              "stillPath": "/1JLPosNtPdj83jOwwPCBRhuJu3m.jpg"
+            },
+            {
+              "episodeNumber": 6,
+              "title": "Aquele Com o Traseiro",
+              "runtimeMinutes": 21,
+              "stillPath": "/8zUXN6UqLBdsYQMexxuxku2iBG3.jpg"
+            },
+            {
+              "episodeNumber": 7,
+              "title": "Aquele Com o Blecaute",
+              "runtimeMinutes": 23,
+              "stillPath": "/cHeKaMNEzqBjTOUlrDzr3omLc8E.jpg"
+            },
+            {
+              "episodeNumber": 8,
+              "title": "Aquele em Que Nana Morre Duas Vezes",
+              "runtimeMinutes": 23,
+              "stillPath": "/8HPwWvfG9nursqepuUQXf2GSggQ.jpg"
+            },
+            {
+              "episodeNumber": 9,
+              "title": "Aquele em Que o Oprimido Escapa",
+              "runtimeMinutes": 23,
+              "stillPath": "/prrV1RMAl7oi2l3J3dq5SkHpOAN.jpg"
+            },
+            {
+              "episodeNumber": 10,
+              "title": "Aquele Com o Macaco",
+              "runtimeMinutes": 23,
+              "stillPath": "/wiICkoadRUmcvqYh4a0K10f8Lgo.jpg"
+            },
+            {
+              "episodeNumber": 11,
+              "title": "Aquele Com a Senhora Bing",
+              "runtimeMinutes": 23,
+              "stillPath": "/pCStDEs8Ga900w8dz8Forg4PCjL.jpg"
+            },
+            {
+              "episodeNumber": 12,
+              "title": "Aquele Com Uma Dúzia de Lasanhas",
+              "runtimeMinutes": 23,
+              "stillPath": "/aEzWo1HvNG8yD0eLEB5E2wlpAQc.jpg"
+            },
+            {
+              "episodeNumber": 13,
+              "title": "Aquele dos Seios",
+              "runtimeMinutes": 23,
+              "stillPath": "/vLXgzuaAJ4bS4DBx4PdbXJhZgmf.jpg"
+            },
+            {
+              "episodeNumber": 14,
+              "title": "Aquele Com os Corações Doces",
+              "runtimeMinutes": 23,
+              "stillPath": "/zDqfFNc2pE5sYiuQvpKOVFPswZZ.jpg"
+            },
+            {
+              "episodeNumber": 15,
+              "title": "Aquele Com o Cara Chapado",
+              "runtimeMinutes": 23,
+              "stillPath": "/2ShLUPe0boFwe6e9T6nQgRXRFp1.jpg"
+            },
+            {
+              "episodeNumber": 16,
+              "title": "Aquele Com Duas Partes (1)",
+              "runtimeMinutes": 23,
+              "stillPath": "/hAGgLNtQf8mDuqCFDNRLu5igfR9.jpg"
+            },
+            {
+              "episodeNumber": 17,
+              "title": "Aquele Com Duas Partes (2)",
+              "runtimeMinutes": 23,
+              "stillPath": "/rq8bmifOZS8TUSSEZol1pcig7xS.jpg"
+            },
+            {
+              "episodeNumber": 18,
+              "title": "Aquele Com o Pôquer",
+              "runtimeMinutes": 23,
+              "stillPath": "/iGIw2sZn2zQVIHEVFEYtSqUiQmD.jpg"
+            },
+            {
+              "episodeNumber": 19,
+              "title": "Aquele em Que o Macaco Foge",
+              "runtimeMinutes": 23,
+              "stillPath": "/miEdFiP6yt6EarwtbvU69MD7Ci8.jpg"
+            },
+            {
+              "episodeNumber": 20,
+              "title": "Aquele Com o Ortodontista Maligno",
+              "runtimeMinutes": 23,
+              "stillPath": "/2pcBJuqhFoL2Vp0UdZwl40M1Xkl.jpg"
+            },
+            {
+              "episodeNumber": 21,
+              "title": "Aquele Com a Monica Falsa",
+              "runtimeMinutes": 23,
+              "stillPath": "/mntXb7pBLNhMn3KXdJ8aZ5bQ88Z.jpg"
+            },
+            {
+              "episodeNumber": 22,
+              "title": "Aquele Com o Fator Repulsa",
+              "runtimeMinutes": 23,
+              "stillPath": "/cQG5BJu8RKJz51srtEuHbAXCPez.jpg"
+            },
+            {
+              "episodeNumber": 23,
+              "title": "Aquele Com o Nascimento",
+              "runtimeMinutes": 23,
+              "stillPath": "/zemqo8BkdOqih3iuqYphPM7bFYc.jpg"
+            },
+            {
+              "episodeNumber": 24,
+              "title": "Aquele em Que Rachel Descobre",
+              "runtimeMinutes": 23,
+              "stillPath": "/iRh3QyPXPArGBj7SPob4NvL4gNS.jpg"
+            }
+          ]
+        },
+        {
+          "seasonNumber": 2,
+          "title": "Temporada 2",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 3,
+          "title": "Temporada 3",
+          "episodeCount": 25,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 4,
+          "title": "Temporada 4",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 5,
+          "title": "Temporada 5",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 6,
+          "title": "Temporada 6",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 7,
+          "title": "Temporada 7",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 8,
+          "title": "Temporada 8",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 9,
+          "title": "Temporada 9",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 10,
+          "title": "Temporada 10",
+          "episodeCount": 17,
+          "episodes": []
+        }
+      ]
+    },
+    {
+      "slug": "himym",
+      "externalId": "tv:1100",
+      "type": "series",
+      "title": "Como Eu Conheci Sua Mãe",
+      "originalTitle": "How I Met Your Mother",
+      "overview": "Ted conta aos filhos como conheceu a mãe deles. Gírias de bar, expressões informais e falas rápidas.",
+      "genres": [
+        "Comédia",
+        "Romance"
+      ],
+      "year": 2005,
+      "posterPath": "/578tlvbrpFwc959bQTT93W2RYA.jpg",
+      "backdropPath": "/3f8aW6vcYRP6mTZdgXm83BiuB9t.jpg",
+      "runtimeMinutes": null,
+      "seasons": [
+        {
+          "seasonNumber": 0,
+          "title": "Temporada 0",
+          "episodeCount": 10,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 1,
+          "title": "Temporada 1",
+          "episodeCount": 22,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "title": "Piloto",
+              "runtimeMinutes": 23,
+              "stillPath": "/nHDFszcCUY4xUd6wVxcVYU2IGbx.jpg"
+            },
+            {
+              "episodeNumber": 2,
+              "title": "Girafa Roxa",
+              "runtimeMinutes": 23,
+              "stillPath": "/6gjpMIPsyypEFbVuKM1ExIosnu.jpg"
+            },
+            {
+              "episodeNumber": 3,
+              "title": "Por Que Eu Não Saio Com o Barney?",
+              "runtimeMinutes": 21,
+              "stillPath": "/OAtOv5E01beO1ad8AL9v72LTba.jpg"
+            },
+            {
+              "episodeNumber": 4,
+              "title": "Novas Opiniões",
+              "runtimeMinutes": 23,
+              "stillPath": "/eyPUOl9gwzFJfYlC3uPtP7Dbo4E.jpg"
+            },
+            {
+              "episodeNumber": 5,
+              "title": "A Balada",
+              "runtimeMinutes": 22,
+              "stillPath": "/uvH1r4s6rW8RBdkfmEqo9cU3ssJ.jpg"
+            },
+            {
+              "episodeNumber": 6,
+              "title": "A Fantasia de Abóbora",
+              "runtimeMinutes": 22,
+              "stillPath": "/bJrxhDeY3CpGVau68uDaED7vFOx.jpg"
+            },
+            {
+              "episodeNumber": 7,
+              "title": "O Par Perfeito",
+              "runtimeMinutes": 22,
+              "stillPath": "/5BCahW1OWEXbi4lViRPf2qgOjc1.jpg"
+            },
+            {
+              "episodeNumber": 8,
+              "title": "O Duelo",
+              "runtimeMinutes": 22,
+              "stillPath": "/uEwFWH8fIjkF9Gz6Cxj9Jlab7W5.jpg"
+            },
+            {
+              "episodeNumber": 9,
+              "title": "A Ação de Graças",
+              "runtimeMinutes": 22,
+              "stillPath": "/h13vEcwQSE7FAY7O5UvYazDnqOb.jpg"
+            },
+            {
+              "episodeNumber": 10,
+              "title": "O Incidente do Abacaxi",
+              "runtimeMinutes": 22,
+              "stillPath": "/6CpcIxO4BoaGOUkK9QhzXT8WPUy.jpg"
+            },
+            {
+              "episodeNumber": 11,
+              "title": "A Limusine",
+              "runtimeMinutes": 23,
+              "stillPath": "/8lG0D07iMdQEDbtnTYB5xAou0kg.jpg"
+            },
+            {
+              "episodeNumber": 12,
+              "title": "O Casamento",
+              "runtimeMinutes": 22,
+              "stillPath": "/79sMrET58FqXJpC1tdBo88hNag3.jpg"
+            },
+            {
+              "episodeNumber": 13,
+              "title": "A Noite Perfeita",
+              "runtimeMinutes": 22,
+              "stillPath": "/b9ExrGISGlLwYWL1DkNga1FUFFc.jpg"
+            },
+            {
+              "episodeNumber": 14,
+              "title": "Rala e Rola",
+              "runtimeMinutes": 23,
+              "stillPath": "/2DcomYmt4bBClp3gT7cDerX2lwJ.jpg"
+            },
+            {
+              "episodeNumber": 15,
+              "title": "A Noite do Jogo",
+              "runtimeMinutes": 22,
+              "stillPath": "/1I85SYnQHISH3Uxy3lp8hFG0g2n.jpg"
+            },
+            {
+              "episodeNumber": 16,
+              "title": "Decisões",
+              "runtimeMinutes": 22,
+              "stillPath": "/iTtbYrudVOGshLNO6GTfNYsQRec.jpg"
+            },
+            {
+              "episodeNumber": 17,
+              "title": "A Adaptação",
+              "runtimeMinutes": 22,
+              "stillPath": "/9OPu42mgc0fGPM5QQySPb3Fom36.jpg"
+            },
+            {
+              "episodeNumber": 18,
+              "title": "Nada de Bom Acontece Depois das 2 da Manhã",
+              "runtimeMinutes": 22,
+              "stillPath": "/evrvAMmK2oJqmD37MfdcYUf4WrH.jpg"
+            },
+            {
+              "episodeNumber": 19,
+              "title": "A Acompanhante",
+              "runtimeMinutes": 22,
+              "stillPath": "/nzdihyfXXWU8APqeddRtAXbG5kC.jpg"
+            },
+            {
+              "episodeNumber": 20,
+              "title": "A Formatura",
+              "runtimeMinutes": 22,
+              "stillPath": "/6Zybqz65JvjAK8IEVzHkv3TAXkD.jpg"
+            },
+            {
+              "episodeNumber": 21,
+              "title": "Dúvidas",
+              "runtimeMinutes": 22,
+              "stillPath": "/gguejRCNMbahAKXtKaQc9m03zPg.jpg"
+            },
+            {
+              "episodeNumber": 22,
+              "title": "O Ultimato",
+              "runtimeMinutes": 22,
+              "stillPath": "/axbiGYH7h1zGyfEHDH1BsXE4PH2.jpg"
+            }
+          ]
+        },
+        {
+          "seasonNumber": 2,
+          "title": "Temporada 2",
+          "episodeCount": 22,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 3,
+          "title": "Temporada 3",
+          "episodeCount": 20,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 4,
+          "title": "Temporada 4",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 5,
+          "title": "Temporada 5",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 6,
+          "title": "Temporada 6",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 7,
+          "title": "Temporada 7",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 8,
+          "title": "Temporada 8",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 9,
+          "title": "Temporada 9",
+          "episodeCount": 24,
+          "episodes": []
+        }
+      ]
+    },
+    {
+      "slug": "office",
+      "externalId": "tv:2316",
+      "type": "series",
+      "title": "The Office",
+      "originalTitle": "The Office",
+      "overview": "Documentário falso num escritório. Humor constrangedor, ironia e linguagem corporativa.",
+      "genres": [
+        "Comédia"
+      ],
+      "year": 2005,
+      "posterPath": "/50DVZEgPwGokQf4o0KHZGQMJqDD.jpg",
+      "backdropPath": "/mLyW3UTgi2lsMdtueYODcfAB9Ku.jpg",
+      "runtimeMinutes": null,
+      "seasons": [
+        {
+          "seasonNumber": 0,
+          "title": "Temporada 0",
+          "episodeCount": 106,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 1,
+          "title": "Temporada 1",
+          "episodeCount": 6,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "title": "Piloto",
+              "runtimeMinutes": 24,
+              "stillPath": "/axt2TV2b3FAs1ZEg1mdKV1ZJnfW.jpg"
+            },
+            {
+              "episodeNumber": 2,
+              "title": "Dia Da Diversidade",
+              "runtimeMinutes": 22,
+              "stillPath": "/frHasw3YEEkpNlDNzHZpFjJWwhk.jpg"
+            },
+            {
+              "episodeNumber": 3,
+              "title": "Assistência médica",
+              "runtimeMinutes": 23,
+              "stillPath": "/b92iKLwxKRGBjKQ2R5k7L9kCPPo.jpg"
+            },
+            {
+              "episodeNumber": 4,
+              "title": "A Aliança",
+              "runtimeMinutes": 22,
+              "stillPath": "/9nZh7ikeLZfFYnYs6yf8Nc36fu.jpg"
+            },
+            {
+              "episodeNumber": 5,
+              "title": "Basquete",
+              "runtimeMinutes": 23,
+              "stillPath": "/2retmsI3vrQupspr9i2ZB21PhhN.jpg"
+            },
+            {
+              "episodeNumber": 6,
+              "title": "Garota Bonita",
+              "runtimeMinutes": 23,
+              "stillPath": "/qZJcuMRsXV8fI3dif0OUH6Wu4KQ.jpg"
+            }
+          ]
+        },
+        {
+          "seasonNumber": 2,
+          "title": "Temporada 2",
+          "episodeCount": 22,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 3,
+          "title": "Temporada 3",
+          "episodeCount": 23,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 4,
+          "title": "Temporada 4",
+          "episodeCount": 14,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 5,
+          "title": "Temporada 5",
+          "episodeCount": 26,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 6,
+          "title": "Temporada 6",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 7,
+          "title": "Temporada 7",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 8,
+          "title": "Temporada 8",
+          "episodeCount": 24,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 9,
+          "title": "Temporada 9",
+          "episodeCount": 23,
+          "episodes": []
+        }
+      ]
+    },
+    {
+      "slug": "tedlasso",
+      "externalId": "tv:97546",
+      "type": "series",
+      "title": "Ted Lasso",
+      "originalTitle": "Ted Lasso",
+      "overview": "Um técnico americano num clube inglês. Contraste de sotaques, gírias britânicas e muita ironia.",
+      "genres": [
+        "Comédia",
+        "Drama"
+      ],
+      "year": 2020,
+      "posterPath": "/uRHsiw1wLxPHFXkkv4Ix1s0O6f4.jpg",
+      "backdropPath": "/nE94ejEbzNCU48bW1oju0dqBONz.jpg",
+      "runtimeMinutes": null,
+      "seasons": [
+        {
+          "seasonNumber": 0,
+          "title": "Temporada 0",
+          "episodeCount": 1,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 1,
+          "title": "Temporada 1",
+          "episodeCount": 10,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "title": "Piloto",
+              "runtimeMinutes": 33,
+              "stillPath": "/8YJqx02JNMu9gNX7Ok7qgaNJJgl.jpg"
+            },
+            {
+              "episodeNumber": 2,
+              "title": "Biscuits",
+              "runtimeMinutes": 32,
+              "stillPath": "/2pNZYWhkY0DdUyVU8FEaYDSSfTW.jpg"
+            },
+            {
+              "episodeNumber": 3,
+              "title": "Trent Crimm: The Independent",
+              "runtimeMinutes": 33,
+              "stillPath": "/N280y3IWDEEimlOVxmvRljkKIN.jpg"
+            },
+            {
+              "episodeNumber": 4,
+              "title": "Pelas Crianças",
+              "runtimeMinutes": 36,
+              "stillPath": "/fbWzpmQlFENbnS6GbvHZhzywozo.jpg"
+            },
+            {
+              "episodeNumber": 5,
+              "title": "Marca de Biquíni",
+              "runtimeMinutes": 34,
+              "stillPath": "/p4KDV9hxszklNHdkRm564qWfq9R.jpg"
+            },
+            {
+              "episodeNumber": 6,
+              "title": "Dois Ases",
+              "runtimeMinutes": 34,
+              "stillPath": "/o9g5v73OPWNA0lP4R0QrOgTrH0k.jpg"
+            },
+            {
+              "episodeNumber": 7,
+              "title": "Rebecca Grande Novamente",
+              "runtimeMinutes": 35,
+              "stillPath": "/iHc295TFzpmAMstLQvJe00oiF6G.jpg"
+            },
+            {
+              "episodeNumber": 8,
+              "title": "Diamond Dogs",
+              "runtimeMinutes": 32,
+              "stillPath": "/bEs22idG5SWG1qObfyMnCGavjMN.jpg"
+            },
+            {
+              "episodeNumber": 9,
+              "title": "Muitas Desculpas",
+              "runtimeMinutes": 34,
+              "stillPath": "/rmNyV9dUPi7VeluqxYq0OFFCKNs.jpg"
+            },
+            {
+              "episodeNumber": 10,
+              "title": "A Esperança que Mata",
+              "runtimeMinutes": 36,
+              "stillPath": "/i6AD9UGfac5wyP2wADG5cWS7EIZ.jpg"
+            }
+          ]
+        },
+        {
+          "seasonNumber": 2,
+          "title": "Temporada 2",
+          "episodeCount": 12,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 3,
+          "title": "Temporada 3",
+          "episodeCount": 12,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 4,
+          "title": "Temporada 4",
+          "episodeCount": 10,
+          "episodes": []
+        }
+      ]
+    },
+    {
+      "slug": "bb",
+      "externalId": "tv:1396",
+      "type": "series",
+      "title": "Breaking Bad",
+      "originalTitle": "Breaking Bad",
+      "overview": "Professor de química vira fabricante de drogas. Vocabulário técnico, tensão e falas curtas.",
+      "genres": [
+        "Drama",
+        "Crime"
+      ],
+      "year": 2008,
+      "posterPath": "/hGwm9Cj3CdbJIqQWNExQqiYmCd4.jpg",
+      "backdropPath": "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg",
+      "runtimeMinutes": null,
+      "seasons": [
+        {
+          "seasonNumber": 0,
+          "title": "Temporada 0",
+          "episodeCount": 9,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 1,
+          "title": "Temporada 1",
+          "episodeCount": 7,
+          "episodes": [
+            {
+              "episodeNumber": 1,
+              "title": "Piloto",
+              "runtimeMinutes": 59,
+              "stillPath": "/ydlY3iPfeOAvu8gVqrxPoMvzNCn.jpg"
+            },
+            {
+              "episodeNumber": 2,
+              "title": "Cat's in the Bag...",
+              "runtimeMinutes": 49,
+              "stillPath": "/AbMoecO0ZZio0LcgeLxlzdyGs6X.jpg"
+            },
+            {
+              "episodeNumber": 3,
+              "title": "...And the Bag's in the River",
+              "runtimeMinutes": 49,
+              "stillPath": "/vlgGfjtuO2WSLT7qYDVlvTpSVW.jpg"
+            },
+            {
+              "episodeNumber": 4,
+              "title": "Cancer Man",
+              "runtimeMinutes": 49,
+              "stillPath": "/i5BAJVhuIWfkoSqDID6FnQNCTVc.jpg"
+            },
+            {
+              "episodeNumber": 5,
+              "title": "Gray Matter",
+              "runtimeMinutes": 49,
+              "stillPath": "/82G3wZgEvZLKcte6yoZJahUWBtx.jpg"
+            },
+            {
+              "episodeNumber": 6,
+              "title": "Crazy Handful of Nothin'",
+              "runtimeMinutes": 49,
+              "stillPath": "/rCCLuycNPL30W3BtuB8HafxEMYz.jpg"
+            },
+            {
+              "episodeNumber": 7,
+              "title": "A No-Rough-Stuff-Type Deal",
+              "runtimeMinutes": 48,
+              "stillPath": "/1dgFAsajUpUT7DLXgAxHb9GyXHH.jpg"
+            }
+          ]
+        },
+        {
+          "seasonNumber": 2,
+          "title": "Temporada 2",
+          "episodeCount": 13,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 3,
+          "title": "Temporada 3",
+          "episodeCount": 13,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 4,
+          "title": "Temporada 4",
+          "episodeCount": 13,
+          "episodes": []
+        },
+        {
+          "seasonNumber": 5,
+          "title": "Temporada 5",
+          "episodeCount": 16,
+          "episodes": []
+        }
+      ]
+    },
+    {
+      "slug": "prada",
+      "externalId": "movie:350",
+      "type": "movie",
+      "title": "O Diabo Veste Prada",
+      "originalTitle": "The Devil Wears Prada",
+      "overview": "Uma jornalista recém-formada vira assistente de uma editora temida. Inglês de trabalho, moda e pressão.",
+      "genres": [
+        "Comédia",
+        "Drama"
+      ],
+      "year": 2006,
+      "posterPath": "/3lAwJ0x87dCv2wRGt7cDdYG7Qnp.jpg",
+      "backdropPath": "/gkh6Nt8DtY1XT4gQsyFq9XAVJlJ.jpg",
+      "runtimeMinutes": 109,
+      "seasons": []
+    },
+    {
+      "slug": "socialnetwork",
+      "externalId": "movie:37799",
+      "type": "movie",
+      "title": "A Rede Social",
+      "originalTitle": "The Social Network",
+      "overview": "A criação de uma rede social. Diálogos muito rápidos e densos: desafio de escuta.",
+      "genres": [
+        "Drama",
+        "História"
+      ],
+      "year": 2010,
+      "posterPath": "/3FULGtzNuDSYkc4Ndopn21UC3M9.jpg",
+      "backdropPath": "/1PXwh3nJzgRkkYnqfWInJNypeL4.jpg",
+      "runtimeMinutes": 121,
+      "seasons": []
+    }
+  ]
+}

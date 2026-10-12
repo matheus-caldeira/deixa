@@ -26,3 +26,18 @@ Cada diálogo tem 4 cenas de 6 falas. A legenda em português tem atraso fixo e 
 diálogos de número par, uma fala da última cena não existe em português (fala sem par).
 
 `index.json` lista os arquivos e a quantidade de falas.
+
+## Trilhas fixas (`plans/`)
+
+Uma trilha por diálogo e por nível (A1, B1 e C1), gerada uma única vez por IA (`pnpm fixtures:plans`) e
+guardada aqui. O seed grava essas trilhas sem chamar a IA.
+
+## Catálogo fixo (`catalog.json`)
+
+As sete obras de demonstração com o **identificador real do TMDB**, título, ano, caminhos de pôster e de imagem,
+temporadas e títulos dos episódios usados pelo seed. Gerado uma única vez com `pnpm fixtures:catalog` (precisa
+das credenciais do TMDB) e versionado, para que `pnpm db:seed` rode sem rede e sem chave.
+
+O arquivo guarda só dados de identificação. As sinopses são textos curtos escritos para este projeto, não as
+do TMDB, e as legendas dos episódios continuam sendo os diálogos fictícios acima.
+

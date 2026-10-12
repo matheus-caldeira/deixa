@@ -48,6 +48,10 @@ nohup pnpm dev > data/app.log 2>&1 &
 
 ### Pendências menores
 
+- [ ] Sem chave do TMDB, a busca de obras ainda usa o provider de demonstração, com identificadores próprios:
+      adicionar por ela uma obra que já veio do seed cria uma segunda entrada. Trocar essa reserva pelo catálogo
+      fixo (`StaticMetadataProvider`) resolve; exige ajustar os testes e2e, que contam com o provider atual.
+
 - [ ] Chave Gemini gratuita aguenta cerca de 20 requisições por dia por modelo; um episódio real (472 falas)
       esgota isso na geração de trilhas. Avaliar lote maior por chamada, cache por episódio e aviso de cota.
 - [ ] O script de revisão de segurança dos commits falha com erro de `hashlib` do Python; só os títulos dos

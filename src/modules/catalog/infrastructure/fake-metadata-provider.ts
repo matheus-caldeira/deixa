@@ -263,3 +263,8 @@ export class FakeMetadataProvider implements MetadataProvider {
 export function fakeExternalId(slug: string): string {
   return `${EXTERNAL_PREFIX}${slug}`;
 }
+
+export function demoWorkNotes(title: string): { overview: string; genres: string[] } | null {
+  const work = FAKE_WORKS.find((candidate) => candidate.title === title);
+  return work ? { overview: work.overview, genres: [...work.genres] } : null;
+}

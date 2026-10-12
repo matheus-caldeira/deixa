@@ -187,3 +187,9 @@ O Deixa não traz banco embutido: usa um PostgreSQL seu (testado na versão 17).
   escolha o Postgres encontrado ou informe o endereço, e o Deixa cria o banco e as tabelas.
 - O endereço fica em `database-url.txt`. Para trocar de banco, apague esse arquivo e abra o app de novo.
 - `DEIXA_CONFIG_DIR` muda a pasta desses arquivos e do `master-key.txt` (padrão: a pasta onde o app roda).
+
+## Seed de demonstração
+
+`pnpm db:seed` cria três perfis, sete obras com os identificadores reais do TMDB, quinze episódios com legendas
+fictícias e as trilhas deles em A1, B1 e C1. Usa só os arquivos de `fixtures/`: não precisa de `.env` nem de
+chave nenhuma, apenas do banco configurado (`DATABASE_URL` ou a tela `/setup`). Senha dos perfis: `deixa1234`.
