@@ -51,19 +51,19 @@ export class DrizzleSourceRepository implements SourceRepository {
       .onConflictDoUpdate({ target: subtitleSearchCache.episodeId, set: values });
   }
 
-  async getQuota(provider: SourceProviderName): Promise<(SourceQuota & { updatedAt: Date }) | null> {
+  async getQuota(quotaKey: string): Promise<(SourceQuota & { updatedAt: Date }) | null> {
     const [row] = await this.db
       .select()
       .from(externalApiQuota)
-      .where(eq(externalApiQuota.provider, provider));
+      .where(eq(externalApiQuota.provider, quotaKey));
     return row ? { remaining: row.remaining, resetAt: row.resetAt, updatedAt: row.updatedAt } : null;
   }
 
-  async saveQuota(provider: SourceProviderName, quota: SourceQuota, now: Date): Promise<void> {
+  async saveQuota(quotaKey: string, quota: SourceQuota, now: Date): Promise<void> {
     const values = { remaining: quota.remaining, resetAt: quota.resetAt, updatedAt: now };
     await this.db
       .insert(externalApiQuota)
-      .values({ provider, ...values })
+      .values({ provider: quotaKey, ...values })
       .onConflictDoUpdate({ target: externalApiQuota.provider, set: values });
   }
 

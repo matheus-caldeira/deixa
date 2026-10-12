@@ -11,8 +11,7 @@ está em `docs/PLAN.md`; as decisões tomadas, em `docs/DECISIONS.md`.
 
 ## 1. Estado atual
 
-- `main` local em `e221f60`, árvore limpa, **sem remote e sem push**. O branch `feat/opensubtitles` aponta para
-  o mesmo commit e pode ser apagado.
+- `main` local com as sugestões personalizadas mescladas, **sem remote e sem push**.
 - Entregue: fases 01 e 02 completas, mais partes das fases 03 a 06 (cards em segundo plano com notificações,
   trilhas e questões por IA, revisão com antecipação sem limite, Conversar por texto e áudio, PWA online-first,
   busca e importação de legendas pelo OpenSubtitles a pedido do usuário).
@@ -110,19 +109,29 @@ As etapas A a C valem mesmo sem a casca nativa e devem vir primeiro.
 
 **B. Configuração no banco e assistente de primeira abertura**
 
-- [ ] Tabela `app_settings` (chave, valor, cifrado ou não) para o que hoje é `.env` global.
-- [ ] Generalizar `user_ai_credentials` para `user_api_credentials` com `provider` (`gemini`, `tmdb`,
-      `opensubtitles`), mantendo AES-256-GCM e resposta mascarada.
-- [ ] Resolvedor único de credencial: usuário → global → provider de reserva (fake ou silencioso). Hoje os
-      providers são montados uma vez no `container.ts`; passam a ser resolvidos por requisição com o `userId`.
-- [ ] O que **não** pode ir para o banco: a chave mestra (`AI_CREDENTIALS_MASTER_KEY`), porque ela cifra o que
-      está no banco. Gerar na primeira abertura e guardar no cofre do sistema operacional (Keychain, Credential
-      Manager, Secret Service), com arquivo `0600` no diretório de dados como reserva. Porta e diretório de
-      dados também ficam fora (são necessários antes de abrir o banco).
+Feito em 12/10/2026 (branch `feat/user-credentials`):
+
+- [x] Chaves de Gemini, TMDB e OpenSubtitles por usuário, na tabela `user_ai_credentials` (uma linha por
+      serviço), com AES-256-GCM e resposta mascarada.
+- [x] Chave global opcional em `app_credentials`, alterada só pelo administrador. Ordem de uso: usuário →
+      global no banco → global no `.env` → provider de reserva.
+- [x] Providers resolvidos por usuário no `container.ts` (antes eram montados uma vez).
+- [x] Papel de administrador: a primeira conta criada (`users.is_admin`).
+- [x] Chave mestra em `master-key.txt`, na raiz da instalação, criada na primeira execução. Chave guardada
+      que não decifra é ignorada e gera alerta pedindo novo cadastro.
+- [x] Cota do OpenSubtitles guardada por chave em uso; com chave própria não há teto diário do servidor.
+
+Falta:
+
+- [ ] Tabela `app_settings` para o resto do `.env` (modelo do Gemini, teto de downloads, endereço do Kokoro,
+      atalhos de desenvolvimento) e remoção das chaves globais do `.env`.
 - [ ] Assistente de primeira abertura: cria o dono do computador (admin), pede as chaves com link para onde
-      obter cada uma, permite pular (o app funciona com os providers de reserva).
-- [ ] Papel de administrador: só ele edita chaves globais e configurações do servidor.
-- [ ] Cota do OpenSubtitles contabilizada por chave em uso (hoje é por servidor + teto por usuário).
+      obter cada uma, permite pular.
+- [ ] Tela para o administrador promover outra conta.
+- [ ] Porta e diretório de dados continuam fora do banco (são necessários antes de abri-lo).
+- [ ] No app nativo, `master-key.txt` deve ir para o diretório de dados do usuário, não para a pasta do app.
+- [ ] O nome `user_ai_credentials` ficou histórico (hoje guarda os três serviços); renomear numa migração
+      futura, se valer a pena.
 - [ ] Nenhuma chave embutida no binário nem no repositório: cada instalação traz as suas.
 
 **C. Voz sem Docker**

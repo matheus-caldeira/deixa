@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { signOutAction } from "@/app/actions/auth";
-import { removeApiKeyAction, saveApiKeyAction, updatePreferencesAction } from "@/app/actions/profile";
+import { updatePreferencesAction } from "@/app/actions/profile";
+import type { ServiceOverview } from "@/modules/ai-credentials";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "@/modules/identity";
 import type { CefrLevel } from "@/shared/levels";
 import { LEVEL_NAMES } from "@/shared/levels";
-import { KeyIcon } from "../icons";
+import { CredentialCard } from "./credential-card";
 import { Sheet } from "./sheet";
 import { useToast } from "./toast";
 
@@ -18,7 +19,8 @@ export type ProfileSheetData = {
   dailyGoal: number;
   accent: Accent;
   audioSpeed: number;
-  maskedKey: string | null;
+  isAdmin: boolean;
+  credentials: ServiceOverview[];
   metadataProvider: string;
 };
 
@@ -30,46 +32,15 @@ const ACCENTS: { value: Accent; label: string }[] = [
 export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClose: () => void }) {
   const router = useRouter();
   const toast = useToast();
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [goal, setGoal] = useState(data.dailyGoal);
   const [accent, setAccent] = useState(data.accent);
   const [speed, setSpeed] = useState(data.audioSpeed);
-  const [maskedKey, setMaskedKey] = useState(data.maskedKey);
-  const [keyInput, setKeyInput] = useState("");
-  const [keyMessage, setKeyMessage] = useState<{ text: string; error: boolean } | null>(null);
 
   const save = (patch: { dailyGoal?: number; preferredAccent?: Accent; audioSpeed?: number }) =>
     startTransition(async () => {
       const result = await updatePreferencesAction(patch);
       if (!result.ok) toast(result.message);
-      router.refresh();
-    });
-
-  const saveKey = () => {
-    setKeyMessage({ text: "Testando com uma requisição curta…", error: false });
-    startTransition(async () => {
-      const result = await saveApiKeyAction(keyInput);
-      if (!result.ok) {
-        setKeyMessage({ text: result.message, error: true });
-        return;
-      }
-      setMaskedKey(result.data.masked);
-      setKeyInput("");
-      setKeyMessage(null);
-      toast("Chave válida e salva com criptografia.");
-      router.refresh();
-    });
-  };
-
-  const removeKey = () =>
-    startTransition(async () => {
-      const result = await removeApiKeyAction();
-      if (!result.ok) {
-        toast(result.message);
-        return;
-      }
-      setMaskedKey(null);
-      toast("Chave removida. Revisões continuam funcionando.");
       router.refresh();
     });
 
@@ -146,62 +117,29 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
         </div>
       </div>
 
-      <div className="card col" style={{ gap: 10 }}>
-        <div className="row">
-          <KeyIcon width={22} height={22} />
-          <b>Chave do Google AI (Gemini)</b>
-        </div>
-        {maskedKey ? (
-          <>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="mono small">{maskedKey}</span>
-              <span className="chip good">Conectada</span>
-            </div>
-            <p className="small muted">
-              Guardada criptografada no servidor. Ela nunca volta para o navegador nem é compartilhada com
-              outras contas.
-            </p>
-            <button
-              className="btn ghost"
-              style={{ padding: 10, fontSize: 13 }}
-              onClick={removeKey}
-              disabled={pending}
-            >
-              Remover chave
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="small muted">
-              Usada para explicar o que você marca e, depois, pelo tutor. O uso pode gerar cobrança na sua
-              conta Google. Sem ela, as explicações são simuladas e as revisões continuam funcionando.
-            </p>
-            <div className="field">
-              <input
-                value={keyInput}
-                onChange={(event) => setKeyInput(event.target.value)}
-                placeholder="AIza…"
-                autoComplete="off"
-                spellCheck={false}
-                aria-label="Chave do Google AI"
-              />
-            </div>
-            {keyMessage ? (
-              <span className="small" style={{ color: keyMessage.error ? "var(--bad)" : "var(--muted)" }}>
-                {keyMessage.text}
-              </span>
-            ) : null}
-            <button
-              className="btn"
-              style={{ padding: 12, fontSize: 13 }}
-              onClick={saveKey}
-              disabled={pending || keyInput.trim() === ""}
-            >
-              Testar e salvar
-            </button>
-          </>
-        )}
+      <div className="col" style={{ gap: 10 }}>
+        <span className="eyebrow">Suas chaves de API</span>
+        <p className="small muted">
+          Cada serviço usa a sua chave. Sem ela, vale a chave global deste servidor, se houver. As chaves
+          ficam criptografadas e nunca voltam para o navegador.
+        </p>
+        {data.credentials.map((entry) => (
+          <CredentialCard key={entry.service} entry={entry} scope="user" />
+        ))}
       </div>
+
+      {data.isAdmin ? (
+        <div className="col" style={{ gap: 10 }}>
+          <span className="eyebrow">Chaves globais (administrador)</span>
+          <p className="small muted">
+            Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode
+            alterá-las.
+          </p>
+          {data.credentials.map((entry) => (
+            <CredentialCard key={entry.service} entry={entry} scope="global" />
+          ))}
+        </div>
+      ) : null}
 
       <form action={signOutAction}>
         <button className="btn ghost wide" type="submit">

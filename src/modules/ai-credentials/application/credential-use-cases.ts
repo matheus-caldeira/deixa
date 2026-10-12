@@ -1,52 +1,156 @@
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
-import { looksLikeGoogleApiKey, maskApiKey } from "../domain/api-key";
-import type { ApiKeyTester, CredentialRepository, KeyCipher } from "./ports";
+import { maskApiKey } from "../domain/api-key";
+import {
+  CREDENTIAL_SERVICES,
+  SERVICE_LABELS,
+  looksLikeSecret,
+  shapeHint,
+  type CredentialService,
+} from "../domain/services";
+import type { CredentialRepository, CredentialTester, KeyCipher, StoredCredential } from "./ports";
 
-const PROVIDER = "google-gemini";
+export type CredentialScope = "user" | "global";
+export type CredentialActor = { userId: string; isAdmin: boolean };
 
-type Deps = { credentials: CredentialRepository; cipher: KeyCipher; testApiKey: ApiKeyTester; clock: Clock };
+type Deps = {
+  credentials: CredentialRepository;
+  cipher: KeyCipher;
+  testCredential: CredentialTester;
+  environmentServices: ReadonlySet<CredentialService>;
+  clock: Clock;
+};
 
-export type KeyStatus = { connected: boolean; masked: string | null };
+export type StoredState = { state: "absent" } | { state: "ready"; masked: string } | { state: "unreadable" };
+export type GlobalSource = "database" | "environment" | null;
 
-export function makeSaveApiKey(deps: Deps) {
-  return async function saveApiKey(userId: string, rawKey: string): Promise<KeyStatus> {
-    const apiKey = rawKey.trim();
-    if (!looksLikeGoogleApiKey(apiKey)) {
+export type ServiceOverview = {
+  service: CredentialService;
+  label: string;
+  own: StoredState;
+  global: { source: GlobalSource; stored: StoredState | null };
+  active: "own" | "global" | "none";
+};
+
+export type ResolvedCredential = { secret: string; origin: "user" | "global" };
+
+function read(cipher: KeyCipher, stored: StoredCredential | null | undefined): string | null | "unreadable" {
+  if (!stored) return null;
+  try {
+    return cipher.decrypt(stored.encryptedApiKey);
+  } catch {
+    return "unreadable";
+  }
+}
+
+function describeStored(cipher: KeyCipher, stored: StoredCredential | null | undefined): StoredState {
+  const secret = read(cipher, stored);
+  if (secret === null) return { state: "absent" };
+  return secret === "unreadable" ? { state: "unreadable" } : { state: "ready", masked: maskApiKey(secret) };
+}
+
+function requireAdmin(actor: CredentialActor, scope: CredentialScope): void {
+  if (scope === "global" && !actor.isAdmin) {
+    throw new AppError("FORBIDDEN", "Só o administrador altera as chaves globais.");
+  }
+}
+
+export function makeSaveCredential(deps: Deps) {
+  return async function saveCredential(input: {
+    actor: CredentialActor;
+    service: CredentialService;
+    scope: CredentialScope;
+    secret: string;
+  }): Promise<StoredState> {
+    requireAdmin(input.actor, input.scope);
+    const secret = input.secret.trim();
+    if (!looksLikeSecret(input.service, secret)) {
+      throw new AppError("AI_KEY_INVALID", `Essa chave não parece válida. ${shapeHint(input.service)}`);
+    }
+    if (!(await deps.testCredential(input.service, secret))) {
       throw new AppError(
-        "AI_KEY_INVALID",
-        'Essa chave não parece válida. Chaves do Google AI Studio começam com "AIza" e têm 39 caracteres.',
+        "AI_KEY_REJECTED",
+        `${SERVICE_LABELS[input.service]} recusou essa chave. Confira se ela está ativa.`,
       );
     }
-    if (!(await deps.testApiKey(apiKey))) {
-      throw new AppError("AI_KEY_REJECTED", "O Google recusou essa chave. Confira se ela está ativa.");
+    const stored = { encryptedApiKey: deps.cipher.encrypt(secret), keyVersion: deps.cipher.version };
+    if (input.scope === "global") {
+      await deps.credentials.upsertGlobal(input.service, stored, input.actor.userId, deps.clock.now());
+    } else {
+      await deps.credentials.upsertForUser(input.actor.userId, input.service, stored, deps.clock.now());
     }
-    await deps.credentials.upsert(
-      userId,
-      { provider: PROVIDER, encryptedApiKey: deps.cipher.encrypt(apiKey), keyVersion: deps.cipher.version },
-      deps.clock.now(),
-    );
-    return { connected: true, masked: maskApiKey(apiKey) };
+    return { state: "ready", masked: maskApiKey(secret) };
   };
 }
 
-export function makeGetKeyStatus(deps: Pick<Deps, "credentials" | "cipher">) {
-  return async function getKeyStatus(userId: string): Promise<KeyStatus> {
-    const stored = await deps.credentials.get(userId);
-    if (!stored) return { connected: false, masked: null };
-    return { connected: true, masked: maskApiKey(deps.cipher.decrypt(stored.encryptedApiKey)) };
+export function makeRemoveCredential(deps: Pick<Deps, "credentials">) {
+  return async function removeCredential(input: {
+    actor: CredentialActor;
+    service: CredentialService;
+    scope: CredentialScope;
+  }): Promise<void> {
+    requireAdmin(input.actor, input.scope);
+    if (input.scope === "global") await deps.credentials.deleteGlobal(input.service);
+    else await deps.credentials.deleteForUser(input.actor.userId, input.service);
   };
 }
 
-export function makeRemoveApiKey(deps: Pick<Deps, "credentials">) {
-  return async function removeApiKey(userId: string): Promise<void> {
-    await deps.credentials.delete(userId);
+export function makeGetCredentialOverview(
+  deps: Pick<Deps, "credentials" | "cipher" | "environmentServices">,
+) {
+  return async function getCredentialOverview(actor: CredentialActor): Promise<ServiceOverview[]> {
+    const [own, global] = await Promise.all([
+      deps.credentials.listForUser(actor.userId),
+      deps.credentials.listGlobal(),
+    ]);
+    return CREDENTIAL_SERVICES.map((service) => {
+      const ownState = describeStored(
+        deps.cipher,
+        own.find((entry) => entry.service === service),
+      );
+      const globalState = describeStored(
+        deps.cipher,
+        global.find((entry) => entry.service === service),
+      );
+      const fromEnvironment = deps.environmentServices.has(service);
+      const source: GlobalSource =
+        globalState.state === "ready" ? "database" : fromEnvironment ? "environment" : null;
+      return {
+        service,
+        label: SERVICE_LABELS[service],
+        own: ownState,
+        global: {
+          source,
+          stored: actor.isAdmin ? globalState : null,
+        },
+        active: ownState.state === "ready" ? "own" : source ? "global" : "none",
+      };
+    });
   };
 }
 
-export function makeResolveApiKey(deps: Pick<Deps, "credentials" | "cipher">) {
-  return async function resolveApiKey(userId: string): Promise<string | null> {
-    const stored = await deps.credentials.get(userId);
-    return stored ? deps.cipher.decrypt(stored.encryptedApiKey) : null;
+export function makeResolveCredential(deps: Pick<Deps, "credentials" | "cipher">) {
+  return async function resolveCredential(
+    userId: string | null,
+    service: CredentialService,
+  ): Promise<ResolvedCredential | null> {
+    if (userId) {
+      const own = read(deps.cipher, await deps.credentials.getForUser(userId, service));
+      if (own && own !== "unreadable") return { secret: own, origin: "user" };
+    }
+    const shared = read(deps.cipher, await deps.credentials.getGlobal(service));
+    return shared && shared !== "unreadable" ? { secret: shared, origin: "global" } : null;
+  };
+}
+
+export function unreadableCredentials(overview: readonly ServiceOverview[]): {
+  own: string[];
+  global: string[];
+} {
+  return {
+    own: overview.filter((entry) => entry.own.state === "unreadable").map((entry) => entry.label),
+    global: overview
+      .filter((entry) => entry.global.stored?.state === "unreadable")
+      .map((entry) => entry.label),
   };
 }

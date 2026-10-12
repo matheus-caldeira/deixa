@@ -9,7 +9,8 @@ Checklist:
 - [ ] Tradução de fala com par alinhado vem da legenda PT (`translation_source = subtitle_pt`); LLM só para fala sem par e para explicar termo.
 - [ ] Geração de cards a partir de marcações faz uma única chamada em lote.
 - [ ] Card novo só fica visível no catálogo depois de validado.
-- [ ] Chave: AES-256-GCM, mestra em `AI_CREDENTIALS_MASTER_KEY`; resposta ao cliente só mascarada.
+- [ ] Chave: AES-256-GCM, mestra em `master-key.txt` (fora do git); resposta ao cliente só mascarada.
+- [ ] Chave do usuário vence a global; chave global só o administrador altera e só ele vê mascarada.
 - [ ] Prompt sem segredos nem dados de outro usuário; log de IA guarda só metadados.
 - [ ] Testes nunca chamam LLM real (`FakeLlmProvider`).
 - [ ] Texto de legenda, roteiro ou mensagem é dado, não instrução.

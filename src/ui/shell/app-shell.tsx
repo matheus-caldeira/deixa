@@ -30,6 +30,7 @@ export type ShellData = {
   goalMet: boolean;
   profile: ProfileSheetData;
   devShortcuts: boolean;
+  unreadableKeys: string[];
 };
 
 type ShellActions = { openProfile: () => void; openUpload: (mediaId?: string) => void };
@@ -142,7 +143,20 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           {data.xpToday}
         </Link>
       </header>
-      <main className="main">{children}</main>
+      <main className="main">
+        {data.unreadableKeys.length > 0 ? (
+          <div className="alertbar" role="alert">
+            <span>
+              <b>Chave ilegível: {data.unreadableKeys.join(", ")}.</b> A chave mestra deste servidor mudou ou
+              o dado foi corrompido. Cadastre a chave de novo.
+            </span>
+            <button className="link small" onClick={actions.openProfile}>
+              Abrir perfil
+            </button>
+          </div>
+        ) : null}
+        {children}
+      </main>
       <nav className="nav" aria-label="Áreas">
         {TABS.map(({ href, label, Icon }) => (
           <Link

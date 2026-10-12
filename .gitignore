@@ -16,6 +16,8 @@ npm-debug.log*
 .DS_Store
 
 data/
+master-key.txt
+master-key.invalid-*.txt
 *.wav
 *.mp3
 !fixtures/**/*.wav

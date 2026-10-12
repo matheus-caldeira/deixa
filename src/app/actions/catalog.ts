@@ -37,10 +37,14 @@ function toEpisodeView(episode: Episode): UploadEpisodeView {
   };
 }
 
-async function toTarget(media: MediaItem, seasons: Season[]): Promise<UploadTargetView> {
+async function toTarget(userId: string, media: MediaItem, seasons: Season[]): Promise<UploadTargetView> {
   const movieSeason = media.type === "movie" ? seasons[0] : undefined;
   const movieEpisodes = movieSeason
-    ? await app().loadSeasonEpisodes({ mediaId: media.id, seasonNumber: movieSeason.seasonNumber })
+    ? await app().loadSeasonEpisodes({
+        userId,
+        mediaId: media.id,
+        seasonNumber: movieSeason.seasonNumber,
+      })
     : null;
   return {
     mediaId: media.id,
@@ -61,11 +65,11 @@ async function toTarget(media: MediaItem, seasons: Season[]): Promise<UploadTarg
 }
 
 export async function searchWorksAction(query: unknown): Promise<ActionResult<SearchResultView[]>> {
-  await requireUser();
+  const user = await requireUser();
   return runAction("searchWorks", async () => {
     const parsed = z.string().max(100).safeParse(query);
     if (!parsed.success) return [];
-    const results = await app().searchWorks(parsed.data);
+    const results = await app().searchWorks(user.id, parsed.data);
     return results.map((work) => ({
       externalId: work.externalId,
       type: work.type,
@@ -90,7 +94,7 @@ export async function selectWorkAction(input: unknown): Promise<ActionResult<Upl
     const media = await app().getMediaById(mediaId);
     if (!media) throw new AppError("MEDIA_NOT_FOUND");
     revalidatePath("/catalog");
-    return toTarget(media, await listAllSeasons(mediaId, media));
+    return toTarget(user.id, media, await listAllSeasons(mediaId, media));
   });
 }
 
@@ -100,24 +104,24 @@ async function listAllSeasons(mediaId: string, media: MediaItem): Promise<Season
 }
 
 export async function openUploadTargetAction(mediaId: unknown): Promise<ActionResult<UploadTargetView>> {
-  await requireUser();
+  const user = await requireUser();
   return runAction("openUploadTarget", async () => {
     const parsed = idSchema.safeParse(mediaId);
     if (!parsed.success) throw new AppError("MEDIA_NOT_FOUND");
     const media = await app().getMediaById(parsed.data);
     if (!media) throw new AppError("MEDIA_NOT_FOUND");
-    return toTarget(media, await listAllSeasons(parsed.data, media));
+    return toTarget(user.id, media, await listAllSeasons(parsed.data, media));
   });
 }
 
 export async function loadEpisodesAction(input: unknown): Promise<ActionResult<UploadEpisodeView[]>> {
-  await requireUser();
+  const user = await requireUser();
   return runAction("loadEpisodes", async () => {
     const parsed = z
       .object({ mediaId: idSchema, seasonNumber: z.number().int().min(0).max(999) })
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const { episodes } = await app().loadSeasonEpisodes(parsed.data);
+    const { episodes } = await app().loadSeasonEpisodes({ userId: user.id, ...parsed.data });
     return episodes.map(toEpisodeView);
   });
 }
@@ -186,12 +190,12 @@ const quotaView = (quota: { remaining: number; resetAt: Date | null } | null) =>
   quota ? { remaining: quota.remaining, resetAt: quota.resetAt?.toISOString() ?? null } : null;
 
 export async function searchSubtitlesAction(input: unknown): Promise<ActionResult<SubtitleSearchView>> {
-  await requireUser();
+  const user = await requireUser();
   return runAction("searchSubtitles", async () => {
     const parsed = z.object({ episodeId: idSchema, refresh: z.boolean().default(false) }).safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     const [search, origins] = await Promise.all([
-      app().searchSubtitles(parsed.data),
+      app().searchSubtitles({ userId: user.id, ...parsed.data }),
       app().listSubtitleOrigins(parsed.data.episodeId),
     ]);
     const toOption = (candidate: (typeof search.ranking.english)[number]): SubtitleOptionView => ({
@@ -272,11 +276,11 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
 }
 
 export async function refreshWorkAction(mediaId: unknown): Promise<ActionResult<{ refreshed: boolean }>> {
-  await requireUser();
+  const user = await requireUser();
   return runAction("refreshWork", async () => {
     const parsed = idSchema.safeParse(mediaId);
     if (!parsed.success) throw new AppError("MEDIA_NOT_FOUND");
-    const result = await app().refreshWork({ mediaId: parsed.data, force: true });
+    const result = await app().refreshWork({ userId: user.id, mediaId: parsed.data, force: true });
     revalidatePath(`/catalog/${parsed.data}`);
     return result;
   });

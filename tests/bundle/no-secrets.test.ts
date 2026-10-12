@@ -12,6 +12,7 @@ const SECRET_NAMES = [
   "OPENSUBTITLES_PASSWORD",
 ] as const;
 const MIN_SECRET_LENGTH = 16;
+const MASTER_KEY_FILE = "master-key.txt";
 
 function filesUnder(directory: string): string[] {
   return readdirSync(directory).flatMap((name) => {
@@ -35,6 +36,12 @@ describe("bundle do cliente", () => {
       expect(leaking).toEqual([]);
     });
   }
+
+  const masterKey = existsSync(MASTER_KEY_FILE) ? readFileSync(MASTER_KEY_FILE, "utf8").trim() : "";
+  it.skipIf(masterKey.length < MIN_SECRET_LENGTH)("não contém a chave mestra do arquivo", () => {
+    const leaking = contents.filter((file) => file.text.includes(masterKey)).map((file) => file.path);
+    expect(leaking).toEqual([]);
+  });
 
   it("não cita variáveis de servidor nem usa NEXT_PUBLIC para o TMDB", () => {
     const mentions = contents

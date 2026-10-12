@@ -33,6 +33,7 @@ import { MS_PER_DAY } from "@/shared/time";
 import {
   SEED_DIALOGUES,
   SEED_EMAIL_SUFFIX,
+  SEED_ADMIN_SLUG,
   SEED_PASSWORD,
   SEED_PLAN_LEVELS,
   SEED_PROFILES,
@@ -81,6 +82,9 @@ export async function runSeed(input: {
     }
     userIdBySlug.set(profile.slug, id);
   }
+  const [admin] = await db.select({ id: users.id }).from(users).where(eq(users.isAdmin, true)).limit(1);
+  const ownerId = userIdBySlug.get(SEED_ADMIN_SLUG);
+  if (!admin && ownerId) await db.update(users).set({ isAdmin: true }).where(eq(users.id, ownerId));
   log(`perfis: ${[...userIdBySlug.keys()].join(", ")}`);
 
   const catalogDeps = { catalog, metadata, clock, ids };

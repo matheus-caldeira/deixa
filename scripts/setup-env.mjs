@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 
@@ -10,7 +9,6 @@ const EXAMPLE_PATH = join(ROOT, ".env.example");
 
 const DEV_DEFAULTS = {
   DATABASE_URL: () => "postgres://deixa:deixa@localhost:1442/deixa",
-  AI_CREDENTIALS_MASTER_KEY: () => randomBytes(32).toString("base64"),
   KOKORO_URL: () => "http://localhost:1881",
   DATA_DIR: () => "data",
   GEMINI_MODEL: () => "gemini-2.5-flash",

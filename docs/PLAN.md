@@ -90,6 +90,19 @@ Branch `feat/recommendations`. Descrição em [HANDOFF.md](HANDOFF.md), seção 
 | 51  | "Para você" no Explorar: motivo, adicionar e "não tenho interesse" | E2E com provider falso                                          | [x]    |
 | 52  | Validação real                                                     | Sugestões com TMDB, vetores e texto do Gemini na conta de teste | [x]    |
 
+## Etapa 4: chaves por usuário
+
+Branch `feat/user-credentials`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 B.
+
+| Nº  | Item                                                          | Critério de pronto                                     | Estado |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------ | ------ |
+| 53  | Chaves de Gemini, TMDB e OpenSubtitles por usuário            | Testes unitários e de integração com isolamento        | [x]    |
+| 54  | Chave global opcional, só para o administrador                | Teste de permissão; primeira conta é administradora    | [x]    |
+| 55  | Providers resolvidos por usuário (usuário → global → reserva) | Suíte completa passando                                | [x]    |
+| 56  | Chave mestra em `master-key.txt`, criada sozinha              | Testes unitários; fora do git e do bundle              | [x]    |
+| 57  | Alerta de chave ilegível                                      | Teste unitário com chave mestra trocada; visto na tela | [x]    |
+| 58  | Perfil com as três chaves e a seção global                    | E2E; chaves reais e falsas testadas contra os serviços | [x]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

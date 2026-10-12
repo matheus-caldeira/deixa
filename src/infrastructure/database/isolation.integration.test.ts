@@ -21,6 +21,7 @@ import {
   subtitleCues,
   subtitleFiles,
   userAiCredentials,
+  users,
   workEmbeddings,
   xpEvents,
 } from "./schema";
@@ -74,7 +75,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       plannerForUser: async () => null,
       embeddingForUser: async () => new HashEmbeddingProvider(),
       suggestionWriterForUser: async () => null,
-      testApiKey: async () => true,
+      testCredential: async () => true,
     });
     ana = (await app.signUp({ name: "Ana", email: "ana@example.com", password: "segredo123", level: "A1" }))
       .userId;
@@ -86,7 +87,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       type: "series",
       externalId: fakeExternalId("suits"),
     });
-    const { episodes } = await app.loadSeasonEpisodes({ mediaId, seasonNumber: 1 });
+    const { episodes } = await app.loadSeasonEpisodes({ userId: ana, mediaId, seasonNumber: 1 });
     episodeId = episodes[0]?.id ?? "";
   });
 
@@ -174,9 +175,31 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     expect((await app.getProfileSummary({ userId: ana, ...prefs })).totalXp).toBe(10);
     expect((await app.getProfileSummary({ userId: lucas, ...prefs })).totalXp).toBe(0);
 
-    await app.saveApiKey(ana, `AIza${"k".repeat(35)}`);
-    expect((await app.getKeyStatus(ana)).connected).toBe(true);
-    expect(await app.getKeyStatus(lucas)).toEqual({ connected: false, masked: null });
+    const anaActor = { userId: ana, isAdmin: true };
+    const lucasActor = { userId: lucas, isAdmin: false };
+    const geminiKey = `AIza${"k".repeat(35)}`;
+    await app.saveCredential({ actor: anaActor, service: "gemini", scope: "user", secret: geminiKey });
+    await app.saveCredential({
+      actor: anaActor,
+      service: "opensubtitles",
+      scope: "user",
+      secret: "AbCdEfGhIjKlMnOpQrStUvWx",
+    });
+    const own = (actor: typeof anaActor) =>
+      app.getCredentialOverview(actor).then((list) => list.map((entry) => entry.own.state));
+    expect(await own(anaActor)).toEqual(["ready", "absent", "ready"]);
+    expect(await own(lucasActor)).toEqual(["absent", "absent", "absent"]);
+    await expect(
+      app.saveCredential({ actor: lucasActor, service: "gemini", scope: "global", secret: geminiKey }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await app.saveCredential({ actor: anaActor, service: "gemini", scope: "global", secret: geminiKey });
+    const forLucas = (await app.getCredentialOverview(lucasActor))[0];
+    expect(forLucas).toMatchObject({ active: "global", global: { source: "database", stored: null } });
+    await app.removeCredential({ actor: anaActor, service: "gemini", scope: "global" });
+    await app.removeCredential({ actor: anaActor, service: "opensubtitles", scope: "user" });
+    expect(await own(anaActor)).toEqual(["ready", "absent", "absent"]);
+    const [firstUser] = await handle.db.select().from(users).where(eq(users.isAdmin, true));
+    expect(firstUser?.id).toBe(ana);
     const [stored] = await handle.db.select().from(userAiCredentials);
     expect(stored?.encryptedApiKey).not.toContain("AIza");
   });

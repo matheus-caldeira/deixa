@@ -156,7 +156,7 @@ describe("sugestões para o usuário", () => {
 
   const deps = () => ({
     repository,
-    candidates: new FakeMetadataProvider(),
+    resolveCandidates: async () => new FakeMetadataProvider(),
     resolveEmbedding: async () => embedding,
     localEmbedding: local,
     resolveWriter: async () => writer,

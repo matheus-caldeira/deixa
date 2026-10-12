@@ -3,6 +3,7 @@ export type AppErrorCode =
   | "EMAIL_TAKEN"
   | "INVALID_INPUT"
   | "UNAUTHENTICATED"
+  | "FORBIDDEN"
   | "MEDIA_NOT_FOUND"
   | "SEASON_NOT_FOUND"
   | "EPISODE_NOT_FOUND"

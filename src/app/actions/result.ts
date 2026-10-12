@@ -11,6 +11,7 @@ const MESSAGES: Partial<Record<AppErrorCode, string>> = {
   EMAIL_TAKEN: "Já existe uma conta com esse e-mail.",
   INVALID_INPUT: "Confira os dados informados.",
   UNAUTHENTICATED: "Sua sessão terminou. Entre de novo.",
+  FORBIDDEN: "Você não tem permissão para fazer isso.",
   MEDIA_NOT_FOUND: "Não encontramos essa obra.",
   SEASON_NOT_FOUND: "Não encontramos essa temporada.",
   EPISODE_NOT_FOUND: "Não encontramos esse episódio.",

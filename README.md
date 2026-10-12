@@ -48,7 +48,7 @@ Tudo fica no `.env`, lido pelo carregamento padrão do Next.js e validado com Zo
 | Variável                              | Para quê                                                                                    |
 | ------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`                        | Conexão com o Postgres                                                                      |
-| `AI_CREDENTIALS_MASTER_KEY`           | Chave mestra (32 bytes em base64) que cifra a chave Gemini de cada usuário                  |
+| `AI_CREDENTIALS_MASTER_KEY`           | Opcional. Substitui a chave mestra do arquivo `master-key.txt` (usada em testes)            |
 | `TMDB_READ_ACCESS_TOKEN`              | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                        |
 | `TMDB_API_KEY`                        | Chave v3 do TMDB, usada só como alternativa se o token for recusado                         |
 | `OPENSUBTITLES_API_KEY`               | Chave da API do OpenSubtitles; vazia = fonte de legendas de demonstração                    |
@@ -168,3 +168,12 @@ data/                 legendas enviadas e áudios gerados (fora do git)
 ```
 
 Regras de arquitetura, decisões e documentação por tecnologia: [`.contexts/`](.contexts/README.md).
+
+## Chaves de API e chave mestra
+
+- Cada conta cadastra as próprias chaves de Gemini, TMDB e OpenSubtitles no perfil. A chave do usuário sempre
+  vence; sem ela, vale a chave global (definida pelo administrador no perfil ou, por enquanto, no `.env`).
+- A primeira conta criada é a administradora.
+- As chaves ficam cifradas no banco com a chave mestra guardada em `master-key.txt`, na raiz do projeto. O
+  arquivo é criado sozinho na primeira execução e fica fora do git. Se ele for trocado ou apagado, as chaves
+  guardadas ficam ilegíveis: o app avisa e basta cadastrá-las de novo.

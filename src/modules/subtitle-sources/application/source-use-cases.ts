@@ -33,8 +33,8 @@ export interface SourceRepository {
     candidates: SubtitleCandidate[],
     now: Date,
   ): Promise<void>;
-  getQuota(provider: SourceProviderName): Promise<(SourceQuota & { updatedAt: Date }) | null>;
-  saveQuota(provider: SourceProviderName, quota: SourceQuota, now: Date): Promise<void>;
+  getQuota(quotaKey: string): Promise<(SourceQuota & { updatedAt: Date }) | null>;
+  saveQuota(quotaKey: string, quota: SourceQuota, now: Date): Promise<void>;
   recordDownload(userId: string, provider: SourceProviderName, fileId: string, now: Date): Promise<void>;
   countUserDownloads(userId: string, provider: SourceProviderName, since: Date): Promise<number>;
 }
@@ -60,6 +60,7 @@ export type ImportedFile = {
 
 type Deps = {
   provider: SubtitleSourceProvider;
+  quotaKey: string;
   sources: SourceRepository;
   findEpisodeSource: (episodeId: string) => Promise<EpisodeSource | null>;
   readExistingFile: (episodeId: string, language: SourceLanguage) => Promise<Uint8Array | null>;
@@ -102,7 +103,7 @@ function currentQuota(stored: (SourceQuota & { updatedAt: Date }) | null, now: D
 }
 
 export function makeSearchSubtitles(
-  deps: Pick<Deps, "provider" | "sources" | "findEpisodeSource" | "clock">,
+  deps: Pick<Deps, "provider" | "quotaKey" | "sources" | "findEpisodeSource" | "clock">,
 ) {
   type SearchInput = { episodeId: string; refresh?: boolean };
   const running = new Map<string, Promise<SubtitleSearch>>();
@@ -119,7 +120,7 @@ export function makeSearchSubtitles(
     const episode = await deps.findEpisodeSource(input.episodeId);
     if (!episode) throw new AppError("EPISODE_NOT_FOUND");
     const now = deps.clock.now();
-    const quota = currentQuota(await deps.sources.getQuota(deps.provider.name), now);
+    const quota = currentQuota(await deps.sources.getQuota(deps.quotaKey), now);
     const cached = await deps.sources.getCachedSearch(input.episodeId, deps.provider.name);
     const fresh = cached && now.getTime() - cached.fetchedAt.getTime() < SEARCH_CACHE_HOURS * MS_PER_HOUR;
     const recent =
@@ -168,7 +169,7 @@ export function makeImportFromSource(deps: Deps) {
         if (error instanceof AppError && error.code === "SUBTITLE_SOURCE_QUOTA") {
           const known = error instanceof SourceQuotaExceeded ? error.quota : null;
           await deps.sources.saveQuota(
-            deps.provider.name,
+            deps.quotaKey,
             { remaining: 0, resetAt: known?.resetAt ?? null },
             deps.clock.now(),
           );
@@ -176,8 +177,7 @@ export function makeImportFromSource(deps: Deps) {
         throw error;
       });
       downloads.count += 1;
-      if (downloaded.quota)
-        await deps.sources.saveQuota(deps.provider.name, downloaded.quota, deps.clock.now());
+      if (downloaded.quota) await deps.sources.saveQuota(deps.quotaKey, downloaded.quota, deps.clock.now());
       if (downloaded.bytes.byteLength === 0 || downloaded.bytes.byteLength > MAX_SUBTITLE_BYTES) {
         throw new AppError(
           "SUBTITLE_INVALID",
@@ -238,7 +238,7 @@ export function makeImportFromSource(deps: Deps) {
     const needed = [english, portuguese].filter(
       (candidate) => candidate && !episode.existing.some((file) => file.language === candidate.language),
     ).length;
-    const known = currentQuota(await deps.sources.getQuota(deps.provider.name), deps.clock.now());
+    const known = currentQuota(await deps.sources.getQuota(deps.quotaKey), deps.clock.now());
     if (known && needed > known.remaining) throw new SourceQuotaExceeded(known);
     const since = new Date(deps.clock.now().getTime() - USER_WINDOW_HOURS * MS_PER_HOUR);
     const used =
@@ -261,7 +261,7 @@ export function makeImportFromSource(deps: Deps) {
       english: englishFile,
       portuguese: portugueseFile,
     });
-    const quota = currentQuota(await deps.sources.getQuota(deps.provider.name), deps.clock.now());
+    const quota = currentQuota(await deps.sources.getQuota(deps.quotaKey), deps.clock.now());
     return { ...outcome, downloadsUsed: downloads.count, quota };
   }
 }

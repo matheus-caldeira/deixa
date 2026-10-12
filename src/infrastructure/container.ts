@@ -1,11 +1,14 @@
+import { createHash } from "node:crypto";
 import { DrizzleCredentialRepository } from "@/modules/ai-credentials/infrastructure/drizzle-credential-repository";
 import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-cipher";
 import {
-  makeGetKeyStatus,
-  makeRemoveApiKey,
-  makeResolveApiKey,
-  makeSaveApiKey,
-  type ApiKeyTester,
+  makeGetCredentialOverview,
+  makeRemoveCredential,
+  makeResolveCredential,
+  makeSaveCredential,
+  tmdbSecretKind,
+  type CredentialService,
+  type CredentialTester,
 } from "@/modules/ai-credentials";
 import { makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider } from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
@@ -20,6 +23,7 @@ import {
   makeRegisterWork,
   makeSearchWorks,
   makeStartEpisode,
+  type MediaType,
   type MetadataProvider,
 } from "@/modules/catalog";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
@@ -120,10 +124,11 @@ import { uuidGenerator } from "@/shared/ids";
 import type { FileStorage } from "@/shared/storage";
 import { tokenize } from "@/shared/text";
 import { getEnv, hasTmdbCredentials, type Env } from "./config/env";
+import { loadMasterKey } from "./config/master-key";
+import { testServiceCredential } from "./credential-tester";
 import { openDatabase, type Database } from "./database/client";
 import { GeminiEmbeddingProvider } from "./google-ai/gemini-embedding-provider";
 import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
-import { testGeminiApiKey } from "./google-ai/gemini-client";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
 import { GeminiSuggestionWriter } from "./google-ai/gemini-suggestion-writer";
 import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
@@ -139,6 +144,11 @@ import { TmdbMetadataProvider } from "./tmdb/tmdb-metadata-provider";
 const MAX_AUDIO_GENERATIONS_PER_USER = 2;
 const MAX_LOGIN_FAILURES = 8;
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const FINGERPRINT_CHARS = 16;
+const UNLIMITED_DOWNLOADS = Number.MAX_SAFE_INTEGER;
+
+const fingerprint = (secret: string): string =>
+  createHash("sha256").update(secret).digest("hex").slice(0, FINGERPRINT_CHARS);
 
 export type ContainerOptions = {
   env: Env;
@@ -154,7 +164,8 @@ export type ContainerOptions = {
   tutorForUser?: (userId: string) => Promise<TutorProvider>;
   embeddingForUser?: (userId: string) => Promise<EmbeddingProvider>;
   suggestionWriterForUser?: (userId: string) => Promise<SuggestionWriter | null>;
-  testApiKey?: ApiKeyTester;
+  testCredential?: CredentialTester;
+  masterKey?: string;
 };
 
 export function buildContainer(options: ContainerOptions) {
@@ -177,61 +188,102 @@ export function buildContainer(options: ContainerOptions) {
   const notificationRepository = new DrizzleNotificationRepository(db);
   const notify = makeNotify({ notifications: notificationRepository, clock, ids });
 
-  const metadata: MetadataProvider =
-    options.metadata ??
-    (hasTmdbCredentials(env)
-      ? new TmdbMetadataProvider(
-          new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
-        )
-      : new FakeMetadataProvider());
-  const subtitleSource: SubtitleSourceProvider =
-    options.subtitleSource ??
-    (env.OPENSUBTITLES_API_KEY
-      ? new OpenSubtitlesProvider({
-          apiKey: env.OPENSUBTITLES_API_KEY,
-          username: env.OPENSUBTITLES_USERNAME,
-          password: env.OPENSUBTITLES_PASSWORD,
-        })
-      : new FakeSubtitleSourceProvider());
   const silentTts = new SilentTtsProvider();
   const tts: TtsProvider =
     options.tts ?? (env.KOKORO_URL ? new KokoroTtsProvider(env.KOKORO_URL) : silentTts);
 
-  const cipher = new AesGcmCipher(env.AI_CREDENTIALS_MASTER_KEY);
+  const masterKey = options.masterKey ?? env.AI_CREDENTIALS_MASTER_KEY;
+  if (!masterKey) throw new Error("chave mestra ausente");
+  const cipher = new AesGcmCipher(masterKey);
   const sharedBudget = new SharedKeyBudget(db, clock);
-  const resolveApiKey = makeResolveApiKey({ credentials, cipher });
+  const resolveCredential = makeResolveCredential({ credentials, cipher });
+  const environmentServices = new Set<CredentialService>();
+  if (env.GEMINI_API_KEY) environmentServices.add("gemini");
+  if (hasTmdbCredentials(env)) environmentServices.add("tmdb");
+  if (env.OPENSUBTITLES_API_KEY) environmentServices.add("opensubtitles");
+
+  const fakeMetadata = new FakeMetadataProvider();
+  const environmentMetadata = hasTmdbCredentials(env)
+    ? new TmdbMetadataProvider(
+        new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
+      )
+    : null;
+  const defaultMetadata: MetadataProvider = options.metadata ?? environmentMetadata ?? fakeMetadata;
+  const metadataBySecret = new Map<string, MetadataProvider>();
+  async function metadataFor(userId: string | null): Promise<MetadataProvider> {
+    if (options.metadata) return options.metadata;
+    const stored = await resolveCredential(userId, "tmdb");
+    if (!stored) return defaultMetadata;
+    const key = fingerprint(stored.secret);
+    const known = metadataBySecret.get(key);
+    if (known) return known;
+    const created = new TmdbMetadataProvider(
+      new TmdbClient(
+        tmdbSecretKind(stored.secret) === "apiKey"
+          ? { apiKey: stored.secret }
+          : { readAccessToken: stored.secret },
+      ),
+    );
+    metadataBySecret.set(key, created);
+    return created;
+  }
+
+  const fakeSubtitleSource = new FakeSubtitleSourceProvider();
+  const environmentSubtitleSource = env.OPENSUBTITLES_API_KEY
+    ? new OpenSubtitlesProvider({
+        apiKey: env.OPENSUBTITLES_API_KEY,
+        username: env.OPENSUBTITLES_USERNAME,
+        password: env.OPENSUBTITLES_PASSWORD,
+      })
+    : null;
+  const defaultSubtitleSource: SubtitleSourceProvider =
+    options.subtitleSource ?? environmentSubtitleSource ?? fakeSubtitleSource;
+  const subtitleSourceBySecret = new Map<string, SubtitleSourceProvider>();
+  type SourceAccess = { provider: SubtitleSourceProvider; quotaKey: string; ownKey: boolean };
+  async function sourceAccessFor(userId: string): Promise<SourceAccess> {
+    const shared = { provider: defaultSubtitleSource, quotaKey: defaultSubtitleSource.name, ownKey: false };
+    if (options.subtitleSource) return shared;
+    const stored = await resolveCredential(userId, "opensubtitles");
+    if (!stored) return shared;
+    const key = fingerprint(stored.secret);
+    const provider = subtitleSourceBySecret.get(key) ?? new OpenSubtitlesProvider({ apiKey: stored.secret });
+    subtitleSourceBySecret.set(key, provider);
+    return { provider, quotaKey: `${provider.name}:${key}`, ownKey: stored.origin === "user" };
+  }
+
+  type GeminiAccess = { apiKey: string; shared: boolean };
+  async function geminiAccessFor(userId: string): Promise<GeminiAccess | null> {
+    const stored = await resolveCredential(userId, "gemini");
+    if (stored) return { apiKey: stored.secret, shared: stored.origin === "global" };
+    return env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY, shared: true } : null;
+  }
+
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
     options.llmForUser ??
     (async (userId: string): Promise<LlmProvider> => {
-      const apiKey = await resolveApiKey(userId);
-      if (apiKey) return new GeminiLlmProvider(apiKey, env.GEMINI_MODEL);
-      if (!env.GEMINI_API_KEY) return fakeLlm;
-      return budgetedLlm(new GeminiLlmProvider(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
-        sharedBudget.spend(userId),
-      );
+      const access = await geminiAccessFor(userId);
+      if (!access) return fakeLlm;
+      const provider = new GeminiLlmProvider(access.apiKey, env.GEMINI_MODEL);
+      return access.shared ? budgetedLlm(provider, () => sharedBudget.spend(userId)) : provider;
     });
   const resolvePlanner =
     options.plannerForUser ??
     (async (userId: string, usage: "charge" | "already-charged"): Promise<LessonPlanner | null> => {
-      if (env.GEMINI_API_KEY) {
-        if (usage === "charge") await sharedBudget.spend(userId);
-        return new GeminiLessonPlanner(env.GEMINI_API_KEY, env.GEMINI_MODEL);
-      }
-      const ownKey = await resolveApiKey(userId);
-      return ownKey ? new GeminiLessonPlanner(ownKey, env.GEMINI_MODEL) : null;
+      const access = await geminiAccessFor(userId);
+      if (!access) return null;
+      if (access.shared && usage === "charge") await sharedBudget.spend(userId);
+      return new GeminiLessonPlanner(access.apiKey, env.GEMINI_MODEL);
     });
 
   const fakeTutor = new FakeTutorProvider();
   const resolveTutor =
     options.tutorForUser ??
     (async (userId: string): Promise<TutorProvider> => {
-      const ownKey = await resolveApiKey(userId);
-      if (ownKey) return new GeminiTutorProvider(ownKey, env.GEMINI_MODEL);
-      if (!env.GEMINI_API_KEY) return fakeTutor;
-      return budgetedTutor(new GeminiTutorProvider(env.GEMINI_API_KEY, env.GEMINI_MODEL), () =>
-        sharedBudget.spend(userId),
-      );
+      const access = await geminiAccessFor(userId);
+      if (!access) return fakeTutor;
+      const tutor = new GeminiTutorProvider(access.apiKey, env.GEMINI_MODEL);
+      return access.shared ? budgetedTutor(tutor, () => sharedBudget.spend(userId)) : tutor;
     });
   const conversations = new DrizzleConversationRepository(db);
 
@@ -239,31 +291,30 @@ export function buildContainer(options: ContainerOptions) {
   const resolveEmbedding =
     options.embeddingForUser ??
     (async (userId: string): Promise<EmbeddingProvider> => {
-      const ownKey = await resolveApiKey(userId);
-      if (ownKey) return new GeminiEmbeddingProvider(ownKey);
-      if (!env.GEMINI_API_KEY) return localEmbedding;
-      const shared = new GeminiEmbeddingProvider(env.GEMINI_API_KEY);
+      const access = await geminiAccessFor(userId);
+      if (!access) return localEmbedding;
+      const provider = new GeminiEmbeddingProvider(access.apiKey);
+      if (!access.shared) return provider;
       return {
-        name: shared.name,
-        model: shared.model,
+        name: provider.name,
+        model: provider.model,
         embed: async (texts) => {
           await sharedBudget.spend(userId);
-          return shared.embed(texts);
+          return provider.embed(texts);
         },
       };
     });
   const resolveSuggestionWriter =
     options.suggestionWriterForUser ??
     (async (userId: string): Promise<SuggestionWriter | null> => {
-      const ownKey = await resolveApiKey(userId);
-      if (ownKey) return new GeminiSuggestionWriter(ownKey, env.GEMINI_MODEL);
-      if (!env.GEMINI_API_KEY) return null;
-      await sharedBudget.spend(userId);
-      return new GeminiSuggestionWriter(env.GEMINI_API_KEY, env.GEMINI_MODEL);
+      const access = await geminiAccessFor(userId);
+      if (!access) return null;
+      if (access.shared) await sharedBudget.spend(userId);
+      return new GeminiSuggestionWriter(access.apiKey, env.GEMINI_MODEL);
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),
-    candidates: metadata,
+    resolveCandidates: (userId: string) => metadataFor(userId),
     resolveEmbedding,
     localEmbedding,
     resolveWriter: resolveSuggestionWriter,
@@ -280,7 +331,25 @@ export function buildContainer(options: ContainerOptions) {
     clock,
     ids,
   };
-  const catalogDeps = { catalog, progress: catalog, metadata, clock, ids };
+  const catalogDeps = { catalog, progress: catalog, clock, ids };
+  const buildCatalogUseCases = (metadata: MetadataProvider) => {
+    const deps = { ...catalogDeps, metadata };
+    return {
+      searchWorks: makeSearchWorks(deps),
+      registerWork: makeRegisterWork(deps),
+      refreshWork: makeRefreshWork(deps),
+      loadSeasonEpisodes: makeLoadSeasonEpisodes(deps),
+    };
+  };
+  const catalogByProvider = new WeakMap<MetadataProvider, ReturnType<typeof buildCatalogUseCases>>();
+  async function catalogFor(userId: string | null) {
+    const metadata = await metadataFor(userId);
+    const known = catalogByProvider.get(metadata);
+    if (known) return known;
+    const created = buildCatalogUseCases(metadata);
+    catalogByProvider.set(metadata, created);
+    return created;
+  }
 
   const getEpisodeScript = makeGetEpisodeScript({ subtitles });
   const awardXp = makeAwardXp({ xp: gamification, clock, ids });
@@ -446,7 +515,10 @@ export function buildContainer(options: ContainerOptions) {
       };
     },
   });
-  const findEpisodeSource = async (episodeId: string): Promise<EpisodeSource | null> => {
+  const findEpisodeSource = async (
+    subtitleSource: SubtitleSourceProvider,
+    episodeId: string,
+  ): Promise<EpisodeSource | null> => {
     const context = await catalog.findEpisodeContext(episodeId);
     if (!context) return null;
     const tmdbId =
@@ -475,21 +547,43 @@ export function buildContainer(options: ContainerOptions) {
     };
   };
   const sourceRepository = new DrizzleSourceRepository(db);
-  const sourceDeps = {
-    provider: subtitleSource,
-    sources: sourceRepository,
-    userDailyDownloads: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
+  const buildSourceUseCases = (access: SourceAccess) => {
+    const deps = {
+      provider: access.provider,
+      quotaKey: access.quotaKey,
+      sources: sourceRepository,
+      userDailyDownloads: access.ownKey ? UNLIMITED_DOWNLOADS : env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
+      clock,
+      findEpisodeSource: (episodeId: string) => findEpisodeSource(access.provider, episodeId),
+      readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {
+        const file = (await subtitles.listFiles(episodeId)).find((stored) => stored.language === language);
+        return file ? storage.read(file.storagePath) : null;
+      },
+      importSubtitles: importEpisodeSubtitles,
+    };
+    return { searchSubtitles: makeSearchSubtitles(deps), importFromSource: makeImportFromSource(deps) };
+  };
+  const sourceUseCases = new Map<string, ReturnType<typeof buildSourceUseCases>>();
+  async function sourcesFor(userId: string) {
+    const access = await sourceAccessFor(userId);
+    const key = `${access.quotaKey}|${access.ownKey ? "own" : "shared"}`;
+    const known = sourceUseCases.get(key);
+    if (known) return known;
+    const created = buildSourceUseCases(access);
+    sourceUseCases.set(key, created);
+    return created;
+  }
+  const credentialDeps = {
+    credentials,
+    cipher,
     clock,
-    findEpisodeSource,
-    readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {
-      const file = (await subtitles.listFiles(episodeId)).find((stored) => stored.language === language);
-      return file ? storage.read(file.storagePath) : null;
-    },
-    importSubtitles: importEpisodeSubtitles,
+    environmentServices,
+    testCredential: options.testCredential ?? testServiceCredential,
   };
 
   return {
-    providers: { metadata: metadata.name, tts: tts.name, subtitles: subtitleSource.name },
+    providers: { metadata: defaultMetadata.name, tts: tts.name, subtitles: defaultSubtitleSource.name },
+    metadataNameFor: async (userId: string) => (await metadataFor(userId)).name,
     devShortcuts: env.DEV_SHORTCUTS,
     secureSessionCookie: env.SESSION_COOKIE_SECURE,
     loginThrottle: new AttemptThrottle(MAX_LOGIN_FAILURES, LOGIN_WINDOW_MS, clock),
@@ -501,10 +595,21 @@ export function buildContainer(options: ContainerOptions) {
     updatePreferences: makeUpdatePreferences({ preferences: identity }),
     listPeople: () => identity.listByEmailSuffix(""),
 
-    searchWorks: makeSearchWorks(catalogDeps),
-    registerWork: makeRegisterWork(catalogDeps),
-    refreshWork: makeRefreshWork(catalogDeps),
-    loadSeasonEpisodes: makeLoadSeasonEpisodes(catalogDeps),
+    searchWorks: async (userId: string, query: string) => (await catalogFor(userId)).searchWorks(query),
+    registerWork: async (input: {
+      userId: string | null;
+      type: MediaType;
+      externalId: string;
+      force?: boolean;
+    }) => (await catalogFor(input.userId)).registerWork(input),
+    refreshWork: async (input: { userId: string; mediaId: string; force: boolean }) =>
+      (await catalogFor(input.userId)).refreshWork(input),
+    loadSeasonEpisodes: async (input: {
+      userId: string;
+      mediaId: string;
+      seasonNumber: number;
+      force?: boolean;
+    }) => (await catalogFor(input.userId)).loadSeasonEpisodes(input),
     getCatalogOverview: makeGetCatalogOverview(catalogDeps),
     getMediaDetail: makeGetMediaDetail(catalogDeps),
     getEpisodeContext: makeGetEpisodeContext(catalogDeps),
@@ -513,8 +618,14 @@ export function buildContainer(options: ContainerOptions) {
     getMediaById: (mediaId: string) => catalog.findMediaById(mediaId),
 
     importEpisodeSubtitles,
-    searchSubtitles: makeSearchSubtitles(sourceDeps),
-    importFromSource: makeImportFromSource(sourceDeps),
+    searchSubtitles: async (input: { userId: string; episodeId: string; refresh?: boolean }) =>
+      (await sourcesFor(input.userId)).searchSubtitles(input),
+    importFromSource: async (input: {
+      userId: string;
+      episodeId: string;
+      englishFileId: string;
+      portugueseFileId: string | null;
+    }) => (await sourcesFor(input.userId)).importFromSource(input),
     listSubtitleOrigins: async (episodeId: string) =>
       (await subtitles.listFiles(episodeId)).map((file) => ({
         language: file.language,
@@ -581,14 +692,9 @@ export function buildContainer(options: ContainerOptions) {
     anticipateReview: makeAnticipateReview({ cards, clock, ids }),
     addCards,
 
-    saveApiKey: makeSaveApiKey({
-      credentials,
-      cipher,
-      clock,
-      testApiKey: options.testApiKey ?? testGeminiApiKey,
-    }),
-    getKeyStatus: makeGetKeyStatus({ credentials, cipher }),
-    removeApiKey: makeRemoveApiKey({ credentials }),
+    saveCredential: makeSaveCredential(credentialDeps),
+    removeCredential: makeRemoveCredential(credentialDeps),
+    getCredentialOverview: makeGetCredentialOverview(credentialDeps),
 
     getRecommendations: makeGetRecommendations(recommendationDeps),
     refreshRecommendations: makeRefreshRecommendations(recommendationDeps),
@@ -630,7 +736,14 @@ export function getContainer(): Container {
   if (!container) {
     const env = getEnv();
     globalStore.__deixaDatabase ??= openDatabase(env.DATABASE_URL).db;
-    container = buildContainer({ env, db: globalStore.__deixaDatabase });
+    const masterKey = loadMasterKey({
+      fromEnvironment: env.AI_CREDENTIALS_MASTER_KEY,
+      directory: process.cwd(),
+    });
+    if (masterKey.origin === "created" || masterKey.origin === "replaced") {
+      defaultLogger.warn("master_key.generated", { origin: masterKey.origin });
+    }
+    container = buildContainer({ env, db: globalStore.__deixaDatabase, masterKey: masterKey.value });
   }
   return container;
 }

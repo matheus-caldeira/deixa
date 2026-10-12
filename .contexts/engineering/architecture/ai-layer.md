@@ -31,7 +31,11 @@ A saída passa por schema Zod. Item inválido derruba a geração com erro trat�
 ## Chave por usuário
 
 - `user_ai_credentials` guarda `encrypted_api_key` (AES-256-GCM: IV, tag e texto cifrado) e `key_version`.
-- A chave mestra vem de `AI_CREDENTIALS_MASTER_KEY` (32 bytes em base64).
+- A chave mestra (32 bytes em base64) fica em `master-key.txt`, na raiz da instalação, criado na primeira
+  execução; `AI_CREDENTIALS_MASTER_KEY` só a substitui em testes. Chave guardada que não decifra é ignorada e
+  vira alerta na interface.
+- As chaves de Gemini, TMDB e OpenSubtitles são por usuário, com chave global opcional (só o administrador
+  altera). A do usuário sempre vence.
 - Salvar testa a chave com uma requisição curta. O cliente só recebe a versão mascarada.
 - Remover a chave não afeta revisões nem cards já criados.
 

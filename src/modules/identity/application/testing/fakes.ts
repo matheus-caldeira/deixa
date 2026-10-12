@@ -1,5 +1,6 @@
 import type { Preferences, User } from "../../domain/user";
 import type {
+  NewUser,
   PasswordHasher,
   PreferencesRepository,
   SessionRepository,
@@ -24,8 +25,9 @@ export class InMemoryIdentityStore implements UserRepository, SessionRepository,
     return user;
   }
 
-  async create(user: UserRecord, preferences: Preferences): Promise<void> {
-    this.users.set(user.id, user);
+  async create(user: NewUser, preferences: Preferences): Promise<void> {
+    const isAdmin = ![...this.users.values()].some((known) => known.isAdmin);
+    this.users.set(user.id, { ...user, isAdmin });
     this.preferencesByUser.set(user.id, preferences);
   }
 

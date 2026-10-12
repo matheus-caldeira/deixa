@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { KeyStatus } from "@/modules/ai-credentials";
+import { CREDENTIAL_SERVICES, type StoredState } from "@/modules/ai-credentials";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
+
+const MAX_SECRET_CHARS = 1000;
 
 const preferencesSchema = z
   .object({
@@ -26,21 +28,33 @@ export async function updatePreferencesAction(input: unknown): Promise<ActionRes
   });
 }
 
-export async function saveApiKeyAction(apiKey: unknown): Promise<ActionResult<KeyStatus>> {
+const credentialTarget = z.object({
+  service: z.enum(CREDENTIAL_SERVICES),
+  scope: z.enum(["user", "global"]),
+});
+
+export async function saveCredentialAction(input: unknown): Promise<ActionResult<StoredState>> {
   const user = await requireUser();
-  return runAction("saveApiKey", async () => {
-    const parsed = z.string().max(200).safeParse(apiKey);
+  return runAction("saveCredential", async () => {
+    const parsed = credentialTarget
+      .extend({ secret: z.string().min(1).max(MAX_SECRET_CHARS) })
+      .safeParse(input);
     if (!parsed.success) throw new AppError("AI_KEY_INVALID", "Essa chave não parece válida.");
-    const status = await app().saveApiKey(user.id, parsed.data);
+    const state = await app().saveCredential({
+      actor: { userId: user.id, isAdmin: user.isAdmin },
+      ...parsed.data,
+    });
     revalidatePath("/", "layout");
-    return status;
+    return state;
   });
 }
 
-export async function removeApiKeyAction(): Promise<ActionResult<null>> {
+export async function removeCredentialAction(input: unknown): Promise<ActionResult<null>> {
   const user = await requireUser();
-  return runAction("removeApiKey", async () => {
-    await app().removeApiKey(user.id);
+  return runAction("removeCredential", async () => {
+    const parsed = credentialTarget.safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    await app().removeCredential({ actor: { userId: user.id, isAdmin: user.isAdmin }, ...parsed.data });
     revalidatePath("/", "layout");
     return null;
   });

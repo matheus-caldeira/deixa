@@ -20,7 +20,7 @@ export default async function MediaDetailPage(props: {
   if (!z.uuid().safeParse(mediaId).success) notFound();
   const container = getContainer();
 
-  await container.refreshWork({ mediaId, force: false }).catch((error: unknown) => {
+  await container.refreshWork({ userId: user.id, mediaId, force: false }).catch((error: unknown) => {
     if (isAppError(error) && error.code === "MEDIA_NOT_FOUND") notFound();
     logger.warn("catalog.refresh_skipped", {
       reason: error instanceof Error ? error.message : "desconhecido",
@@ -39,12 +39,14 @@ export default async function MediaDetailPage(props: {
   const seasonNumber = allSeasons.some((entry) => entry.seasonNumber === requested) ? requested : fallback;
   let episodes = detail.seasons.find((entry) => entry.seasonNumber === seasonNumber)?.episodes ?? [];
   if (episodes.length === 0 && seasonNumber !== null) {
-    const loaded = await container.loadSeasonEpisodes({ mediaId, seasonNumber }).catch((error: unknown) => {
-      logger.warn("catalog.season_load_failed", {
-        reason: error instanceof Error ? error.message : "desconhecido",
+    const loaded = await container
+      .loadSeasonEpisodes({ userId: user.id, mediaId, seasonNumber })
+      .catch((error: unknown) => {
+        logger.warn("catalog.season_load_failed", {
+          reason: error instanceof Error ? error.message : "desconhecido",
+        });
+        return null;
       });
-      return null;
-    });
     episodes = (loaded?.episodes ?? []).map((episode) => ({ ...episode, progressPercent: null }));
   }
 
@@ -66,7 +68,7 @@ export default async function MediaDetailPage(props: {
         levelRange: `${media.levelMin}–${media.levelMax}`,
         accent: media.accent,
         uploaderName: media.uploaderName,
-        canRefresh: media.metadataProvider === container.providers.metadata,
+        canRefresh: media.metadataProvider === (await container.metadataNameFor(user.id)),
         seasonNumber,
         seasons: allSeasons.map((entry) => ({
           seasonNumber: entry.seasonNumber,

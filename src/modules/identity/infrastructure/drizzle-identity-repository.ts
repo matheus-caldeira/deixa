@@ -1,9 +1,10 @@
-import { and, eq, gt, like } from "drizzle-orm";
+import { and, eq, gt, like, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
 import { sessions, userPreferences, users } from "@/infrastructure/database/schema";
 import { isCefrLevel } from "@/shared/levels";
 import type { Accent, Preferences, User } from "../domain/user";
 import type {
+  NewUser,
   PreferencesRepository,
   SessionRepository,
   UserRecord,
@@ -35,22 +36,33 @@ export class DrizzleIdentityRepository implements UserRepository, SessionReposit
       name: row.name,
       email: row.email,
       avatarColor: row.avatarColor,
+      isAdmin: row.isAdmin,
       passwordHash: row.passwordHash,
     };
   }
 
   async findById(id: string): Promise<User | null> {
     const [row] = await this.db
-      .select({ id: users.id, name: users.name, email: users.email, avatarColor: users.avatarColor })
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarColor: users.avatarColor,
+        isAdmin: users.isAdmin,
+      })
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
     return row ?? null;
   }
 
-  async create(user: UserRecord, preferences: Preferences, createdAt: Date): Promise<void> {
+  async create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.insert(users).values({ ...user, createdAt });
+      await tx.insert(users).values({
+        ...user,
+        isAdmin: sql<boolean>`not exists (select 1 from ${users} where ${users.isAdmin})`,
+        createdAt,
+      });
       await tx.insert(userPreferences).values({ userId: user.id, ...preferences });
     });
   }
@@ -72,6 +84,7 @@ export class DrizzleIdentityRepository implements UserRepository, SessionReposit
         name: users.name,
         email: users.email,
         avatarColor: users.avatarColor,
+        isAdmin: users.isAdmin,
         level: userPreferences.level,
         createdAt: users.createdAt,
       })

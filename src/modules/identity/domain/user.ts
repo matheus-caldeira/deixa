@@ -29,6 +29,7 @@ export type User = {
   name: string;
   email: string;
   avatarColor: string;
+  isAdmin: boolean;
 };
 
 export type SessionUser = User & { preferences: Preferences };

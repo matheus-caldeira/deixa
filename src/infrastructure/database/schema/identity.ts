@@ -1,4 +1,5 @@
 import {
+  boolean,
   doublePrecision,
   index,
   integer,
@@ -16,6 +17,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   avatarColor: text("avatar_color").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 });
 
@@ -42,13 +44,25 @@ export const userPreferences = pgTable("user_preferences", {
   currentEpisodeId: uuid("current_episode_id"),
 });
 
-export const userAiCredentials = pgTable("user_ai_credentials", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  provider: text("provider").notNull(),
+export const userAiCredentials = pgTable(
+  "user_ai_credentials",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    encryptedApiKey: text("encrypted_api_key").notNull(),
+    keyVersion: integer("key_version").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.provider] })],
+);
+
+export const appCredentials = pgTable("app_credentials", {
+  provider: text("provider").primaryKey(),
   encryptedApiKey: text("encrypted_api_key").notNull(),
   keyVersion: integer("key_version").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 

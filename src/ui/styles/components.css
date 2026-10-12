@@ -662,6 +662,19 @@
     width: 18px;
     height: 18px;
   }
+  .alertbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--bad);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+  }
+  .alertbar b {
+    color: var(--bad);
+  }
   /* detail */
   .dhead {
     display: grid;

@@ -51,7 +51,7 @@ const MS_PER_SECOND = 1000;
 
 type Deps = {
   repository: RecommendationRepository;
-  candidates: CandidateSource;
+  resolveCandidates: (userId: string) => Promise<CandidateSource>;
   resolveEmbedding: (userId: string) => Promise<EmbeddingProvider>;
   localEmbedding: EmbeddingProvider;
   resolveWriter: (userId: string) => Promise<SuggestionWriter | null>;
@@ -118,11 +118,12 @@ export function makeGetRecommendations(deps: Deps) {
 
 async function gatherCandidates(
   deps: Deps,
+  source: CandidateSource,
   studied: StudiedWork[],
   excluded: ReadonlySet<string>,
 ): Promise<WorkCandidate[]> {
   const seeds = studied
-    .filter((work) => work.provider === deps.candidates.name)
+    .filter((work) => work.provider === source.name)
     .sort((left, right) => right.engagement - left.engagement)
     .slice(0, MAX_SEED_WORKS);
   const failed = (error: unknown): WorkCandidate[] => {
@@ -130,8 +131,8 @@ async function gatherCandidates(
     return [];
   };
   const lists = await Promise.all([
-    ...seeds.map((seed) => deps.candidates.listRelatedWorks(seed.type, seed.externalId).catch(failed)),
-    deps.candidates.listPopularWorks().catch(failed),
+    ...seeds.map((seed) => source.listRelatedWorks(seed.type, seed.externalId).catch(failed)),
+    source.listPopularWorks().catch(failed),
   ]);
   const unique = new Map<string, WorkCandidate>();
   for (const work of lists.flat()) {
@@ -340,7 +341,12 @@ export function makeRefreshRecommendations(deps: Deps) {
         ...studied.map((work) => work.workKey),
         ...feedback.map((entry) => entry.workKey),
       ]);
-      const candidates = await gatherCandidates(deps, studied, excluded);
+      const candidates = await gatherCandidates(
+        deps,
+        await deps.resolveCandidates(input.userId),
+        studied,
+        excluded,
+      );
 
       const documents = new Map<string, string>();
       for (const work of candidates) documents.set(workKeyOf(work), documentOf(work));

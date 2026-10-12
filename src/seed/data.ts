@@ -4,6 +4,7 @@ import type { CefrLevel } from "@/shared/levels";
 
 export const SEED_EMAIL_SUFFIX = "@deixa.example";
 export const SEED_PASSWORD = "deixa1234";
+export const SEED_ADMIN_SLUG = "matheus";
 
 export const SEED_DIALOGUES = [
   "01-roommates-chores",

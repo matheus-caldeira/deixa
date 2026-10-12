@@ -146,11 +146,11 @@ class InMemorySources implements SourceRepository {
     this.cache.set(`${provider}:${episodeId}`, { candidates, fetchedAt: now });
   }
 
-  async getQuota(provider: SourceProviderName) {
+  async getQuota(provider: string) {
     return this.quota.get(provider) ?? null;
   }
 
-  async saveQuota(provider: SourceProviderName, quota: SourceQuota, now: Date) {
+  async saveQuota(provider: string, quota: SourceQuota, now: Date) {
     this.quota.set(provider, { ...quota, updatedAt: now });
   }
 
@@ -185,6 +185,7 @@ function setup(
   const stored = new Map<string, Uint8Array>();
   const imported: { userId: string; english: ImportedFile; portuguese?: ImportedFile }[] = [];
   const deps = {
+    quotaKey: "fake",
     provider,
     userDailyDownloads: options.userDailyDownloads ?? 10,
     sources,

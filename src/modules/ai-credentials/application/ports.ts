@@ -1,9 +1,27 @@
+import type { CredentialService } from "../domain/services";
+
 export type StoredCredential = { encryptedApiKey: string; keyVersion: number };
+export type ServiceCredential = StoredCredential & { service: CredentialService };
 
 export interface CredentialRepository {
-  get(userId: string): Promise<StoredCredential | null>;
-  upsert(userId: string, credential: StoredCredential & { provider: string }, now: Date): Promise<void>;
-  delete(userId: string): Promise<void>;
+  getForUser(userId: string, service: CredentialService): Promise<StoredCredential | null>;
+  listForUser(userId: string): Promise<ServiceCredential[]>;
+  upsertForUser(
+    userId: string,
+    service: CredentialService,
+    credential: StoredCredential,
+    now: Date,
+  ): Promise<void>;
+  deleteForUser(userId: string, service: CredentialService): Promise<void>;
+  getGlobal(service: CredentialService): Promise<StoredCredential | null>;
+  listGlobal(): Promise<ServiceCredential[]>;
+  upsertGlobal(
+    service: CredentialService,
+    credential: StoredCredential,
+    updatedBy: string,
+    now: Date,
+  ): Promise<void>;
+  deleteGlobal(service: CredentialService): Promise<void>;
 }
 
 export interface KeyCipher {
@@ -12,4 +30,4 @@ export interface KeyCipher {
   decrypt(encrypted: string): string;
 }
 
-export type ApiKeyTester = (apiKey: string) => Promise<boolean>;
+export type CredentialTester = (service: CredentialService, secret: string) => Promise<boolean>;

@@ -1,11 +1,12 @@
 import type { Preferences, User } from "../domain/user";
 
 export type UserRecord = User & { passwordHash: string };
+export type NewUser = Omit<UserRecord, "isAdmin">;
 
 export interface UserRepository {
   findByEmail(email: string): Promise<UserRecord | null>;
   findById(id: string): Promise<User | null>;
-  create(user: UserRecord, preferences: Preferences, createdAt: Date): Promise<void>;
+  create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void>;
   listByEmailSuffix(suffix: string): Promise<(User & { level: Preferences["level"] })[]>;
 }
 

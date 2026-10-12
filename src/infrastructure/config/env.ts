@@ -13,7 +13,7 @@ const masterKey = z.string().refine((value) => Buffer.from(value, "base64").leng
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
-  AI_CREDENTIALS_MASTER_KEY: masterKey,
+  AI_CREDENTIALS_MASTER_KEY: z.preprocess(blankAsUndefined, masterKey.optional()),
   TMDB_API_KEY: optionalText,
   TMDB_READ_ACCESS_TOKEN: optionalText,
   OPENSUBTITLES_API_KEY: optionalText,
