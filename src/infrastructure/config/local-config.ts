@@ -6,7 +6,9 @@ export const DATABASE_URL_FILE = "database-url.txt";
 export const SETUP_CODE_FILE = "setup-code.txt";
 const OWNER_ONLY = 0o600;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const CODE_LENGTH = 8;
+const CODE_LENGTH = 12;
+const CODE_GROUP = 4;
+const CODE_SEPARATOR = "-";
 
 export function configDirectory(): string {
   return process.env.DEIXA_CONFIG_DIR?.trim() || process.cwd();
@@ -38,11 +40,20 @@ export function readSetupCode(directory: string): string | null {
 export function ensureSetupCode(directory: string): string {
   const known = readSetupCode(directory);
   if (known) return known;
-  const code = Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join(
-    "",
+  const characters = Array.from(
+    { length: CODE_LENGTH },
+    () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)],
   );
+  const groups = Array.from({ length: CODE_LENGTH / CODE_GROUP }, (_, index) =>
+    characters.slice(index * CODE_GROUP, (index + 1) * CODE_GROUP).join(""),
+  );
+  const code = groups.join(CODE_SEPARATOR);
   writePrivate(directory, SETUP_CODE_FILE, code);
   return code;
+}
+
+export function normalizeSetupCode(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
 export function clearSetupCode(directory: string): void {

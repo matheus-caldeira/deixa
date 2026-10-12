@@ -15,7 +15,7 @@ test("sem banco configurado: código → conexão → tabelas criadas → primei
   await expect(page.getByRole("heading", { name: "Configurar o banco de dados" })).toBeVisible();
   await expect(page.getByLabel("Servidor")).toHaveCount(0);
 
-  await page.getByLabel("Código de configuração").fill("ERRADO99");
+  await page.getByLabel("Código de configuração").fill("AAAA-BBBB-CCCC");
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByText(/Código incorreto/)).toBeVisible();
 

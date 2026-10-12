@@ -113,7 +113,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
         <form className="col" style={{ gap: 12 }} onSubmit={unlock}>
           <p className="note">
             Para garantir que é você, abra o arquivo <b>{view.codeFile}</b> na pasta onde o Deixa está
-            instalado e digite o código que está nele.
+            instalado e digite o código de 12 caracteres que está nele.
           </p>
           <div className="field">
             <label htmlFor="setup-code">Código de configuração</label>

@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readSetupCode } from "../config/local-config";
-import { checkSetupCode, checkSetupCookie, prepareSetupCode } from "./index";
+import { isSetupCode, prepareSetupCode } from "./index";
+
+const WRONG_ATTEMPTS = 50;
 
 describe("código de configuração", () => {
   const directory = mkdtempSync(join(tmpdir(), "deixa-setup-"));
@@ -19,18 +21,19 @@ describe("código de configuração", () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
-  it("aceita o código certo sem diferenciar maiúsculas; cookie ausente não conta como tentativa", () => {
+  it("aceita o código com ou sem hífens e sem diferenciar maiúsculas", () => {
     const code = readSetupCode(directory) ?? "";
-    expect(checkSetupCookie(undefined)).toBe(false);
-    expect(checkSetupCode(code.toLowerCase())).toBe("valid");
-    expect(checkSetupCookie(code)).toBe(true);
+    expect(isSetupCode(code)).toBe(true);
+    expect(isSetupCode(code.toLowerCase().replace(/-/g, ""))).toBe(true);
+    expect(isSetupCode(undefined)).toBe(false);
+    expect(isSetupCode("")).toBe(false);
+    expect(isSetupCode(code.slice(0, -1))).toBe(false);
   });
 
-  it("tentativas erradas pelo formulário e pelo cookie somam no mesmo bloqueio", () => {
+  it("tentativas erradas de terceiros não bloqueiam quem tem o código certo", () => {
     const code = readSetupCode(directory) ?? "";
-    for (let attempt = 0; attempt < 5; attempt += 1) expect(checkSetupCode("ERRADO99")).toBe("invalid");
-    for (let attempt = 0; attempt < 5; attempt += 1) expect(checkSetupCookie("ERRADO99")).toBe(false);
-    expect(checkSetupCode(code)).toBe("blocked");
-    expect(checkSetupCookie(code)).toBe(false);
+    for (let attempt = 0; attempt < WRONG_ATTEMPTS; attempt += 1)
+      expect(isSetupCode("AAAA-BBBB-CCCC")).toBe(false);
+    expect(isSetupCode(code)).toBe(true);
   });
 });

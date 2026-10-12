@@ -6,6 +6,7 @@ import {
   DATABASE_URL_FILE,
   clearSetupCode,
   ensureSetupCode,
+  normalizeSetupCode,
   readSetupCode,
   readStoredDatabaseUrl,
   saveDatabaseUrl,
@@ -34,7 +35,8 @@ describe("configuração local em arquivo", () => {
 
   it("gera um código de configuração, mantém o mesmo até ser apagado e depois gera outro", () => {
     const first = ensureSetupCode(directory);
-    expect(first).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
+    expect(first).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(normalizeSetupCode(` ${first.toLowerCase().replace(/-/g, " ")} `)).toBe(first.replace(/-/g, ""));
     expect(ensureSetupCode(directory)).toBe(first);
     expect(readSetupCode(directory)).toBe(first);
     clearSetupCode(directory);

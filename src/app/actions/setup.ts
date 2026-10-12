@@ -5,10 +5,9 @@ import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import {
   TESTED_MAJOR_VERSION,
-  checkSetupCode,
   configureDatabase,
   getDatabaseStatus,
-  checkSetupCookie,
+  isSetupCode,
 } from "@/infrastructure/setup";
 import { SETUP_COOKIE } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
@@ -43,14 +42,10 @@ function toUrl(input: z.infer<typeof connectionSchema>): string {
 export async function unlockSetupAction(code: unknown): Promise<ActionResult<null>> {
   if ((await getDatabaseStatus()).state === "ready") return { ok: false, message: ALREADY_READY };
   const parsed = z.string().max(40).safeParse(code);
-  const outcome = parsed.success ? checkSetupCode(parsed.data) : "invalid";
-  if (outcome === "blocked") {
-    return { ok: false, message: "Muitas tentativas. Espere alguns minutos e tente de novo." };
-  }
-  if (outcome === "invalid" || !parsed.success) {
+  if (!parsed.success || !isSetupCode(parsed.data)) {
     return { ok: false, message: "Código incorreto. Confira o arquivo no computador onde o Deixa roda." };
   }
-  (await cookies()).set(SETUP_COOKIE, parsed.data.trim().toUpperCase(), {
+  (await cookies()).set(SETUP_COOKIE, parsed.data, {
     httpOnly: true,
     sameSite: "strict",
     path: "/",
@@ -65,7 +60,7 @@ export async function connectDatabaseAction(
   const status = await getDatabaseStatus();
   if (status.state === "ready") return { ok: false, message: ALREADY_READY };
   const store = await cookies();
-  if (!checkSetupCookie(store.get(SETUP_COOKIE)?.value)) return { ok: false, message: LOCKED };
+  if (!isSetupCode(store.get(SETUP_COOKIE)?.value)) return { ok: false, message: LOCKED };
   const parsed = connectionSchema.safeParse(input);
   if (!parsed.success) {
     return {

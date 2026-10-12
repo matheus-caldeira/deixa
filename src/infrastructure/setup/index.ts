@@ -1,12 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
-import { AttemptThrottle } from "@/modules/identity/infrastructure/attempt-throttle";
-import { systemClock } from "@/shared/clock";
 import { getEnv } from "../config/env";
 import {
   SETUP_CODE_FILE,
   clearSetupCode,
   configDirectory,
   ensureSetupCode,
+  normalizeSetupCode,
   readSetupCode,
   saveDatabaseUrl,
 } from "../config/local-config";
@@ -21,37 +20,16 @@ import { forgetDatabaseStatus, getDatabaseStatus, type DatabaseStatus } from "./
 export { getDatabaseStatus, SETUP_CODE_FILE, TESTED_MAJOR_VERSION };
 export type { DatabaseStatus, DetectedServer };
 
-const MAX_CODE_FAILURES = 10;
-const CODE_WINDOW_MS = 10 * 60 * 1000;
-const THROTTLE_KEY = "setup";
-const codeThrottle = new AttemptThrottle(MAX_CODE_FAILURES, CODE_WINDOW_MS, systemClock);
-
-export type CodeCheck = "valid" | "invalid" | "blocked";
-
 export function prepareSetupCode(): void {
   ensureSetupCode(configDirectory());
 }
 
-function isSetupCode(candidate: string | undefined): boolean {
+export function isSetupCode(candidate: string | undefined): boolean {
   const expected = readSetupCode(configDirectory());
   if (!expected || !candidate) return false;
-  const given = Buffer.from(candidate.trim().toUpperCase());
-  const known = Buffer.from(expected);
+  const given = Buffer.from(normalizeSetupCode(candidate));
+  const known = Buffer.from(normalizeSetupCode(expected));
   return given.length === known.length && timingSafeEqual(given, known);
-}
-
-export function checkSetupCode(candidate: string): CodeCheck {
-  if (codeThrottle.isBlocked(THROTTLE_KEY)) return "blocked";
-  if (isSetupCode(candidate)) {
-    codeThrottle.reset(THROTTLE_KEY);
-    return "valid";
-  }
-  codeThrottle.recordFailure(THROTTLE_KEY);
-  return "invalid";
-}
-
-export function checkSetupCookie(value: string | undefined): boolean {
-  return value !== undefined && checkSetupCode(value) === "valid";
 }
 
 export function databaseComesFromEnvironment(): boolean {

@@ -118,7 +118,7 @@ Feito (branch `feat/database-setup`):
 
 - [x] O app sobe sem banco. Sem endereço configurado, ou com o banco fora do ar, toda rota leva a `/setup`.
 - [x] `/setup` pede o código de `setup-code.txt` (criado na pasta de configuração; só quem tem acesso ao
-      computador lê), detecta Postgres local (portas 5432, 5433 e 1442), aceita dados em campos ou o endereço
+      computador lê; 12 caracteres, sem bloqueio por tentativas), detecta Postgres local (portas 5432, 5433 e 1442), aceita dados em campos ou o endereço
       completo, cria o banco se faltar, aplica as migrações e leva à criação da primeira conta.
 - [x] Sem Postgres local, a tela recomenda a instalação conforme o sistema do servidor.
 - [x] O endereço fica em `database-url.txt` (só o dono lê). `DATABASE_URL` no ambiente continua valendo e
