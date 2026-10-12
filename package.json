@@ -29,9 +29,9 @@
     "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
     "fixtures:catalog": "tsx --env-file=.env scripts/generate-catalog-fixture.ts",
     "screenshots": "node scripts/screenshots.mjs",
-    "desktop:check": "cd src-tauri && cargo check",
-    "desktop:run": "cd src-tauri && cargo run",
-    "desktop:build": "tauri build"
+    "desktop:check": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo check",
+    "desktop:run": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo run",
+    "desktop:build": "PATH=\"$HOME/.cargo/bin:$PATH\" tauri build"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
