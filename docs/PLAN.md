@@ -82,3 +82,4 @@ Detalhes em [STAGE-2-SUBTITLES.md](STAGE-2-SUBTITLES.md). Branch `feat/opensubti
 - Fase 03 restante: worker separado, áudio em lote, roteiro.
 - Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
 - Fase 06: fala em tempo real, limites de uso por conta, HTTPS para PWA e microfone.
+- App nativo instalável (Tauri, banco embutido, configuração no banco): ver `docs/HANDOFF.md`.
