@@ -77,14 +77,14 @@ release do GitHub, sem Docker, sem `.env`, com o menor consumo de recursos poss�
 
 ### 3.2 Arquitetura recomendada
 
-| Peça          | Hoje                         | Proposta                                                                        |
-| ------------- | ---------------------------- | ------------------------------------------------------------------------------- |
-| Casca         | navegador                    | **Tauri 2**: bandeja, janela no webview do sistema, notificações, atualizador   |
-| Servidor      | `pnpm dev`                   | Next com `output: "standalone"` rodando como sidecar com um Node embutido       |
-| Banco         | Postgres 17 no Docker        | **PGlite** (Postgres em WASM, no processo) com o mesmo schema Drizzle           |
-| Voz           | Kokoro no Docker             | opcional: modelo ONNX baixado sob demanda; sem ele, `SilentTtsProvider`         |
-| Configuração  | `.env`                       | tabela `app_settings` + credenciais por usuário; segredo mestre fora do banco   |
-| Dados         | `data/` no repositório       | diretório de dados do usuário no sistema operacional                            |
+| Peça         | Hoje                   | Proposta                                                                      |
+| ------------ | ---------------------- | ----------------------------------------------------------------------------- |
+| Casca        | navegador              | **Tauri 2**: bandeja, janela no webview do sistema, notificações, atualizador |
+| Servidor     | `pnpm dev`             | Next com `output: "standalone"` rodando como sidecar com um Node embutido     |
+| Banco        | Postgres 17 no Docker  | **PGlite** (Postgres em WASM, no processo) com o mesmo schema Drizzle         |
+| Voz          | Kokoro no Docker       | opcional: modelo ONNX baixado sob demanda; sem ele, `SilentTtsProvider`       |
+| Configuração | `.env`                 | tabela `app_settings` + credenciais por usuário; segredo mestre fora do banco |
+| Dados        | `data/` no repositório | diretório de dados do usuário no sistema operacional                          |
 
 Por que Tauri e não Electron: o Electron embute um Chromium inteiro (instalador perto de 150 MB a mais e
 algumas centenas de MB de memória com a janela aberta); o Tauri usa o webview que o sistema já tem. Como o app
