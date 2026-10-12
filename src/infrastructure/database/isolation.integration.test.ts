@@ -198,8 +198,16 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     await app.removeCredential({ actor: anaActor, service: "gemini", scope: "global" });
     await app.removeCredential({ actor: anaActor, service: "opensubtitles", scope: "user" });
     expect(await own(anaActor)).toEqual(["ready", "absent", "absent"]);
-    const [firstUser] = await handle.db.select().from(users).where(eq(users.isAdmin, true));
-    expect(firstUser?.id).toBe(ana);
+    await handle.db.update(users).set({ isAdmin: false }).where(eq(users.id, ana));
+    const signUps = await Promise.all(
+      ["bia", "caio", "duda"].map((name) =>
+        app.signUp({ name, email: `${name}@example.com`, password: "segredo123", level: "A1" }),
+      ),
+    );
+    const admins = await handle.db.select({ id: users.id }).from(users).where(eq(users.isAdmin, true));
+    expect(signUps).toHaveLength(3);
+    expect(admins).toEqual([]);
+    await handle.db.update(users).set({ isAdmin: true }).where(eq(users.id, ana));
     const [stored] = await handle.db.select().from(userAiCredentials);
     expect(stored?.encryptedApiKey).not.toContain("AIza");
   });

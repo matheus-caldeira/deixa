@@ -11,6 +11,8 @@ import type {
   UserRepository,
 } from "../application/ports";
 
+const FIRST_ACCOUNT_LOCK = 7_301_001;
+
 type PreferencesRow = typeof userPreferences.$inferSelect;
 
 function toPreferences(row: PreferencesRow): Preferences {
@@ -58,9 +60,10 @@ export class DrizzleIdentityRepository implements UserRepository, SessionReposit
 
   async create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void> {
     await this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${FIRST_ACCOUNT_LOCK})`);
       await tx.insert(users).values({
         ...user,
-        isAdmin: sql<boolean>`not exists (select 1 from ${users} where ${users.isAdmin})`,
+        isAdmin: sql<boolean>`not exists (select 1 from ${users})`,
         createdAt,
       });
       await tx.insert(userPreferences).values({ userId: user.id, ...preferences });

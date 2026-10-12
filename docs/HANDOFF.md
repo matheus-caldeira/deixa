@@ -128,6 +128,9 @@ Falta:
 - [ ] Assistente de primeira abertura: cria o dono do computador (admin), pede as chaves com link para onde
       obter cada uma, permite pular.
 - [ ] Tela para o administrador promover outra conta.
+- [ ] Numa instalação nova, a primeira conta criada vira administradora, e o servidor já escuta na rede
+      interna. O assistente de primeira abertura deve aceitar a criação dessa conta só a partir do próprio
+      computador.
 - [ ] Porta e diretório de dados continuam fora do banco (são necessários antes de abri-lo).
 - [ ] No app nativo, `master-key.txt` deve ir para o diretório de dados do usuário, não para a pasta do app.
 - [ ] O nome `user_ai_credentials` ficou histórico (hoje guarda os três serviços); renomear numa migração

@@ -26,7 +26,7 @@ export class InMemoryIdentityStore implements UserRepository, SessionRepository,
   }
 
   async create(user: NewUser, preferences: Preferences): Promise<void> {
-    const isAdmin = ![...this.users.values()].some((known) => known.isAdmin);
+    const isAdmin = this.users.size === 0;
     this.users.set(user.id, { ...user, isAdmin });
     this.preferencesByUser.set(user.id, preferences);
   }
