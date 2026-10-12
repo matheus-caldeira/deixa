@@ -30,7 +30,8 @@ const eslintConfig = defineConfig([
           patterns: [
             {
               group: ["@/infrastructure/**", "@/modules/*/infrastructure/**", "@/modules/*/application/**"],
-              message: "Componente React não importa infraestrutura nem casos de uso: receba dados por props.",
+              message:
+                "Componente React não importa infraestrutura nem casos de uso: receba dados por props.",
             },
           ],
         },
@@ -62,7 +63,14 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["@/infrastructure/**", "@/modules/*/infrastructure/**", "drizzle-orm", "drizzle-orm/**", "next", "next/**"],
+              group: [
+                "@/infrastructure/**",
+                "@/modules/*/infrastructure/**",
+                "drizzle-orm",
+                "drizzle-orm/**",
+                "next",
+                "next/**",
+              ],
               message: "Domínio e aplicação dependem só de ports.",
             },
           ],
@@ -72,6 +80,8 @@ const eslintConfig = defineConfig([
   },
   globalIgnores([
     ".next/**",
+    "src-tauri/target/**",
+    "src-tauri/gen/**",
     "out/**",
     "build/**",
     "next-env.d.ts",

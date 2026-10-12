@@ -193,3 +193,13 @@ O Deixa não traz banco embutido: usa um PostgreSQL seu (testado na versão 17).
 `pnpm db:seed` cria três perfis, sete obras com os identificadores reais do TMDB, quinze episódios com legendas
 fictícias e as trilhas deles em A1, B1 e C1. Usa só os arquivos de `fixtures/`: não precisa de `.env` nem de
 chave nenhuma, apenas do banco configurado (`DATABASE_URL` ou a tela `/setup`). Senha dos perfis: `deixa1234`.
+
+## Casca nativa (em construção)
+
+`src-tauri/` tem um app Tauri que fica na bandeja do sistema e abre o Deixa numa janela própria, no navegador
+ou por QR code no celular. Precisa do Rust instalado e, por enquanto, do servidor já rodando:
+
+```bash
+pnpm dev            # em um terminal
+pnpm desktop:run    # em outro
+```

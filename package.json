@@ -28,7 +28,10 @@
     "db:reset": "node scripts/reset-dev-db.mjs && pnpm db:migrate && pnpm db:seed",
     "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
     "fixtures:catalog": "tsx --env-file=.env scripts/generate-catalog-fixture.ts",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "desktop:check": "cd src-tauri && cargo check",
+    "desktop:run": "cd src-tauri && cargo run",
+    "desktop:build": "tauri build"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
@@ -41,6 +44,7 @@
   "devDependencies": {
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@tauri-apps/cli": "^2.12.2",
     "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",

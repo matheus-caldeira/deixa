@@ -33,3 +33,6 @@ screenshots/
 .claude/settings.local.json
 .claude/worktrees/
 .claude/reports/
+
+src-tauri/target/
+src-tauri/gen/

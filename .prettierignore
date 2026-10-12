@@ -10,3 +10,6 @@ src/infrastructure/database/migrations/
 test-results/
 playwright-report/
 screenshots/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/icons/

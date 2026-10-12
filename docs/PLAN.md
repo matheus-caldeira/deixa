@@ -130,6 +130,16 @@ Branch `feat/database-setup`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 
 | 67  | Seção de configurações do servidor no perfil         | E2E: valor inválido recusado, valor salvo persiste          | [x]    |
 | 68  | Mudança vale sem reiniciar                           | Conferido: tirar o Kokoro troca a voz para silêncio na hora | [x]    |
 
+## Etapa 8: casca nativa (Tauri), primeira parte
+
+Branch `feat/desktop-shell`. Detalhes e pendências em [HANDOFF.md](HANDOFF.md), seção 3.3 D.
+
+| Nº  | Item                                                   | Critério de pronto                                       | Estado |
+| --- | ------------------------------------------------------ | -------------------------------------------------------- | ------ |
+| 69  | Projeto Tauri com bandeja, janela, navegador e QR code | Compila; sobe e fica residente no macOS; instância única | [x]    |
+| 70  | Teste manual do menu e das janelas                     | Conferido pelo autor                                     | [ ]    |
+| 71  | Servidor embutido como sidecar                         | App instalável sobe sem `pnpm dev`                       | [ ]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

@@ -184,16 +184,38 @@ Falta:
 
 **D. Casca Tauri**
 
-- [ ] `next.config` com `output: "standalone"`; conferir `next/image` (o otimizador usa `sharp`, módulo
-      nativo; usar imagens não otimizadas ou empacotar o binário por plataforma).
-- [ ] Sidecar: binário do Node por plataforma + pasta standalone; a casca sobe, vigia e encerra o servidor.
-- [ ] Instância única, início com o sistema (opcional), porta configurável com detecção de conflito.
-- [ ] Bandeja: status do servidor, endereços (local e rede), "onde parei" do dono, abrir janela, abrir no
-      navegador, sair.
-- [ ] Sessão do dono: token de sessão de longa duração guardado no cofre do sistema e injetado só na janela
-      local; acesso pela rede continua exigindo login.
-- [ ] Notificações nativas: a casca consulta a caixa de notificações do dono (endpoint local autenticado) e
-      dispara o aviso do sistema; sem perfil conectado, não consulta.
+Primeira etapa feita em 12/10/2026 (branch `feat/desktop-shell`, pasta `src-tauri/`). Rust instalado em
+`/Volumes/SSD/.rustup` e `/Volumes/SSD/.cargo`, com links em `~/.rustup` e `~/.cargo`.
+
+- [x] Projeto Tauri 2 com ícones gerados a partir do ícone do PWA. `pnpm desktop:run` compila e executa;
+      `pnpm desktop:check` só confere.
+- [x] Ícone na bandeja com menu: estado do servidor (atualizado a cada 5 s), "Abrir o Deixa", "Abrir no
+      navegador", "Abrir no celular (QR code)" e "Sair".
+- [x] Janela própria apontando para `http://localhost:1300` (porta trocável por `DEIXA_PORT`). Fechar a
+      janela só a esconde; o app continua na bandeja. No macOS não aparece no Dock.
+- [x] Janela do QR code com o endereço da rede interna, gerado na própria casca.
+- [x] Instância única: abrir de novo só traz a janela existente.
+- [x] Sem servidor no ar, a janela mostra um aviso local em vez de erro.
+
+Conferido só no macOS, em modo de desenvolvimento: o binário sobe, fica residente (cerca de 97 MB com a
+janela aberta, compilação de depuração) e a segunda instância encerra sozinha. O menu e as janelas não
+foram clicados por automação; falta o teste manual.
+
+Falta:
+
+- [ ] **A casca ainda não sobe o servidor.** Hoje ela espera o servidor já rodando (`pnpm dev` ou
+      `pnpm start`). Próximo passo: `next.config` com `output: "standalone"`, binário do Node por plataforma
+      como sidecar, e a casca subindo, vigiando e encerrando o servidor. Levar junto a pasta de migrações e
+      `fixtures/`, e resolver o `sharp` do `next/image`.
+- [ ] Apontar `DEIXA_CONFIG_DIR` e `DATA_DIR` para o diretório de dados do usuário.
+- [ ] Sessão do dono: token de longa duração injetado só na janela local.
+- [ ] "Onde parei" no menu da bandeja (depende da sessão do dono).
+- [ ] Notificações nativas a partir da caixa de notificações do dono.
+- [ ] Destravar `/setup` sozinho, lendo `setup-code.txt`.
+- [ ] Início com o sistema (opcional) e detecção de porta ocupada.
+- [ ] Ícone monocromático para a barra de menus do macOS.
+- [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).
+- [ ] `pnpm desktop:build` gera o instalador, mas sem o servidor embutido ele ainda não serve para distribuir.
 
 **E. HTTPS na rede interna**
 
