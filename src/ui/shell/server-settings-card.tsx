@@ -69,7 +69,9 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
             autoCapitalize="none"
             spellCheck={false}
           />
-          <span className="small muted">Em branco, o áudio fica em silêncio.</span>
+          <span className="small muted">
+            Só neste computador ou numa rede privada. Em branco, o áudio fica em silêncio.
+          </span>
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button className="btn" style={{ padding: 12, fontSize: 13 }} type="submit" disabled={pending}>

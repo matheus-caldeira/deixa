@@ -1,10 +1,71 @@
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import type { LookupFunction } from "node:net";
 import type { TtsProvider, Voice } from "@/modules/audio";
-import { resolvesToAllowedAddress } from "./service-address";
+import { resolveAllowedAddresses, type ResolvedAddress } from "./service-address";
 
 const TIMEOUT_MS = 60_000;
 const HEALTH_TIMEOUT_MS = 2000;
 const MODEL = "kokoro";
 const AUDIO_TYPE = "audio/";
+const OK = 200;
+const MAX_AUDIO_BYTES = 30_000_000;
+const CONNECTION_ERRORS = new Set(["ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH", "EADDRNOTAVAIL"]);
+
+type PinnedResponse = { status: number; contentType: string; bytes: Uint8Array };
+
+function pinnedLookup(target: ResolvedAddress): LookupFunction {
+  return (_hostname, options, callback) => {
+    if (typeof options === "object" && options.all) {
+      callback(null, [{ address: target.address, family: target.family }]);
+      return;
+    }
+    callback(null, target.address, target.family);
+  };
+}
+
+function sendTo(input: {
+  url: string;
+  method: "GET" | "POST";
+  body?: string;
+  timeoutMs: number;
+  target: ResolvedAddress;
+}): Promise<PinnedResponse> {
+  return new Promise((resolve, reject) => {
+    const url = new URL(input.url);
+    const open = url.protocol === "https:" ? httpsRequest : httpRequest;
+    const request = open(
+      url,
+      {
+        method: input.method,
+        lookup: pinnedLookup(input.target),
+        headers: input.body
+          ? { "content-type": "application/json", "content-length": Buffer.byteLength(input.body) }
+          : {},
+      },
+      (response) => {
+        const chunks: Buffer[] = [];
+        let size = 0;
+        response.on("data", (chunk: Buffer) => {
+          size += chunk.length;
+          if (size > MAX_AUDIO_BYTES) request.destroy(new Error("resposta do Kokoro grande demais"));
+          else chunks.push(chunk);
+        });
+        response.on("end", () =>
+          resolve({
+            status: response.statusCode ?? 0,
+            contentType: response.headers["content-type"] ?? "",
+            bytes: new Uint8Array(Buffer.concat(chunks)),
+          }),
+        );
+        response.on("error", reject);
+      },
+    );
+    request.setTimeout(input.timeoutMs, () => request.destroy(new Error("Kokoro não respondeu a tempo")));
+    request.on("error", reject);
+    request.end(input.body);
+  });
+}
 
 export class KokoroTtsProvider implements TtsProvider {
   readonly name = "kokoro" as const;
@@ -19,41 +80,51 @@ export class KokoroTtsProvider implements TtsProvider {
     return requested;
   }
 
-  private async assertAllowedAddress(): Promise<void> {
-    if (!(await resolvesToAllowedAddress(this.baseUrl))) {
-      throw new Error("o endereço do Kokoro resolve para uma rede não permitida");
+  private async send(request: {
+    path: string;
+    method: "GET" | "POST";
+    body?: string;
+    timeoutMs: number;
+  }): Promise<PinnedResponse> {
+    const targets = await resolveAllowedAddresses(this.baseUrl);
+    if (targets.length === 0) {
+      throw new Error("o endereço do Kokoro não é deste computador nem de uma rede privada");
     }
+    let failure: unknown = new Error("Kokoro sem endereço para conectar");
+    for (const target of targets) {
+      try {
+        return await sendTo({ ...request, url: `${this.baseUrl}${request.path}`, target });
+      } catch (error) {
+        failure = error;
+        if (!CONNECTION_ERRORS.has((error as { code?: string }).code ?? "")) throw error;
+      }
+    }
+    throw failure;
   }
 
   async synthesize(input: { text: string; voice: Voice }): Promise<Uint8Array> {
-    await this.assertAllowedAddress();
-    const response = await fetch(`${this.baseUrl}/v1/audio/speech`, {
+    const response = await this.send({
+      path: "/v1/audio/speech",
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
         voice: input.voice.voiceId,
         input: input.text,
         response_format: "wav",
       }),
-      redirect: "error",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      timeoutMs: TIMEOUT_MS,
     });
-    if (!response.ok) throw new Error(`Kokoro respondeu ${response.status}`);
-    if (!(response.headers.get("content-type") ?? "").startsWith(AUDIO_TYPE)) {
+    if (response.status !== OK) throw new Error(`Kokoro respondeu ${response.status}`);
+    if (!response.contentType.startsWith(AUDIO_TYPE)) {
       throw new Error("Kokoro respondeu com um conteúdo que não é áudio");
     }
-    return new Uint8Array(await response.arrayBuffer());
+    return response.bytes;
   }
 
   async isHealthy(): Promise<boolean> {
     try {
-      await this.assertAllowedAddress();
-      const response = await fetch(`${this.baseUrl}/health`, {
-        redirect: "error",
-        signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
-      });
-      return response.ok;
+      const response = await this.send({ path: "/health", method: "GET", timeoutMs: HEALTH_TIMEOUT_MS });
+      return response.status === OK;
     } catch {
       return false;
     }
