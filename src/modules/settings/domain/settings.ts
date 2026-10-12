@@ -15,12 +15,13 @@ export function canonicalServiceUrl(value: string): string | null {
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") return null;
   if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") return null;
-  const host = url.hostname.toLowerCase();
+  const host = url.hostname.toLowerCase().replace(/\.+$/, "");
   const isIpv6 = host.startsWith("[");
   if (host === "" || BLOCKED_IPV4.test(host) || BLOCKED_NAMES.has(host)) return null;
   if (isIpv6 && host !== LOOPBACK_IPV6) return null;
   const path = url.pathname.replace(/\/+$/, "");
-  return `${url.protocol}//${url.host.toLowerCase()}${path}`;
+  const port = url.port === "" ? "" : `:${url.port}`;
+  return `${url.protocol}//${host}${port}${path}`;
 }
 
 const FAIL_CLOSED: Partial<AppSettings> = { subtitleDownloadsPerUserPerDay: 0, kokoroUrl: null };

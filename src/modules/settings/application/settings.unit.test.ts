@@ -56,6 +56,7 @@ describe("configurações do servidor", () => {
     expect(saved.kokoroUrl).toBe("http://localhost:1881/api");
     expect(canonicalServiceUrl("http://[::1]:1881")).toBe("http://[::1]:1881");
     expect(canonicalServiceUrl("http://192.168.1.20:1881/")).toBe("http://192.168.1.20:1881");
+    expect(canonicalServiceUrl("http://kokoro.local.:1881")).toBe("http://kokoro.local:1881");
   });
 
   it("recusa modelo fora do formato, quantidade fora da faixa e endereço que não é http", async () => {
@@ -75,6 +76,8 @@ describe("configurações do servidor", () => {
       { ...defaults, kokoroUrl: "http://0xa9.0xfe.0xa9.0xfe/" },
       { ...defaults, kokoroUrl: "http://[::ffff:169.254.169.254]/" },
       { ...defaults, kokoroUrl: "http://[fe80::1]:1881" },
+      { ...defaults, kokoroUrl: "http://metadata.google.internal./" },
+      { ...defaults, kokoroUrl: "http://169.254.169.254./" },
       { geminiModel: "gemini-2.5-flash" },
     ]) {
       await expect(app.update({ actor: admin, values })).rejects.toMatchObject({ code: "INVALID_INPUT" });

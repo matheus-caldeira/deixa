@@ -1,4 +1,5 @@
 import type { TtsProvider, Voice } from "@/modules/audio";
+import { resolvesToAllowedAddress } from "./service-address";
 
 const TIMEOUT_MS = 60_000;
 const HEALTH_TIMEOUT_MS = 2000;
@@ -18,7 +19,14 @@ export class KokoroTtsProvider implements TtsProvider {
     return requested;
   }
 
+  private async assertAllowedAddress(): Promise<void> {
+    if (!(await resolvesToAllowedAddress(this.baseUrl))) {
+      throw new Error("o endereço do Kokoro resolve para uma rede não permitida");
+    }
+  }
+
   async synthesize(input: { text: string; voice: Voice }): Promise<Uint8Array> {
+    await this.assertAllowedAddress();
     const response = await fetch(`${this.baseUrl}/v1/audio/speech`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -40,6 +48,7 @@ export class KokoroTtsProvider implements TtsProvider {
 
   async isHealthy(): Promise<boolean> {
     try {
+      await this.assertAllowedAddress();
       const response = await fetch(`${this.baseUrl}/health`, {
         redirect: "error",
         signal: AbortSignal.timeout(HEALTH_TIMEOUT_MS),
