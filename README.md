@@ -177,3 +177,13 @@ Regras de arquitetura, decisões e documentação por tecnologia: [`.contexts/`]
 - As chaves ficam cifradas no banco com a chave mestra guardada em `master-key.txt`, na raiz do projeto. O
   arquivo é criado sozinho na primeira execução e fica fora do git. Se ele for trocado ou apagado, as chaves
   guardadas ficam ilegíveis: o app avisa e basta cadastrá-las de novo.
+
+## Banco de dados
+
+O Deixa não traz banco embutido: usa um PostgreSQL seu (testado na versão 17).
+
+- Em desenvolvimento, `DATABASE_URL` no `.env` aponta para o Postgres do `docker compose`.
+- Sem `DATABASE_URL`, a primeira abertura leva a `/setup`: digite o código do arquivo `setup-code.txt`,
+  escolha o Postgres encontrado ou informe o endereço, e o Deixa cria o banco e as tabelas.
+- O endereço fica em `database-url.txt`. Para trocar de banco, apague esse arquivo e abra o app de novo.
+- `DEIXA_CONFIG_DIR` muda a pasta desses arquivos e do `master-key.txt` (padrão: a pasta onde o app roda).

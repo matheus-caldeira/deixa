@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { chmodSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 export const MASTER_KEY_FILE = "master-key.txt";
 const KEY_BYTES = 32;
@@ -13,6 +13,7 @@ const isValid = (value: string): boolean => Buffer.from(value, "base64").length 
 
 function create(path: string): string {
   const value = randomBytes(KEY_BYTES).toString("base64");
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${value}\n`, { mode: OWNER_ONLY, flag: "wx" });
   return value;
 }

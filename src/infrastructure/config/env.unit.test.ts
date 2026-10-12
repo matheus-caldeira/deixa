@@ -26,10 +26,11 @@ describe("variáveis de ambiente", () => {
     expect(env.DEV_SHORTCUTS).toBe(true);
   });
 
-  it("recusa chave mestra com tamanho errado e cita só o nome da variável", () => {
+  it("recusa chave mestra com tamanho errado; endereço do banco é opcional", () => {
     expect(() => parseEnv({ ...base, AI_CREDENTIALS_MASTER_KEY: "curta" })).toThrow(
       /AI_CREDENTIALS_MASTER_KEY/,
     );
-    expect(() => parseEnv({ AI_CREDENTIALS_MASTER_KEY: MASTER_KEY })).toThrow(/DATABASE_URL/);
+    expect(parseEnv({ AI_CREDENTIALS_MASTER_KEY: MASTER_KEY }).DATABASE_URL).toBeUndefined();
+    expect(parseEnv({ DATABASE_URL: "  " }).DATABASE_URL).toBeUndefined();
   });
 });

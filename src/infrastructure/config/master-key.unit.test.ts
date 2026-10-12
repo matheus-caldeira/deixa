@@ -30,6 +30,12 @@ describe("chave mestra em arquivo", () => {
     expect(second).toEqual({ value: first.value, origin: "file" });
   });
 
+  it("cria a pasta de configuração quando ela ainda não existe", () => {
+    const nested = join(directory, "ainda", "não", "existe");
+    expect(loadMasterKey({ fromEnvironment: undefined, directory: nested }).origin).toBe("created");
+    expect(readdirSync(nested)).toEqual([MASTER_KEY_FILE]);
+  });
+
   it("variável de ambiente tem prioridade e não cria arquivo", () => {
     const fromEnvironment = Buffer.alloc(32, 4).toString("base64");
     expect(loadMasterKey({ fromEnvironment, directory })).toEqual({

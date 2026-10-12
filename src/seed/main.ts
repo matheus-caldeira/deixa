@@ -12,6 +12,7 @@ import { runSeed } from "./run-seed";
 
 async function main(): Promise<void> {
   const env = getEnv();
+  if (!env.DATABASE_URL) throw new Error("DATABASE_URL ausente. Rode pnpm setup:env.");
   const handle = openDatabase(env.DATABASE_URL);
   const fakeLlm = new FakeLlmProvider();
   try {

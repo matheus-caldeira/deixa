@@ -99,13 +99,44 @@ As etapas A a C valem mesmo sem a casca nativa e devem vir primeiro.
 
 **A. Banco embutido**
 
-- [ ] Prova de conceito: rodar migrações e `pnpm test:integration` contra PGlite (driver `drizzle-orm/pglite`).
-      Pontos a conferir: índices únicos parciais, transações, `ON CONFLICT`, concorrência (PGlite é conexão
-      única; as filas por usuário já existentes ajudam).
-- [ ] Port de conexão escolhendo Postgres externo (`DATABASE_URL` definido) ou PGlite (padrão no app nativo).
-- [ ] Migrações aplicadas na inicialização, com cópia de segurança do diretório antes de migrar.
-- [ ] Se o PGlite não aguentar: alternativa é embutir binários do Postgres (instalador bem maior). SQLite
-      obrigaria a reescrever schema e migrações; descartado em princípio.
+Prova feita em 12/10/2026 (branch `spike/pglite`, sem mudança no app). Para repetir:
+`DEIXA_TEST_DB=pglite pnpm test:integration`.
+
+Resultado com PGlite 0.5.8 (PostgreSQL 18.3 em WASM):
+
+- Funciona: as 14 migrações aplicam sem ajuste e a suíte de integração passa inteira (índices únicos
+  parciais, transações, `ON CONFLICT`, trava de transação, pedidos simultâneos).
+- Abre em cerca de 1 s, aplica as migrações em 0,1 s, consulta simples em 0,2 ms, persiste em disco e
+  reabre; banco vazio ocupa 40 MB.
+- **Memória é o ponto fraco**: picos de 0,9 a 1,2 GB ao abrir e sob uso, assentando entre 175 e 280 MB
+  parado, somados ao Node. O Postgres atual no Docker usa 83 MB.
+
+Decisão do Matheus em 12/10/2026: **não embutir banco**. O instalador não leva Postgres; o app usa o
+Postgres que a pessoa já tem ou instala. PGlite e SQLite ficam descartados por ora.
+
+Feito (branch `feat/database-setup`):
+
+- [x] O app sobe sem banco. Sem endereço configurado, ou com o banco fora do ar, toda rota leva a `/setup`.
+- [x] `/setup` pede o código de `setup-code.txt` (criado na pasta de configuração; só quem tem acesso ao
+      computador lê), detecta Postgres local (portas 5432, 5433 e 1442), aceita dados em campos ou o endereço
+      completo, cria o banco se faltar, aplica as migrações e leva à criação da primeira conta.
+- [x] Sem Postgres local, a tela recomenda a instalação conforme o sistema do servidor.
+- [x] O endereço fica em `database-url.txt` (só o dono lê). `DATABASE_URL` no ambiente continua valendo e
+      tem prioridade (desenvolvimento e testes).
+- [x] As migrações passam a rodar sozinhas na primeira verificação do banco em cada execução.
+- [x] `DEIXA_CONFIG_DIR` escolhe a pasta de `master-key.txt`, `database-url.txt` e `setup-code.txt`
+      (padrão: pasta onde o app roda).
+
+Falta:
+
+- [ ] Botão "Baixar e configurar para mim", que busca os binários do Postgres sob demanda, para quem não
+      é técnico.
+- [ ] Validar versões do Postgres abaixo da 17 (hoje a tela só avisa quando a versão é menor).
+- [ ] Cópia de segurança antes de migrar.
+- [ ] No pacote final, a pasta `src/infrastructure/database/migrations` precisa ir junto: as migrações são
+      lidas a partir da pasta de execução.
+- [ ] Trocar de banco depois de configurado (hoje só editando ou apagando `database-url.txt`).
+- [ ] A casca Tauri deve ler `setup-code.txt` e destravar a tela sozinha na janela local.
 
 **B. Configuração no banco e assistente de primeira abertura**
 
@@ -199,8 +230,7 @@ Ainda em aberto:
 - **Assinatura de código.** Sem certificado, o macOS bloqueia o app baixado (Gatekeeper) e o Windows mostra o
   aviso do SmartScreen. Apple Developer custa 99 dólares por ano; certificado para Windows também é pago. Dá
   para lançar sem, com instruções de contorno, mas isso contraria o "fácil para qualquer um".
-- **PGlite** é conexão única e mais lento que o Postgres nativo; suficiente para uma casa, a validar com os
-  testes de integração.
+- **PGlite** passou nos testes, mas usa bem mais memória que o previsto (ver 3.3 A).
 - **Memória total**: o piso é o Node do servidor Next (ordem de 150 a 250 MB). Reduzir além disso exigiria
   reescrever o servidor, o que não se recomenda agora.
 - **Direitos**: com instalação local, cada pessoa monta o próprio catálogo, o que reduz o problema de

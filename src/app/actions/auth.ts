@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { CEFR_LEVELS } from "@/shared/levels";
 import { AppError } from "@/shared/errors";
-import { endSession, startSession } from "../session";
+import { endSession, requireDatabase, startSession } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
 const signInSchema = z.object({ email: z.string().max(200), password: z.string().max(200) });
@@ -16,6 +16,7 @@ const signUpSchema = z.object({
 });
 
 export async function signInAction(input: unknown): Promise<ActionResult<null>> {
+  await requireDatabase();
   const result = await runAction("signIn", async () => {
     const parsed = signInSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_CREDENTIALS");
@@ -39,6 +40,7 @@ export async function signInAction(input: unknown): Promise<ActionResult<null>> 
 }
 
 export async function signUpAction(input: unknown): Promise<ActionResult<null>> {
+  await requireDatabase();
   const result = await runAction("signUp", async () => {
     const parsed = signUpSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
@@ -52,6 +54,7 @@ export async function signUpAction(input: unknown): Promise<ActionResult<null>> 
 }
 
 export async function signOutAction(): Promise<void> {
+  await requireDatabase();
   await app().signOut(await endSession());
   redirect("/login");
 }

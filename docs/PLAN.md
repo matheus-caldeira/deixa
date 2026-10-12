@@ -103,6 +103,18 @@ Branch `feat/user-credentials`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.
 | 57  | Alerta de chave ilegível                                      | Teste unitário com chave mestra trocada; visto na tela | [x]    |
 | 58  | Perfil com as três chaves e a seção global                    | E2E; chaves reais e falsas testadas contra os serviços | [x]    |
 
+## Etapa 5: configuração do banco na primeira abertura
+
+Branch `feat/database-setup`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 A.
+
+| Nº  | Item                                                  | Critério de pronto                                       | Estado |
+| --- | ----------------------------------------------------- | -------------------------------------------------------- | ------ |
+| 59  | Prova do banco embutido (PGlite)                      | Suíte de integração passou; descartado pela memória      | [x]    |
+| 60  | App sobe sem banco e leva a `/setup`                  | E2E numa instância sem banco; banco fora do ar conferido | [x]    |
+| 61  | Código de configuração em arquivo local               | Testes unitários; código errado recusado no e2e          | [x]    |
+| 62  | Detecção de Postgres local e recomendação de instalar | Teste unitário da sondagem                               | [x]    |
+| 63  | Conectar, criar o banco, migrar e guardar o endereço  | E2E até a primeira conta, que vira administradora        | [x]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

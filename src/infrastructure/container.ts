@@ -126,7 +126,9 @@ import { tokenize } from "@/shared/text";
 import { getEnv, hasTmdbCredentials, type Env } from "./config/env";
 import { loadMasterKey } from "./config/master-key";
 import { testServiceCredential } from "./credential-tester";
-import { openDatabase, type Database } from "./database/client";
+import { sql } from "drizzle-orm";
+import { configDirectory, readStoredDatabaseUrl } from "./config/local-config";
+import { openDatabase, type Database, type DatabaseHandle } from "./database/client";
 import { GeminiEmbeddingProvider } from "./google-ai/gemini-embedding-provider";
 import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
 import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
@@ -729,21 +731,49 @@ export function buildContainer(options: ContainerOptions) {
 
 export type Container = ReturnType<typeof buildContainer>;
 
-const globalStore = globalThis as typeof globalThis & { __deixaDatabase?: Database };
+type ActiveDatabase = { url: string; handle: DatabaseHandle };
+const globalStore = globalThis as typeof globalThis & { __deixaActiveDatabase?: ActiveDatabase };
 let container: Container | undefined;
+let containerUrl: string | undefined;
+
+export class DatabaseNotConfigured extends Error {
+  constructor() {
+    super("banco de dados não configurado");
+    this.name = "DatabaseNotConfigured";
+  }
+}
+
+export function resolveDatabaseUrl(): string | null {
+  return getEnv().DATABASE_URL ?? readStoredDatabaseUrl(configDirectory());
+}
+
+function activeDatabase(url: string): DatabaseHandle {
+  const active = globalStore.__deixaActiveDatabase;
+  if (active?.url === url) return active.handle;
+  void active?.handle.close().catch(() => undefined);
+  const handle = openDatabase(url);
+  globalStore.__deixaActiveDatabase = { url, handle };
+  return handle;
+}
+
+export async function pingDatabase(url: string): Promise<void> {
+  await activeDatabase(url).db.execute(sql`select 1`);
+}
 
 export function getContainer(): Container {
-  if (!container) {
+  const url = resolveDatabaseUrl();
+  if (!url) throw new DatabaseNotConfigured();
+  if (!container || containerUrl !== url) {
     const env = getEnv();
-    globalStore.__deixaDatabase ??= openDatabase(env.DATABASE_URL).db;
     const masterKey = loadMasterKey({
       fromEnvironment: env.AI_CREDENTIALS_MASTER_KEY,
-      directory: process.cwd(),
+      directory: configDirectory(),
     });
     if (masterKey.origin === "created" || masterKey.origin === "replaced") {
       defaultLogger.warn("master_key.generated", { origin: masterKey.origin });
     }
-    container = buildContainer({ env, db: globalStore.__deixaDatabase, masterKey: masterKey.value });
+    container = buildContainer({ env, db: activeDatabase(url).db, masterKey: masterKey.value });
+    containerUrl = url;
   }
   return container;
 }

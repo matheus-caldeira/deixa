@@ -2,10 +2,16 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getContainer } from "@/infrastructure/container";
+import { getDatabaseStatus } from "@/infrastructure/setup";
 import type { SessionUser } from "@/modules/identity";
 import { SESSION_COOKIE } from "@/shared/session-cookie";
 
+export async function requireDatabase(): Promise<void> {
+  if ((await getDatabaseStatus()).state !== "ready") redirect("/setup");
+}
+
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+  await requireDatabase();
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   return getContainer().getSessionUser(token);
 });

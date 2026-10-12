@@ -18,6 +18,8 @@ npm-debug.log*
 data/
 master-key.txt
 master-key.invalid-*.txt
+database-url.txt
+setup-code.txt
 *.wav
 *.mp3
 !fixtures/**/*.wav
