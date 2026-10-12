@@ -5,7 +5,7 @@ import {
   databaseComesFromEnvironment,
   findLocalServers,
   getDatabaseStatus,
-  isSetupCode,
+  checkSetupCookie,
   prepareSetupCode,
   serverPlatform,
 } from "@/infrastructure/setup";
@@ -18,7 +18,7 @@ export default async function SetupPage() {
   const status = await getDatabaseStatus();
   if (status.state === "ready") redirect("/login");
   prepareSetupCode();
-  const unlocked = isSetupCode((await cookies()).get(SETUP_COOKIE)?.value);
+  const unlocked = checkSetupCookie((await cookies()).get(SETUP_COOKIE)?.value);
   return (
     <SetupScreen
       view={{

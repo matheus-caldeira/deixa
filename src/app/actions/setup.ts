@@ -8,7 +8,7 @@ import {
   checkSetupCode,
   configureDatabase,
   getDatabaseStatus,
-  isSetupCode,
+  checkSetupCookie,
 } from "@/infrastructure/setup";
 import { SETUP_COOKIE } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
@@ -19,7 +19,10 @@ const ONE_HOUR_SECONDS = 3600;
 
 const fieldsSchema = z.object({
   mode: z.literal("fields"),
-  host: z.string().trim().min(1).max(200),
+  host: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9]([a-z0-9.-]{0,198}[a-z0-9])?$/i),
   port: z.number().int().min(1).max(65_535),
   user: z.string().trim().min(1).max(100),
   password: z.string().max(200),
@@ -62,7 +65,7 @@ export async function connectDatabaseAction(
   const status = await getDatabaseStatus();
   if (status.state === "ready") return { ok: false, message: ALREADY_READY };
   const store = await cookies();
-  if (!isSetupCode(store.get(SETUP_COOKIE)?.value)) return { ok: false, message: LOCKED };
+  if (!checkSetupCookie(store.get(SETUP_COOKIE)?.value)) return { ok: false, message: LOCKED };
   const parsed = connectionSchema.safeParse(input);
   if (!parsed.success) {
     return {

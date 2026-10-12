@@ -54,16 +54,29 @@ export function describeConnectionError(error: unknown): string {
   return (typeof code === "string" ? MESSAGES[code] : undefined) ?? GENERIC;
 }
 
-export function isPostgresUrl(value: string): boolean {
+const HOST_SHAPE = /^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:]+\])$/i;
+const DATABASE_PATH = /^\/[a-z0-9_]{1,60}$/;
+const SSL_MODES = new Set(["disable", "prefer", "require", "verify-full"]);
+const SSL_PARAMETER = "sslmode";
+
+export function normalizePostgresUrl(value: string): string | null {
+  let url: URL;
   try {
-    const url = new URL(value);
-    const hasDatabase = /^\/[a-z0-9_]+$/.test(url.pathname);
-    return (
-      (url.protocol === "postgres:" || url.protocol === "postgresql:") && url.hostname !== "" && hasDatabase
-    );
+    url = new URL(value.trim());
   } catch {
-    return false;
+    return null;
   }
+  if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") return null;
+  if (!HOST_SHAPE.test(url.hostname) || !DATABASE_PATH.test(url.pathname) || url.hash !== "") return null;
+  if (url.username === "") return null;
+  const parameters = [...url.searchParams.keys()];
+  const sslMode = url.searchParams.get(SSL_PARAMETER);
+  if (parameters.some((name) => name !== SSL_PARAMETER) || parameters.length > 1) return null;
+  if (sslMode !== null && !SSL_MODES.has(sslMode)) return null;
+  const credentials = url.password === "" ? url.username : `${url.username}:${url.password}`;
+  const port = url.port === "" ? "" : `:${url.port}`;
+  const query = sslMode === null ? "" : `?${SSL_PARAMETER}=${sslMode}`;
+  return `postgres://${credentials}@${url.hostname.toLowerCase()}${port}${url.pathname}${query}`;
 }
 
 async function readMajorVersion(url: string): Promise<number | null> {
@@ -83,8 +96,11 @@ async function readMajorVersion(url: string): Promise<number | null> {
   }
 }
 
-export async function connectAndPrepare(url: string): Promise<ConnectionResult> {
-  if (!isPostgresUrl(url)) {
+export async function connectAndPrepare(
+  input: string,
+): Promise<{ ok: true; url: string; majorVersion: number | null } | { ok: false; message: string }> {
+  const url = normalizePostgresUrl(input);
+  if (!url) {
     return {
       ok: false,
       message:
@@ -93,7 +109,7 @@ export async function connectAndPrepare(url: string): Promise<ConnectionResult> 
   }
   try {
     await runMigrations(url);
-    return { ok: true, majorVersion: await readMajorVersion(url) };
+    return { ok: true, url, majorVersion: await readMajorVersion(url) };
   } catch (error) {
     return { ok: false, message: describeConnectionError(error) };
   }

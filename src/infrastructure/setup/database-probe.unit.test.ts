@@ -4,7 +4,7 @@ import {
   connectAndPrepare,
   describeConnectionError,
   detectLocalServers,
-  isPostgresUrl,
+  normalizePostgresUrl,
 } from "./database-probe";
 
 const servers: Server[] = [];
@@ -41,13 +41,26 @@ describe("sondagem de Postgres local", () => {
     ]);
   });
 
-  it("valida o formato do endereço antes de tentar conectar", async () => {
-    expect(isPostgresUrl("postgres://usuario:senha@localhost:5432/deixa")).toBe(true);
-    expect(isPostgresUrl("postgresql://usuario@servidor/deixa_2")).toBe(true);
-    expect(isPostgresUrl("mysql://usuario:senha@localhost/deixa")).toBe(false);
-    expect(isPostgresUrl("postgres://usuario:senha@localhost:5432/")).toBe(false);
-    expect(isPostgresUrl("postgres://usuario:senha@localhost:5432/Deixa; drop")).toBe(false);
-    expect(isPostgresUrl("não é endereço")).toBe(false);
+  it("aceita só o endereço que ele mesmo consegue reescrever, sem parâmetros que mudem o destino", async () => {
+    expect(normalizePostgresUrl(" postgresql://usuario:se%40nha@Servidor.local:5432/deixa ")).toBe(
+      "postgres://usuario:se%40nha@servidor.local:5432/deixa",
+    );
+    expect(normalizePostgresUrl("postgres://usuario@servidor/deixa_2?sslmode=require")).toBe(
+      "postgres://usuario@servidor/deixa_2?sslmode=require",
+    );
+    for (const refused of [
+      "mysql://usuario:senha@localhost/deixa",
+      "postgres://usuario:senha@localhost:5432/",
+      "postgres://usuario:senha@localhost:5432/Deixa; drop",
+      "postgres://usuario:senha@localhost/deixa?host=10.0.0.7",
+      "postgres://usuario:senha@localhost/deixa?sslmode=require&host=/tmp",
+      "postgres://usuario:senha@localhost/deixa?sslmode=qualquer",
+      "postgres://usuario:senha@localhost/deixa#x",
+      "postgres://localhost/deixa",
+      "não é endereço",
+    ]) {
+      expect(normalizePostgresUrl(refused), refused).toBeNull();
+    }
     expect(await connectAndPrepare("http://localhost/deixa")).toMatchObject({ ok: false });
   });
 

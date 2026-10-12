@@ -32,7 +32,7 @@ export function prepareSetupCode(): void {
   ensureSetupCode(configDirectory());
 }
 
-export function isSetupCode(candidate: string | undefined): boolean {
+function isSetupCode(candidate: string | undefined): boolean {
   const expected = readSetupCode(configDirectory());
   if (!expected || !candidate) return false;
   const given = Buffer.from(candidate.trim().toUpperCase());
@@ -48,6 +48,10 @@ export function checkSetupCode(candidate: string): CodeCheck {
   }
   codeThrottle.recordFailure(THROTTLE_KEY);
   return "invalid";
+}
+
+export function checkSetupCookie(value: string | undefined): boolean {
+  return value !== undefined && checkSetupCode(value) === "valid";
 }
 
 export function databaseComesFromEnvironment(): boolean {
@@ -72,7 +76,7 @@ export async function configureDatabase(
   }
   const result = await connectAndPrepare(url);
   if (!result.ok) return result;
-  saveDatabaseUrl(configDirectory(), url);
+  saveDatabaseUrl(configDirectory(), result.url);
   clearSetupCode(configDirectory());
   forgetDatabaseStatus();
   return result;
