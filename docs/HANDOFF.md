@@ -288,7 +288,7 @@ Feito em 12/10/2026 (branch `feat/ci-release`):
       Windows.
 - [x] `.github/workflows/release.yml`: uma tag `vX.Y.Z` cria um release em rascunho e anexa os instaladores
       de macOS (Apple Silicon e Intel), Linux (AppImage e `.deb`) e Windows (`.msi` e `.exe`), com um arquivo
-      de hashes SHA-256 por plataforma.
+      de hashes SHA-256 por plataforma. Só o job final, que anexa os arquivos, tem permissão de escrita.
 - [x] `scripts/check-release-version.mjs` recusa a tag que não bate com a versão em `package.json`,
       `tauri.conf.json`, `Cargo.toml` e `src/shared/app.ts`.
 - [x] O Node embutido em cada instalador é o que o `actions/setup-node` baixa de nodejs.org para aquela

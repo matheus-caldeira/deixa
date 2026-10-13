@@ -35,6 +35,8 @@ jobs:
       DATABASE_URL: postgres://deixa:deixa@localhost:1442/deixa
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -58,6 +60,8 @@ jobs:
         os: [macos-14, ubuntu-22.04, windows-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
