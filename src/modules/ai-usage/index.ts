@@ -15,6 +15,7 @@ export {
 } from "./domain/usage";
 export {
   NO_LIMIT,
+  SHARED_KEY_DEFAULT_LIMIT,
   checkLimit,
   hasAnyLimit,
   usageLimitSchema,

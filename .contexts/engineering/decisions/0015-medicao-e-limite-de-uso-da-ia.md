@@ -24,6 +24,9 @@ gasta e poder se proteger.
   para a chave compartilhada vale o padrão do servidor, e o administrador pode dar um limite próprio a cada
   conta. A conferência acontece antes da chamada; passou do limite, toda a IA trava até o período virar ou o
   limite subir, e ler, marcar e revisar continuam funcionando.
+- A chave compartilhada nasce com limite fechado (`SHARED_KEY_DEFAULT_LIMIT`: dólar e tokens por dia e por mês),
+  porque antes havia um teto de 60 chamadas e um padrão aberto deixaria qualquer conta esgotar a chave do
+  administrador. O limite em tokens garante a trava mesmo para modelo sem preço cadastrado.
 - Os tokens vindos do provedor são dado não confiável: valores ausentes, negativos ou não numéricos viram
   zero na fronteira da contagem.
 
@@ -32,6 +35,9 @@ gasta e poder se proteger.
 - A chamada que cruza o limite termina, porque o tamanho da resposta só se conhece depois; a trava vale da
   seguinte em diante. A interface trata o valor como estimativa e mostra a data do preço.
 - O custo de uma consulta ao banco antes de cada chamada de IA é aceito; a chamada em si é muito mais cara.
+- A conferência e a gravação não são atômicas: chamadas simultâneas da mesma conta podem passar juntas pouco
+  antes do limite. Travar por conta durante a chamada de IA seguraria o banco por minutos; o excesso de
+  algumas chamadas é aceito.
 - A contagem de 60 chamadas e a tabela `ai_usage` saem.
 
 ## Alternativas descartadas

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { NO_LIMIT, checkLimit, periodsFor, sumEvents, weeklyUsd } from "./limits";
+import {
+  NO_LIMIT,
+  SHARED_KEY_DEFAULT_LIMIT,
+  checkLimit,
+  hasAnyLimit,
+  periodsFor,
+  sumEvents,
+  weeklyUsd,
+} from "./limits";
 import type { AiUsageEvent } from "./usage";
 
 const event = (createdAt: string, usd: number | null, tokens = 100): AiUsageEvent => ({
@@ -35,6 +43,12 @@ describe("limites de uso da IA", () => {
     expect(checkLimit(limit, spent(1), spent(5))).toEqual({ blocked: "day", warning: null });
     expect(checkLimit(limit, spent(1), spent(10))).toEqual({ blocked: "month", warning: null });
     expect(checkLimit(NO_LIMIT, spent(999), spent(999))).toEqual({ blocked: null, warning: null });
+  });
+
+  it("o padrão da chave compartilhada fecha em dólar e em tokens, para valer mesmo sem preço", () => {
+    expect(hasAnyLimit(SHARED_KEY_DEFAULT_LIMIT)).toBe(true);
+    expect(SHARED_KEY_DEFAULT_LIMIT.tokensPerDay).not.toBeNull();
+    expect(SHARED_KEY_DEFAULT_LIMIT.usdPerDay).not.toBeNull();
   });
 
   it("limite em tokens vale mesmo sem preço cadastrado", () => {

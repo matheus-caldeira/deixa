@@ -122,7 +122,7 @@ import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
 import {
-  NO_LIMIT,
+  SHARED_KEY_DEFAULT_LIMIT,
   makeEnsureAiAllowed,
   makeGetAiUsageOverview,
   makeGetAiUsageSummary,
@@ -199,7 +199,7 @@ export function settingsFromEnvironment(env: Env): AppSettings {
     geminiModel: env.GEMINI_MODEL,
     subtitleDownloadsPerUserPerDay: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
     kokoroUrl: env.KOKORO_URL ?? null,
-    aiSharedLimit: NO_LIMIT,
+    aiSharedLimit: SHARED_KEY_DEFAULT_LIMIT,
   };
 }
 

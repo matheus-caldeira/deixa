@@ -23,6 +23,13 @@ export const NO_LIMIT: UsageLimit = {
   tokensPerMonth: null,
 };
 
+export const SHARED_KEY_DEFAULT_LIMIT: UsageLimit = {
+  usdPerDay: 0.5,
+  usdPerMonth: 5,
+  tokensPerDay: 2_000_000,
+  tokensPerMonth: 20_000_000,
+};
+
 export type PeriodTotals = { usd: number; tokens: number; unknownCostCalls: number; calls: number };
 
 export const EMPTY_TOTALS: PeriodTotals = { usd: 0, tokens: 0, unknownCostCalls: 0, calls: 0 };
