@@ -7,7 +7,8 @@ import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
-const PERSONAL_THROTTLE_PREFIX = "personal:";
+const ORIGIN_THROTTLE_PREFIX = "personal-origin:";
+const IMPORTER_THROTTLE_PREFIX = "personal-importer:";
 
 export async function importPackageAction(input: unknown): Promise<ActionResult<ImportReport>> {
   const user = await requireUser();
@@ -21,7 +22,7 @@ export async function importPackageAction(input: unknown): Promise<ActionResult<
       ? await app().peekPersonalEmail({ userId: user.id, uploadId: parsed.data.uploadId })
       : null;
     const throttleKeys = originEmail
-      ? [`${PERSONAL_THROTTLE_PREFIX}${originEmail}`, `${PERSONAL_THROTTLE_PREFIX}${user.id}`]
+      ? [`${ORIGIN_THROTTLE_PREFIX}${originEmail}`, `${IMPORTER_THROTTLE_PREFIX}${user.id}`]
       : [];
     if (throttleKeys.some((key) => throttle.isBlocked(key))) {
       throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
