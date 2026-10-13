@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { GeminiLessonPlanner } from "@/infrastructure/google-ai/gemini-lesson-planner";
+import { AiLessonPlanner } from "@/infrastructure/ai/ai-lesson-planner";
 import { alignCues } from "@/modules/alignment";
 import { assemblePlan, type PlannerLine } from "@/modules/study";
 import { parseSrt, sceneIndexes } from "@/modules/subtitles";
@@ -34,7 +34,10 @@ async function linesOf(name: string): Promise<PlannerLine[]> {
 async function main(): Promise<void> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY ausente no .env");
-  const planner = new GeminiLessonPlanner(apiKey, process.env.GEMINI_MODEL || "gemini-2.5-flash");
+  const planner = new AiLessonPlanner(
+    { provider: "google", apiKey },
+    process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  );
   await mkdir(PLANS_DIR, { recursive: true });
   const jobs = SEED_DIALOGUES.flatMap((name) => SEED_PLAN_LEVELS.map((level) => ({ name, level })));
   const pending = jobs.filter((job) => !existsSync(`${PLANS_DIR}/${job.name}.${job.level}.json`));

@@ -21,7 +21,8 @@ versão mascarada. A geração de cards faz uma chamada em lote.
 ## Consequências
 
 - Sem chave, tudo funciona com explicações simuladas, identificadas como tal.
-- Mastra entra na fase 03 chamando os mesmos casos de uso; o port não muda.
+- O `GeminiLlmProvider` por `fetch` foi substituído pelo `AiLlmProvider` sobre o AI SDK (ADR 0014); o port
+  não mudou. O Mastra, previsto aqui para a fase 03, não entra.
 
 ## Alternativas descartadas
 

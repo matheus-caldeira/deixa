@@ -1,6 +1,8 @@
 import type { TutorMessage, TutorProvider, TurnRole } from "@/modules/conversations";
 import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
-import { generateGeminiJson, type GeminiPart, type GeminiTurn } from "./gemini-client";
+import type { ModelMessage, UserContent } from "ai";
+import { generateJson } from "./generate-json";
+import type { AiAccess } from "./models";
 
 const REPLY_TIMEOUT_MS = 45_000;
 const REVIEW_TIMEOUT_MS = 60_000;
@@ -24,24 +26,23 @@ Avalie só as mensagens do aluno e responda em português do Brasil, só com JSO
 Nada de links, HTML ou markdown.`;
 }
 
-function messageParts(message: TutorMessage): GeminiPart[] {
-  if ("text" in message) return [{ text: message.text }];
+function messageContent(message: TutorMessage): UserContent {
+  if ("text" in message) return message.text;
   return [
     {
-      inlineData: {
-        mimeType: message.audio.mimeType.split(";")[0] ?? "audio/webm",
-        data: message.audio.base64,
-      },
+      type: "file",
+      mediaType: message.audio.mimeType.split(";")[0] ?? "audio/webm",
+      data: message.audio.base64,
     },
-    { text: "Mensagem do aluno em áudio." },
+    { type: "text", text: "Mensagem do aluno em áudio." },
   ];
 }
 
-export class GeminiTutorProvider implements TutorProvider {
+export class AiTutorProvider implements TutorProvider {
   readonly name = "gemini" as const;
 
   constructor(
-    private readonly apiKey: string,
+    private readonly access: AiAccess,
     private readonly model: string,
   ) {}
 
@@ -51,18 +52,19 @@ export class GeminiTutorProvider implements TutorProvider {
     history: { role: TurnRole; text: string }[];
     message: TutorMessage;
   }): Promise<unknown> {
-    const history: GeminiTurn[] = input.history.map((turn) => ({
-      role: turn.role === "user" ? "user" : "model",
-      parts: [{ text: turn.role === "user" ? turn.text : JSON.stringify({ reply: turn.text }) }],
-    }));
+    const history: ModelMessage[] = input.history.map((turn) =>
+      turn.role === "user"
+        ? { role: "user", content: turn.text }
+        : { role: "assistant", content: JSON.stringify({ reply: turn.text }) },
+    );
     const firstUser = history.findIndex((turn) => turn.role === "user");
-    return generateGeminiJson({
-      apiKey: this.apiKey,
+    return generateJson({
+      access: this.access,
       model: this.model,
       system: `${replyInstructions(input.level, input.theme)}\nSua abertura na conversa foi: ${JSON.stringify(input.history[0]?.text ?? "")}`,
-      turns: [
+      messages: [
         ...(firstUser >= 0 ? history.slice(firstUser) : []),
-        { role: "user", parts: messageParts(input.message) },
+        { role: "user", content: messageContent(input.message) },
       ],
       timeoutMs: REPLY_TIMEOUT_MS,
       temperature: 0.7,
@@ -74,11 +76,11 @@ export class GeminiTutorProvider implements TutorProvider {
     theme: string;
     turns: { role: TurnRole; text: string }[];
   }): Promise<unknown> {
-    return generateGeminiJson({
-      apiKey: this.apiKey,
+    return generateJson({
+      access: this.access,
       model: this.model,
       system: reviewInstructions(input.level, input.theme),
-      turns: [{ role: "user", parts: [{ text: JSON.stringify(input.turns) }] }],
+      messages: [{ role: "user", content: JSON.stringify(input.turns) }],
       timeoutMs: REVIEW_TIMEOUT_MS,
       temperature: 0.3,
     });

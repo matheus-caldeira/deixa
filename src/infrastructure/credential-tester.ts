@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { tmdbSecretKind, type CredentialService } from "@/modules/ai-credentials";
-import { testGeminiApiKey } from "./google-ai/gemini-client";
+import { testAiApiKey } from "./ai/test-api-key";
 import { TmdbClient } from "./tmdb/client";
 
 const OPENSUBTITLES_CHECK_URL = "https://api.opensubtitles.com/api/v1/utilities/guessit";
@@ -34,7 +34,7 @@ async function testOpenSubtitles(secret: string): Promise<boolean> {
 }
 
 export async function testServiceCredential(service: CredentialService, secret: string): Promise<boolean> {
-  if (service === "gemini") return testGeminiApiKey(secret);
+  if (service === "gemini") return testAiApiKey({ provider: "google", apiKey: secret });
   if (service === "tmdb") return testTmdb(secret);
   return testOpenSubtitles(secret);
 }

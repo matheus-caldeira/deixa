@@ -27,7 +27,7 @@ da sessão. Detalhes: @.claude/rules/user-isolation.md
 - Node 24, pnpm 12, TypeScript 5.9 estrito.
 - Next 16 (App Router), React 19, Tailwind 4, Zod 4.
 - Drizzle + PostgreSQL 17 (docker compose).
-- TMDB atrás de `MetadataProvider`; Gemini atrás de `LlmProvider`; Kokoro atrás de `TtsProvider`. Cada um tem
+- TMDB atrás de `MetadataProvider`; IA pelo AI SDK atrás de `LlmProvider`; Kokoro atrás de `TtsProvider`. Cada um tem
   uma implementação de reserva (fake ou silenciosa) usada nos testes e quando falta credencial ou serviço.
 - Vitest e Playwright.
 
@@ -40,7 +40,7 @@ src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastr
                       identity, catalog, subtitles, alignment, highlights, learning, flashcards,
                       ai-credentials, audio, gamification, study, notifications, conversations,
                       subtitle-sources, recommendations, settings
-src/infrastructure/   config/env.ts, database/, storage/, tmdb/, google-ai/, kokoro/, logger/, container.ts
+src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
 src/seed/             seed de demonstração
 tests/                e2e (Playwright), bundle

@@ -1,6 +1,6 @@
 ---
 title: Camada de IA e áudio
-updated: 2026-10-10
+updated: 2026-10-13
 source: PROJETO.md §6, §7, §9 (etapa 5) e §10
 ---
 
@@ -15,8 +15,8 @@ Todo uso passa pelo port `LlmProvider` (`modules/learning/application/ports`):
   Quando a fala não tem par em PT, devolve também a tradução da fala.
 - `translateLines(lines)`: tradução de falas sem par, sob demanda.
 
-Implementações: `GeminiLlmProvider` (HTTP, em `src/infrastructure/google-ai/`) e `FakeLlmProvider`
-(determinístico). A fábrica escolhe por usuário: com chave configurada, Gemini; sem chave, fake.
+Implementações: `AiLlmProvider` (AI SDK, em `src/infrastructure/ai/`, ADR 0014) e `FakeLlmProvider`
+(determinístico). A fábrica escolhe por usuário: com chave configurada, o provedor da chave; sem chave, fake.
 
 A saída passa por schema Zod. Item inválido derruba a geração com erro tratável; nada inválido é salvo.
 

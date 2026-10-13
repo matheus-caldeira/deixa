@@ -24,6 +24,7 @@ Decisões permanentes de arquitetura. O diário do dia a dia, com as escolhas fe
 | 0011 | [Código sem comentários](0011-codigo-sem-comentarios.md)                                                |
 | 0012 | [Estratégia de testes](0012-estrategia-de-testes.md)                                                    |
 | 0013 | [Interface portada do protótipo](0013-interface-pelo-prototipo.md)                                      |
+| 0014 | [Chamadas de IA pelo AI SDK](0014-ia-pelo-ai-sdk.md)                                                    |
 
 ## Formato
 

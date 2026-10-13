@@ -1,7 +1,8 @@
 import type { SuggestionWriter, WriterInput } from "@/modules/recommendations";
 import { isAppError } from "@/shared/errors";
 import { LEVEL_NAMES } from "@/shared/levels";
-import { generateGeminiJson } from "./gemini-client";
+import { generateJson } from "./generate-json";
+import type { AiAccess } from "./models";
 
 const TIMEOUT_MS = 60_000;
 const ATTEMPTS = 2;
@@ -29,24 +30,21 @@ Responda só com JSON neste formato:
 {"items":[{"key":"...","levelMin":"B1","levelMax":"B2","reason":"..."}]}`;
 }
 
-export class GeminiSuggestionWriter implements SuggestionWriter {
+export class AiSuggestionWriter implements SuggestionWriter {
   readonly name = "gemini" as const;
 
   constructor(
-    private readonly apiKey: string,
+    private readonly access: AiAccess,
     private readonly model: string,
   ) {}
 
   private generate(input: WriterInput): Promise<unknown> {
-    return generateGeminiJson({
-      apiKey: this.apiKey,
+    return generateJson({
+      access: this.access,
       model: this.model,
       system: instructions(input),
-      turns: [
-        {
-          role: "user",
-          parts: [{ text: JSON.stringify({ learner: input.learner, candidates: input.candidates }) }],
-        },
+      messages: [
+        { role: "user", content: JSON.stringify({ learner: input.learner, candidates: input.candidates }) },
       ],
       timeoutMs: TIMEOUT_MS,
       temperature: 0.5,

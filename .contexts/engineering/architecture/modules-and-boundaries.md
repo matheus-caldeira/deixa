@@ -12,7 +12,7 @@ source: PROJETO.md §14
 src/app/              Next.js: (auth), (learning) com as cinco abas, read/[episodeId], api/
 src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
 src/modules/<m>/      domain/ · application/ (casos de uso e ports) · infrastructure/ · index.ts
-src/infrastructure/   config/ database/ storage/ tmdb/ google-ai/ kokoro/ logger/ container.ts
+src/infrastructure/   config/ database/ storage/ tmdb/ ai/ kokoro/ logger/ container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
 src/seed/             seed de demonstração (idempotente)
 tests/                e2e (Playwright), bundle
@@ -46,7 +46,7 @@ chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão e
 - `infrastructure` de um módulo implementa os ports do módulo.
 - Um módulo só importa outro pelo `index.ts`.
 - `src/infrastructure/container.ts` é o único lugar que monta casos de uso com implementações concretas.
-- `src/app` importa o container e tipos públicos dos módulos; nunca adapters (`tmdb`, `kokoro`, `google-ai`,
+- `src/app` importa o container e tipos públicos dos módulos; nunca adapters (`tmdb`, `kokoro`, `ai`,
   `database`) nem `modules/**/infrastructure`.
 - `src/ui` não importa `src/infrastructure/**` nem `modules/**/infrastructure/**`. Componente cliente chama
   server action.

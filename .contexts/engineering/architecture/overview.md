@@ -19,7 +19,7 @@ domínio, aplicação e infraestrutura, para extrair serviços depois sem reescr
 ├───────────────────────────────────────────────────────────┤
 │ src/modules/<m>/infrastructure — repositórios Drizzle     │
 │ src/infrastructure — config, database, storage, tmdb,     │
-│                      google-ai, kokoro, logger, container │
+│                      ai, kokoro, logger, container        │
 ├──────────────┬───────────────────┬────────────────────────┤
 │ PostgreSQL   │ data/ (SRT, áudio)│ Kokoro (container)     │
 └──────────────┴───────────────────┴────────────────────────┘
@@ -39,7 +39,7 @@ domínio, aplicação e infraestrutura, para extrair serviços depois sem reescr
 | Serviço | Port               | Implementação real     | Reserva                | Quando a reserva entra                 |
 | ------- | ------------------ | ---------------------- | ---------------------- | -------------------------------------- |
 | TMDB    | `MetadataProvider` | `TmdbMetadataProvider` | `FakeMetadataProvider` | Sem credenciais no `.env`; testes      |
-| Gemini  | `LlmProvider`      | `GeminiLlmProvider`    | `FakeLlmProvider`      | Usuário sem chave; testes              |
+| IA      | `LlmProvider`      | `AiLlmProvider`        | `FakeLlmProvider`      | Usuário sem chave; testes              |
 | Kokoro  | `TtsProvider`      | `KokoroTtsProvider`    | `SilentTtsProvider`    | Sem `KOKORO_URL`; serviço fora; testes |
 
 ## Dados

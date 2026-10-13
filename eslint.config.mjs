@@ -6,7 +6,7 @@ import prettier from "eslint-config-prettier/flat";
 const ADAPTERS = [
   "@/infrastructure/database/**",
   "@/infrastructure/tmdb/**",
-  "@/infrastructure/google-ai/**",
+  "@/infrastructure/ai/**",
   "@/infrastructure/kokoro/**",
   "@/infrastructure/storage/**",
   "@/modules/*/infrastructure/**",

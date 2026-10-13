@@ -1,7 +1,8 @@
 import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
 import type { LessonPlanner, PlannerLine } from "@/modules/study";
 import { levelBand } from "@/modules/study";
-import { generateGeminiJson } from "./gemini-client";
+import { generateJson } from "./generate-json";
+import type { AiAccess } from "./models";
 
 const TIMEOUT_MS = 150_000;
 
@@ -42,20 +43,20 @@ Responda só com JSON neste formato:
 {"blocks":[{"title":"...","startLine":0,"endLine":5,"exercises":[{"kind":"meaning","line":0,"translation":"...","distractors":["...","...","..."]}]}],"finalExercises":[...]}`;
 }
 
-export class GeminiLessonPlanner implements LessonPlanner {
+export class AiLessonPlanner implements LessonPlanner {
   readonly name = "gemini" as const;
 
   constructor(
-    private readonly apiKey: string,
+    private readonly access: AiAccess,
     private readonly model: string,
   ) {}
 
   plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown> {
-    return generateGeminiJson({
-      apiKey: this.apiKey,
+    return generateJson({
+      access: this.access,
       model: this.model,
       system: instructions(input.level, input.lines.length),
-      turns: [{ role: "user", parts: [{ text: JSON.stringify(input.lines) }] }],
+      messages: [{ role: "user", content: JSON.stringify(input.lines) }],
       timeoutMs: TIMEOUT_MS,
       temperature: 0.4,
     });

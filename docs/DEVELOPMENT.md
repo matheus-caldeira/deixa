@@ -122,7 +122,7 @@ Os testes rodam sem paralelismo e nunca chamam a IA.
 src/app/              páginas, server actions e rotas (borda fina)
 src/ui/               componentes React, ícones e estilos portados do protótipo
 src/modules/<m>/      domain · application (casos de uso + ports) · infrastructure
-src/infrastructure/   env, banco, storage, TMDB, Gemini, Kokoro, OpenSubtitles, logger, container
+src/infrastructure/   env, banco, storage, TMDB, IA (AI SDK), Kokoro, OpenSubtitles, logger, container
 src/seed/             seed de demonstração
 src-tauri/            casca nativa (Tauri)
 tests/                e2e (Playwright) e bundle

@@ -133,12 +133,13 @@ import { testServiceCredential } from "./credential-tester";
 import { sql } from "drizzle-orm";
 import { configDirectory, readStoredDatabaseUrl } from "./config/local-config";
 import { openDatabase, type Database, type DatabaseHandle } from "./database/client";
-import { GeminiEmbeddingProvider } from "./google-ai/gemini-embedding-provider";
-import { GeminiLessonPlanner } from "./google-ai/gemini-lesson-planner";
-import { GeminiLlmProvider } from "./google-ai/gemini-llm-provider";
-import { GeminiSuggestionWriter } from "./google-ai/gemini-suggestion-writer";
-import { GeminiTutorProvider } from "./google-ai/gemini-tutor-provider";
-import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./google-ai/shared-key-budget";
+import { AiEmbeddingProvider } from "./ai/ai-embedding-provider";
+import { AiLessonPlanner } from "./ai/ai-lesson-planner";
+import { AiLlmProvider } from "./ai/ai-llm-provider";
+import { AiSuggestionWriter } from "./ai/ai-suggestion-writer";
+import { AiTutorProvider } from "./ai/ai-tutor-provider";
+import type { AiAccess } from "./ai/models";
+import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./ai/shared-key-budget";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
@@ -268,38 +269,38 @@ export function buildContainer(options: ContainerOptions) {
     return { provider, quotaKey: `${provider.name}:${key}`, ownKey: stored.origin === "user" };
   }
 
-  type GeminiAccess = { apiKey: string; shared: boolean };
-  async function geminiAccessFor(userId: string): Promise<GeminiAccess | null> {
+  type ResolvedAiAccess = AiAccess & { shared: boolean };
+  async function aiAccessFor(userId: string): Promise<ResolvedAiAccess | null> {
     const stored = await resolveCredential(userId, "gemini");
-    if (stored) return { apiKey: stored.secret, shared: stored.origin === "global" };
-    return env.GEMINI_API_KEY ? { apiKey: env.GEMINI_API_KEY, shared: true } : null;
+    if (stored) return { provider: "google", apiKey: stored.secret, shared: stored.origin === "global" };
+    return env.GEMINI_API_KEY ? { provider: "google", apiKey: env.GEMINI_API_KEY, shared: true } : null;
   }
 
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
     options.llmForUser ??
     (async (userId: string): Promise<LlmProvider> => {
-      const access = await geminiAccessFor(userId);
+      const access = await aiAccessFor(userId);
       if (!access) return fakeLlm;
-      const provider = new GeminiLlmProvider(access.apiKey, settings.geminiModel);
+      const provider = new AiLlmProvider(access, settings.geminiModel);
       return access.shared ? budgetedLlm(provider, () => sharedBudget.spend(userId)) : provider;
     });
   const resolvePlanner =
     options.plannerForUser ??
     (async (userId: string, usage: "charge" | "already-charged"): Promise<LessonPlanner | null> => {
-      const access = await geminiAccessFor(userId);
+      const access = await aiAccessFor(userId);
       if (!access) return null;
       if (access.shared && usage === "charge") await sharedBudget.spend(userId);
-      return new GeminiLessonPlanner(access.apiKey, settings.geminiModel);
+      return new AiLessonPlanner(access, settings.geminiModel);
     });
 
   const fakeTutor = new FakeTutorProvider();
   const resolveTutor =
     options.tutorForUser ??
     (async (userId: string): Promise<TutorProvider> => {
-      const access = await geminiAccessFor(userId);
+      const access = await aiAccessFor(userId);
       if (!access) return fakeTutor;
-      const tutor = new GeminiTutorProvider(access.apiKey, settings.geminiModel);
+      const tutor = new AiTutorProvider(access, settings.geminiModel);
       return access.shared ? budgetedTutor(tutor, () => sharedBudget.spend(userId)) : tutor;
     });
   const conversations = new DrizzleConversationRepository(db);
@@ -308,9 +309,9 @@ export function buildContainer(options: ContainerOptions) {
   const resolveEmbedding =
     options.embeddingForUser ??
     (async (userId: string): Promise<EmbeddingProvider> => {
-      const access = await geminiAccessFor(userId);
+      const access = await aiAccessFor(userId);
       if (!access) return localEmbedding;
-      const provider = new GeminiEmbeddingProvider(access.apiKey);
+      const provider = new AiEmbeddingProvider(access);
       if (!access.shared) return provider;
       return {
         name: provider.name,
@@ -324,10 +325,10 @@ export function buildContainer(options: ContainerOptions) {
   const resolveSuggestionWriter =
     options.suggestionWriterForUser ??
     (async (userId: string): Promise<SuggestionWriter | null> => {
-      const access = await geminiAccessFor(userId);
+      const access = await aiAccessFor(userId);
       if (!access) return null;
       if (access.shared) await sharedBudget.spend(userId);
-      return new GeminiSuggestionWriter(access.apiKey, settings.geminiModel);
+      return new AiSuggestionWriter(access, settings.geminiModel);
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),

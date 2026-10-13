@@ -1,6 +1,6 @@
 ---
 title: Google Gemini
-updated: 2026-10-10
+updated: 2026-10-13
 source: PROJETO.md §4 (Tecnologias)
 package: (API HTTP)
 version: "v1beta"
@@ -15,11 +15,12 @@ LLM das atividades personalizadas, com a chave de cada usuário.
 
 ## Como usamos
 
-- `GeminiLlmProvider` em `src/infrastructure/google-ai/`, por `fetch` em
-  `generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent`, com a chave no header
-  `x-goog-api-key`.
-- Modelo em `GEMINI_MODEL` (padrão `gemini-2.5-flash`).
-- `responseMimeType: "application/json"`; a resposta passa pelo schema Zod do port.
+- Pelo AI SDK, com o pacote `@ai-sdk/google` (ver @.contexts/engineering/stacks/ai-sdk.md); nenhum `fetch`
+  direto à API do Google fora do teste de chave.
+- Modelo em `GEMINI_MODEL` (padrão `gemini-2.5-flash`), com `gemini-flash-latest` e `gemini-2.5-flash-lite`
+  como reserva quando o pedido falha por cota ou indisponibilidade.
+- Saída pedida em JSON; a resposta passa pelo schema Zod do port.
+- Embeddings com `gemini-embedding-001` em 256 dimensões.
 - Teste de chave: listar modelos com a chave informada.
 
 ## Usos nas fases 01 e 02
@@ -33,6 +34,6 @@ LLM das atividades personalizadas, com a chave de cada usuário.
 
 `FakeLlmProvider`: glossário fixo do diálogo fictício e respostas previsíveis para o resto.
 
-## Fase 03
+## Outros provedores
 
-Mastra orquestra os workflows chamando os casos de uso; o port continua o mesmo.
+O Google é o primeiro provedor ligado ao AI SDK; os demais entram pelo mesmo caminho (ADR 0014).
