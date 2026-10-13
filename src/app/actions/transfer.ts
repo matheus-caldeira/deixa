@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { ImportReport } from "@/modules/packages";
-import { AppError } from "@/shared/errors";
+import { AppError, isAppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -14,11 +14,22 @@ export async function importPackageAction(input: unknown): Promise<ActionResult<
       .object({ uploadId: z.uuid(), password: z.string().min(1).max(200).optional() })
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const report = await app().importPackage({
-      userId: user.id,
-      uploadId: parsed.data.uploadId,
-      password: parsed.data.password,
-    });
+    const throttle = app().loginThrottle;
+    const throttleKey = user.email.trim().toLowerCase();
+    if (parsed.data.password && throttle.isBlocked(throttleKey)) {
+      throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
+    }
+    let report: ImportReport;
+    try {
+      report = await app().importPackage({
+        userId: user.id,
+        uploadId: parsed.data.uploadId,
+        password: parsed.data.password,
+      });
+    } catch (error) {
+      if (isAppError(error) && error.code === "INVALID_CREDENTIALS") throttle.recordFailure(throttleKey);
+      throw error;
+    }
     revalidatePath("/catalog");
     revalidatePath("/");
     return report;

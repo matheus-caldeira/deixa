@@ -20,6 +20,11 @@ export async function POST(request: NextRequest): Promise<Response> {
     includeCredentials: form.get("includeCredentials") || undefined,
   });
   if (!parsed.success) return new NextResponse(null, { status: 400 });
+  const throttle = getContainer().loginThrottle;
+  const throttleKey = user.email.trim().toLowerCase();
+  if (throttle.isBlocked(throttleKey)) {
+    return new NextResponse(null, { status: 303, headers: { location: PASSWORD_ERROR_PATH } });
+  }
   try {
     const exported = await getContainer().exportPersonalPackage({
       userId: user.id,
@@ -36,6 +41,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   } catch (error) {
     if (isAppError(error) && error.code === "INVALID_CREDENTIALS") {
+      throttle.recordFailure(throttleKey);
       return new NextResponse(null, { status: 303, headers: { location: PASSWORD_ERROR_PATH } });
     }
     if (isAppError(error)) return new NextResponse(null, { status: 400 });

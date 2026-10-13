@@ -14,7 +14,7 @@ const SALT_BYTES = 16;
 const IV_BYTES = 12;
 const TAG_BYTES = 16;
 const KEY_BYTES = 32;
-const SCRYPT = { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+const SCRYPT = { N: 2 ** 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
 const HEADER_BYTES = 1 + SALT_BYTES + IV_BYTES;
 
 const normalizeEmail = (email: string): string => email.trim().toLowerCase();
