@@ -39,7 +39,6 @@ const TICKET_PATH: &str = "/api/desktop/ticket";
 const NONCE_BYTES: usize = 16;
 const PROOF_PREFIX: &str = "hello:";
 const MAX_STATUS_BYTES: u64 = 64 * 1024;
-const PROFILE_EVENT_SCRIPT: &str = "window.dispatchEvent(new CustomEvent('deixa:open-profile'))";
 const NAVIGATION: [(&str, &str, &str, &str); 7] = [
     ("go-home", "Início", "/", "CmdOrCtrl+1"),
     ("go-catalog", "Explorar", "/catalog", "CmdOrCtrl+2"),
@@ -515,12 +514,6 @@ fn go_to(app: &AppHandle, path: &str) {
     }
 }
 
-fn open_profile(app: &AppHandle) {
-    show_main_window(app);
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
-        let _ = window.eval(PROFILE_EVENT_SCRIPT);
-    }
-}
 
 fn about_metadata(app: &AppHandle) -> AboutMetadata<'static> {
     AboutMetadata {
