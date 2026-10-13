@@ -4,5 +4,5 @@ export type EmbeddedDatabasePhase =
   | { phase: "extracting" }
   | { phase: "initializing" }
   | { phase: "starting" }
-  | { phase: "ready"; url: string }
+  | { phase: "ready" }
   | { phase: "failed"; message: string };

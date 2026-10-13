@@ -7,6 +7,7 @@ import {
   TESTED_MAJOR_VERSION,
   configureDatabase,
   embeddedDatabaseStatus,
+  finishSetup,
   getDatabaseStatus,
   startEmbeddedDatabaseInstall,
   verifySetupCode,
@@ -99,12 +100,14 @@ export async function embeddedDatabaseProgressAction(): Promise<
   ActionResult<{ phase: EmbeddedPhase; next: "/login" | "/signup" | null }>
 > {
   const store = await cookies();
-  const phase = embeddedDatabaseStatus();
-  if (phase.phase === "ready" && (await getDatabaseStatus()).state === "ready") {
-    store.delete(SETUP_COOKIE);
-    const hasAccounts = (await getContainer().listPeople()).length > 0;
-    return { ok: true, data: { phase, next: hasAccounts ? "/login" : "/signup" } };
-  }
   if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
-  return { ok: true, data: { phase: phase.phase === "ready" ? { phase: "starting" } : phase, next: null } };
+  const phase = embeddedDatabaseStatus();
+  if (phase.phase !== "ready") return { ok: true, data: { phase, next: null } };
+  if ((await getDatabaseStatus()).state !== "ready") {
+    return { ok: true, data: { phase: { phase: "starting" }, next: null } };
+  }
+  finishSetup();
+  store.delete(SETUP_COOKIE);
+  const hasAccounts = (await getContainer().listPeople()).length > 0;
+  return { ok: true, data: { phase, next: hasAccounts ? "/login" : "/signup" } };
 }

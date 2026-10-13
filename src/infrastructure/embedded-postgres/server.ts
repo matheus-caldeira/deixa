@@ -228,7 +228,7 @@ export class EmbeddedPostgres {
       await this.initialize();
       report({ phase: "starting" });
       const url = await this.start();
-      report({ phase: "ready", url });
+      report({ phase: "ready" });
       return url;
     } catch (error) {
       report({ phase: "failed", message: error instanceof Error ? error.message : "falha desconhecida" });

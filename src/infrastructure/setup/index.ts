@@ -79,7 +79,7 @@ export function startEmbeddedDatabaseInstall(): void {
   installing = embeddedPostgres()
     .install()
     .then(async (url) => {
-      const result = await configureDatabase(url);
+      const result = await configureDatabase(url, { keepSetupCode: true });
       if (!result.ok) throw new Error(result.message);
       logger.info("embedded_postgres.ready", { port: new URL(url).port });
     })
@@ -93,8 +93,13 @@ export function startEmbeddedDatabaseInstall(): void {
     });
 }
 
+export function finishSetup(): void {
+  clearSetupCode(configDirectory());
+}
+
 export async function configureDatabase(
   url: string,
+  options: { keepSetupCode?: boolean } = {},
 ): Promise<{ ok: true; majorVersion: number | null } | { ok: false; message: string }> {
   if (databaseComesFromEnvironment()) {
     return {
@@ -105,7 +110,7 @@ export async function configureDatabase(
   const result = await connectAndPrepare(url);
   if (!result.ok) return result;
   saveDatabaseUrl(configDirectory(), result.url);
-  clearSetupCode(configDirectory());
+  if (!options.keepSetupCode) clearSetupCode(configDirectory());
   forgetDatabaseStatus();
   await refreshSettings();
   return result;
