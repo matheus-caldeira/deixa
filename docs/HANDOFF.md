@@ -264,6 +264,12 @@ Limites desta etapa:
 - [ ] O fluxo completo pelo app empacotado (configurar banco, criar conta, estudar) não foi percorrido; só a
       subida do servidor e a chegada em `/setup`. O fluxo em si é coberto pelo e2e no servidor comum.
 - [ ] Início com o sistema (opcional) e detecção de porta ocupada.
+- [x] Barra de menus (12/10/2026): Deixa (Sobre, Configurações, Sair), Arquivo (navegador, QR code,
+      fechar), Editar (desfazer, copiar, colar), Ir (as cinco áreas, com Cmd+1 a Cmd+5, e Recarregar) e Janela.
+      O app aparece no Dock enquanto a janela está aberta e some ao fechá-la. Conferido só que sobe e fica
+      como app comum; os itens não foram clicados por automação.
+- [ ] Itens "Importar…" e "Exportar…" no menu Arquivo, quando a função existir: ver
+      `docs/OFFLINE-EXPORT-DRAFT.md` (rascunho, não implementado).
 - [ ] Ícone monocromático para a barra de menus do macOS.
 - [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).
 

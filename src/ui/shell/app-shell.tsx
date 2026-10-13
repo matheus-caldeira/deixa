@@ -53,6 +53,7 @@ const TABS = [
 ] as const;
 
 const SCROLL_THRESHOLD = 4;
+const OPEN_PROFILE_EVENT = "deixa:open-profile";
 
 type Sheet = { kind: "profile" } | { kind: "notifications" } | { kind: "upload"; mediaId?: string } | null;
 const INBOX_REFRESH_MS = 15_000;
@@ -96,6 +97,11 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     }),
     [],
   );
+
+  useEffect(() => {
+    window.addEventListener(OPEN_PROFILE_EVENT, actions.openProfile);
+    return () => window.removeEventListener(OPEN_PROFILE_EVENT, actions.openProfile);
+  }, [actions]);
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 

@@ -157,3 +157,4 @@ Branch `feat/owner-session`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 D
 - Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
 - Fase 06: fala em tempo real, limites de uso por conta, HTTPS para PWA e microfone.
 - App nativo instalável (Tauri, banco embutido, configuração no banco): ver `docs/HANDOFF.md`.
+- Importar e exportar para a versão 100% offline: rascunho em `docs/OFFLINE-EXPORT-DRAFT.md`, sem implementação.

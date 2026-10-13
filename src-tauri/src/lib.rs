@@ -10,7 +10,7 @@ use hmac::{Hmac, Mac};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use sha2::Sha256;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_notification::NotificationExt;
@@ -39,6 +39,14 @@ const TICKET_PATH: &str = "/api/desktop/ticket";
 const NONCE_BYTES: usize = 16;
 const PROOF_PREFIX: &str = "hello:";
 const MAX_STATUS_BYTES: u64 = 64 * 1024;
+const PROFILE_EVENT_SCRIPT: &str = "window.dispatchEvent(new CustomEvent('deixa:open-profile'))";
+const NAVIGATION: [(&str, &str, &str, &str); 5] = [
+    ("go-home", "Início", "/", "CmdOrCtrl+1"),
+    ("go-catalog", "Explorar", "/catalog", "CmdOrCtrl+2"),
+    ("go-review", "Revisar", "/review", "CmdOrCtrl+3"),
+    ("go-tutor", "Conversar", "/tutor", "CmdOrCtrl+4"),
+    ("go-progress", "Progresso", "/progress", "CmdOrCtrl+5"),
+];
 const RESUME_EMPTY: &str = "Nada em andamento";
 const INBOX_EMPTY: &str = "Sem notificações novas";
 const SERVER_FOLDER: &str = "server";
@@ -473,7 +481,128 @@ fn is_app_page(url: &Url) -> bool {
     from_server || from_shell
 }
 
+fn show_in_dock(app: &AppHandle, visible: bool) {
+    #[cfg(target_os = "macos")]
+    {
+        let policy = if visible {
+            tauri::ActivationPolicy::Regular
+        } else {
+            tauri::ActivationPolicy::Accessory
+        };
+        let _ = app.set_activation_policy(policy);
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, visible);
+    }
+}
+
+fn go_to(app: &AppHandle, path: &str) {
+    show_main_window(app);
+    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+        return;
+    };
+    if let Ok(url) = format!("{}{}", local_url(), path).parse() {
+        let _ = window.navigate(url);
+    }
+}
+
+fn open_profile(app: &AppHandle) {
+    show_main_window(app);
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+        let _ = window.eval(PROFILE_EVENT_SCRIPT);
+    }
+}
+
+fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
+    let settings = MenuItem::with_id(app, "settings", "Configurações…", true, Some("CmdOrCtrl+,"))?;
+    let quit = MenuItem::with_id(app, "app-quit", "Sair do Deixa", true, Some("CmdOrCtrl+Q"))?;
+    let application = Submenu::with_items(
+        app,
+        "Deixa",
+        true,
+        &[
+            &PredefinedMenuItem::about(app, Some("Sobre o Deixa"), None)?,
+            &PredefinedMenuItem::separator(app)?,
+            &settings,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::hide(app, Some("Ocultar o Deixa"))?,
+            &PredefinedMenuItem::hide_others(app, Some("Ocultar outros"))?,
+            &PredefinedMenuItem::show_all(app, Some("Mostrar todos"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &quit,
+        ],
+    )?;
+    let browser = MenuItem::with_id(app, "app-browser", "Abrir no navegador", true, Some("CmdOrCtrl+B"))?;
+    let qr = MenuItem::with_id(app, "app-qr", "Abrir no celular (QR code)", true, None::<&str>)?;
+    let file = Submenu::with_items(
+        app,
+        "Arquivo",
+        true,
+        &[
+            &browser,
+            &qr,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::close_window(app, Some("Fechar janela"))?,
+        ],
+    )?;
+    let edit = Submenu::with_items(
+        app,
+        "Editar",
+        true,
+        &[
+            &PredefinedMenuItem::undo(app, Some("Desfazer"))?,
+            &PredefinedMenuItem::redo(app, Some("Refazer"))?,
+            &PredefinedMenuItem::separator(app)?,
+            &PredefinedMenuItem::cut(app, Some("Recortar"))?,
+            &PredefinedMenuItem::copy(app, Some("Copiar"))?,
+            &PredefinedMenuItem::paste(app, Some("Colar"))?,
+            &PredefinedMenuItem::select_all(app, Some("Selecionar tudo"))?,
+        ],
+    )?;
+    let go = Submenu::new(app, "Ir", true)?;
+    for (id, label, _path, shortcut) in NAVIGATION {
+        go.append(&MenuItem::with_id(app, id, label, true, Some(shortcut))?)?;
+    }
+    go.append(&PredefinedMenuItem::separator(app)?)?;
+    go.append(&MenuItem::with_id(app, "reload", "Recarregar", true, Some("CmdOrCtrl+R"))?)?;
+    let window = Submenu::with_items(
+        app,
+        "Janela",
+        true,
+        &[
+            &PredefinedMenuItem::minimize(app, Some("Minimizar"))?,
+            &PredefinedMenuItem::maximize(app, Some("Zoom"))?,
+            &PredefinedMenuItem::fullscreen(app, Some("Tela cheia"))?,
+        ],
+    )?;
+    app.set_menu(Menu::with_items(app, &[&application, &file, &edit, &go, &window])?)?;
+    app.on_menu_event(|app, event| {
+        let id = event.id.as_ref();
+        if let Some((_, _, path, _)) = NAVIGATION.iter().find(|entry| entry.0 == id) {
+            go_to(app, path);
+            return;
+        }
+        match id {
+            "settings" => open_profile(app),
+            "app-browser" => {
+                let _ = app.opener().open_url(local_url(), None::<&str>);
+            }
+            "app-qr" => show_qr_window(app),
+            "reload" => {
+                if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+                    let _ = window.eval("window.location.reload()");
+                }
+            }
+            "app-quit" => app.exit(0),
+            _ => {}
+        }
+    });
+    Ok(())
+}
+
 fn show_main_window(app: &AppHandle) {
+    show_in_dock(app, true);
     if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
         let _ = window.show();
         let _ = window.unminimize();
@@ -624,6 +753,7 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            build_app_menu(app.handle())?;
             build_tray(app.handle())?;
             let handle = app.handle().clone();
             let _ = ctrlc::set_handler(move || {
@@ -637,6 +767,7 @@ pub fn run() {
                 if window.label() == MAIN_WINDOW {
                     let _ = window.hide();
                     api.prevent_close();
+                    show_in_dock(window.app_handle(), false);
                 }
             }
         })
