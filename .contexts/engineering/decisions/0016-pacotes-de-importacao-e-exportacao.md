@@ -35,9 +35,10 @@ depender de TMDB, OpenSubtitles nem IA. A referência é o Anki: exportar e impo
   senha da conta de origem e entra na conta conectada, somando sem duplicar (marcação por fala e tokens, card
   por item, revisão por data, XP por origem) e mantendo o estado de revisão mais recente. Itens de episódio
   que a instalação de destino não tem ficam de fora e viram contagem no relatório.
-- A proteção do pacote pessoal é a da senha: quem tem o arquivo pode tentar senhas sem limite. O scrypt usa
+- A proteção do pacote pessoal é a da senha: quem tem o arquivo pode tentar senhas sem limite. O cabeçalho do
+  arquivo guarda a versão e o custo do scrypt (log2 N), para mudar o custo sem perder arquivos antigos. O scrypt usa
   N=2^17 e r=8 (cerca de 128 MB e perto de um segundo por tentativa) para encarecer isso, e as tentativas
-  on-line de senha na exportação e na importação contam no mesmo limite do login.
+  on-line de senha na exportação e na importação contam no mesmo limite do login, registradas antes da conferência e zeradas no acerto.
 - Áudio só entra se o hash corresponder a uma fala dos episódios do pacote, com a voz e a versão declaradas:
   um pacote não consegue registrar áudio para texto que não trouxe.
 - Importar segue as mesmas permissões de adicionar à mão: qualquer conta cadastra obra e legenda, e os cards do

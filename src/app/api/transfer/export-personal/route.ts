@@ -25,12 +25,14 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (throttle.isBlocked(throttleKey)) {
     return new NextResponse(null, { status: 303, headers: { location: PASSWORD_ERROR_PATH } });
   }
+  throttle.recordFailure(throttleKey);
   try {
     const exported = await getContainer().exportPersonalPackage({
       userId: user.id,
       password: parsed.data.password,
       includeCredentials: parsed.data.includeCredentials === "true",
     });
+    throttle.reset(throttleKey);
     return new NextResponse(Buffer.from(exported.bytes), {
       status: 200,
       headers: {
@@ -41,7 +43,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
   } catch (error) {
     if (isAppError(error) && error.code === "INVALID_CREDENTIALS") {
-      throttle.recordFailure(throttleKey);
       return new NextResponse(null, { status: 303, headers: { location: PASSWORD_ERROR_PATH } });
     }
     if (isAppError(error)) return new NextResponse(null, { status: 400 });
