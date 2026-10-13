@@ -40,6 +40,7 @@ export type {
 export {
   makeImportPackage,
   makeInspectPackage,
+  makePeekPersonalEmail,
   type ImportReport,
   type PackagePreview,
   type PackagePreviewEpisode,

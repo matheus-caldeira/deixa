@@ -133,6 +133,7 @@ import {
   makeExportPersonalPackage,
   makeImportPackage,
   makeInspectPackage,
+  makePeekPersonalEmail,
 } from "@/modules/packages";
 import { DrizzlePackageCatalog } from "@/modules/packages/infrastructure/drizzle-package-catalog";
 import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
@@ -731,6 +732,7 @@ export function buildContainer(options: ContainerOptions) {
     exportPersonalPackage: makeExportPersonalPackage(packageDeps),
     inspectPackage: makeInspectPackage(packageDeps),
     importPackage: makeImportPackage(packageDeps),
+    peekPersonalEmail: makePeekPersonalEmail(packageDeps),
     metadataNameFor: async (userId: string) => (await metadataFor(userId)).name,
     devShortcuts: env.DEV_SHORTCUTS,
     secureSessionCookie: env.SESSION_COOKIE_SECURE,

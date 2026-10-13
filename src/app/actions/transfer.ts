@@ -7,6 +7,8 @@ import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
+const PERSONAL_THROTTLE_PREFIX = "personal:";
+
 export async function importPackageAction(input: unknown): Promise<ActionResult<ImportReport>> {
   const user = await requireUser();
   return runAction("importPackage", async () => {
@@ -15,17 +17,20 @@ export async function importPackageAction(input: unknown): Promise<ActionResult<
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     const throttle = app().loginThrottle;
-    const throttleKey = user.email.trim().toLowerCase();
-    if (parsed.data.password && throttle.isBlocked(throttleKey)) {
+    const originEmail = parsed.data.password
+      ? await app().peekPersonalEmail({ userId: user.id, uploadId: parsed.data.uploadId })
+      : null;
+    const throttleKey = originEmail ? `${PERSONAL_THROTTLE_PREFIX}${originEmail}` : null;
+    if (throttleKey && throttle.isBlocked(throttleKey)) {
       throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
     }
-    if (parsed.data.password) throttle.recordFailure(throttleKey);
+    if (throttleKey) throttle.recordFailure(throttleKey);
     const report = await app().importPackage({
       userId: user.id,
       uploadId: parsed.data.uploadId,
       password: parsed.data.password,
     });
-    if (parsed.data.password) throttle.reset(throttleKey);
+    if (throttleKey) throttle.reset(throttleKey);
     revalidatePath("/catalog");
     revalidatePath("/");
     return report;

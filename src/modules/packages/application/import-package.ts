@@ -96,6 +96,19 @@ export function makeInspectPackage(deps: Pick<Deps, "reader" | "archive" | "stor
   };
 }
 
+export function makePeekPersonalEmail(deps: Pick<Deps, "archive" | "storage">) {
+  return async function peekPersonalEmail(input: {
+    userId: string;
+    uploadId: string;
+  }): Promise<string | null> {
+    if (!SAFE_SEGMENT.test(input.uploadId)) return null;
+    const bytes = await deps.storage.read(uploadPath(input.userId, input.uploadId));
+    if (!bytes) return null;
+    const pkg = await readPackage(deps.archive, bytes);
+    return pkg.personal?.meta.email.trim().toLowerCase() ?? null;
+  };
+}
+
 export function makeImportPackage(deps: Deps) {
   return async function importPackage(input: {
     userId: string;
