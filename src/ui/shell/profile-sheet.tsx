@@ -7,6 +7,7 @@ import { updatePreferencesAction } from "@/app/actions/profile";
 import type { ServiceOverview } from "@/modules/ai-credentials";
 import type { AppSettings } from "@/modules/settings";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "@/modules/identity";
+import { APP_AUTHOR, APP_NAME, APP_TAGLINE, APP_VERSION } from "@/shared/app";
 import type { CefrLevel } from "@/shared/levels";
 import { LEVEL_NAMES } from "@/shared/levels";
 import { CredentialCard } from "./credential-card";
@@ -154,6 +155,19 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
 
       <div className="about">
         <span className="eyebrow">Sobre</span>
+        <span>
+          <b>{APP_NAME}</b> {APP_VERSION} · {APP_TAGLINE}
+        </span>
+        <span>
+          Criado por <b>{APP_AUTHOR.name}</b>. Contato:{" "}
+          <a className="link" href={`mailto:${APP_AUTHOR.email}`}>
+            {APP_AUTHOR.email}
+          </a>{" "}
+          ·{" "}
+          <a className="link" href={`tel:${APP_AUTHOR.phoneHref}`}>
+            {APP_AUTHOR.phone}
+          </a>
+        </span>
         <span>
           Metadados de séries e filmes: <b>TMDB</b>
           {data.metadataProvider === "tmdb" ? "" : " (dados de demonstração neste ambiente)"}

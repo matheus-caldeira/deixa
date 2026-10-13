@@ -128,6 +128,7 @@ const build = spawnSync("pnpm", ["exec", "next", "build"], {
   cwd: ROOT,
   stdio: "inherit",
   env: { ...process.env, NODE_ENV: "production", DEIXA_STANDALONE: "1" },
+  shell: process.platform === "win32",
 });
 if (build.status !== 0) process.exit(build.status ?? 1);
 if (!existsSync(join(STANDALONE, "server.js")))

@@ -2,6 +2,7 @@
 name = "deixa-desktop"
 version = "0.1.0"
 description = "Casca nativa do Deixa: bandeja, janela e atalhos para o servidor local"
+authors = ["Matheus Caldeira <matheuscardozo4@gmail.com>"]
 edition = "2021"
 publish = false
 

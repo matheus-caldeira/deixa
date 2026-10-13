@@ -209,3 +209,29 @@ pnpm desktop:installer  # gera também o instalador (no macOS, um .dmg que o Fin
 Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
 instalado (endereço do banco, chave mestra, legendas e áudio) ficam na pasta de dados do sistema, não na pasta
 do projeto.
+
+## Instalar o aplicativo
+
+Os instaladores ficam na página de releases do repositório. Eles **não são assinados** com certificado pago,
+então cada sistema pede uma liberação na primeira vez. Cada release traz arquivos `SHA256SUMS-*.txt` para
+conferir o download.
+
+- **macOS**: abra o `.dmg` e arraste o Deixa para Aplicativos. Na primeira abertura o sistema bloqueia; vá em
+  Ajustes do Sistema → Privacidade e Segurança e clique em "Abrir Mesmo Assim".
+- **Windows**: rode o instalador. Se o SmartScreen aparecer, clique em "Mais informações" e em "Executar assim
+  mesmo".
+- **Linux**: use o `.deb` ou o `.AppImage` (dê permissão de execução ao AppImage).
+
+O Deixa precisa de um PostgreSQL. Na primeira abertura ele procura um no computador e pede os dados de
+conexão; sem nenhum, mostra o que instalar.
+
+## Publicar uma versão
+
+1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` e
+   `src/shared/app.ts`.
+2. Crie e envie a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+3. O fluxo `Release` cria um rascunho com os instaladores das três plataformas. Confira e publique.
+
+## Autor
+
+Matheus Caldeira · matheuscardozo4@gmail.com · +55 41 99524-5271

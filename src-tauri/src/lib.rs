@@ -10,7 +10,7 @@ use hmac::{Hmac, Mac};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use sha2::Sha256;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_notification::NotificationExt;
@@ -47,6 +47,10 @@ const NAVIGATION: [(&str, &str, &str, &str); 5] = [
     ("go-tutor", "Conversar", "/tutor", "CmdOrCtrl+4"),
     ("go-progress", "Progresso", "/progress", "CmdOrCtrl+5"),
 ];
+const AUTHOR_NAME: &str = "Matheus Caldeira";
+const AUTHOR_EMAIL: &str = "matheuscardozo4@gmail.com";
+const AUTHOR_PHONE: &str = "+55 41 99524-5271";
+const ABOUT_COMMENTS: &str = "Inglês a partir das séries e filmes que você já assiste.";
 const RESUME_EMPTY: &str = "Nada em andamento";
 const INBOX_EMPTY: &str = "Sem notificações novas";
 const SERVER_FOLDER: &str = "server";
@@ -514,6 +518,18 @@ fn open_profile(app: &AppHandle) {
     }
 }
 
+fn about_metadata(app: &AppHandle) -> AboutMetadata<'static> {
+    AboutMetadata {
+        name: Some("Deixa".into()),
+        version: Some(app.package_info().version.to_string()),
+        authors: Some(vec![AUTHOR_NAME.into()]),
+        comments: Some(ABOUT_COMMENTS.into()),
+        copyright: Some(format!("© 2026 {}", AUTHOR_NAME)),
+        credits: Some(format!("{}\n{}\n{}\n{}", ABOUT_COMMENTS, AUTHOR_NAME, AUTHOR_EMAIL, AUTHOR_PHONE)),
+        ..Default::default()
+    }
+}
+
 fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
     let settings = MenuItem::with_id(app, "settings", "Configurações…", true, Some("CmdOrCtrl+,"))?;
     let quit = MenuItem::with_id(app, "app-quit", "Sair do Deixa", true, Some("CmdOrCtrl+Q"))?;
@@ -522,7 +538,7 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
         "Deixa",
         true,
         &[
-            &PredefinedMenuItem::about(app, Some("Sobre o Deixa"), None)?,
+            &PredefinedMenuItem::about(app, Some("Sobre o Deixa"), Some(about_metadata(app)))?,
             &PredefinedMenuItem::separator(app)?,
             &settings,
             &PredefinedMenuItem::separator(app)?,

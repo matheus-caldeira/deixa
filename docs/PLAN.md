@@ -151,6 +151,17 @@ Branch `feat/owner-session`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 D
 | 75  | Aviso nativo para notificação nova                  | Casca permanece estável ao receber um aviso de teste | [x]    |
 | 76  | Teste manual do menu e dos avisos na tela           | Conferido pelo autor                                 | [ ]    |
 
+## Etapa 10: CI e release
+
+Branch `feat/ci-release`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 F.
+
+| Nº  | Item                                                | Critério de pronto                                    | Estado |
+| --- | --------------------------------------------------- | ----------------------------------------------------- | ------ |
+| 77  | Sobre com autor e contato                           | Perfil e menu nativo                                  | [x]    |
+| 78  | Fluxo de CI (testes e compilação da casca)          | YAML válido                                           | [x]    |
+| 79  | Fluxo de release por tag, com instaladores e hashes | YAML válido; conferência de versão testada            | [x]    |
+| 80  | Primeira execução real no GitHub                    | Depende de o autor criar o repositório e fazer o push | [ ]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.

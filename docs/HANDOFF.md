@@ -281,12 +281,35 @@ Limites desta etapa:
 
 **F. Distribuição**
 
-- [ ] Repositório no GitHub (ação do Matheus; nada de push sem pedido explícito).
-- [ ] Antes de publicar: varredura de segredos em todo o histórico do git, escolha de licença, `README` de
-      instalação, atribuição a TMDB e OpenSubtitles.
-- [ ] GitHub Actions com matriz Windows, Linux e macOS gerando instaladores e publicando o release.
-- [ ] Aviso de versão nova consultando os releases do GitHub, com link para o download manual.
-- [ ] `README` com o passo de liberação do app não assinado em macOS e Windows (decisão em 3.4).
+Feito em 12/10/2026 (branch `feat/ci-release`):
+
+- [x] `.github/workflows/ci.yml`: a cada push na `main` e em cada pull request roda typecheck, lint, testes
+      unitários, de integração (com Postgres), e2e e bundle; e confere que a casca compila em macOS, Linux e
+      Windows.
+- [x] `.github/workflows/release.yml`: uma tag `vX.Y.Z` cria um release em rascunho e anexa os instaladores
+      de macOS (Apple Silicon e Intel), Linux (AppImage e `.deb`) e Windows (`.msi` e `.exe`), com um arquivo
+      de hashes SHA-256 por plataforma.
+- [x] `scripts/check-release-version.mjs` recusa a tag que não bate com a versão em `package.json`,
+      `tauri.conf.json`, `Cargo.toml` e `src/shared/app.ts`.
+- [x] O Node embutido em cada instalador é o que o `actions/setup-node` baixa de nodejs.org para aquela
+      plataforma.
+- [x] Varredura de segredos no histórico inteiro do git (58 commits, 5 segredos locais): nenhuma ocorrência.
+- [x] `README` com instalação e liberação do app não assinado.
+- [x] Tela Sobre com autor e contato, no perfil e no menu nativo.
+
+**Nada disso rodou ainda**: o repositório não tem remote. Os dois fluxos foram validados só como YAML. As
+partes da casca específicas de Windows e de Linux nunca foram compiladas, então é esperado que a primeira
+execução do CI aponte ajustes.
+
+Falta:
+
+- [ ] Criar o repositório no GitHub e fazer o primeiro push (ação do Matheus; nada de push sem pedido).
+- [ ] Escolher a licença.
+- [ ] Corrigir o que a primeira execução do CI apontar em Windows e Linux.
+- [ ] Conferir o rótulo do executor Intel do macOS (`macos-15-intel`), que muda com o tempo.
+- [ ] Aviso de versão nova consultando os releases, com link para o download manual (depende do endereço do
+      repositório).
+- [ ] Reduzir o tamanho do Node embutido (116 MB no macOS).
 
 ### 3.4 Decisões
 
