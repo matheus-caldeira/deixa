@@ -743,7 +743,7 @@ dependencies = [
 
 [[package]]
 name = "deixa-desktop"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "ctrlc",
  "getrandom 0.3.4",
