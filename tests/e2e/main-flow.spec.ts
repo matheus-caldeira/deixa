@@ -43,11 +43,16 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
     ["Explorar", "Explorar"],
     ["Revisar", "Revisar"],
     ["Conversar", "Conversar"],
-    ["Progresso", "Progresso"],
   ] as const) {
     await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: label }).click();
     await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
   }
+  await page.getByRole("button", { name: "Mais áreas" }).click();
+  await page
+    .getByRole("dialog", { name: "Mais" })
+    .getByRole("link", { name: /Progresso/ })
+    .click();
+  await expect(page.getByRole("heading", { level: 1, name: "Progresso" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Explorar" }).click();
   await page.getByRole("button", { name: "Adicionar episódio com legenda .srt" }).click();

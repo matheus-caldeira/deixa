@@ -164,10 +164,25 @@ Branch `feat/ci-release`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 F.
 | 81  | README de apresentação, licença e guia de desenvolvimento | Links e âncoras conferidos                                   | [x]    |
 | 82  | Instaladores testados em cada sistema                     | Conferido pelo autor antes de publicar o release             | [ ]    |
 
+## Etapa 11: provedores de IA, custo e pacotes (branch `feat/ai-providers`)
+
+Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da versão web.
+
+| #   | Tarefa                                                                                                 | Critério de pronto                                                                       | Estado |
+| --- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------ |
+| 83  | Protótipo das telas novas no `deixa.html`                                                              | Configurações, Uso da IA, menu Mais, opções do catálogo, importar e exportar, aprovados  | [x]    |
+| 84  | IA pelo AI SDK, ainda só Gemini                                                                        | Mesmos ports e prompts; testes existentes passam; teste do cliente com modelo de mentira | [x]    |
+| 85  | Medição de tokens e valor por chamada                                                                  | Evento por chamada; preços por modelo; isolamento no Postgres                            | [x]    |
+| 86  | Limite por dia e por mês com trava total                                                               | Chamada acima do limite recusada em toda operação; padrão fechado para a chave global    | [x]    |
+| 87  | Tela Configurações, Uso da IA, menu Mais e perfil enxuto                                               | E2E passa; capturas em 390 e 1280 sem erro                                               | [x]    |
+| 88  | Escolha de provedor e de modelo (Google, OpenAI, Anthropic, OpenRouter, Ollama, compatível com OpenAI) | Dois provedores de ponta a ponta; embeddings por modelo                                  | [ ]    |
+| 89  | Importar e exportar: formato, legendas, dados pessoais, cards, áudio                                   | Reimportar não duplica; pacote adulterado recusado; isolamento                           | [ ]    |
+| 90  | Opções do catálogo e tela Importar e exportar; menu Arquivo do Tauri                                   | Conforme o protótipo                                                                     | [ ]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.
 - Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
-- Fase 06: fala em tempo real, limites de uso por conta, HTTPS para PWA e microfone.
+- Fase 06: fala em tempo real, HTTPS para PWA e microfone.
 - App nativo instalável (Tauri, banco embutido, configuração no banco): ver `docs/HANDOFF.md`.
-- Importar e exportar para a versão 100% offline: rascunho em `docs/OFFLINE-EXPORT-DRAFT.md`, sem implementação.
+- Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), depois da etapa 11.

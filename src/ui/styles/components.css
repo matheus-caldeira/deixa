@@ -1547,14 +1547,17 @@
     padding: 4px;
     border-radius: 12px;
   }
-  .seg button {
+  .seg button,
+  .seg a {
     padding: 9px 4px;
     border-radius: 9px;
     font-weight: 700;
     font-size: 13px;
     color: var(--muted);
+    text-align: center;
   }
-  .seg button.on {
+  .seg button.on,
+  .seg a.on {
     background: var(--surface);
     color: var(--ink);
     box-shadow: var(--shadow);
@@ -2254,6 +2257,9 @@
   .navbrand {
     display: none;
   }
+  .nav .desk {
+    display: none;
+  }
   @media (min-width: 1024px) {
     .app {
       max-width: none;
@@ -2279,12 +2285,24 @@
       display: block;
       padding: 4px 10px 22px;
     }
-    .shell .nav a {
+    .shell .nav a,
+    .shell .nav button {
       flex-direction: row;
       justify-content: flex-start;
       gap: 12px;
       padding: 12px 14px;
       font-size: 14px;
+    }
+    .shell .nav .desk {
+      display: flex;
+    }
+    .shell .nav .mob {
+      display: none;
+    }
+    .shell .chips {
+      margin: 0;
+      padding: 4px 0 8px;
+      flex-wrap: wrap;
     }
     .shell .topbar,
     .shell .main {

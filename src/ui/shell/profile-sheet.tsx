@@ -1,17 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { updatePreferencesAction } from "@/app/actions/profile";
-import type { ServiceOverview } from "@/modules/ai-credentials";
-import type { AppSettings } from "@/modules/settings";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "@/modules/identity";
 import { APP_AUTHOR, APP_NAME, APP_TAGLINE, APP_VERSION } from "@/shared/app";
 import type { CefrLevel } from "@/shared/levels";
 import { LEVEL_NAMES } from "@/shared/levels";
-import { CredentialCard } from "./credential-card";
-import { ServerSettingsCard } from "./server-settings-card";
+import { SlidersIcon } from "../icons";
 import { Sheet } from "./sheet";
 import { useToast } from "./toast";
 
@@ -22,9 +20,6 @@ export type ProfileSheetData = {
   dailyGoal: number;
   accent: Accent;
   audioSpeed: number;
-  isAdmin: boolean;
-  credentials: ServiceOverview[];
-  settings: AppSettings | null;
   metadataProvider: string;
 };
 
@@ -121,31 +116,9 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
         </div>
       </div>
 
-      <div className="col" style={{ gap: 10 }}>
-        <span className="eyebrow">Suas chaves de API</span>
-        <p className="small muted">
-          Cada serviço usa a sua chave. Sem ela, vale a chave global deste servidor, se houver. As chaves
-          ficam criptografadas e nunca voltam para o navegador.
-        </p>
-        {data.credentials.map((entry) => (
-          <CredentialCard key={entry.service} entry={entry} scope="user" />
-        ))}
-      </div>
-
-      {data.isAdmin ? (
-        <div className="col" style={{ gap: 10 }}>
-          <span className="eyebrow">Chaves globais (administrador)</span>
-          <p className="small muted">
-            Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode
-            alterá-las.
-          </p>
-          {data.credentials.map((entry) => (
-            <CredentialCard key={entry.service} entry={entry} scope="global" />
-          ))}
-        </div>
-      ) : null}
-
-      {data.settings ? <ServerSettingsCard initial={data.settings} /> : null}
+      <Link className="btn ghost wide" href="/settings" onClick={onClose}>
+        <SlidersIcon width={18} height={18} /> Configurações
+      </Link>
 
       <form action={signOutAction}>
         <button className="btn ghost wide" type="submit">

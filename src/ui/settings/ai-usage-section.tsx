@@ -107,8 +107,8 @@ export function AiUsageSection({ summary }: { summary: UsageSummary }) {
           limitTokens={limit.tokensPerMonth}
         />
         <p className="note">
-          Valores estimados pela tabela de preços de {formatDate(summary.pricesUpdatedAt)}. A cobrança real é a
-          do provedor.
+          Valores estimados pela tabela de preços de {formatDate(summary.pricesUpdatedAt)}. A cobrança real é
+          a do provedor.
           {summary.month.unknownCostCalls > 0
             ? ` ${summary.month.unknownCostCalls} chamada(s) deste mês usaram modelo sem preço cadastrado e não entram no valor.`
             : ""}
@@ -166,7 +166,8 @@ export function AiUsageSection({ summary }: { summary: UsageSummary }) {
                 </b>
                 <span className="small muted">
                   {PROVIDER_LABELS[entry.provider] ?? entry.provider} ·{" "}
-                  {entry.keySource === "user" ? "sua chave" : "chave global"} · {formatTokens(entry.tokens)} tokens
+                  {entry.keySource === "user" ? "sua chave" : "chave global"} · {formatTokens(entry.tokens)}{" "}
+                  tokens
                 </span>
               </span>
               <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatUsd(entry.usd)}</b>

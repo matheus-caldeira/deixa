@@ -10,15 +10,16 @@ import {
   BellIcon,
   BoltIcon,
   CardsIcon,
-  ChartIcon,
   ChatIcon,
   FilmIcon,
   FlameIcon,
   FlameOffIcon,
   HomeIcon,
+  MoreIcon,
 } from "../icons";
 import { UploadSheet } from "../catalog/upload-sheet";
 import { Logo } from "./logo";
+import { MORE_LINKS, MoreSheet } from "./more-sheet";
 import { NotificationsSheet } from "./notifications-sheet";
 import { ProfileSheet, type ProfileSheetData } from "./profile-sheet";
 
@@ -49,13 +50,17 @@ const TABS = [
   { href: "/catalog", label: "Explorar", Icon: FilmIcon },
   { href: "/review", label: "Revisar", Icon: CardsIcon },
   { href: "/tutor", label: "Conversar", Icon: ChatIcon },
-  { href: "/progress", label: "Progresso", Icon: ChartIcon },
 ] as const;
 
 const SCROLL_THRESHOLD = 4;
 const OPEN_PROFILE_EVENT = "deixa:open-profile";
 
-type Sheet = { kind: "profile" } | { kind: "notifications" } | { kind: "upload"; mediaId?: string } | null;
+type Sheet =
+  | { kind: "profile" }
+  | { kind: "notifications" }
+  | { kind: "more" }
+  | { kind: "upload"; mediaId?: string }
+  | null;
 const INBOX_REFRESH_MS = 15_000;
 const EMPTY_INBOX: InboxView = { unread: 0, items: [] };
 
@@ -104,6 +109,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
   }, [actions]);
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const inMore = MORE_LINKS.some((link) => isActive(link.href));
 
   return (
     <ShellContext.Provider value={actions}>
@@ -158,9 +164,9 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
                 <b>Chave ilegível: {data.unreadableKeys.join(", ")}.</b> A chave mestra deste servidor mudou
                 ou o dado foi corrompido. Cadastre a chave de novo.
               </span>
-              <button className="link small" onClick={actions.openProfile}>
-                Abrir perfil
-              </button>
+              <Link className="link small" href="/settings">
+                Abrir configurações
+              </Link>
             </div>
           ) : null}
           {children}
@@ -180,9 +186,30 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
               <span>{label}</span>
             </Link>
           ))}
+          {MORE_LINKS.map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`desk ${isActive(href) ? "on" : ""}`}
+              aria-current={isActive(href) ? "page" : undefined}
+            >
+              <Icon />
+              <span>{label}</span>
+            </Link>
+          ))}
+          <button
+            className={`mob ${inMore ? "on" : ""}`}
+            onClick={() => setSheet({ kind: "more" })}
+            aria-haspopup="dialog"
+            aria-label="Mais áreas"
+          >
+            <MoreIcon />
+            <span>Mais</span>
+          </button>
         </nav>
       </div>
       {sheet?.kind === "profile" ? <ProfileSheet data={data.profile} onClose={() => setSheet(null)} /> : null}
+      {sheet?.kind === "more" ? <MoreSheet onClose={() => setSheet(null)} /> : null}
       {sheet?.kind === "notifications" ? (
         <NotificationsSheet inbox={inbox} onChange={refreshInbox} onClose={() => setSheet(null)} />
       ) : null}

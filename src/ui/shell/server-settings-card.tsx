@@ -23,6 +23,7 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
         geminiModel: model.trim(),
         subtitleDownloadsPerUserPerDay: Number(downloads),
         kokoroUrl: kokoroUrl.trim() === "" ? null : kokoroUrl.trim(),
+        aiSharedLimit: initial.aiSharedLimit,
       });
       if (!result.ok) {
         setError(result.message);
@@ -35,7 +36,6 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
 
   return (
     <form className="col" style={{ gap: 10 }} onSubmit={save}>
-      <span className="eyebrow">Configurações do servidor (administrador)</span>
       <div className="card col" style={{ gap: 10 }}>
         <div className="field">
           <label htmlFor="settings-model">Modelo do Gemini</label>

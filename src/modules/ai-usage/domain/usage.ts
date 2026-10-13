@@ -33,7 +33,7 @@ export const modelPriceSchema = z.object({
 });
 export type ModelPrice = z.infer<typeof modelPriceSchema>;
 
-export const DEFAULT_PRICES_DATE = new Date("2026-10-01T00:00:00Z");
+export const DEFAULT_PRICES_DATE = new Date("2026-10-01T12:00:00Z");
 
 export const DEFAULT_MODEL_PRICES: ModelPrice[] = [
   { provider: "google", model: "gemini-2.5-flash", inputUsdPerMillion: 0.3, outputUsdPerMillion: 2.5 },

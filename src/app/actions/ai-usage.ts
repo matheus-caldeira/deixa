@@ -47,7 +47,10 @@ export async function updateSharedAiLimitAction(input: unknown): Promise<ActionR
 export async function saveModelPriceAction(input: unknown): Promise<ActionResult<ModelPrice>> {
   const user = await requireUser();
   return runAction("saveModelPrice", async () => {
-    const saved = await app().saveModelPrice({ actor: { userId: user.id, isAdmin: user.isAdmin }, price: input });
+    const saved = await app().saveModelPrice({
+      actor: { userId: user.id, isAdmin: user.isAdmin },
+      price: input,
+    });
     revalidatePath("/settings");
     return saved;
   });

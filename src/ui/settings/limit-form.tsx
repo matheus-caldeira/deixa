@@ -47,7 +47,12 @@ export function LimitForm({
     const limit: UsageLimit =
       unit === "usd"
         ? { usdPerDay: dayValue, usdPerMonth: monthValue, tokensPerDay: null, tokensPerMonth: null }
-        : { usdPerDay: null, usdPerMonth: null, tokensPerDay: asTokens(dayValue), tokensPerMonth: asTokens(monthValue) };
+        : {
+            usdPerDay: null,
+            usdPerMonth: null,
+            tokensPerDay: asTokens(dayValue),
+            tokensPerMonth: asTokens(monthValue),
+          };
     setError("");
     startTransition(async () => {
       const result = await save(limit);
@@ -95,8 +100,8 @@ export function LimitForm({
         </div>
       </div>
       <p className="small muted">
-        {note} Ao passar do limite, toda a IA pausa até o período virar ou o limite subir. Ler, marcar e revisar
-        continuam funcionando.
+        {note} Ao passar do limite, toda a IA pausa até o período virar ou o limite subir. Ler, marcar e
+        revisar continuam funcionando.
       </p>
       {error ? <p className="formerr">{error}</p> : null}
       <button className="btn" style={{ padding: 12, fontSize: 13 }} type="submit" disabled={pending}>

@@ -6,7 +6,8 @@ export function formatUsd(value: number): string {
 }
 
 export function formatTokens(value: number): string {
-  if (value >= MILLION) return `${(value / MILLION).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+  if (value >= MILLION)
+    return `${(value / MILLION).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
   if (value >= THOUSAND) return `${Math.round(value / THOUSAND)} mil`;
   return String(value);
 }
@@ -23,5 +24,7 @@ export function parseDecimal(text: string): number | null {
 }
 
 export function decimalText(value: number | null): string {
-  return value === null ? "" : value.toLocaleString("pt-BR", { maximumFractionDigits: 6, useGrouping: false });
+  return value === null
+    ? ""
+    : value.toLocaleString("pt-BR", { maximumFractionDigits: 6, useGrouping: false });
 }

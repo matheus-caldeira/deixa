@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { saveModelPriceAction, setAiUsageLimitAction, updateSharedAiLimitAction } from "@/app/actions/ai-usage";
+import {
+  saveModelPriceAction,
+  setAiUsageLimitAction,
+  updateSharedAiLimitAction,
+} from "@/app/actions/ai-usage";
 import { hasAnyLimit, type UsageLimit, type UsageOverview } from "@/modules/ai-usage";
 import { useToast } from "../shell/toast";
 import { decimalText, formatDate, formatUsd, parseDecimal } from "./format";
@@ -29,7 +33,12 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
   const save = () => {
     const inputValue = parseDecimal(input);
     const outputValue = parseDecimal(output);
-    if (inputValue === null || outputValue === null || Number.isNaN(inputValue) || Number.isNaN(outputValue)) {
+    if (
+      inputValue === null ||
+      outputValue === null ||
+      Number.isNaN(inputValue) ||
+      Number.isNaN(outputValue)
+    ) {
       toast("Informe os dois preços, com vírgula para os centavos.");
       return;
     }
@@ -100,7 +109,12 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
             onChange={(event) => setOutput(event.target.value)}
           />
         </div>
-        <button className="btn" style={{ padding: "12px 14px", fontSize: 13 }} onClick={save} disabled={pending}>
+        <button
+          className="btn"
+          style={{ padding: "12px 14px", fontSize: 13 }}
+          onClick={save}
+          disabled={pending}
+        >
           Salvar
         </button>
       </div>
@@ -135,7 +149,13 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
               >
                 <span
                   className="avatar"
-                  style={{ background: entry.person.avatarColor, width: 32, height: 32, fontSize: 14, borderRadius: 10 }}
+                  style={{
+                    background: entry.person.avatarColor,
+                    width: 32,
+                    height: 32,
+                    fontSize: 14,
+                    borderRadius: 10,
+                  }}
                 >
                   {entry.person.name.slice(0, 1)}
                 </span>
@@ -154,7 +174,10 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
                     note={`Vale só para ${entry.person.name}, enquanto usar a chave global.`}
                     save={async (limit) =>
                       asResult(
-                        await setAiUsageLimitAction({ target: { scope: "shared", userId: entry.person.id }, limit }),
+                        await setAiUsageLimitAction({
+                          target: { scope: "shared", userId: entry.person.id },
+                          limit,
+                        }),
                       )
                     }
                   />

@@ -42,8 +42,9 @@ test("sem banco configurado: código → conexão → tabelas criadas → primei
   await page.getByLabel("E-mail").fill("dona@deixa.example");
   await page.getByLabel(/^Senha/).fill("deixa1234");
   await page.getByRole("button", { name: "Criar conta" }).click();
-  await page.getByRole("button", { name: "Perfil de Dona" }).click();
-  await expect(page.getByText("Chaves globais (administrador)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Perfil de Dona" })).toBeVisible();
+  await page.goto(`${E2E_SETUP_BASE_URL}/settings?tab=catalog&scope=global`);
+  await expect(page.getByLabel("Chave: TMDB global", { exact: true })).toBeVisible();
 
   await page.goto(`${E2E_SETUP_BASE_URL}/setup`);
   await expect(page).not.toHaveURL(/\/setup$/);
