@@ -38,8 +38,9 @@ depender de TMDB, OpenSubtitles nem IA. A referência é o Anki: exportar e impo
 - A proteção do pacote pessoal é a da senha: quem tem o arquivo pode tentar senhas sem limite. O cabeçalho do
   arquivo guarda a versão e o custo do scrypt (log2 N), para mudar o custo sem perder arquivos antigos. O scrypt usa
   N=2^17 e r=8 (cerca de 128 MB e perto de um segundo por tentativa) para encarecer isso, e as tentativas
-  on-line de senha na exportação e na importação contam no mesmo limite do login, registradas antes da conferência e zeradas no acerto. Na importação a chave do limite é o e-mail da
-  conta de origem, para um login bem-sucedido não zerar as tentativas contra outra conta. O custo aceito ao abrir
+  on-line de senha na exportação e na importação contam no mesmo limite do login, registradas antes da conferência e zeradas no acerto. Na importação o limite conta em duas chaves ao
+  mesmo tempo, o e-mail da conta de origem e a conta que importa, para um login bem-sucedido não zerar as
+  tentativas nem um pacote remontado ou outra conta abrir contador novo. O custo aceito ao abrir
   um arquivo fica preso a N=2^17, para um cabeçalho forjado não pedir memória sem fim.
 - Áudio só entra se o hash corresponder a uma fala dos episódios do pacote, com a voz e a versão declaradas:
   um pacote não consegue registrar áudio para texto que não trouxe.

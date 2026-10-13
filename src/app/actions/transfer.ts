@@ -20,17 +20,19 @@ export async function importPackageAction(input: unknown): Promise<ActionResult<
     const originEmail = parsed.data.password
       ? await app().peekPersonalEmail({ userId: user.id, uploadId: parsed.data.uploadId })
       : null;
-    const throttleKey = originEmail ? `${PERSONAL_THROTTLE_PREFIX}${originEmail}` : null;
-    if (throttleKey && throttle.isBlocked(throttleKey)) {
+    const throttleKeys = originEmail
+      ? [`${PERSONAL_THROTTLE_PREFIX}${originEmail}`, `${PERSONAL_THROTTLE_PREFIX}${user.id}`]
+      : [];
+    if (throttleKeys.some((key) => throttle.isBlocked(key))) {
       throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
     }
-    if (throttleKey) throttle.recordFailure(throttleKey);
+    for (const key of throttleKeys) throttle.recordFailure(key);
     const report = await app().importPackage({
       userId: user.id,
       uploadId: parsed.data.uploadId,
       password: parsed.data.password,
     });
-    if (throttleKey) throttle.reset(throttleKey);
+    for (const key of throttleKeys) throttle.reset(key);
     revalidatePath("/catalog");
     revalidatePath("/");
     return report;
