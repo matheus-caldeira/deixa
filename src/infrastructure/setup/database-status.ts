@@ -1,4 +1,5 @@
 import { pingDatabase, refreshSettings, resolveDatabaseUrl } from "../container";
+import { ensureEmbeddedPostgres } from "../embedded-postgres";
 import { runMigrations } from "../database/migrate";
 import { describeConnectionError } from "./database-probe";
 
@@ -15,6 +16,7 @@ let migratedUrl: string | undefined;
 
 async function check(url: string): Promise<DatabaseStatus> {
   try {
+    await ensureEmbeddedPostgres();
     if (migratedUrl !== url) {
       await runMigrations(url);
       migratedUrl = url;

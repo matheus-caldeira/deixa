@@ -2,6 +2,10 @@ export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { getContainer, refreshSettings, resolveDatabaseUrl } = await import("@/infrastructure/container");
   const { logger } = await import("@/infrastructure/logger/logger");
+  const { ensureEmbeddedPostgres, stopEmbeddedPostgresOnExit } =
+    await import("@/infrastructure/embedded-postgres");
+  stopEmbeddedPostgresOnExit();
+  await ensureEmbeddedPostgres();
   if (!resolveDatabaseUrl()) {
     const { prepareSetupCode, SETUP_CODE_FILE } = await import("@/infrastructure/setup");
     prepareSetupCode();

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import {
   SETUP_CODE_FILE,
   databaseComesFromEnvironment,
+  embeddedDatabaseAvailable,
+  embeddedDatabaseConfigured,
   findLocalServers,
   getDatabaseStatus,
   verifySetupCode,
@@ -28,6 +30,11 @@ export default async function SetupPage() {
         codeFile: SETUP_CODE_FILE,
         platform: serverPlatform(),
         detected: unlocked ? await findLocalServers() : [],
+        embedded: embeddedDatabaseAvailable()
+          ? embeddedDatabaseConfigured()
+            ? "configured"
+            : "available"
+          : "unsupported",
       }}
     />
   );

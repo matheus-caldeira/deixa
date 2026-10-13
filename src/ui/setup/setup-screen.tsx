@@ -1,8 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { connectDatabaseAction, unlockSetupAction } from "@/app/actions/setup";
+import { useEffect, useState, useTransition } from "react";
+import {
+  connectDatabaseAction,
+  embeddedDatabaseProgressAction,
+  installEmbeddedDatabaseAction,
+  unlockSetupAction,
+} from "@/app/actions/setup";
+import type { EmbeddedDatabasePhase as EmbeddedPhase } from "@/shared/embedded-database";
 import { Logo } from "../shell/logo";
 
 export type SetupView = {
@@ -12,7 +18,97 @@ export type SetupView = {
   codeFile: string;
   platform: "macos" | "windows" | "linux";
   detected: { host: string; port: number }[];
+  embedded: "available" | "configured" | "unsupported";
 };
+
+type Choice = "embedded" | "existing" | null;
+const PROGRESS_INTERVAL_MS = 1000;
+
+function phaseText(phase: EmbeddedPhase): string {
+  switch (phase.phase) {
+    case "downloading":
+      return phase.percent === null ? "Baixando o Postgres…" : `Baixando o Postgres… ${phase.percent}%`;
+    case "extracting":
+      return "Descompactando…";
+    case "initializing":
+      return "Criando o banco…";
+    case "starting":
+      return "Iniciando o Postgres e preparando as tabelas…";
+    case "ready":
+      return "Pronto.";
+    case "failed":
+      return phase.message;
+    default:
+      return "Preparando…";
+  }
+}
+
+function EmbeddedInstall({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
+  const [phase, setPhase] = useState<EmbeddedPhase>({ phase: "idle" });
+  const [error, setError] = useState("");
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const begin = async () => {
+      const result = await installEmbeddedDatabaseAction();
+      if (!active) return;
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setStarted(true);
+    };
+    void begin();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    const timer = setInterval(async () => {
+      const result = await embeddedDatabaseProgressAction();
+      if (!result.ok) {
+        setError(result.message);
+        clearInterval(timer);
+        return;
+      }
+      setPhase(result.data.phase);
+      if (result.data.phase.phase === "failed") clearInterval(timer);
+      if (result.data.next) {
+        clearInterval(timer);
+        router.push(result.data.next);
+      }
+    }, PROGRESS_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [started, router]);
+
+  const failed = phase.phase === "failed" || error !== "";
+  const percent = phase.phase === "downloading" ? (phase.percent ?? 0) : phase.phase === "idle" ? 0 : 100;
+  return (
+    <div className="col" style={{ gap: 12 }}>
+      <p className="hint">
+        <span>
+          <b>Instalando um Postgres só para o Deixa.</b> Ele fica na pasta de dados do app e sobe junto com
+          ele. Cerca de 30 MB de download; só na primeira vez.
+        </span>
+      </p>
+      <div className="bar">
+        <i style={{ width: `${Math.max(2, percent)}%` }} />
+      </div>
+      <p className={failed ? "formerr" : "small muted"} role="status">
+        {error || phaseText(phase)}
+      </p>
+      {failed ? (
+        <button type="button" className="btn ghost wide" onClick={onBack}>
+          Voltar
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 const INSTALL_GUIDE: Record<SetupView["platform"], { name: string; steps: string }> = {
   macos: {
@@ -46,6 +142,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
   const [password, setPassword] = useState("");
   const [database, setDatabase] = useState(DEFAULT_DATABASE);
   const [url, setUrl] = useState("");
+  const [choice, setChoice] = useState<Choice>(view.embedded === "configured" ? "embedded" : null);
   const guide = INSTALL_GUIDE[view.platform];
 
   const unlock = (event: React.FormEvent) => {
@@ -132,8 +229,51 @@ export function SetupScreen({ view }: { view: SetupView }) {
             {pending ? "Conferindo…" : "Continuar"}
           </button>
         </form>
+      ) : view.embedded !== "unsupported" && choice === null ? (
+        <div className="col" style={{ gap: 12 }}>
+          <span className="eyebrow">Como guardar os dados?</span>
+          <button
+            type="button"
+            className="result on"
+            style={{ gridTemplateColumns: "1fr" }}
+            onClick={() => setChoice("embedded")}
+          >
+            <span className="col" style={{ gap: 2 }}>
+              <b>Instalar um Postgres só para o Deixa</b>
+              <span className="small muted">
+                Recomendado. O app baixa o Postgres uma vez (cerca de 30 MB), guarda tudo na própria pasta e
+                sobe junto com ele. Nada a configurar.
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className="result"
+            style={{ gridTemplateColumns: "1fr" }}
+            onClick={() => setChoice("existing")}
+          >
+            <span className="col" style={{ gap: 2 }}>
+              <b>Usar um Postgres que já existe</b>
+              <span className="small muted">
+                Neste computador, na rede da casa ou na nuvem. Você informa endereço, usuário e senha.
+              </span>
+            </span>
+          </button>
+        </div>
+      ) : choice === "embedded" ? (
+        <EmbeddedInstall onBack={() => setChoice(null)} />
       ) : (
         <form className="col" style={{ gap: 12 }} onSubmit={connect}>
+          {view.embedded !== "unsupported" ? (
+            <button
+              type="button"
+              className="link small"
+              style={{ alignSelf: "flex-start" }}
+              onClick={() => setChoice(null)}
+            >
+              ← Voltar para a escolha
+            </button>
+          ) : null}
           {view.detected.length > 0 ? (
             <div className="col" style={{ gap: 8 }}>
               <span className="eyebrow">Postgres encontrado neste computador</span>

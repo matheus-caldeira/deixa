@@ -28,6 +28,7 @@ const IDENTITY_PATH: &str = "/manifest.webmanifest";
 const IDENTITY_MARK: &str = "Deixa";
 const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
+const EMBEDDED_POSTGRES_DIRECTORY: &str = "postgres";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
 const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
 const DESKTOP_SIGNATURE_HEADER: &str = "x-deixa-desktop-signature";
@@ -435,8 +436,29 @@ fn stop_server(app: &AppHandle) {
         if let Some(mut child) = slot.take() {
             let _ = child.kill();
             let _ = child.wait();
+            stop_embedded_postgres(app);
         }
     }
+}
+
+fn stop_embedded_postgres(app: &AppHandle) {
+    let Some(home) = data_home(app) else {
+        return;
+    };
+    let pid_file = home.join(EMBEDDED_POSTGRES_DIRECTORY).join("data").join("postmaster.pid");
+    let Ok(contents) = std::fs::read_to_string(&pid_file) else {
+        return;
+    };
+    let Some(pid) = contents.lines().next().map(str::trim).filter(|line| !line.is_empty()) else {
+        return;
+    };
+    if pid.chars().any(|character| !character.is_ascii_digit()) {
+        return;
+    }
+    #[cfg(windows)]
+    let _ = Command::new("taskkill").args(["/PID", pid, "/T", "/F"]).output();
+    #[cfg(not(windows))]
+    let _ = Command::new("kill").args(["-TERM", pid]).output();
 }
 
 fn wait_until_up() -> bool {

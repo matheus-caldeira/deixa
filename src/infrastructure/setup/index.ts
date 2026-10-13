@@ -17,9 +17,16 @@ import {
   type DetectedServer,
 } from "./database-probe";
 import { forgetDatabaseStatus, getDatabaseStatus, type DatabaseStatus } from "./database-status";
+import {
+  embeddedPostgres,
+  embeddedPostgresConfigured,
+  embeddedPostgresSupported,
+  type EmbeddedPhase,
+} from "../embedded-postgres";
+import { logger } from "../logger/logger";
 
 export { getDatabaseStatus, SETUP_CODE_FILE, TESTED_MAJOR_VERSION };
-export type { DatabaseStatus, DetectedServer };
+export type { DatabaseStatus, DetectedServer, EmbeddedPhase };
 
 export function prepareSetupCode(): void {
   ensureSetupCode(configDirectory());
@@ -52,6 +59,39 @@ export function serverPlatform(): "macos" | "windows" | "linux" {
 }
 
 export const findLocalServers = (): Promise<DetectedServer[]> => detectLocalServers();
+
+export function embeddedDatabaseAvailable(): boolean {
+  return embeddedPostgresSupported() && !databaseComesFromEnvironment();
+}
+
+export function embeddedDatabaseStatus(): EmbeddedPhase {
+  return embeddedPostgres().status;
+}
+
+export function embeddedDatabaseConfigured(): boolean {
+  return embeddedPostgresConfigured();
+}
+
+let installing: Promise<void> | null = null;
+
+export function startEmbeddedDatabaseInstall(): void {
+  if (installing || !embeddedDatabaseAvailable()) return;
+  installing = embeddedPostgres()
+    .install()
+    .then(async (url) => {
+      const result = await configureDatabase(url);
+      if (!result.ok) throw new Error(result.message);
+      logger.info("embedded_postgres.ready", { port: new URL(url).port });
+    })
+    .catch((error: unknown) => {
+      logger.error("embedded_postgres.install_failed", {
+        reason: error instanceof Error ? error.message : "desconhecido",
+      });
+    })
+    .finally(() => {
+      installing = null;
+    });
+}
 
 export async function configureDatabase(
   url: string,

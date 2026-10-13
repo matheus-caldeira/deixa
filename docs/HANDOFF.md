@@ -115,8 +115,9 @@ Resultado com PGlite 0.5.8 (PostgreSQL 18.3 em WASM):
 - **Memória é o ponto fraco**: picos de 0,9 a 1,2 GB ao abrir e sob uso, assentando entre 175 e 280 MB
   parado, somados ao Node. O Postgres atual no Docker usa 83 MB.
 
-Decisão do Matheus em 12/10/2026: **não embutir banco**. O instalador não leva Postgres; o app usa o
-Postgres que a pessoa já tem ou instala. PGlite e SQLite ficam descartados por ora.
+Decisão do Matheus em 12/10/2026: **não embutir o PGlite**. Em 13/10/2026 a decisão virou **Postgres embutido**:
+o assistente oferece instalar um Postgres só para o Deixa, com os binários oficiais baixados na primeira
+abertura (ADR 0017). PGlite e SQLite seguem descartados.
 
 Feito (branch `feat/database-setup`):
 
@@ -133,8 +134,10 @@ Feito (branch `feat/database-setup`):
 
 Falta:
 
-- [ ] Botão "Baixar e configurar para mim", que busca os binários do Postgres sob demanda, para quem não
-      é técnico.
+- [x] "Instalar um Postgres só para o Deixa" (13/10/2026): baixa os binários do Postgres 17.6 do Maven Central
+      com hash fixado, `initdb`, sobe em 127.0.0.1 numa porta livre e grava a conexão. Conferido no macOS
+      (instalar, parar no SIGTERM, voltar no reinício). **Falta conferir no Windows**: o `tar` do sistema
+      precisa abrir `.txz`, e o Postgres não roda como Administrador.
 - [ ] Validar versões do Postgres abaixo da 17 (hoje a tela só avisa quando a versão é menor).
 - [ ] Cópia de segurança antes de migrar.
 - [ ] No pacote final, a pasta `src/infrastructure/database/migrations` precisa ir junto: as migrações são

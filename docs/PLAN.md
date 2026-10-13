@@ -179,6 +179,7 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da vers�
 | 89  | Importar e exportar: formato, legendas, dados pessoais, cards, áudio                                   | Reimportar não duplica; pacote adulterado recusado; isolamento                                      | [x]    |
 | 90  | Opções do catálogo e tela Importar e exportar; menu Arquivo do Tauri                                   | Conforme o protótipo                                                                                | [x]    |
 | 91  | Pacote pessoal cifrado (preferências, progresso, marcações, cards, histórico) com e-mail e senha       | Exportar e importar na outra conta sem duplicar; senha errada e arquivo adulterado dão o mesmo erro | [x]    |
+| 92  | Postgres embutido na instalação local (ADR 0017)                                                       | Assistente instala, sobe e grava a conexão; para no SIGTERM e volta no reinício                     | [x]    |
 
 ## Próximo
 

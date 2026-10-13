@@ -90,15 +90,17 @@ vez. Cada release traz arquivos `SHA256SUMS-*.txt` para conferir o download.
 | **Windows** | `.msi` ou `.exe`      | No aviso do SmartScreen, "Mais informações" → "Executar assim mesmo" |
 | **Linux**   | `.deb` ou `.AppImage` | Para o AppImage, dê permissão de execução                            |
 
-O Deixa precisa de um **PostgreSQL**. Na primeira abertura ele procura um no computador e pede os dados de
-conexão; se não houver nenhum, mostra o que instalar.
+O Deixa guarda tudo num **PostgreSQL**. Na primeira abertura ele oferece instalar um Postgres só para ele,
+baixado uma vez (cerca de 30 MB) e guardado na própria pasta do app, sem nada a configurar. Quem já tem um
+Postgres, no computador, na rede da casa ou na nuvem, pode informar o endereço em vez disso.
 
 > Versão 0.0.1. O projeto está no começo: espere arestas, e conte o que encontrar.
 
 ## Como usar
 
 1. **Abra o Deixa.** Ele fica na bandeja do sistema e abre numa janela própria.
-2. **Configure o banco.** Escolha o PostgreSQL encontrado ou informe o endereço. As tabelas são criadas sozinhas.
+2. **Configure o banco.** Escolha "Instalar um Postgres só para o Deixa" ou informe o endereço de um Postgres
+   seu. As tabelas são criadas sozinhas.
 3. **Crie a sua conta.** A primeira conta é a administradora da instalação.
 4. **Cadastre as chaves, se quiser.** No perfil, em "Suas chaves de API". Sem elas o app funciona em modo de
    demonstração e com envio manual de legenda.

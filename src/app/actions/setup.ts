@@ -6,8 +6,11 @@ import { getContainer } from "@/infrastructure/container";
 import {
   TESTED_MAJOR_VERSION,
   configureDatabase,
+  embeddedDatabaseStatus,
   getDatabaseStatus,
+  startEmbeddedDatabaseInstall,
   verifySetupCode,
+  type EmbeddedPhase,
 } from "@/infrastructure/setup";
 import { SETUP_COOKIE } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
@@ -82,4 +85,26 @@ export async function connectDatabaseAction(
         : null,
     },
   };
+}
+
+export async function installEmbeddedDatabaseAction(): Promise<ActionResult<null>> {
+  if ((await getDatabaseStatus()).state === "ready") return { ok: false, message: ALREADY_READY };
+  const store = await cookies();
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
+  startEmbeddedDatabaseInstall();
+  return { ok: true, data: null };
+}
+
+export async function embeddedDatabaseProgressAction(): Promise<
+  ActionResult<{ phase: EmbeddedPhase; next: "/login" | "/signup" | null }>
+> {
+  const store = await cookies();
+  const phase = embeddedDatabaseStatus();
+  if (phase.phase === "ready" && (await getDatabaseStatus()).state === "ready") {
+    store.delete(SETUP_COOKIE);
+    const hasAccounts = (await getContainer().listPeople()).length > 0;
+    return { ok: true, data: { phase, next: hasAccounts ? "/login" : "/signup" } };
+  }
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
+  return { ok: true, data: { phase: phase.phase === "ready" ? { phase: "starting" } : phase, next: null } };
 }

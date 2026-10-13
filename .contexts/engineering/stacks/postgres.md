@@ -15,7 +15,12 @@ Banco único: catálogo, falas, alinhamentos, aprendizado e progresso.
 
 ## Como sobe
 
-`docker compose up -d` (serviço `postgres`, imagem `postgres:17-alpine`, porta 1442 no host, volume nomeado).
+- Desenvolvimento: `docker compose up -d` (serviço `postgres`, imagem `postgres:17-alpine`, porta 1442 no host,
+  volume nomeado).
+- Instalação local do app: Postgres embutido (ADR 0017), binários oficiais 17.6 baixados na primeira abertura
+  para `<config>/postgres/binaries/`, dados em `<config>/postgres/data/`, processo filho em 127.0.0.1 numa porta
+  livre entre 1443 e 1499. Código em `src/infrastructure/embedded-postgres/`.
+- Banco remoto (nuvem ou rede da casa): o endereço informado no assistente.
 
 ## Bancos
 
