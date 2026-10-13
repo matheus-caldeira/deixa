@@ -2,11 +2,14 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   chmodSync,
+  copyFileSync,
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   statSync,
 } from "node:fs";
@@ -45,6 +48,47 @@ function secretValues() {
     if (existsSync(path)) values.add(readFileSync(path, "utf8").trim());
   }
   return [...values].filter((value) => value.length >= MIN_SECRET_LENGTH);
+}
+
+function copyResolved(source, destination) {
+  const stats = statSync(source, { throwIfNoEntry: false });
+  if (!stats) return;
+  if (!stats.isDirectory()) {
+    if (stats.isFile()) copyFileSync(source, destination);
+    return;
+  }
+  mkdirSync(destination, { recursive: true });
+  for (const name of readdirSync(source)) copyResolved(join(source, name), join(destination, name));
+}
+
+function packagesIn(folder) {
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder).flatMap((name) => {
+    if (name.startsWith(".")) return [];
+    if (!name.startsWith("@")) return [name];
+    return readdirSync(join(folder, name)).map((scoped) => join(name, scoped));
+  });
+}
+
+function flattenModules(modules) {
+  const store = join(modules, ".pnpm");
+  const hoisted = join(store, "node_modules");
+  for (const name of packagesIn(hoisted)) {
+    const target = join(modules, name);
+    if (existsSync(target)) continue;
+    mkdirSync(join(target, ".."), { recursive: true });
+    renameSync(join(hoisted, name), target);
+  }
+  rmSync(store, { recursive: true, force: true });
+}
+
+function linksUnder(folder) {
+  return readdirSync(folder).flatMap((name) => {
+    const path = join(folder, name);
+    const stats = lstatSync(path);
+    if (stats.isSymbolicLink()) return [path];
+    return stats.isDirectory() ? linksUnder(path) : [];
+  });
 }
 
 function filesUnder(folder) {
@@ -90,7 +134,8 @@ if (!existsSync(join(STANDALONE, "server.js")))
   throw new Error("o build não gerou .next/standalone/server.js");
 
 rmSync(SERVER, { recursive: true, force: true });
-cpSync(STANDALONE, SERVER, { recursive: true, dereference: true });
+copyResolved(STANDALONE, SERVER);
+flattenModules(join(SERVER, "node_modules"));
 cpSync(join(ROOT, ".next", "static"), join(SERVER, ".next", "static"), { recursive: true });
 cpSync(join(ROOT, "public"), join(SERVER, "public"), { recursive: true });
 cpSync(join(ROOT, ...MIGRATIONS), join(SERVER, ...MIGRATIONS), { recursive: true });
@@ -100,6 +145,11 @@ for (const leftover of readdirSync(SERVER).filter((name) => name.startsWith(".en
 }
 for (const leftover of [...SECRET_FILES, "data"]) {
   rmSync(join(SERVER, leftover), { recursive: true, force: true });
+}
+const links = linksUnder(SERVER);
+if (links.length > 0) {
+  rmSync(SERVER, { recursive: true, force: true });
+  throw new Error(`o servidor empacotado ficou com ${links.length} atalho(s) para fora; pacote apagado`);
 }
 const checkedSecrets = assertNoSecrets(SERVER);
 

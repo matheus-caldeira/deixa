@@ -213,6 +213,10 @@ Falta:
 - [x] A casca destrava `/setup` sozinha: lê `setup-code.txt` e abre a janela por `/setup/unlock`, só quando
       o servidor foi iniciado por ela.
 - [x] O empacotamento confere que nenhum segredo do `.env` nem dos arquivos locais foi parar no pacote.
+- [x] O servidor empacotado não tem atalhos nem depende de `.next/standalone`: conferido copiando-o para
+      outra pasta, com as pastas de build escondidas, e percorrendo login, catálogo, leitura e revisão.
+- [ ] Atenção ao testar: o servidor empacotado aparece na lista de processos como `next-server`, o mesmo
+      nome do servidor de dev. Para encerrar um deles, use o PID de quem escuta na porta.
 - [x] `pnpm desktop:build` gera `Deixa.app` (171 MB: 116 do Node, 51 do servidor). Conferido executando o
       binário do pacote: sobe o servidor de dentro do próprio pacote e encerra junto.
 
