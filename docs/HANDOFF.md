@@ -300,13 +300,18 @@ Feito em 12/10/2026 (branch `feat/ci-release`):
 Primeira execução do CI em 12/10/2026, depois do push da `main` para `matheus-caldeira/deixa` (privado):
 testes e build passaram, e a casca compilou em macOS e em Windows. O job de Linux falhou no build do Next,
 ao baixar as fontes do Google; a correção (fontes no repositório) está no branch `fix/ci-fonts`. O fluxo de
-release ainda não rodou: depende de uma tag.
+release rodou com a tag `v0.0.1`: gerou os instaladores de macOS (Apple Silicon e Intel), Linux (AppImage e
+`.deb`) e Windows (`.msi` e `.exe`) e os anexou a um release em rascunho, com os hashes. Os instaladores
+não foram instalados nem abertos por ninguém ainda.
 
 Falta:
 
 - [x] Repositório criado e `main` enviada (12/10/2026).
-- [ ] Escolher a licença.
-- [ ] Confirmar no CI que a casca compila em Linux depois da correção das fontes.
+- [x] Licença própria de uso não comercial em `LICENSE.md` (12/10/2026). Texto do projeto, sem revisão
+      jurídica: vale uma leitura por advogado antes de divulgar.
+- [x] CI verde nas três plataformas depois da correção das fontes.
+- [ ] Instalar e abrir cada instalador do release `v0.0.1` no sistema correspondente, antes de publicar.
+- [ ] Os selos de CI e de versão do README só aparecem para todos quando o repositório for público.
 - [ ] Conferir o rótulo do executor Intel do macOS (`macos-15-intel`), que muda com o tempo.
 - [ ] Aviso de versão nova consultando os releases, com link para o download manual (depende do endereço do
       repositório).

@@ -1,237 +1,187 @@
+<div align="center">
+
+<img src="src-tauri/app-icon.png" alt="Ícone do Deixa" width="96" />
+
 # Deixa
 
-Nome provisório. Plataforma para aprender inglês a partir das séries e filmes que você já assiste: você importa
-a legenda do episódio (inglês e, de preferência, português), lê o episódio inteiro, marca o que não entendeu e
-transforma as marcações em cards de revisão.
+**Aprenda inglês com as séries e os filmes que você já assiste.**
 
-- Especificação: [`PROJETO.md`](PROJETO.md)
-- Protótipo aprovado da interface: [`deixa.html`](deixa.html)
-- Plano da etapa: [`docs/PLAN.md`](docs/PLAN.md) · Diário de decisões: [`docs/DECISIONS.md`](docs/DECISIONS.md)
+Leia o episódio inteiro, marque o que não entendeu e transforme as marcações em revisão.
 
-Feito até aqui: fases **01 · Fundação e catálogo** e **02 · Leitura e marcador**, o núcleo da **03** (trilha e sessão de estudo, sem IA) e o núcleo da **04** (XP, sequência, missões e progresso calculados).
+[![CI](https://github.com/matheus-caldeira/deixa/actions/workflows/ci.yml/badge.svg)](https://github.com/matheus-caldeira/deixa/actions/workflows/ci.yml)
+[![Versão](https://img.shields.io/github/v/release/matheus-caldeira/deixa?label=vers%C3%A3o&color=2F43D6)](https://github.com/matheus-caldeira/deixa/releases)
+[![Licença](https://img.shields.io/badge/licen%C3%A7a-uso%20n%C3%A3o%20comercial-F3B61F)](LICENSE.md)
+[![Plataformas](https://img.shields.io/badge/plataformas-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-0F9E73)](#instalar)
 
-## Requisitos
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 
-Node 24, pnpm 12, Docker.
+[Motivação](#motivação) · [O que ele faz](#o-que-ele-faz) · [Benefícios](#benefícios) · [Instalar](#instalar) · [Como usar](#como-usar) · [Direitos autorais](#direitos-autorais-e-pirataria) · [Licença](#licença)
 
-## Como subir
+</div>
 
-```bash
-pnpm install
-pnpm setup:env          # cria ou completa o .env com valores de desenvolvimento, sem imprimir nada
-docker compose up -d    # Postgres (porta 1442) e Kokoro (porta 1881)
-pnpm db:migrate         # aplica as migrações
-pnpm db:seed            # perfis, obras e episódios de demonstração (pode rodar de novo)
-pnpm dev                # http://localhost:1300 e http://<IP da máquina>:1300
-```
+---
 
-Para testar pelo celular na mesma rede, abra `http://<IP da máquina>:1300` (vale para `pnpm dev` e para
-`pnpm build && pnpm start`). A aplicação escuta em `0.0.0.0`; Postgres e Kokoro ficam só em `127.0.0.1`.
+<p align="center">
+  <img src="docs/images/explorar.png" alt="Tela Explorar no computador, com o catálogo e as sugestões" width="100%" />
+</p>
 
-A imagem do Kokoro tem cerca de 8 GB; o primeiro `docker compose up` demora. Sem ela, comente o serviço ou deixe
-`KOKORO_URL` vazio: o áudio vira um WAV curto de silêncio e o resto funciona.
+<p align="center">
+  <img src="docs/images/leitura.png" alt="Leitura do episódio com inglês e português alinhados" width="30%" />
+  &nbsp;
+  <img src="docs/images/trilha.png" alt="Trilha de estudo do episódio" width="30%" />
+  &nbsp;
+  <img src="docs/images/revisar.png" alt="Revisão de cards" width="30%" />
+</p>
 
-### Portas
+<p align="center"><sub>As telas acima usam o seed de demonstração: os diálogos são fictícios, escritos para o projeto.</sub></p>
 
-| Serviço    | Porta |
-| ---------- | ----- |
-| Aplicação  | 1300  |
-| E2E        | 1310  |
-| PostgreSQL | 1442  |
-| Kokoro     | 1881  |
+## Motivação
 
-## Variáveis de ambiente
+Quem estuda inglês costuma juntar duas ferramentas que não conversam entre si: um aplicativo de lições, com
+frases que não têm nada a ver com a vida da pessoa, e um aplicativo de cartões, que exige montar tudo à mão.
 
-Tudo fica no `.env`, lido pelo carregamento padrão do Next.js e validado com Zod em
-`src/infrastructure/config/env.ts`. O [`.env.example`](.env.example) lista os nomes, sem valores.
+Enquanto isso, a mesma pessoa passa horas vendo séries em inglês, com legenda em português, sem aproveitar
+nada daquilo como estudo.
 
-| Variável                              | Para quê                                                                                    |
-| ------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                        | Conexão com o Postgres                                                                      |
-| `AI_CREDENTIALS_MASTER_KEY`           | Opcional. Substitui a chave mestra do arquivo `master-key.txt` (usada em testes)            |
-| `TMDB_READ_ACCESS_TOKEN`              | Token de leitura v4 do TMDB, usado no header `Authorization: Bearer`                        |
-| `TMDB_API_KEY`                        | Chave v3 do TMDB, usada só como alternativa se o token for recusado                         |
-| `OPENSUBTITLES_API_KEY`               | Chave da API do OpenSubtitles; vazia = fonte de legendas de demonstração                    |
-| `OPENSUBTITLES_USERNAME`              | Opcional: usuário para login antes do download                                              |
-| `OPENSUBTITLES_PASSWORD`              | Opcional: senha desse usuário                                                               |
-| `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` | Teto de downloads de legenda por usuário em 24 horas (padrão 10)                            |
-| `KOKORO_URL`                          | Endereço do Kokoro; vazio = áudio silencioso                                                |
-| `DATA_DIR`                            | Diretório das legendas e dos áudios (padrão `data`, fora do git)                            |
-| `GEMINI_API_KEY`                      | Chave Gemini do servidor: monta as trilhas e serve de reserva para quem não cadastrou a sua |
-| `GEMINI_MODEL`                        | Modelo do Gemini (padrão `gemini-2.5-flash`)                                                |
-| `SESSION_COOKIE_SECURE`               | `true` por padrão; `false` permite entrar por HTTP na rede interna                          |
-| `DEV_SHORTCUTS`                       | `true` mostra os perfis de seed na tela de entrada e o atalho de arquivos de exemplo        |
+O Deixa nasceu para ligar as duas pontas. O material de estudo é o episódio que você acabou de ver ou vai ver:
+as falas viram leitura, o que você não entendeu vira card, e o próprio episódio vira uma trilha de exercícios
+no seu nível. Você estuda o inglês que realmente vai ouvir, com o contexto da cena na cabeça.
 
-### Credenciais do TMDB
+## O que ele faz
 
-As credenciais do TMDB ficam **só no `.env`**, nas variáveis `TMDB_READ_ACCESS_TOKEN` e `TMDB_API_KEY`. O
-`pnpm setup:env` não as preenche: coloque-as você. Elas são lidas apenas no servidor, nunca vão para o bundle do
-cliente (`pnpm test:bundle` confere) e nunca aparecem em log. Sem elas, a busca de obras usa um provider de
-demonstração com algumas obras fixas, e o provider ativo aparece no log de inicialização.
+| Área          | O que você faz                                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Explorar**  | Monta o catálogo de séries e filmes, por temporada e episódio, e recebe sugestões pelo seu gosto e nível   |
+| **Ler**       | Lê o episódio inteiro com inglês e português alinhados por tempo, ouve cada fala e marca palavras e frases |
+| **Cards**     | Transforma as marcações em cards com significado, pronúncia e exemplo, só para você ou para a casa toda    |
+| **Estudar**   | Segue uma trilha de exercícios montada com as falas do episódio, dosada pelo seu nível                     |
+| **Revisar**   | Revê os cards no momento certo, com repetição espaçada; tudo o que você erra volta para a revisão          |
+| **Conversar** | Conversa com um tutor por texto ou áudio, com correção a cada mensagem                                     |
+| **Progresso** | Acompanha sequência de dias, XP, missões e quem mais está estudando na mesma instalação                    |
 
-This product uses the TMDB API but is not endorsed or certified by TMDB.
+O catálogo é compartilhado entre as contas da mesma instalação; o aprendizado é individual.
 
-### Legendas do OpenSubtitles
+## Benefícios
 
-Na folha "Adicionar ao catálogo", o passo padrão é **Buscar legendas**: o app procura no OpenSubtitles as
-legendas em inglês e português do episódio e só baixa quando você confirma. O envio manual de `.srt` continua
-no link logo abaixo. Detalhes em [docs/STAGE-2-SUBTITLES.md](docs/STAGE-2-SUBTITLES.md).
+- **Conteúdo que é seu.** Você estuda o que escolheu assistir, não frases genéricas.
+- **Contexto real.** Cada palavra vem com a fala, a cena e a tradução da própria legenda.
+- **Tudo num lugar só.** Leitura, cards, exercícios, revisão e conversa, sem exportar nada de um app para outro.
+- **Seus dados ficam com você.** Roda no seu computador, com banco de dados seu. Nada vai para um servidor nosso.
+- **Funciona sem IA.** Ler, marcar e revisar não dependem de chave nenhuma. Com chave, a IA explica os termos,
+  monta as trilhas, sugere obras e conversa com você.
+- **Suas chaves, sua cota.** Cada pessoa cadastra as próprias chaves de TMDB, OpenSubtitles e Gemini.
+- **Para a casa toda.** Várias contas na mesma instalação, cada uma com seu nível e seu progresso.
+- **No computador e no celular.** Aplicativo para macOS, Windows e Linux, e acesso pelo celular na mesma rede
+  por QR code.
 
-- **Cota:** a conta do servidor tem um número de downloads por dia (a tela mostra quanto resta e quando
-  renova). Além disso, cada usuário pode baixar até `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` legendas em 24 horas.
-- **Sem a chave** (`OPENSUBTITLES_API_KEY` vazia), o app usa uma fonte de demonstração com as legendas fictícias
-  de `fixtures/`. Para forçar essa fonte, deixe a variável vazia e reinicie; o log de inicialização mostra
-  `subtitles: "fake"`.
-- As credenciais são lidas só no servidor e nunca vão para o navegador nem para o log.
+## Instalar
 
-## Perfis de seed
+Baixe o instalador do seu sistema na [página de releases](https://github.com/matheus-caldeira/deixa/releases).
+Os instaladores **não são assinados** com certificado pago, então cada sistema pede uma liberação na primeira
+vez. Cada release traz arquivos `SHA256SUMS-*.txt` para conferir o download.
 
-Todos com a mesma senha de desenvolvimento: **`deixa1234`**
+| Sistema     | Arquivo               | Primeira abertura                                                    |
+| ----------- | --------------------- | -------------------------------------------------------------------- |
+| **macOS**   | `.dmg`                | Ajustes do Sistema → Privacidade e Segurança → "Abrir Mesmo Assim"   |
+| **Windows** | `.msi` ou `.exe`      | No aviso do SmartScreen, "Mais informações" → "Executar assim mesmo" |
+| **Linux**   | `.deb` ou `.AppImage` | Para o AppImage, dê permissão de execução                            |
 
-| Perfil  | E-mail                  | Nível | Obra atual            |
-| ------- | ----------------------- | ----- | --------------------- |
-| Ana     | `ana@deixa.example`     | A1    | Friends               |
-| Matheus | `matheus@deixa.example` | B1    | How I Met Your Mother |
-| Lucas   | `lucas@deixa.example`   | C1    | Ted Lasso             |
+O Deixa precisa de um **PostgreSQL**. Na primeira abertura ele procura um no computador e pede os dados de
+conexão; se não houver nenhum, mostra o que instalar.
 
-A tela de entrada pede e-mail e senha e tem "Criar conta". Ela não lista as contas existentes.
+> Versão 0.0.1. O projeto está no começo: espere arestas, e conte o que encontrar.
 
-Todo o catálogo vem do TMDB: o seed cadastra as sete obras pela API (títulos em pt-BR, pôster, imagem de fundo e
-imagem de cada episódio). O **texto** dos episódios do seed vem de 8 diálogos fictícios originais em
-[`fixtures/dialogues/`](fixtures/dialogues/), nunca de legendas reais; as trilhas deles em A1, B1 e C1 estão em
-[`fixtures/plans/`](fixtures/plans/). O seed é fixo e não chama a IA. Sem credenciais do TMDB, o seed e a busca caem
-num provider de demonstração, sem fotos.
+## Como usar
 
-`pnpm db:reset` apaga o banco de desenvolvimento e os arquivos em `data/`, migra e semeia de novo.
+1. **Abra o Deixa.** Ele fica na bandeja do sistema e abre numa janela própria.
+2. **Configure o banco.** Escolha o PostgreSQL encontrado ou informe o endereço. As tabelas são criadas sozinhas.
+3. **Crie a sua conta.** A primeira conta é a administradora da instalação.
+4. **Cadastre as chaves, se quiser.** No perfil, em "Suas chaves de API". Sem elas o app funciona em modo de
+   demonstração e com envio manual de legenda.
+5. **Adicione uma obra.** Em Explorar, toque em "+", busque a série ou o filme e escolha o episódio.
+6. **Traga a legenda.** Envie os seus arquivos `.srt` em inglês e em português, ou busque no OpenSubtitles com
+   a sua chave. Nada é baixado sem você confirmar.
+7. **Leia e marque.** Toque nas palavras que não conhece; palavras vizinhas viram uma expressão.
+8. **Gere os cards e estude.** Os cards entram na revisão, e a trilha do episódio fica disponível no Início.
 
-## O que dá para fazer
+### Chaves de API
 
-- Buscar uma série ou filme no TMDB, escolher temporada e episódio e ver pôster, sinopse e títulos em pt-BR.
-- Enviar o `.srt` em inglês e, opcionalmente, em português; acompanhar o processamento até `READY`; reenviar o mesmo
-  arquivo e ver a duplicidade detectada.
-- Ler o episódio inteiro com a legenda EN ↔ PT alinhada por tempo, nos modos EN + PT, PT ao tocar e Só inglês.
-- Marcar palavras, expressões e falas; gerar cards só para você ou para o catálogo; revisar em Revisar.
-- Ouvir cada fala: o áudio é gerado no primeiro toque (Kokoro) e servido do cache depois.
-- Configurar a chave do Google AI no perfil. Sem chave, as explicações dos cards são simuladas.
+| Serviço           | Para quê                                                 | Sem a chave                               |
+| ----------------- | -------------------------------------------------------- | ----------------------------------------- |
+| **TMDB**          | Buscar séries, filmes, temporadas e imagens              | Só as obras de demonstração               |
+| **OpenSubtitles** | Buscar e baixar legendas quando você pede                | Envio manual dos arquivos `.srt`          |
+| **Google Gemini** | Explicar termos, montar trilhas, sugerir obras e o tutor | Explicações simuladas; a revisão funciona |
 
-- Estudar: "Continuar estudando" abre a lição da cena atual da trilha, com exercícios montados das falas do
-  episódio e misturados conforme o nível (significado, escuta, montar a frase, lacuna, digitação e ditado). A
-  correção e o XP são calculados no servidor; repetir rende metade e para de render depois de duas repetições no dia.
-- Sequência, XP do dia e da semana, mapa de dias estudados e missões são calculados dos eventos de XP, no fuso da
-  conta. Tocar no XP ou na sequência abre "Quem está estudando", com nome, nível, ofensiva e XP de cada conta.
-- Instalar como aplicativo (PWA): manifesto, ícones e service worker online-first. O service worker só registra em
-  HTTPS ou em `localhost`; pelo IP da rede em HTTP dá para "Adicionar à tela de início", mas sem cache offline.
+As chaves ficam criptografadas no seu banco e nunca voltam para o navegador.
 
-- Trilha por IA: para cada episódio e nível, o Gemini divide as falas em blocos, dá título a cada um e cria as
-  questões, mais um desafio final do episódio inteiro. A trilha é montada em segundo plano e avisada pelo sino. É
-  preciso 70% de acerto para concluir um bloco; só acertos rendem XP e todo erro vira card de revisão.
-- Cards em segundo plano: "Gerar cards" não trava a tela; dá para continuar lendo e abrir o resultado pelo sino.
-- Revisar: quando a fila acaba, "Antecipar próxima revisão" traz os 10 cartões que venceriam primeiro (até 5 vezes por
-  dia, com espera que cresce 1 hora a cada uso).
-- Conversar: escolha um tema ou escreva um assunto e converse livremente com o tutor, por texto ou áudio. Ele corrige
-  cada mensagem na hora e o botão de alvo avalia a conversa inteira. As correções entram na revisão.
-- Explorar: botão "+" ao lado do título e seletor com todas as temporadas da obra.
+### No celular
 
-Percentual de nível, habilidades e erros recorrentes ainda mostram dados de demonstração.
+No menu da bandeja, "Abrir no celular (QR code)" mostra o endereço do Deixa na sua rede. O celular precisa
+estar na mesma rede do computador.
 
-### Sobre a chave Gemini
+### A partir do código
 
-No plano gratuito do Google AI a cota é de cerca de 20 requisições por dia por modelo. Quando a cota do modelo
-principal acaba, o app tenta `gemini-flash-latest` e `gemini-2.5-flash-lite`; se todas acabarem, avisa e não trava.
-As trilhas dos episódios do seed já vêm prontas em `fixtures/plans/` e não gastam cota. Sem nenhuma chave, trilhas,
-cards e tutor funcionam em modo simulado.
-
-O microfone do tutor só funciona em HTTPS ou em `localhost` (restrição do navegador).
-
-## Comandos
+Para rodar em modo de desenvolvimento, testar ou empacotar, veja [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm lint:comments && pnpm test   # depois de cada tarefa
-pnpm test:integration   # repositórios no Postgres real + busca no TMDB real (pulada sem token)
-pnpm build && pnpm test:bundle   # procura os segredos em .next/static
-pnpm test:e2e           # build + banco deixa_e2e + Playwright no Chrome instalado, com providers de demonstração
-pnpm screenshots        # telas da aplicação e do protótipo em 390×844, claro e escuro, em screenshots/
-pnpm db:generate        # gera migração a partir do schema
+pnpm install && pnpm setup:env && docker compose up -d && pnpm db:seed && pnpm dev
 ```
 
-## Organização
+## Direitos autorais e pirataria
 
-```
-src/app/              páginas, server actions e endpoints de áudio (borda fina)
-src/ui/               componentes React, ícones e estilos portados do protótipo
-src/modules/<m>/      domain · application (casos de uso + ports) · infrastructure
-src/infrastructure/   env, banco, storage, TMDB, Gemini, Kokoro, logger, container
-src/seed/             seed de demonstração
-tests/                e2e (Playwright) e bundle
-fixtures/             SRT fictícios EN e PT
-data/                 legendas enviadas e áudios gerados (fora do git)
-```
+**O Deixa não distribui, não hospeda e não dá acesso a séries, filmes nem legendas.**
 
-Regras de arquitetura, decisões e documentação por tecnologia: [`.contexts/`](.contexts/README.md).
+- O aplicativo **não reproduz vídeo**. Ele trabalha só com texto de legenda.
+- O repositório e os instaladores **não trazem nenhuma legenda real**. Os exemplos são diálogos fictícios,
+  escritos para o projeto.
+- As legendas que você usa são **suas**: você envia os arquivos ou as busca no OpenSubtitles com a sua própria
+  chave, por decisão sua, um episódio de cada vez.
+- O TMDB é usado apenas para identificar as obras (títulos, temporadas e imagens).
+- Tudo o que você importa fica no seu computador. O projeto não mantém catálogo nem servidor de conteúdo.
 
-## Chaves de API e chave mestra
+Você é responsável por ter o direito de usar o conteúdo que importar. Não use o Deixa para compartilhar
+material protegido, e não abra pedidos de ajuda para obter séries, filmes ou legendas.
 
-- Cada conta cadastra as próprias chaves de Gemini, TMDB e OpenSubtitles no perfil. A chave do usuário sempre
-  vence; sem ela, vale a chave global (definida pelo administrador no perfil ou, por enquanto, no `.env`).
-- A primeira conta criada é a administradora.
-- As chaves ficam cifradas no banco com a chave mestra guardada em `master-key.txt`, na raiz do projeto. O
-  arquivo é criado sozinho na primeira execução e fica fora do git. Se ele for trocado ou apagado, as chaves
-  guardadas ficam ilegíveis: o app avisa e basta cadastrá-las de novo.
+## Como é feito
 
-## Banco de dados
+Monólito modular em TypeScript: Next.js e React na interface e no servidor, PostgreSQL com Drizzle, e uma casca
+em Tauri que empacota tudo num aplicativo de bandeja. Cada serviço externo fica atrás de uma interface, com uma
+implementação de reserva usada nos testes e quando falta credencial.
 
-O Deixa não traz banco embutido: usa um PostgreSQL seu (testado na versão 17).
+Detalhes em [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), decisões em [docs/DECISIONS.md](docs/DECISIONS.md) e
+pendências em [docs/HANDOFF.md](docs/HANDOFF.md).
 
-- Em desenvolvimento, `DATABASE_URL` no `.env` aponta para o Postgres do `docker compose`.
-- Sem `DATABASE_URL`, a primeira abertura leva a `/setup`: digite o código do arquivo `setup-code.txt`,
-  escolha o Postgres encontrado ou informe o endereço, e o Deixa cria o banco e as tabelas.
-- O endereço fica em `database-url.txt`. Para trocar de banco, apague esse arquivo e abra o app de novo.
-- `DEIXA_CONFIG_DIR` muda a pasta desses arquivos e do `master-key.txt` (padrão: a pasta onde o app roda).
+## Próximos passos
 
-## Seed de demonstração
+- Versão que roda inteira no navegador, sem servidor: [rascunho](docs/WEB-OFFLINE-DRAFT.md).
+- Importar e exportar episódios, cards e dados pessoais: [rascunho](docs/OFFLINE-EXPORT-DRAFT.md).
+- Escolha do provedor de IA e controle de custo.
 
-`pnpm db:seed` cria três perfis, sete obras com os identificadores reais do TMDB, quinze episódios com legendas
-fictícias e as trilhas deles em A1, B1 e C1. Usa só os arquivos de `fixtures/`: não precisa de `.env` nem de
-chave nenhuma, apenas do banco configurado (`DATABASE_URL` ou a tela `/setup`). Senha dos perfis: `deixa1234`.
+## Licença
 
-## Casca nativa (em construção)
+O Deixa tem o código aberto para **uso não comercial**. Em resumo:
 
-`src-tauri/` tem um app Tauri que fica na bandeja do sistema, sobe o servidor do Deixa e o abre numa janela
-própria, no navegador ou por QR code no celular. Precisa do Rust instalado.
+- **Qualquer pessoa pode usar, estudar, copiar e modificar**, sem pagar nada.
+- **Quem modificar precisa publicar as alterações**, com o código-fonte, sob a mesma licença.
+- **O uso comercial é reservado ao autor.** Vender, cobrar pelo acesso ou incluir o Deixa em produto pago
+  depende de autorização por escrito.
 
-```bash
-pnpm desktop:server   # gera o servidor embutido (build do Next + Node) em src-tauri/
-pnpm desktop:run      # executa a casca em modo de desenvolvimento
-pnpm desktop:build      # gera só o aplicativo em src-tauri/target/release/bundle
-pnpm desktop:installer  # gera também o instalador (no macOS, um .dmg que o Finder abre ao terminar)
-```
+Por restringir o uso comercial, esta não é uma licença "open source" no sentido estrito do termo. O texto
+completo, que é o que vale, está em [LICENSE.md](LICENSE.md).
 
-Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
-instalado (endereço do banco, chave mestra, legendas e áudio) ficam na pasta de dados do sistema, não na pasta
-do projeto.
+## Créditos
 
-## Instalar o aplicativo
-
-Os instaladores ficam na página de releases do repositório. Eles **não são assinados** com certificado pago,
-então cada sistema pede uma liberação na primeira vez. Cada release traz arquivos `SHA256SUMS-*.txt` para
-conferir o download.
-
-- **macOS**: abra o `.dmg` e arraste o Deixa para Aplicativos. Na primeira abertura o sistema bloqueia; vá em
-  Ajustes do Sistema → Privacidade e Segurança e clique em "Abrir Mesmo Assim".
-- **Windows**: rode o instalador. Se o SmartScreen aparecer, clique em "Mais informações" e em "Executar assim
-  mesmo".
-- **Linux**: use o `.deb` ou o `.AppImage` (dê permissão de execução ao AppImage).
-
-O Deixa precisa de um PostgreSQL. Na primeira abertura ele procura um no computador e pede os dados de
-conexão; sem nenhum, mostra o que instalar.
-
-## Publicar uma versão
-
-1. Atualize a versão em `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` e
-   `src/shared/app.ts`.
-2. Crie e envie a tag: `git tag v0.1.0 && git push origin v0.1.0`.
-3. O fluxo `Release` cria um rascunho com os instaladores das três plataformas. Confira e publique.
+- Metadados de séries e filmes: [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not
+  endorsed or certified by TMDB.
+- Busca de legendas a pedido do usuário: [OpenSubtitles](https://www.opensubtitles.com).
+- Fontes Bricolage Grotesque, Figtree e JetBrains Mono, sob a licença OFL.
 
 ## Autor
 
-Matheus Caldeira · matheuscardozo4@gmail.com · +55 41 99524-5271
+**Matheus Caldeira**
+
+[matheuscardozo4@gmail.com](mailto:matheuscardozo4@gmail.com) · +55 41 99524-5271
