@@ -3,6 +3,7 @@ import type { Clock } from "@/shared/clock";
 import { maskSecret } from "../domain/api-key";
 import {
   CREDENTIAL_SERVICES,
+  SECRET_KINDS,
   SERVICE_LABELS,
   looksLikeSecret,
   shapeHint,
@@ -18,6 +19,7 @@ type Deps = {
   cipher: KeyCipher;
   testCredential: CredentialTester;
   environmentServices: ReadonlySet<CredentialService>;
+  endpointsAllowed?: () => Promise<boolean>;
   clock: Clock;
 };
 
@@ -69,6 +71,12 @@ export function makeSaveCredential(deps: Deps) {
     secret: string;
   }): Promise<StoredState> {
     requireAdmin(input.actor, input.scope);
+    if (SECRET_KINDS[input.service] === "endpoint" && !input.actor.isAdmin) {
+      const allowed = deps.endpointsAllowed ? await deps.endpointsAllowed() : true;
+      if (!allowed) {
+        throw new AppError("FORBIDDEN", "O administrador desligou endereços próprios de IA por conta.");
+      }
+    }
     const secret = input.secret.trim();
     if (!looksLikeSecret(input.service, secret)) {
       throw new AppError("AI_KEY_INVALID", `Essa chave não parece válida. ${shapeHint(input.service)}`);

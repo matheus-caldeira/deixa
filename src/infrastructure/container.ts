@@ -16,7 +16,7 @@ import {
   type CredentialService,
   type CredentialTester,
 } from "@/modules/ai-credentials";
-import { makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider } from "@/modules/audio";
+import { makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider, VOICE_BY_ACCENT } from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
 import { PerUserGate } from "@/modules/audio/infrastructure/per-user-gate";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
@@ -128,6 +128,9 @@ import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
 import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
+import { makeExportPackage, makeImportPackage, makeInspectPackage } from "@/modules/packages";
+import { DrizzlePackageCatalog } from "@/modules/packages/infrastructure/drizzle-package-catalog";
+import { FflateArchive } from "@/modules/packages/infrastructure/fflate-archive";
 import {
   SHARED_KEY_DEFAULT_LIMIT,
   makeEnsureAiAllowed,
@@ -677,10 +680,37 @@ export function buildContainer(options: ContainerOptions) {
     clock,
     environmentServices,
     testCredential: options.testCredential ?? testServiceCredential,
+    endpointsAllowed: async () => (await getSettings()).aiCustomEndpointsAllowed,
+  };
+
+  const packageCatalog = new DrizzlePackageCatalog({
+    db,
+    catalog,
+    subtitles,
+    learning,
+    audio: audioAssets,
+    importSubtitles: async (input) =>
+      (await importEpisodeSubtitles({ ...input, portuguese: input.portuguese ?? undefined })).outcome,
+    ids,
+    voices: Object.values(VOICE_BY_ACCENT),
+    modelVersion: tts.modelVersion,
+  });
+  const packageDeps = {
+    reader: packageCatalog,
+    writer: packageCatalog,
+    archive: new FflateArchive(),
+    storage,
+    clock,
+    ids,
   };
 
   return {
     providers: { metadata: defaultMetadata.name, tts: tts.name, subtitles: defaultSubtitleSource.name },
+    listCatalogWorks: async () => (await catalog.listCatalog()).map((entry) => entry.media),
+    listEpisodesByMedia: (mediaId: string) => catalog.listEpisodesByMedia(mediaId),
+    exportPackage: makeExportPackage(packageDeps),
+    inspectPackage: makeInspectPackage(packageDeps),
+    importPackage: makeImportPackage(packageDeps),
     metadataNameFor: async (userId: string) => (await metadataFor(userId)).name,
     devShortcuts: env.DEV_SHORTCUTS,
     secureSessionCookie: env.SESSION_COOKIE_SECURE,

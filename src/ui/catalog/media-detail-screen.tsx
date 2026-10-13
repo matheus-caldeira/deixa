@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
 import type { EpisodeStatus } from "@/modules/catalog";
 import type { LevelFit } from "@/shared/levels";
-import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, PlusIcon, UploadIcon } from "../icons";
+import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, PlusIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
@@ -67,7 +67,7 @@ function StatusChips({ episode }: { episode: EpisodeRow }) {
 export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
   const router = useRouter();
   const toast = useToast();
-  const { openUpload } = useShell();
+  const { openCatalogOptions } = useShell();
   const [pending, startTransition] = useTransition();
   const [pickingSeason, setPickingSeason] = useState(false);
   const seasonNumber = media.seasonNumber;
@@ -103,8 +103,9 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
         </Link>
         <button
           className="playbtn"
-          onClick={() => openUpload(media.id)}
-          aria-label="Adicionar legenda de um episódio"
+          onClick={() => openCatalogOptions(media.poster.title, media.id)}
+          aria-label="Adicionar, importar ou exportar"
+          aria-haspopup="dialog"
         >
           <PlusIcon />
         </button>
@@ -252,8 +253,12 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
       ) : (
         <p className="muted">Nenhum episódio carregado ainda. Envie a primeira legenda abaixo.</p>
       )}
-      <button className="fab" onClick={() => openUpload(media.id)}>
-        <UploadIcon /> Enviar legenda de outro episódio
+      <button
+        className="fab"
+        onClick={() => openCatalogOptions(media.poster.title, media.id)}
+        aria-haspopup="dialog"
+      >
+        <PlusIcon /> Adicionar, importar ou exportar
       </button>
     </>
   );

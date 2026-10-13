@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { BackIcon, ChartIcon, SlidersIcon } from "../icons";
+import { BackIcon, ChartIcon, SlidersIcon, SwapIcon } from "../icons";
 import { Sheet } from "./sheet";
 
 export const MORE_LINKS = [
   { href: "/progress", label: "Progresso", detail: "Nível, sequência, XP e conquistas", Icon: ChartIcon },
+  {
+    href: "/transfer",
+    label: "Importar e exportar",
+    detail: "Pacotes de obras, legendas, cards e áudio",
+    Icon: SwapIcon,
+  },
   { href: "/settings", label: "Configurações", detail: "Chaves, uso da IA e servidor", Icon: SlidersIcon },
 ] as const;
 

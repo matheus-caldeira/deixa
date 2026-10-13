@@ -17,6 +17,7 @@ import {
   HomeIcon,
   MoreIcon,
 } from "../icons";
+import { CatalogOptionsSheet } from "../catalog/catalog-options-sheet";
 import { UploadSheet } from "../catalog/upload-sheet";
 import { Logo } from "./logo";
 import { MORE_LINKS, MoreSheet } from "./more-sheet";
@@ -35,10 +36,15 @@ export type ShellData = {
   unreadableKeys: string[];
 };
 
-type ShellActions = { openProfile: () => void; openUpload: (mediaId?: string) => void };
+type ShellActions = {
+  openProfile: () => void;
+  openUpload: (mediaId?: string) => void;
+  openCatalogOptions: (title: string, mediaId?: string) => void;
+};
 const ShellContext = createContext<ShellActions>({
   openProfile: () => undefined,
   openUpload: () => undefined,
+  openCatalogOptions: () => undefined,
 });
 
 export function useShell(): ShellActions {
@@ -59,6 +65,7 @@ type Sheet =
   | { kind: "profile" }
   | { kind: "notifications" }
   | { kind: "more" }
+  | { kind: "catalog-options"; title: string; mediaId?: string }
   | { kind: "upload"; mediaId?: string }
   | null;
 const INBOX_REFRESH_MS = 15_000;
@@ -99,6 +106,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     () => ({
       openProfile: () => setSheet({ kind: "profile" }),
       openUpload: (mediaId) => setSheet({ kind: "upload", mediaId }),
+      openCatalogOptions: (title, mediaId) => setSheet({ kind: "catalog-options", title, mediaId }),
     }),
     [],
   );
@@ -210,6 +218,14 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
       </div>
       {sheet?.kind === "profile" ? <ProfileSheet data={data.profile} onClose={() => setSheet(null)} /> : null}
       {sheet?.kind === "more" ? <MoreSheet onClose={() => setSheet(null)} /> : null}
+      {sheet?.kind === "catalog-options" ? (
+        <CatalogOptionsSheet
+          title={sheet.title}
+          mediaId={sheet.mediaId}
+          onAdd={() => setSheet({ kind: "upload", mediaId: sheet.mediaId })}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
       {sheet?.kind === "notifications" ? (
         <NotificationsSheet inbox={inbox} onChange={refreshInbox} onClose={() => setSheet(null)} />
       ) : null}

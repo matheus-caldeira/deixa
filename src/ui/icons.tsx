@@ -668,3 +668,20 @@ export function MoreIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function SwapIcon(props: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M8 4v14M4 14l4 4 4-4M16 20V6M12 10l4-4 4 4" />
+    </svg>
+  );
+}

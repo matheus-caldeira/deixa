@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { LevelFit } from "@/shared/levels";
-import { PlusIcon, SearchIcon, UploadIcon } from "../icons";
+import { PlusIcon, SearchIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
 import { SuggestionsSection, type SuggestionsView } from "./suggestions-section";
@@ -41,7 +41,7 @@ export function CatalogScreen({
   inProgress: InProgressTile[];
   suggestions: SuggestionsView;
 }) {
-  const { openUpload } = useShell();
+  const { openCatalogOptions } = useShell();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const needle = query.trim().toLowerCase();
@@ -56,7 +56,12 @@ export function CatalogScreen({
     <>
       <div className="sec-h" style={{ paddingTop: 4, alignItems: "center" }}>
         <h1 style={{ fontSize: 28 }}>Explorar</h1>
-        <button className="playbtn" onClick={() => openUpload()} aria-label="Adicionar série ou filme">
+        <button
+          className="playbtn"
+          onClick={() => openCatalogOptions("Catálogo")}
+          aria-label="Adicionar, importar ou exportar"
+          aria-haspopup="dialog"
+        >
           <PlusIcon />
         </button>
       </div>
@@ -135,8 +140,8 @@ export function CatalogScreen({
           </p>
         )}
       </section>
-      <button className="fab" onClick={() => openUpload()}>
-        <UploadIcon /> Adicionar episódio com legenda .srt
+      <button className="fab" onClick={() => openCatalogOptions("Catálogo")} aria-haspopup="dialog">
+        <PlusIcon /> Adicionar, importar ou exportar
       </button>
     </>
   );

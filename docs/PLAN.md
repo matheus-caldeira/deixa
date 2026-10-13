@@ -168,16 +168,17 @@ Branch `feat/ci-release`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 F.
 
 Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da versão web.
 
-| #   | Tarefa                                                                                                 | Critério de pronto                                                                       | Estado |
-| --- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ------ |
-| 83  | Protótipo das telas novas no `deixa.html`                                                              | Configurações, Uso da IA, menu Mais, opções do catálogo, importar e exportar, aprovados  | [x]    |
-| 84  | IA pelo AI SDK, ainda só Gemini                                                                        | Mesmos ports e prompts; testes existentes passam; teste do cliente com modelo de mentira | [x]    |
-| 85  | Medição de tokens e valor por chamada                                                                  | Evento por chamada; preços por modelo; isolamento no Postgres                            | [x]    |
-| 86  | Limite por dia e por mês com trava total                                                               | Chamada acima do limite recusada em toda operação; padrão fechado para a chave global    | [x]    |
-| 87  | Tela Configurações, Uso da IA, menu Mais e perfil enxuto                                               | E2E passa; capturas em 390 e 1280 sem erro                                               | [x]    |
-| 88  | Escolha de provedor e de modelo (Google, OpenAI, Anthropic, OpenRouter, Ollama, compatível com OpenAI) | Dois provedores de ponta a ponta; embeddings por modelo                                  | [x]    |
-| 89  | Importar e exportar: formato, legendas, dados pessoais, cards, áudio                                   | Reimportar não duplica; pacote adulterado recusado; isolamento                           | [ ]    |
-| 90  | Opções do catálogo e tela Importar e exportar; menu Arquivo do Tauri                                   | Conforme o protótipo                                                                     | [ ]    |
+| #   | Tarefa                                                                                                 | Critério de pronto                                                                                  | Estado |
+| --- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------ |
+| 83  | Protótipo das telas novas no `deixa.html`                                                              | Configurações, Uso da IA, menu Mais, opções do catálogo, importar e exportar, aprovados             | [x]    |
+| 84  | IA pelo AI SDK, ainda só Gemini                                                                        | Mesmos ports e prompts; testes existentes passam; teste do cliente com modelo de mentira            | [x]    |
+| 85  | Medição de tokens e valor por chamada                                                                  | Evento por chamada; preços por modelo; isolamento no Postgres                                       | [x]    |
+| 86  | Limite por dia e por mês com trava total                                                               | Chamada acima do limite recusada em toda operação; padrão fechado para a chave global               | [x]    |
+| 87  | Tela Configurações, Uso da IA, menu Mais e perfil enxuto                                               | E2E passa; capturas em 390 e 1280 sem erro                                                          | [x]    |
+| 88  | Escolha de provedor e de modelo (Google, OpenAI, Anthropic, OpenRouter, Ollama, compatível com OpenAI) | Dois provedores de ponta a ponta; embeddings por modelo                                             | [x]    |
+| 89  | Importar e exportar: formato, legendas, dados pessoais, cards, áudio                                   | Reimportar não duplica; pacote adulterado recusado; isolamento                                      | [x]    |
+| 90  | Opções do catálogo e tela Importar e exportar; menu Arquivo do Tauri                                   | Conforme o protótipo                                                                                | [x]    |
+| 91  | Pacote pessoal cifrado (preferências, progresso, marcações, cards, histórico) com e-mail e senha       | Exportar e importar na outra conta sem duplicar; senha errada e arquivo adulterado dão o mesmo erro | [ ]    |
 
 ## Próximo
 

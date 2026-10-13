@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
+import { makeSaveCredential, type CredentialScope } from "../application/credential-use-cases";
+import type { CredentialRepository, KeyCipher } from "../application/ports";
 import { makeSetAiModels, type ModelChoiceRepository } from "../application/model-choice-use-cases";
 import { maskSecret } from "./api-key";
 import { endpointSecret, looksLikeSecret, parseEndpoint } from "./services";
@@ -75,5 +77,46 @@ describe("escolha de modelos", () => {
     ]) {
       expect(await codeOf(app.set({ userId: "ana", models }))).toBe("INVALID_INPUT");
     }
+  });
+});
+
+describe("endereço próprio de IA", () => {
+  function setup(allowed: boolean) {
+    const saved: string[] = [];
+    const credentials = {
+      upsertForUser: async (_userId: string, service: string) => {
+        saved.push(service);
+      },
+      upsertGlobal: async (service: string) => {
+        saved.push(`global:${service}`);
+      },
+    } as unknown as CredentialRepository;
+    const cipher: KeyCipher = {
+      version: 1,
+      encrypt: (plain) => `enc:${plain}`,
+      decrypt: (value) => value.slice(4),
+    };
+    const save = makeSaveCredential({
+      credentials,
+      cipher,
+      testCredential: async () => true,
+      environmentServices: new Set(),
+      endpointsAllowed: async () => allowed,
+      clock: new FixedClock("2026-10-13T12:00:00Z"),
+    });
+    const secret = endpointSecret({ baseUrl: "http://localhost:11434", apiKey: null });
+    const attempt = (isAdmin: boolean, scope: CredentialScope) =>
+      save({ actor: { userId: "u", isAdmin }, service: "ollama", scope, secret });
+    return { saved, attempt };
+  }
+
+  it("com a opção desligada, só o administrador guarda um endereço", async () => {
+    const off = setup(false);
+    expect(await codeOf(off.attempt(false, "user"))).toBe("FORBIDDEN");
+    expect(off.saved).toEqual([]);
+    expect(await codeOf(off.attempt(true, "global"))).toBe("ok");
+    const on = setup(true);
+    expect(await codeOf(on.attempt(false, "user"))).toBe("ok");
+    expect(on.saved).toEqual(["ollama"]);
   });
 });

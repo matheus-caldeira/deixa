@@ -40,13 +40,17 @@ const NONCE_BYTES: usize = 16;
 const PROOF_PREFIX: &str = "hello:";
 const MAX_STATUS_BYTES: u64 = 64 * 1024;
 const PROFILE_EVENT_SCRIPT: &str = "window.dispatchEvent(new CustomEvent('deixa:open-profile'))";
-const NAVIGATION: [(&str, &str, &str, &str); 5] = [
+const NAVIGATION: [(&str, &str, &str, &str); 7] = [
     ("go-home", "Início", "/", "CmdOrCtrl+1"),
     ("go-catalog", "Explorar", "/catalog", "CmdOrCtrl+2"),
     ("go-review", "Revisar", "/review", "CmdOrCtrl+3"),
     ("go-tutor", "Conversar", "/tutor", "CmdOrCtrl+4"),
     ("go-progress", "Progresso", "/progress", "CmdOrCtrl+5"),
+    ("go-transfer", "Importar e exportar", "/transfer", "CmdOrCtrl+6"),
+    ("go-settings", "Configurações", "/settings", "CmdOrCtrl+7"),
 ];
+const TRANSFER_IMPORT_PATH: &str = "/transfer#importar";
+const TRANSFER_EXPORT_PATH: &str = "/transfer#exportar";
 const AUTHOR_NAME: &str = "Matheus Caldeira";
 const AUTHOR_EMAIL: &str = "matheuscardozo4@gmail.com";
 const AUTHOR_PHONE: &str = "+55 41 99524-5271";
@@ -551,11 +555,16 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
     )?;
     let browser = MenuItem::with_id(app, "app-browser", "Abrir no navegador", true, Some("CmdOrCtrl+B"))?;
     let qr = MenuItem::with_id(app, "app-qr", "Abrir no celular (QR code)", true, None::<&str>)?;
+    let import = MenuItem::with_id(app, "transfer-import", "Importar…", true, Some("CmdOrCtrl+I"))?;
+    let export = MenuItem::with_id(app, "transfer-export", "Exportar…", true, Some("CmdOrCtrl+E"))?;
     let file = Submenu::with_items(
         app,
         "Arquivo",
         true,
         &[
+            &import,
+            &export,
+            &PredefinedMenuItem::separator(app)?,
             &browser,
             &qr,
             &PredefinedMenuItem::separator(app)?,
@@ -600,7 +609,9 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
             return;
         }
         match id {
-            "settings" => open_profile(app),
+            "settings" => go_to(app, "/settings"),
+            "transfer-import" => go_to(app, TRANSFER_IMPORT_PATH),
+            "transfer-export" => go_to(app, TRANSFER_EXPORT_PATH),
             "app-browser" => {
                 let _ = app.opener().open_url(local_url(), None::<&str>);
             }

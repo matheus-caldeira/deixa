@@ -269,8 +269,8 @@ Limites desta etapa:
       fechar), Editar (desfazer, copiar, colar), Ir (as cinco áreas, com Cmd+1 a Cmd+5, e Recarregar) e Janela.
       O app aparece no Dock enquanto a janela está aberta e some ao fechá-la. Conferido só que sobe e fica
       como app comum; os itens não foram clicados por automação.
-- [ ] Itens "Importar…" e "Exportar…" no menu Arquivo, quando a função existir: ver
-      `docs/OFFLINE-EXPORT-DRAFT.md` (rascunho, não implementado).
+- [x] Itens "Importar…" e "Exportar…" no menu Arquivo (13/10/2026), levando à tela Importar e exportar;
+      o pacote pessoal cifrado (tipo 5 do rascunho) ainda não existe.
 - [ ] Ícone monocromático para a barra de menus do macOS.
 - [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).
 

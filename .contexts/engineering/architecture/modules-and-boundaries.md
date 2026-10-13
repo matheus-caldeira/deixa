@@ -35,6 +35,8 @@ fixtures/             SRT fictícios EN e PT
 | `gamification`    | XP por eventos e retrato de demonstração de Início, Conversar e Progresso     |
 | `settings`        | Configurações do servidor guardadas no banco, alteradas só pelo administrador |
 | `recommendations` | Retrato do aluno, vetores das obras, ranqueamento e sugestões personalizadas  |
+| `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites       |
+| `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio      |
 
 Os módulos `scripts`, `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
 chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.

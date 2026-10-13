@@ -34,12 +34,12 @@ da sessão. Detalhes: @.claude/rules/user-isolation.md
 ## Estrutura de `src/`
 
 ```
-src/app/              (auth), (learning) com as cinco abas, read/[episodeId], api/audio
+src/app/              (auth), (learning) com as abas, settings, transfer, read/[episodeId], api/audio, api/transfer
 src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
 src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastructure/ · index.ts
                       identity, catalog, subtitles, alignment, highlights, learning, flashcards,
                       ai-credentials, audio, gamification, study, notifications, conversations,
-                      subtitle-sources, recommendations, settings
+                      subtitle-sources, recommendations, settings, ai-usage, packages
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
 src/seed/             seed de demonstração

@@ -55,7 +55,11 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.getByRole("heading", { level: 1, name: "Progresso" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Explorar" }).click();
-  await page.getByRole("button", { name: "Adicionar episódio com legenda .srt" }).click();
+  await page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first().click();
+  await page
+    .getByRole("dialog", { name: "Catálogo" })
+    .getByRole("button", { name: /^Adicionar/ })
+    .click();
   const sheet = page.getByRole("dialog", { name: "Adicionar ao catálogo" });
   await sheet.getByLabel("Nome da série ou filme").fill("modern");
   await sheet.getByRole("button", { name: /Modern Family/ }).click();
@@ -73,7 +77,11 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.getByText("Pronto · 23 falas")).toBeVisible();
   await expect(page.getByText("EN + PT", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Enviar legenda de outro episódio" }).click();
+  await page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /^Adicionar/ })
+    .click();
   await expect(sheet.getByLabel("Episódio")).toContainText("E01 · Pilot");
   await sheet.getByLabel("Episódio").selectOption({ label: "E01 · Pilot (pronto)" });
   await attachSubtitles(page);
@@ -206,7 +214,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.goto("/review");
   await expect(page.getByText(/\d+ na fila/)).toBeVisible();
   await page.goto("/catalog");
-  await expect(page.getByRole("button", { name: "Adicionar série ou filme" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first()).toBeVisible();
   await page.goto("/");
 
   await page.getByRole("link", { name: /XP hoje/ }).click();

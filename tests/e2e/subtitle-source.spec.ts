@@ -13,7 +13,11 @@ test("escolher episódio → buscar legendas → confirmar → processar → ler
   await expect(page.getByRole("button", { name: "Perfil de Lucas" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Explorar" }).click();
-  await page.getByRole("button", { name: "Adicionar episódio com legenda .srt" }).click();
+  await page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first().click();
+  await page
+    .getByRole("dialog", { name: "Catálogo" })
+    .getByRole("button", { name: /^Adicionar/ })
+    .click();
   const sheet = page.getByRole("dialog", { name: "Adicionar ao catálogo" });
   await sheet.getByLabel("Nome da série ou filme").fill("brooklyn");
   await sheet.getByRole("button", { name: /Brooklyn Nine-Nine/ }).click();
@@ -58,7 +62,11 @@ test("escolher episódio → buscar legendas → confirmar → processar → ler
   await expect(page.getByText("Ei, o que você vai fazer hoje à noite?")).toBeVisible();
 
   await page.goBack();
-  await page.getByRole("button", { name: "Enviar legenda de outro episódio" }).click();
+  await page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first().click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /^Adicionar/ })
+    .click();
   await sheet.getByLabel("Episódio").selectOption({ index: 0 });
   await sheet.getByRole("button", { name: "Buscar legendas" }).click();
   await expect(sheet.getByText("Este episódio já tem as duas legendas do OpenSubtitles.")).toBeVisible();
