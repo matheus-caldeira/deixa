@@ -40,7 +40,9 @@ depender de TMDB, OpenSubtitles nem IA. A referência é o Anki: exportar e impo
   N=2^17 e r=8 (cerca de 128 MB e perto de um segundo por tentativa) para encarecer isso, e as tentativas
   on-line de senha na exportação e na importação contam no mesmo limite do login, registradas antes da conferência e zeradas no acerto. Na importação o limite conta em duas chaves ao
   mesmo tempo, o e-mail da conta de origem e a conta que importa, para um login bem-sucedido não zerar as
-  tentativas nem um pacote remontado ou outra conta abrir contador novo. O custo aceito ao abrir
+  tentativas nem um pacote remontado ou outra conta abrir contador novo. Aceito: quem errar oito vezes contra um e-mail de origem
+  bloqueia por dez minutos a importação de pacotes desse e-mail para qualquer conta; não afeta o login nem o
+  resto do app. O custo aceito ao abrir
   um arquivo fica preso a N=2^17, para um cabeçalho forjado não pedir memória sem fim.
 - Áudio só entra se o hash corresponder a uma fala dos episódios do pacote, com a voz e a versão declaradas:
   um pacote não consegue registrar áudio para texto que não trouxe.
