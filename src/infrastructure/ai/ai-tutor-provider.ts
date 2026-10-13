@@ -1,7 +1,7 @@
 import type { TutorMessage, TutorProvider, TurnRole } from "@/modules/conversations";
 import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
 import type { ModelMessage, UserContent } from "ai";
-import { generateJson } from "./generate-json";
+import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 
 const REPLY_TIMEOUT_MS = 45_000;
@@ -32,7 +32,7 @@ function messageContent(message: TutorMessage): UserContent {
     {
       type: "file",
       mediaType: message.audio.mimeType.split(";")[0] ?? "audio/webm",
-      data: message.audio.base64,
+      data: Buffer.from(message.audio.base64, "base64"),
     },
     { type: "text", text: "Mensagem do aluno em áudio." },
   ];
@@ -44,6 +44,7 @@ export class AiTutorProvider implements TutorProvider {
   constructor(
     private readonly access: AiAccess,
     private readonly model: string,
+    private readonly deps: AiDeps,
   ) {}
 
   reply(input: {
@@ -58,17 +59,21 @@ export class AiTutorProvider implements TutorProvider {
         : { role: "assistant", content: JSON.stringify({ reply: turn.text }) },
     );
     const firstUser = history.findIndex((turn) => turn.role === "user");
-    return generateJson({
-      access: this.access,
-      model: this.model,
-      system: `${replyInstructions(input.level, input.theme)}\nSua abertura na conversa foi: ${JSON.stringify(input.history[0]?.text ?? "")}`,
-      messages: [
-        ...(firstUser >= 0 ? history.slice(firstUser) : []),
-        { role: "user", content: messageContent(input.message) },
-      ],
-      timeoutMs: REPLY_TIMEOUT_MS,
-      temperature: 0.7,
-    });
+    return generateJson(
+      {
+        access: this.access,
+        model: this.model,
+        system: `${replyInstructions(input.level, input.theme)}\nSua abertura na conversa foi: ${JSON.stringify(input.history[0]?.text ?? "")}`,
+        messages: [
+          ...(firstUser >= 0 ? history.slice(firstUser) : []),
+          { role: "user", content: messageContent(input.message) },
+        ],
+        timeoutMs: REPLY_TIMEOUT_MS,
+        temperature: 0.7,
+      },
+      "tutor",
+      this.deps,
+    );
   }
 
   review(input: {
@@ -76,13 +81,17 @@ export class AiTutorProvider implements TutorProvider {
     theme: string;
     turns: { role: TurnRole; text: string }[];
   }): Promise<unknown> {
-    return generateJson({
-      access: this.access,
-      model: this.model,
-      system: reviewInstructions(input.level, input.theme),
-      messages: [{ role: "user", content: JSON.stringify(input.turns) }],
-      timeoutMs: REVIEW_TIMEOUT_MS,
-      temperature: 0.3,
-    });
+    return generateJson(
+      {
+        access: this.access,
+        model: this.model,
+        system: reviewInstructions(input.level, input.theme),
+        messages: [{ role: "user", content: JSON.stringify(input.turns) }],
+        timeoutMs: REVIEW_TIMEOUT_MS,
+        temperature: 0.3,
+      },
+      "tutor",
+      this.deps,
+    );
   }
 }

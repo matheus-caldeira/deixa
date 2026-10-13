@@ -1,4 +1,5 @@
 import { APICallError, embedMany } from "ai";
+import type { AiUsageMeter } from "@/modules/ai-usage";
 import type { EmbeddingProvider } from "@/modules/recommendations";
 import { AppError } from "@/shared/errors";
 import { embeddingModel, type AiAccess } from "./models";
@@ -14,10 +15,14 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
   readonly name = "gemini" as const;
   readonly model = `${MODEL}-${DIMENSIONS}`;
 
-  constructor(private readonly access: AiAccess) {}
+  constructor(
+    private readonly access: AiAccess,
+    private readonly meter: AiUsageMeter,
+  ) {}
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
     let embeddings: number[][];
+    let tokens = 0;
     try {
       const result = await embedMany({
         model: embeddingModel(this.access, MODEL),
@@ -27,6 +32,7 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
         maxRetries: 0,
       });
       embeddings = result.embeddings;
+      tokens = result.usage.tokens;
     } catch (error) {
       const status = APICallError.isInstance(error) ? (error.statusCode ?? 0) : 0;
       if (KEY_REJECTED.includes(status)) {
@@ -40,6 +46,13 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
     if (!wellFormed) {
       throw new AppError("LLM_INVALID_OUTPUT", "O serviço de vetores devolveu um formato inesperado.");
     }
+    await this.meter.record({
+      provider: this.access.provider,
+      model: MODEL,
+      operation: "embeddings",
+      inputTokens: tokens,
+      outputTokens: 0,
+    });
     return embeddings;
   }
 

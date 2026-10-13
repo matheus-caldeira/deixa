@@ -1,7 +1,7 @@
 import type { SuggestionWriter, WriterInput } from "@/modules/recommendations";
 import { isAppError } from "@/shared/errors";
 import { LEVEL_NAMES } from "@/shared/levels";
-import { generateJson } from "./generate-json";
+import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 
 const TIMEOUT_MS = 60_000;
@@ -36,19 +36,24 @@ export class AiSuggestionWriter implements SuggestionWriter {
   constructor(
     private readonly access: AiAccess,
     private readonly model: string,
+    private readonly deps: AiDeps,
   ) {}
 
   private generate(input: WriterInput): Promise<unknown> {
-    return generateJson({
-      access: this.access,
-      model: this.model,
-      system: instructions(input),
-      messages: [
-        { role: "user", content: JSON.stringify({ learner: input.learner, candidates: input.candidates }) },
-      ],
-      timeoutMs: TIMEOUT_MS,
-      temperature: 0.5,
-    });
+    return generateJson(
+      {
+        access: this.access,
+        model: this.model,
+        system: instructions(input),
+        messages: [
+          { role: "user", content: JSON.stringify({ learner: input.learner, candidates: input.candidates }) },
+        ],
+        timeoutMs: TIMEOUT_MS,
+        temperature: 0.5,
+      },
+      "suggestions",
+      this.deps,
+    );
   }
 
   async write(input: WriterInput): Promise<unknown> {

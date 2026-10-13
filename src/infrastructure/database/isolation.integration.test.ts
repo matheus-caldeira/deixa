@@ -9,6 +9,10 @@ import {
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
+import {
+  DrizzleAiUsageRepository,
+  DrizzleModelPriceRepository,
+} from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
 import { InMemoryFileStorage } from "@/shared/storage";
 import { parseEnv } from "../config/env";
 import { buildContainer, type Container } from "../container";
@@ -240,6 +244,42 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     ).toBe(true);
     const [events] = await handle.db.select({ total: count() }).from(xpEvents);
     expect(events?.total).toBe(2);
+  });
+
+  it("o uso da IA de um usuário não aparece para o outro; preço por modelo é único", async () => {
+    const usage = new DrizzleAiUsageRepository(handle.db);
+    const prices = new DrizzleModelPriceRepository(handle.db);
+    const now = new Date("2026-10-13T10:00:00Z");
+    const base = {
+      provider: "google",
+      model: "gemini-2.5-flash",
+      operation: "cards" as const,
+      keySource: "user" as const,
+      inputTokens: 100,
+      outputTokens: 20,
+      estimatedCostUsd: 0.00008,
+      createdAt: now,
+    };
+    await usage.record({ ...base, id: crypto.randomUUID(), userId: ana });
+    await usage.record({ ...base, id: crypto.randomUUID(), userId: ana, operation: "tutor" });
+    await usage.record({ ...base, id: crypto.randomUUID(), userId: lucas });
+    const since = new Date("2026-10-13T00:00:00Z");
+    expect((await usage.listEvents(ana, since)).map((event) => event.operation).sort()).toEqual([
+      "cards",
+      "tutor",
+    ]);
+    expect((await usage.listEvents(lucas, since)).map((event) => event.userId)).toEqual([lucas]);
+
+    const price = {
+      provider: "google",
+      model: "gemini-2.5-flash",
+      inputUsdPerMillion: 1,
+      outputUsdPerMillion: 2,
+    };
+    await prices.save(price, ana, now);
+    await prices.save({ ...price, outputUsdPerMillion: 3 }, ana, now);
+    expect(await prices.list()).toHaveLength(1);
+    expect((await prices.find("google", "gemini-2.5-flash"))?.outputUsdPerMillion).toBe(3);
   });
 
   it("gera o áudio uma vez e serve do cache no segundo pedido, para qualquer usuário", async () => {

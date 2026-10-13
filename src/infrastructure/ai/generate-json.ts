@@ -8,6 +8,7 @@ import {
   type LanguageModel,
   type ModelMessage,
 } from "ai";
+import type { AiOperation, AiUsageMeter } from "@/modules/ai-usage";
 import { AppError } from "@/shared/errors";
 import { languageModel, type AiAccess } from "./models";
 
@@ -29,6 +30,8 @@ export type JsonRequest = {
 
 export type ModelFactory = (access: AiAccess, modelId: string) => LanguageModel;
 
+export type AiDeps = { meter: AiUsageMeter; createModel?: ModelFactory };
+
 function statusOf(error: unknown): number {
   return APICallError.isInstance(error) ? (error.statusCode ?? 0) : 0;
 }
@@ -41,7 +44,13 @@ function isMalformedOutput(error: unknown): boolean {
   );
 }
 
-async function callModel(request: JsonRequest, model: LanguageModel): Promise<unknown> {
+async function callModel(
+  request: JsonRequest,
+  model: LanguageModel,
+  modelId: string,
+  operation: AiOperation,
+  meter: AiUsageMeter,
+): Promise<unknown> {
   try {
     const result = await generateText({
       model,
@@ -52,6 +61,13 @@ async function callModel(request: JsonRequest, model: LanguageModel): Promise<un
       timeout: request.timeoutMs,
       maxRetries: 0,
     });
+    await meter.record({
+      provider: request.access.provider,
+      model: modelId,
+      operation,
+      inputTokens: result.usage.inputTokens ?? 0,
+      outputTokens: result.usage.outputTokens ?? 0,
+    });
     return result.output;
   } catch (error) {
     if (!isMalformedOutput(error)) throw error;
@@ -61,13 +77,15 @@ async function callModel(request: JsonRequest, model: LanguageModel): Promise<un
 
 export async function generateJson(
   request: JsonRequest,
-  createModel: ModelFactory = languageModel,
+  operation: AiOperation,
+  deps: AiDeps,
 ): Promise<unknown> {
+  const createModel = deps.createModel ?? languageModel;
   const fallbacks = FALLBACK_MODELS[request.access.provider].filter((id) => id !== request.model);
   let lastStatus = 0;
   for (const modelId of [request.model, ...fallbacks]) {
     try {
-      return await callModel(request, createModel(request.access, modelId));
+      return await callModel(request, createModel(request.access, modelId), modelId, operation, deps.meter);
     } catch (error) {
       if (error instanceof AppError) throw error;
       lastStatus = statusOf(error);

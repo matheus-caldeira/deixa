@@ -1,7 +1,7 @@
 import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
 import type { LessonPlanner, PlannerLine } from "@/modules/study";
 import { levelBand } from "@/modules/study";
-import { generateJson } from "./generate-json";
+import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 
 const TIMEOUT_MS = 150_000;
@@ -49,16 +49,21 @@ export class AiLessonPlanner implements LessonPlanner {
   constructor(
     private readonly access: AiAccess,
     private readonly model: string,
+    private readonly deps: AiDeps,
   ) {}
 
   plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown> {
-    return generateJson({
-      access: this.access,
-      model: this.model,
-      system: instructions(input.level, input.lines.length),
-      messages: [{ role: "user", content: JSON.stringify(input.lines) }],
-      timeoutMs: TIMEOUT_MS,
-      temperature: 0.4,
-    });
+    return generateJson(
+      {
+        access: this.access,
+        model: this.model,
+        system: instructions(input.level, input.lines.length),
+        messages: [{ role: "user", content: JSON.stringify(input.lines) }],
+        timeoutMs: TIMEOUT_MS,
+        temperature: 0.4,
+      },
+      "lesson_plan",
+      this.deps,
+    );
   }
 }

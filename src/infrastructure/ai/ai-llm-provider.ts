@@ -1,5 +1,5 @@
 import type { ExplainRequest, LlmProvider } from "@/modules/learning";
-import { generateJson } from "./generate-json";
+import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 
 const TIMEOUT_MS = 90_000;
@@ -28,24 +28,29 @@ export class AiLlmProvider implements LlmProvider {
   constructor(
     private readonly access: AiAccess,
     private readonly model: string,
+    private readonly deps: AiDeps,
   ) {}
 
-  private generateJson(system: string, payload: unknown): Promise<unknown> {
-    return generateJson({
-      access: this.access,
-      model: this.model,
-      system,
-      messages: [{ role: "user", content: JSON.stringify(payload) }],
-      timeoutMs: TIMEOUT_MS,
-      temperature: 0.2,
-    });
+  private generateJson(operation: "cards" | "translation", system: string, payload: unknown) {
+    return generateJson(
+      {
+        access: this.access,
+        model: this.model,
+        system,
+        messages: [{ role: "user", content: JSON.stringify(payload) }],
+        timeoutMs: TIMEOUT_MS,
+        temperature: 0.2,
+      },
+      operation,
+      this.deps,
+    );
   }
 
   explainTerms(request: ExplainRequest): Promise<unknown> {
-    return this.generateJson(EXPLAIN_INSTRUCTIONS, request);
+    return this.generateJson("cards", EXPLAIN_INSTRUCTIONS, request);
   }
 
   translateLines(lines: { id: string; text: string }[]): Promise<unknown> {
-    return this.generateJson(TRANSLATE_INSTRUCTIONS, lines);
+    return this.generateJson("translation", TRANSLATE_INSTRUCTIONS, lines);
   }
 }

@@ -9,6 +9,8 @@ import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
 const MAX_AUDIO_BASE64 = 2_100_000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+const AUDIO_MIME = /^audio\/[a-z0-9.+-]+(;[\w=.-]+)*$/i;
 
 export type TurnView = {
   id: string;
@@ -48,7 +50,10 @@ export async function sendMessageAction(
         sessionId: z.uuid(),
         text: z.string().max(600).optional(),
         audio: z
-          .object({ mimeType: z.string().max(60), base64: z.string().max(MAX_AUDIO_BASE64) })
+          .object({
+            mimeType: z.string().max(60).regex(AUDIO_MIME),
+            base64: z.string().max(MAX_AUDIO_BASE64).regex(BASE64),
+          })
           .optional(),
       })
       .safeParse(input);

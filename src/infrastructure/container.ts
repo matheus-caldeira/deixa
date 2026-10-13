@@ -120,6 +120,11 @@ import { DrizzleRecommendationRepository } from "@/modules/recommendations/infra
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
+import { makeRecordAiUsage, meterFor, type AiUsageMeter } from "@/modules/ai-usage";
+import {
+  DrizzleAiUsageRepository,
+  DrizzleModelPriceRepository,
+} from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
@@ -204,6 +209,9 @@ export function buildContainer(options: ContainerOptions) {
   const gamification = new DrizzleGamificationRepository(db);
   const study = new DrizzleStudyRepository(db);
   const notificationRepository = new DrizzleNotificationRepository(db);
+  const aiUsage = new DrizzleAiUsageRepository(db);
+  const modelPrices = new DrizzleModelPriceRepository(db);
+  const recordAiUsage = makeRecordAiUsage({ usage: aiUsage, prices: modelPrices, clock, ids });
   const notify = makeNotify({ notifications: notificationRepository, clock, ids });
 
   const silentTts = new SilentTtsProvider();
@@ -275,6 +283,9 @@ export function buildContainer(options: ContainerOptions) {
     if (stored) return { provider: "google", apiKey: stored.secret, shared: stored.origin === "global" };
     return env.GEMINI_API_KEY ? { provider: "google", apiKey: env.GEMINI_API_KEY, shared: true } : null;
   }
+  function aiMeterFor(userId: string, access: ResolvedAiAccess): AiUsageMeter {
+    return meterFor(recordAiUsage, userId, access.shared ? "global" : "user");
+  }
 
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
@@ -282,7 +293,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<LlmProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeLlm;
-      const provider = new AiLlmProvider(access, settings.geminiModel);
+      const provider = new AiLlmProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
       return access.shared ? budgetedLlm(provider, () => sharedBudget.spend(userId)) : provider;
     });
   const resolvePlanner =
@@ -291,7 +302,7 @@ export function buildContainer(options: ContainerOptions) {
       const access = await aiAccessFor(userId);
       if (!access) return null;
       if (access.shared && usage === "charge") await sharedBudget.spend(userId);
-      return new AiLessonPlanner(access, settings.geminiModel);
+      return new AiLessonPlanner(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -300,7 +311,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<TutorProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeTutor;
-      const tutor = new AiTutorProvider(access, settings.geminiModel);
+      const tutor = new AiTutorProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
       return access.shared ? budgetedTutor(tutor, () => sharedBudget.spend(userId)) : tutor;
     });
   const conversations = new DrizzleConversationRepository(db);
@@ -311,7 +322,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<EmbeddingProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return localEmbedding;
-      const provider = new AiEmbeddingProvider(access);
+      const provider = new AiEmbeddingProvider(access, aiMeterFor(userId, access));
       if (!access.shared) return provider;
       return {
         name: provider.name,
@@ -328,7 +339,7 @@ export function buildContainer(options: ContainerOptions) {
       const access = await aiAccessFor(userId);
       if (!access) return null;
       if (access.shared) await sharedBudget.spend(userId);
-      return new AiSuggestionWriter(access, settings.geminiModel);
+      return new AiSuggestionWriter(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),
