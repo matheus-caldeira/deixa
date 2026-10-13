@@ -2,9 +2,11 @@ import { getContainer } from "@/infrastructure/container";
 import { TransferScreen, type TransferWork } from "@/ui/transfer/transfer-screen";
 import { requireUser } from "../../session";
 
-export default async function TransferPage(props: { searchParams: Promise<{ mediaId?: string }> }) {
+export default async function TransferPage(props: {
+  searchParams: Promise<{ mediaId?: string; erro?: string }>;
+}) {
   await requireUser();
-  const { mediaId } = await props.searchParams;
+  const { mediaId, erro } = await props.searchParams;
   const container = getContainer();
   const works: TransferWork[] = [];
   for (const entry of await container.listCatalogWorks()) {
@@ -31,5 +33,5 @@ export default async function TransferPage(props: { searchParams: Promise<{ medi
     });
   }
   const selectedMediaId = works.some((work) => work.id === mediaId) ? (mediaId ?? null) : null;
-  return <TransferScreen view={{ works, selectedMediaId }} />;
+  return <TransferScreen view={{ works, selectedMediaId, passwordError: erro === "senha" }} />;
 }

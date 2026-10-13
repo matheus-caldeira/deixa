@@ -2,12 +2,17 @@ import type { Clock } from "@/shared/clock";
 import { AppError, isAppError } from "@/shared/errors";
 import type { IdGenerator } from "@/shared/ids";
 import type { FileStorage } from "@/shared/storage";
+import { audioHash } from "@/modules/audio";
+import { personalDataSchema } from "../domain/personal";
 import { readPackage } from "./read-package";
 import {
   episodeKey,
   type PackageArchive,
   type PackageCatalogReader,
   type PackageCatalogWriter,
+  type PersonalCipher,
+  type PersonalDataWriter,
+  type PersonalMergeReport,
 } from "./ports";
 
 type Deps = {
@@ -17,6 +22,8 @@ type Deps = {
   storage: FileStorage;
   clock: Clock;
   ids: IdGenerator;
+  personal: PersonalDataWriter;
+  cipher: PersonalCipher;
 };
 
 export type PackagePreviewEpisode = {
@@ -32,6 +39,7 @@ export type PackagePreview = {
   app: string;
   works: { title: string; status: "new" | "exists"; episodes: PackagePreviewEpisode[] }[];
   audio: number;
+  personal: { email: string; includesCredentials: boolean } | null;
 };
 
 export type ImportReport = {
@@ -40,12 +48,15 @@ export type ImportReport = {
   episodesSkipped: number;
   cards: number;
   audio: number;
+  personal: PersonalMergeReport | null;
+  skippedAudio: number;
   warnings: string[];
 };
 
 const uploadPath = (userId: string, uploadId: string): string => `packages/${userId}/${uploadId}.zip`;
 const AUDIO_PATH = (voiceId: string, hash: string, format: string) => `audio/${voiceId}/${hash}.${format}`;
 const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
+const AUDIO_FORMAT = "wav";
 
 export function makeInspectPackage(deps: Pick<Deps, "reader" | "archive" | "storage" | "ids">) {
   return async function inspectPackage(input: {
@@ -78,12 +89,19 @@ export function makeInspectPackage(deps: Pick<Deps, "reader" | "archive" | "stor
       app: `${pkg.manifest.app.name} ${pkg.manifest.app.version}`,
       works,
       audio: pkg.audio.length,
+      personal: pkg.personal
+        ? { email: pkg.personal.meta.email, includesCredentials: pkg.personal.meta.includesCredentials }
+        : null,
     };
   };
 }
 
 export function makeImportPackage(deps: Deps) {
-  return async function importPackage(input: { userId: string; uploadId: string }): Promise<ImportReport> {
+  return async function importPackage(input: {
+    userId: string;
+    uploadId: string;
+    password?: string;
+  }): Promise<ImportReport> {
     if (!SAFE_SEGMENT.test(input.uploadId)) throw new AppError("INVALID_INPUT");
     const bytes = await deps.storage.read(uploadPath(input.userId, input.uploadId));
     if (!bytes) throw new AppError("INVALID_INPUT", "O arquivo não está mais disponível. Escolha-o de novo.");
@@ -95,8 +113,11 @@ export function makeImportPackage(deps: Deps) {
       episodesSkipped: 0,
       cards: 0,
       audio: 0,
+      personal: null,
+      skippedAudio: 0,
       warnings: [],
     };
+    const importedEpisodeIds: string[] = [];
     for (const work of pkg.catalog.works) {
       const target = await deps.writer.ensureWork({ ...work, createdBy: input.userId, now });
       if (target.created) report.worksCreated += 1;
@@ -107,6 +128,7 @@ export function makeImportPackage(deps: Deps) {
           report.warnings.push(`${label}: episódio não encontrado no catálogo.`);
           continue;
         }
+        importedEpisodeIds.push(episodeId);
         const english = episode.subtitles.find((subtitle) => subtitle.language === "en");
         const portuguese = episode.subtitles.find((subtitle) => subtitle.language === "pt-BR");
         if (english) {
@@ -157,15 +179,52 @@ export function makeImportPackage(deps: Deps) {
         }
       }
     }
+    const knownTexts: string[] = [];
+    for (const episodeId of importedEpisodeIds) {
+      knownTexts.push(...(await deps.reader.listEnglishCues(episodeId)).map((cue) => cue.text));
+    }
     for (const asset of pkg.audio) {
-      if (!SAFE_SEGMENT.test(asset.voiceId) || !SAFE_SEGMENT.test(asset.format)) continue;
+      if (!SAFE_SEGMENT.test(asset.voiceId) || asset.format !== AUDIO_FORMAT) continue;
       const content = pkg.files.get(asset.path);
       if (!content) continue;
+      const expected = new Set(
+        knownTexts.map((text) =>
+          audioHash({
+            text,
+            voiceId: asset.voiceId,
+            language: asset.language,
+            modelVersion: asset.modelVersion,
+          }),
+        ),
+      );
+      if (!expected.has(asset.textHash)) {
+        report.skippedAudio += 1;
+        continue;
+      }
       const storagePath = AUDIO_PATH(asset.voiceId, asset.textHash, asset.format);
       if (await deps.storage.exists(storagePath)) continue;
       await deps.storage.write(storagePath, content);
       await deps.writer.saveAudio({ ...asset, storagePath, id: deps.ids.next() }, now);
       report.audio += 1;
+    }
+    if (pkg.personal) {
+      if (!input.password) {
+        report.warnings.push(
+          "Dados pessoais ficaram de fora: informe a senha da conta de origem para importá-los.",
+        );
+      } else {
+        const opened = await deps.cipher.open(pkg.personal.sealed, pkg.personal.meta.email, input.password);
+        const parsed = opened
+          ? personalDataSchema.safeParse(JSON.parse(new TextDecoder().decode(opened)))
+          : null;
+        if (!parsed || !parsed.success) {
+          throw new AppError(
+            "INVALID_CREDENTIALS",
+            "Senha incorreta ou dados pessoais danificados. Nada foi gravado.",
+          );
+        }
+        report.personal = await deps.personal.merge(input.userId, parsed.data, now);
+      }
     }
     return report;
   };

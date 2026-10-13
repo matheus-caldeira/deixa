@@ -10,9 +10,15 @@ import { app, runAction, type ActionResult } from "./result";
 export async function importPackageAction(input: unknown): Promise<ActionResult<ImportReport>> {
   const user = await requireUser();
   return runAction("importPackage", async () => {
-    const parsed = z.object({ uploadId: z.uuid() }).safeParse(input);
+    const parsed = z
+      .object({ uploadId: z.uuid(), password: z.string().min(1).max(200).optional() })
+      .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const report = await app().importPackage({ userId: user.id, uploadId: parsed.data.uploadId });
+    const report = await app().importPackage({
+      userId: user.id,
+      uploadId: parsed.data.uploadId,
+      password: parsed.data.password,
+    });
     revalidatePath("/catalog");
     revalidatePath("/");
     return report;

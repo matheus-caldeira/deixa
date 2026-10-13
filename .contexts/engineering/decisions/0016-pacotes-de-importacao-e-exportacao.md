@@ -27,7 +27,18 @@ depender de TMDB, OpenSubtitles nem IA. A referência é o Anki: exportar e impo
   por fala e tokens, áudio por hash e voz. Importar duas vezes não duplica nada.
 - Pacote adulterado, sem manifesto, com arquivo faltando ou de versão mais nova é recusado antes de gravar.
 - Exportação por obra, temporada ou episódio, escolhendo legendas, cards do catálogo e áudio. Cards privados
-  não saem; dados pessoais ficam para o pacote pessoal cifrado (fora desta decisão).
+  não saem do pacote de catálogo.
+- Pacote pessoal: `personal.json` em claro só com e-mail, data e se há chaves; `personal.enc` com preferências,
+  marcações, cards com estado e histórico de revisão, progresso, XP, retrato e, opcionalmente, as chaves de
+  API. Cifrado com AES-256-GCM e chave derivada por scrypt do e-mail normalizado e da senha, com sal e IV por
+  arquivo; senha errada e arquivo mexido dão o mesmo erro. Exportar pede a senha da conta; importar pede a
+  senha da conta de origem e entra na conta conectada, somando sem duplicar (marcação por fala e tokens, card
+  por item, revisão por data, XP por origem) e mantendo o estado de revisão mais recente. Itens de episódio
+  que a instalação de destino não tem ficam de fora e viram contagem no relatório.
+- Áudio só entra se o hash corresponder a uma fala dos episódios do pacote, com a voz e a versão declaradas:
+  um pacote não consegue registrar áudio para texto que não trouxe.
+- Importar segue as mesmas permissões de adicionar à mão: qualquer conta cadastra obra e legenda, e os cards do
+  pacote entram como sugestão do catálogo, como quando alguém compartilha "para o catálogo".
 
 ## Consequências
 

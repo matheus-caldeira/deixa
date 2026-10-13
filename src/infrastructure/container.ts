@@ -128,9 +128,16 @@ import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
 import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
-import { makeExportPackage, makeImportPackage, makeInspectPackage } from "@/modules/packages";
+import {
+  makeExportPackage,
+  makeExportPersonalPackage,
+  makeImportPackage,
+  makeInspectPackage,
+} from "@/modules/packages";
 import { DrizzlePackageCatalog } from "@/modules/packages/infrastructure/drizzle-package-catalog";
+import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
 import { FflateArchive } from "@/modules/packages/infrastructure/fflate-archive";
+import { NodePersonalCipher } from "@/modules/packages/infrastructure/node-personal-cipher";
 import {
   SHARED_KEY_DEFAULT_LIMIT,
   makeEnsureAiAllowed,
@@ -695,6 +702,15 @@ export function buildContainer(options: ContainerOptions) {
     voices: Object.values(VOICE_BY_ACCENT),
     modelVersion: tts.modelVersion,
   });
+  const personalData = new DrizzlePersonalData({ db, catalog, learning, keyCipher: cipher, ids });
+  const account = {
+    emailOf: async (userId: string) => (await identity.findById(userId))?.email ?? null,
+    verifyPassword: async (userId: string, password: string) => {
+      const user = await identity.findById(userId);
+      const record = user ? await identity.findByEmail(user.email) : null;
+      return scryptPasswords.verify(password, record?.passwordHash ?? null);
+    },
+  };
   const packageDeps = {
     reader: packageCatalog,
     writer: packageCatalog,
@@ -702,6 +718,9 @@ export function buildContainer(options: ContainerOptions) {
     storage,
     clock,
     ids,
+    personal: personalData,
+    cipher: new NodePersonalCipher(),
+    account,
   };
 
   return {
@@ -709,6 +728,7 @@ export function buildContainer(options: ContainerOptions) {
     listCatalogWorks: async () => (await catalog.listCatalog()).map((entry) => entry.media),
     listEpisodesByMedia: (mediaId: string) => catalog.listEpisodesByMedia(mediaId),
     exportPackage: makeExportPackage(packageDeps),
+    exportPersonalPackage: makeExportPersonalPackage(packageDeps),
     inspectPackage: makeInspectPackage(packageDeps),
     importPackage: makeImportPackage(packageDeps),
     metadataNameFor: async (userId: string) => (await metadataFor(userId)).name,

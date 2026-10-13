@@ -9,6 +9,7 @@ export {
   endpointSecret,
   isAiService,
   isCredentialService,
+  looksLikeSecret,
   parseEndpoint,
   tmdbSecretKind,
   type AiService,

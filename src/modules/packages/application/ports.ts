@@ -120,3 +120,38 @@ export interface PackageCatalogWriter {
 
 export const episodeKey = (seasonNumber: number, episodeNumber: number): string =>
   `s${seasonNumber}e${episodeNumber}`;
+
+export interface PersonalCipher {
+  seal(plain: Uint8Array, email: string, password: string): Promise<Uint8Array>;
+  open(sealed: Uint8Array, email: string, password: string): Promise<Uint8Array | null>;
+}
+
+export type PersonalWorkRef = { metadataProvider: "tmdb" | "fake" | "manual"; externalId: string };
+
+export interface PersonalDataReader {
+  collect(userId: string, includeCredentials: boolean): Promise<import("../domain/personal").PersonalData>;
+  listReferencedWorks(userId: string): Promise<(PersonalWorkRef & { mediaId: string })[]>;
+}
+
+export type PersonalMergeReport = {
+  highlights: number;
+  cards: number;
+  reviews: number;
+  progress: number;
+  xp: number;
+  credentials: number;
+  skipped: number;
+};
+
+export interface PersonalDataWriter {
+  merge(
+    userId: string,
+    data: import("../domain/personal").PersonalData,
+    now: Date,
+  ): Promise<PersonalMergeReport>;
+}
+
+export interface AccountGate {
+  emailOf(userId: string): Promise<string | null>;
+  verifyPassword(userId: string, password: string): Promise<boolean>;
+}

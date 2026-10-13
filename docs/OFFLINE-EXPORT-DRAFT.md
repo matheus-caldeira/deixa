@@ -6,7 +6,7 @@ source: conversa de 12/10/2026
 
 # Rascunho: importar e exportar
 
-**Estado: parcialmente implementado em 13/10/2026** (tipos 2, 3 e 4 e a importação sem escolha de tipo, ADR 0016; o tipo 5 e o tipo 1 seguem como rascunho). Este documento guarda a ideia para o plano da versão que
+**Estado: implementado em 13/10/2026** (tipos 2, 3, 4 e 5 e a importação sem escolha de tipo, ADR 0016). Só o tipo 1 ("só tempos") e as conversas com o tutor seguem como rascunho. Este documento guarda a ideia para o plano da versão que
 funciona 100% offline. A referência é o Anki: o que dá vida ao Anki é poder exportar e importar baralhos.
 
 ## 1. Objetivo

@@ -270,7 +270,9 @@ Limites desta etapa:
       O app aparece no Dock enquanto a janela está aberta e some ao fechá-la. Conferido só que sobe e fica
       como app comum; os itens não foram clicados por automação.
 - [x] Itens "Importar…" e "Exportar…" no menu Arquivo (13/10/2026), levando à tela Importar e exportar;
-      o pacote pessoal cifrado (tipo 5 do rascunho) ainda não existe.
+      o pacote pessoal cifrado também existe (ADR 0016); ficam de fora conversas com o tutor e lições. O
+      leitor/gravador Drizzle dos dados pessoais só foi conferido pela ida e volta manual no app compilado (Ana →
+      Lucas); falta um teste de integração próprio.
 - [ ] Ícone monocromático para a barra de menus do macOS.
 - [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).
 

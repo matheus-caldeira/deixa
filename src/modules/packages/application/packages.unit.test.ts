@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
 import { SequentialIds } from "@/shared/ids";
-import { sha256Hex } from "@/shared/hash";
+import { audioHash } from "@/modules/audio";
 import { InMemoryFileStorage } from "@/shared/storage";
 import { makeExportPackage } from "./export-package";
 import { makeImportPackage, makeInspectPackage } from "./import-package";
-import { InMemoryPackageCatalog, JsonArchive } from "./testing/fakes";
+import { InMemoryPackageCatalog, JsonArchive, PlainCipher, RecordingPersonalData } from "./testing/fakes";
 
 const encode = (text: string) => new TextEncoder().encode(text);
 const card = (cueId: string) => ({
@@ -90,7 +90,7 @@ function source() {
   storage.files.set("sub/pt.srt", encode("pagar a conta"));
   storage.files.set("audio/v1/h.wav", encode("RIFF"));
   catalog.audio.push({
-    textHash: sha256Hex("pick up the tab"),
+    textHash: audioHash({ text: "pick up the tab", voiceId: "v1", language: "en", modelVersion: "1" }),
     voiceId: "v1",
     language: "en",
     modelVersion: "1",
@@ -110,8 +110,16 @@ function target() {
     storage,
     clock: new FixedClock("2026-10-13T12:00:00Z"),
     ids: new SequentialIds("id"),
+    personal: new RecordingPersonalData(),
+    cipher: new PlainCipher(),
   };
-  return { catalog, storage, inspect: makeInspectPackage(deps), import: makeImportPackage(deps) };
+  return {
+    catalog,
+    storage,
+    personal: deps.personal,
+    inspect: makeInspectPackage(deps),
+    import: makeImportPackage(deps),
+  };
 }
 
 async function codeOf(promise: Promise<unknown>): Promise<string> {
@@ -157,7 +165,11 @@ describe("pacotes", () => {
       audio: 1,
     });
     expect(to.catalog.imported[0]).toMatchObject({ english: "pick up the tab", portuguese: "pagar a conta" });
-    expect(to.storage.files.has(`audio/v1/${sha256Hex("pick up the tab")}.wav`)).toBe(true);
+    expect(
+      to.storage.files.has(
+        `audio/v1/${audioHash({ text: "pick up the tab", voiceId: "v1", language: "en", modelVersion: "1" })}.wav`,
+      ),
+    ).toBe(true);
 
     const again = await to.inspect({ userId: "ana", bytes: exported.bytes });
     expect(again.works[0]?.status).toBe("exists");

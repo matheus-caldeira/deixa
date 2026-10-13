@@ -18,6 +18,13 @@ import {
   type PackagedCard,
   type PackagedCatalog,
 } from "../domain/package";
+import {
+  MAX_PERSONAL_BYTES,
+  PERSONAL_META_PATH,
+  PERSONAL_PATH,
+  personalMetaSchema,
+  type PersonalMeta,
+} from "../domain/personal";
 import type { PackageArchive, PackageFile } from "./ports";
 
 export type ReadPackage = {
@@ -25,6 +32,7 @@ export type ReadPackage = {
   catalog: PackagedCatalog;
   audio: PackagedAudio[];
   files: Map<string, Uint8Array>;
+  personal: { meta: PersonalMeta; sealed: Uint8Array } | null;
   cardsAt(path: string): PackagedCard[];
 };
 
@@ -97,11 +105,22 @@ export async function readPackage(archive: PackageArchive, bytes: Uint8Array): P
         .assets
     : [];
   for (const asset of audio) if (!trusted.has(asset.path)) throw INVALID(`falta o áudio ${asset.path}`);
+  const metaBytes = trusted.get(PERSONAL_META_PATH);
+  const sealed = trusted.get(PERSONAL_PATH);
+  let personal: ReadPackage["personal"] = null;
+  if (metaBytes && sealed) {
+    if (sealed.length > MAX_PERSONAL_BYTES) throw INVALID("dados pessoais grandes demais");
+    personal = {
+      meta: parseJson(metaBytes, (value) => personalMetaSchema.safeParse(value), "dados pessoais"),
+      sealed,
+    };
+  }
   return {
     manifest,
     catalog,
     audio,
     files: trusted,
+    personal,
     cardsAt: (path) => {
       const content = trusted.get(path);
       if (!content) return [];

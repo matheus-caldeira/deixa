@@ -1,5 +1,6 @@
-import { sha256Hex } from "@/shared/hash";
+import { audioHash } from "@/modules/audio";
 import type { PackagedCard } from "../../domain/package";
+import type { PersonalData } from "../../domain/personal";
 import type {
   CueRef,
   ExportableAudio,
@@ -12,7 +13,39 @@ import type {
   PackageCatalogReader,
   PackageCatalogWriter,
   PackageFile,
+  PersonalCipher,
+  PersonalDataWriter,
+  PersonalMergeReport,
 } from "../ports";
+
+export class PlainCipher implements PersonalCipher {
+  async seal(plain: Uint8Array, email: string, password: string): Promise<Uint8Array> {
+    return new TextEncoder().encode(`${email}|${password}|${new TextDecoder().decode(plain)}`);
+  }
+
+  async open(sealed: Uint8Array, email: string, password: string): Promise<Uint8Array | null> {
+    const text = new TextDecoder().decode(sealed);
+    const prefix = `${email}|${password}|`;
+    return text.startsWith(prefix) ? new TextEncoder().encode(text.slice(prefix.length)) : null;
+  }
+}
+
+export class RecordingPersonalData implements PersonalDataWriter {
+  merged: { userId: string; data: PersonalData }[] = [];
+
+  async merge(userId: string, data: PersonalData): Promise<PersonalMergeReport> {
+    this.merged.push({ userId, data });
+    return {
+      highlights: data.highlights.length,
+      cards: data.cards.length,
+      reviews: 0,
+      progress: 0,
+      xp: 0,
+      credentials: 0,
+      skipped: 0,
+    };
+  }
+}
 
 export class JsonArchive implements PackageArchive {
   async pack(files: PackageFile[]): Promise<Uint8Array> {
@@ -90,8 +123,17 @@ export class InMemoryPackageCatalog implements PackageCatalogReader, PackageCata
   }
 
   async listAudioForTexts(texts: string[]): Promise<ExportableAudio[]> {
-    const wanted = new Set(texts.map((text) => sha256Hex(text)));
-    return this.audio.filter((asset) => wanted.has(asset.textHash));
+    return this.audio.filter((asset) =>
+      texts.some(
+        (text) =>
+          audioHash({
+            text,
+            voiceId: asset.voiceId,
+            language: asset.language,
+            modelVersion: asset.modelVersion,
+          }) === asset.textHash,
+      ),
+    );
   }
 
   async ensureWork(work: Parameters<PackageCatalogWriter["ensureWork"]>[0]) {

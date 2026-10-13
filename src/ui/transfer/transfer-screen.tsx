@@ -17,13 +17,14 @@ export type TransferWork = {
   }[];
 };
 
-export type TransferView = { works: TransferWork[]; selectedMediaId: string | null };
+export type TransferView = { works: TransferWork[]; selectedMediaId: string | null; passwordError: boolean };
 
-type ExportScope = "work" | "season" | "episode";
+type ExportScope = "me" | "work" | "season" | "episode";
 type ImportStage =
   { step: "pick" } | { step: "preview"; preview: PackagePreview } | { step: "done"; report: ImportReport };
 
 const SCOPES: { key: ExportScope; label: string }[] = [
+  { key: "me", label: "Meus dados" },
   { key: "work", label: "Obra" },
   { key: "season", label: "Temporada" },
   { key: "episode", label: "Episódio" },
@@ -58,7 +59,8 @@ function Pick({
 }
 
 function ExportCard({ view }: { view: TransferView }) {
-  const [scope, setScope] = useState<ExportScope>(view.selectedMediaId ? "work" : "work");
+  const [scope, setScope] = useState<ExportScope>(view.selectedMediaId ? "work" : "me");
+  const [includeKeys, setIncludeKeys] = useState(false);
   const [mediaId, setMediaId] = useState(view.selectedMediaId ?? view.works[0]?.id ?? "");
   const work = view.works.find((candidate) => candidate.id === mediaId) ?? null;
   const [seasonNumber, setSeasonNumber] = useState<number>(work?.seasons[0]?.seasonNumber ?? 0);
@@ -74,26 +76,69 @@ function ExportCard({ view }: { view: TransferView }) {
   for (const [key, on] of Object.entries(options)) if (on) params.set(key, "1");
   const ready = Boolean(work) && (scope !== "episode" || Boolean(params.get("episodeId")));
 
+  const personal = (
+    <form className="col" style={{ gap: 14 }} method="post" action="/api/transfer/export-personal">
+      <p className="small muted">
+        Preferências, progresso, marcações, seus cards com o estado de revisão, histórico e XP. Entram na
+        conta que importar.
+      </p>
+      <div className="field">
+        <label>Chaves de API</label>
+        <div className="seg" role="radiogroup" aria-label="Chaves de API">
+          <button type="button" className={includeKeys ? "" : "on"} onClick={() => setIncludeKeys(false)}>
+            Sem as chaves
+          </button>
+          <button type="button" className={includeKeys ? "on" : ""} onClick={() => setIncludeKeys(true)}>
+            Com as chaves
+          </button>
+        </div>
+        <span className="small muted">Com as chaves, elas entram cifradas junto com os seus dados.</span>
+      </div>
+      <input type="hidden" name="includeCredentials" value={includeKeys ? "true" : "false"} />
+      <div className="field">
+        <label htmlFor="export-password">Sua senha</label>
+        <input
+          id="export-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+        <span className="small muted">
+          Os dados pessoais saem cifrados com o seu e-mail e a sua senha. Sem a senha, o arquivo não abre.
+        </span>
+      </div>
+      {view.passwordError ? <p className="formerr">Senha incorreta. Tente de novo.</p> : null}
+      <button className="btn block" type="submit">
+        Exportar .deixa.zip
+      </button>
+    </form>
+  );
+
   return (
     <section className="card col" style={{ gap: 14 }} id="exportar">
       <h2 style={{ fontSize: 17 }}>Exportar</h2>
-      {view.works.length === 0 ? (
+      <div className="seg" role="radiogroup" aria-label="Alcance da exportação">
+        {SCOPES.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={scope === option.key ? "on" : ""}
+            onClick={() => setScope(option.key)}
+            disabled={
+              (option.key === "season" || option.key === "episode") && (!work || work.type === "movie")
+            }
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {scope === "me" ? (
+        personal
+      ) : view.works.length === 0 ? (
         <p className="small muted">O catálogo ainda está vazio. Adicione uma obra antes de exportar.</p>
       ) : (
         <>
-          <div className="seg" role="radiogroup" aria-label="Alcance da exportação">
-            {SCOPES.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={scope === option.key ? "on" : ""}
-                onClick={() => setScope(option.key)}
-                disabled={option.key !== "work" && work?.type === "movie"}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
           <div className="field">
             <label htmlFor="export-work">Obra</label>
             <select
@@ -194,6 +239,7 @@ function ImportCard() {
   const router = useRouter();
   const toast = useToast();
   const [stage, setStage] = useState<ImportStage>({ step: "pick" });
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
@@ -223,7 +269,11 @@ function ImportCard() {
   const confirm = (preview: PackagePreview) =>
     startTransition(async () => {
       setBusy(true);
-      const result = await importPackageAction({ uploadId: preview.uploadId });
+      setError("");
+      const result = await importPackageAction({
+        uploadId: preview.uploadId,
+        password: preview.personal && password.trim() !== "" ? password : undefined,
+      });
       setBusy(false);
       if (!result.ok) {
         setError(result.message);
@@ -303,7 +353,36 @@ function ImportCard() {
                 <b>{stage.preview.audio}</b>
               </div>
             ) : null}
+            {stage.preview.personal ? (
+              <div className="dueitem">
+                <span className="col" style={{ gap: 2 }}>
+                  <b>Dados pessoais</b>
+                  <span className="small muted">
+                    De {stage.preview.personal.email}, cifrados. Entram na conta conectada
+                    {stage.preview.personal.includesCredentials ? ", com as chaves de API" : ""}.
+                  </span>
+                </span>
+                <span className="chip warn" style={{ alignSelf: "start" }}>
+                  Pede senha
+                </span>
+              </div>
+            ) : null}
           </div>
+          {stage.preview.personal ? (
+            <div className="field">
+              <label htmlFor="import-password">Senha de {stage.preview.personal.email}</label>
+              <input
+                id="import-password"
+                type="password"
+                autoComplete="off"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <span className="small muted">
+                Sem a senha, os dados pessoais ficam de fora e o resto entra normalmente.
+              </span>
+            </div>
+          ) : null}
           <div className="row">
             <button
               className="btn ghost"
@@ -353,6 +432,24 @@ function ImportCard() {
               <span className="muted">Episódios que já existiam</span>
               <b className="muted">{stage.report.episodesSkipped}</b>
             </div>
+            {stage.report.personal ? (
+              <div className="dueitem">
+                <span className="col" style={{ gap: 2 }}>
+                  <span>Dados pessoais</span>
+                  <span className="small muted">
+                    {stage.report.personal.cards} cards, {stage.report.personal.highlights} marcações,{" "}
+                    {stage.report.personal.progress} episódios em andamento, {stage.report.personal.xp}{" "}
+                    eventos de XP
+                    {stage.report.personal.credentials > 0
+                      ? `, ${stage.report.personal.credentials} chaves`
+                      : ""}
+                    {stage.report.personal.skipped > 0
+                      ? `; ${stage.report.personal.skipped} itens sem episódio aqui`
+                      : ""}
+                  </span>
+                </span>
+              </div>
+            ) : null}
           </div>
           {stage.report.warnings.length > 0 ? (
             <ul className="small muted" style={{ paddingLeft: 18 }}>
