@@ -340,6 +340,31 @@ textarea.ta:focus{border-color:var(--brand)}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
 .check input{width:20px;height:20px;accent-color:var(--brand);flex:none;margin-top:1px}
 .btn.onDark{background:transparent;color:var(--bg);box-shadow:none;border:2px solid color-mix(in srgb,var(--bg) 35%,transparent)}
+/* navegação: no celular, cinco itens e o restante em "Mais"; no desktop, todos na lateral */
+.nav .desk{display:none}
+.navbrand{display:none}
+@media (min-width:1024px){
+  .app{max-width:none}
+  .shell{--rail:232px;padding-left:var(--rail)}
+  .shell .nav{top:0;bottom:0;left:0;transform:none;width:var(--rail);grid-template-columns:1fr;align-content:start;gap:4px;padding:20px 14px;border-top:0;border-right:1px solid var(--line)}
+  .shell .navbrand{display:block;padding:4px 10px 22px}
+  .shell .navbrand .logo{font-size:28px}
+  .shell .nav button{flex-direction:row;justify-content:flex-start;gap:12px;padding:12px 14px;font-size:14px}
+  .shell .nav .desk{display:flex}
+  .shell .nav .mob{display:none}
+  .shell .topbar,.shell .main{width:min(100%,1120px);margin:0 auto;padding-left:36px;padding-right:36px}
+  .shell .topbar{padding-top:18px}
+  .shell .main{padding-bottom:56px;gap:24px}
+  .shell .grid{grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:22px}
+  .shell .hscroll,.shell .chips{margin:0;padding:4px 0 8px;flex-wrap:wrap}
+  .shell .fab{align-self:flex-start;padding:14px 22px}
+  .lesson,.tx,.chat{width:min(100%,780px);margin:0 auto;min-height:100vh}
+  .picker{width:min(100%,460px);margin:0 auto;min-height:100vh}
+  .scrim{align-items:center;padding:24px}
+  .sheet{width:min(100%,560px);max-height:min(86vh,900px);border-radius:22px;padding-bottom:24px}
+  .sheet .grab{visibility:hidden}
+  .toast{bottom:32px}
+}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -379,6 +404,10 @@ const I = {
   beer:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h10v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M16 10h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 7a3 3 0 0 1 5-2 3 3 0 0 1 5 2"/></svg>',
   brief:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
   scale:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 21h14M4 8h16M7 8l-3 7a3 3 0 0 0 6 0zM17 8l-3 7a3 3 0 0 0 6 0z"/></svg>',
+  sliders:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg>',
+  swap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4v14M4 14l4 4 4-4M16 20V6M12 10l4-4 4 4"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>',
   key:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l2 2M15 8l2 2"/></svg>',
   upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>',
   trophy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8"/></svg>',
@@ -551,7 +580,7 @@ const ACHS=[
 ];
 
 /* ============ ESTADO ============ */
-const S={pid:null,tab:'home',media:null,season:null,lesson:null,chat:null,rev:null,sheet:null,filter:'all',q:'',done:{}};
+const S={pid:null,tab:'home',media:null,season:null,lesson:null,chat:null,rev:null,sheet:null,filter:'all',q:'',done:{},cfg:{tab:'ai',scope:'user',open:null,person:null},data:{scope:'me',work:null,pick:{subs:true,cards:true,audio:false},keys:false,imp:0}};
 try{const p=localStorage.getItem('deixa.pid');if(p&&PROFILES[p])S.pid=p}catch(e){}
 const P=()=>PROFILES[S.pid];
 const $app=document.getElementById('app');
@@ -591,7 +620,9 @@ function render(){
   else if(S.tab==='review')body=renderReview();
   else if(S.tab==='talk')body=renderTalk();
   else if(S.tab==='progress')body=renderProgress();
-  $app.innerHTML=renderTop()+`<main class="main">${body}</main>`+renderNav()+renderSheet();
+  else if(S.tab==='data')body=renderData();
+  else if(S.tab==='settings')body=renderSettings();
+  $app.innerHTML=`<div class="shell">`+renderTop()+`<main class="main">${body}</main>`+renderNav()+`</div>`+renderSheet();
 }
 
 function renderPicker(){
@@ -623,10 +654,13 @@ function renderTop(){
   </header>`;
 }
 function renderNav(){
-  const t=[['home','Início',I.home],['explore','Explorar',I.film],['review','Revisar',I.cards],['talk','Conversar',I.chat],['progress','Progresso',I.chart]];
-  return `<nav class="nav">${t.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-act="tab" data-t="${k}">${i}<span>${l}</span></button>`).join('')}</nav>`;
+  const t=[['home','Início',I.home],['explore','Explorar',I.film],['review','Revisar',I.cards],['talk','Conversar',I.chat]];
+  const inMore=MORE_MENUS.some(m=>m[0]===S.tab);
+  return `<nav class="nav"><span class="navbrand"><span class="logo">Dei<span>xa</span></span></span>
+    ${t.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-act="tab" data-t="${k}">${i}<span>${l}</span></button>`).join('')}
+    ${MORE_MENUS.map(([k,l,i])=>`<button class="desk ${S.tab===k?'on':''}" data-act="tab" data-t="${k}">${I[i]}<span>${l}</span></button>`).join('')}
+    <button class="mob ${inMore?'on':''}" data-act="sheet" data-s="more" aria-haspopup="dialog">${I.more}<span>Mais</span></button></nav>`;
 }
-
 function ring(v,max,color){
   const r=30,c=2*Math.PI*r,p=Math.min(1,v/max);
   return `<div class="ring"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="8"/><circle cx="36" cy="36" r="${r}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p)}"/></svg><b>${Math.round(p*100)}%</b></div>`;
@@ -700,7 +734,7 @@ function renderExplore(){
   if(S.filter==='fit')list=list.filter(m=>fit(m).c==='good');
   const f=[['all','Todos'],['fit','No meu nível'],['series','Séries'],['movie','Filmes']];
   return `
-  <h1 style="font-size:28px;padding-top:4px">Explorar</h1>
+  <div class="sec-h" style="padding-top:4px;align-items:center"><h1 style="font-size:28px">Explorar</h1><button class="playbtn" data-act="sheet" data-s="catalog" aria-haspopup="dialog" aria-label="Adicionar, importar ou exportar">${I.plus}</button></div>
   <label class="search">${I.search}<input id="q" placeholder="Buscar série ou filme" value="${esc(S.q)}" autocomplete="off"></label>
   <div class="chips">${f.map(([k,l])=>`<button class="fchip ${S.filter===k?'on':''}" data-act="filter" data-f="${k}">${l}</button>`).join('')}</div>
   ${conts.length&&!S.q?`<section class="col" style="gap:10px"><div class="sec-h"><h2 style="font-size:18px">Em andamento</h2></div>
@@ -709,7 +743,7 @@ function renderExplore(){
     <div class="sec-h"><h2 style="font-size:18px">Catálogo</h2><span class="small muted">${list.length} títulos</span></div>
     ${list.length?`<div class="grid">${list.map(m=>{const ft=fit(m);return `<button class="ptile" data-act="openmedia" data-id="${m.id}">${poster(m)}<div class="meta"><span class="chip ${ft.c}">${ft.t}</span><span class="chip mono">${m.lv[0]}–${m.lv[1]}</span></div></button>`}).join('')}</div>`:`<p class="muted">Nada encontrado para "${esc(S.q)}". Você pode cadastrar o título abaixo.</p>`}
   </section>
-  <button class="fab" data-act="sheet" data-s="upload">${I.upload} Adicionar episódio com legenda .srt</button>`;
+  <button class="fab" data-act="sheet" data-s="catalog" aria-haspopup="dialog">${I.plus} Adicionar, importar ou exportar</button>`;
 }
 
 function statusChip(ep){
@@ -723,7 +757,7 @@ function renderDetail(){
   const seasons=Object.keys(m.seasons);if(S.season==null||!m.seasons[S.season])S.season=seasons[0];
   const eps=m.seasons[S.season];
   return `
-  <button class="back" data-act="closemedia">${I.back} Explorar</button>
+  <div class="sec-h" style="padding-top:4px;align-items:center"><button class="back" data-act="closemedia">${I.back} Explorar</button><button class="playbtn" data-act="sheet" data-s="catalog" aria-haspopup="dialog" aria-label="Adicionar, importar ou exportar">${I.plus}</button></div>
   <div class="dhead">${poster(m)}<div class="col" style="gap:8px;min-width:0">
     <h1 style="font-size:24px;line-height:1.1">${esc(m.title)}</h1>
     <div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip ${ft.c}">${ft.t}</span><span class="chip mono">${m.lv[0]}–${m.lv[1]}</span><span class="chip">Sotaque: ${m.accent}</span></div>
@@ -739,7 +773,7 @@ function renderDetail(){
       <div class="row" style="gap:8px"><button class="playbtn" style="background:var(--cue);color:var(--cue-ink);box-shadow:0 3px 0 var(--cue-deep)" ${ok?'':'disabled'} data-act="opentx" data-key="${key}" aria-label="Ler e marcar a legenda">${I.marker}</button>
       <button class="playbtn" ${ok?'':'disabled'} data-act="studyep" data-key="${key}" aria-label="Estudar">${pr===100?I.check:I.play}</button></div></div>`}).join('')}
   </section>
-  <button class="fab" data-act="sheet" data-s="upload">${I.upload} Enviar legenda de outro episódio</button>`;
+  <button class="fab" data-act="sheet" data-s="catalog" aria-haspopup="dialog">${I.plus} Adicionar, importar ou exportar</button>`;
 }
 
 /* ---------- LIÇÃO ---------- */
@@ -891,7 +925,7 @@ function renderTalk(){
   const sorted=[...SCENARIOS].sort((a,b)=>Math.abs(lvIdx(a.lv)-u)-Math.abs(lvIdx(b.lv)-u));
   return `<h1 style="font-size:28px;padding-top:4px">Conversar</h1>
   <p class="muted">Pratique situações reais com um tutor de IA. Ele corrige suas frases e transforma os erros em cartões de revisão.</p>
-  ${!p.key?`<div class="hint" style="flex-direction:column;gap:8px"><span><b>Configure sua chave do Google AI</b> para conversar com o tutor. Revisões e flashcards continuam funcionando sem ela.</span><button class="btn cue" style="align-self:flex-start;padding:10px 14px;font-size:13px" data-act="sheet" data-s="profile">${I.key.replace('<svg','<svg width="18" height="18"')} Adicionar chave</button></div>`:''}
+  ${!p.key?`<div class="hint" style="flex-direction:column;gap:8px"><span><b>Configure uma chave de IA</b> para conversar com o tutor. Revisões e flashcards continuam funcionando sem ela.</span><button class="btn cue" style="align-self:flex-start;padding:10px 14px;font-size:13px" data-act="cfgopen" data-t="ai">${I.key.replace('<svg','<svg width="18" height="18"')} Adicionar chave</button></div>`:''}
   <section class="card" style="padding:4px 16px">
     ${sorted.map(s=>{const d=lvIdx(s.lv)-u;const tag=d===0?'<span class="chip good">Recomendado</span>':d>0?'<span class="chip warn">Desafio</span>':'<span class="chip">Revisão</span>';
       return `<div class="ep" style="grid-template-columns:1fr"><button class="scen" data-act="openchat" data-id="${s.id}"><span class="ic">${I[s.ic]}</span><span class="col" style="gap:3px;min-width:0"><b>${s.t}</b><span class="small muted">${s.d}</span><span class="row" style="gap:6px">${tag}<span class="chip mono">${s.lv}</span></span></span><span style="color:var(--muted);width:20px;transform:rotate(180deg)">${I.back}</span></button></div>`}).join('')}
@@ -900,7 +934,7 @@ function renderTalk(){
 }
 function openChat(id){
   const p=P();
-  if(!p.key){toast('Adicione sua chave do Google AI no perfil para usar o tutor.');S.sheet='profile';render();return}
+  if(!p.key){toast('Adicione uma chave de IA em Configurações para usar o tutor.');A.cfgopen({t:'ai'});return}
   const s=SCENARIOS.find(x=>x.id===id);
   S.chat={s,turn:0,msgs:[{r:'ai',t:s.open,pt:lvIdx(p.level)<=1?s.openPt:''}],fixes:[],ended:false};render();
 }
@@ -1060,12 +1094,285 @@ function renderTxResult(m,hasPT){
   </div>`;
 }
 
+/* ---------- CONFIGURAÇÕES ---------- */
+PROFILES.matheus.admin=true;
+const AI_PROVIDERS=[
+  {id:'google',n:'Google AI (Gemini)',ph:'AIza…',gen:'gemini-2.5-flash',emb:'gemini-embedding-001'},
+  {id:'openai',n:'OpenAI',ph:'sk-…',gen:'gpt-4o-mini',emb:'text-embedding-3-small'},
+  {id:'anthropic',n:'Anthropic',ph:'sk-ant-…',gen:'claude-haiku-5-5',emb:null},
+  {id:'openrouter',n:'OpenRouter',ph:'sk-or-…',gen:'google/gemini-2.5-flash',emb:null,sub:'Vários modelos com uma chave só'},
+  {id:'ollama',n:'Ollama',url:'http://localhost:11434',nokey:true,gen:'llama3.1',emb:'nomic-embed-text',sub:'Modelos rodando na sua máquina, sem custo por uso'},
+  {id:'custom',n:'Compatível com OpenAI',url:'https://seu-servidor/v1',ph:'Chave, se o servidor pedir',keyopt:true,gen:'',emb:'',sub:'Qualquer servidor que fale o formato da OpenAI'},
+];
+const CATALOG_SERVICES=[
+  {id:'tmdb',n:'TMDB',ph:'eyJ… ou chave de 32 caracteres',sub:'Busca de séries, filmes, temporadas e episódios',help:'Use o token de leitura da API (começa com "eyJ") ou a chave de API de 32 caracteres.'},
+  {id:'opensubtitles',n:'OpenSubtitles',ph:'Chave de API',sub:'Busca de legendas a pedido',help:'A chave de API do OpenSubtitles tem só letras e números, sem espaços.'},
+];
+const CFG={
+  global:{keys:{google:'AIza••••••••Gk01',tmdb:'eyJ••••••••Zt9Q',opensubtitles:'••••••••4f2a'},urls:{},gen:{p:'google',m:'gemini-2.5-flash'},emb:{p:'google',m:'gemini-embedding-001'}},
+  user:{
+    ana:{keys:{},urls:{},gen:null,emb:null,limit:{day:'',month:''}},
+    matheus:{keys:{google:'AIza••••••••a91F',openai:'sk-••••••••x2Qd',tmdb:'eyJ••••••••m3Lp'},urls:{ollama:'http://localhost:11434'},gen:{p:'openai',m:'gpt-4o-mini'},emb:null,limit:{day:'0,50',month:'5,00'}},
+    lucas:{keys:{google:'AIza••••••••7Kc2'},urls:{},gen:{p:'google',m:'gemini-2.5-flash'},emb:null,limit:{day:'',month:''}},
+  },
+  usage:{
+    ana:{day:.21,month:2.06,tokDay:31e4,tokMonth:305e4,week:[.12,.31,.4,.08,.36,.58,.21],ops:[['Cards',.92],['Tradução',.31],['Tutor',.48],['Plano de aula',.27],['Sugestões',.06],['Embeddings',.02]],models:[['gemini-2.5-flash','Google · chave global',2.04,'3,0 mi'],['gemini-embedding-001','Google · chave global',.02,'50 mil']]},
+    matheus:{day:.34,month:3.12,tokDay:92e4,tokMonth:84e5,week:[.41,.52,.18,.6,.47,.6,.34],ops:[['Cards',1.21],['Tradução',.22],['Tutor',1.04],['Plano de aula',.49],['Sugestões',.13],['Embeddings',.03]],models:[['gpt-4o-mini','OpenAI · sua chave',2.87,'7,9 mi'],['gemini-2.5-flash','Google · sua chave',.22,'410 mil'],['gemini-embedding-001','Google · sua chave',.03,'90 mil'],['llama3.1','Ollama · local',0,'1,2 mi']]},
+    lucas:{day:.08,month:1.4,tokDay:14e4,tokMonth:21e5,week:[.2,.24,.19,.31,.11,.27,.08],ops:[['Cards',.52],['Tradução',.05],['Tutor',.61],['Plano de aula',.18],['Sugestões',.04],['Embeddings',0]],models:[['gemini-2.5-flash','Google · sua chave',1.4,'2,1 mi']]},
+  },
+  sharedDefault:{day:'0,25',month:'2,00'},shared:{},
+  prices:[['gemini-2.5-flash','0,30','2,50'],['gpt-4o-mini','0,15','0,60'],['claude-haiku-5-5','1,00','5,00'],['gemini-embedding-001','0,15','—'],['llama3.1','0,00','0,00']],priceDate:'01/10/2026',
+  server:{kokoro:'http://localhost:1881',downloads:10,db:'postgres://deixa@localhost:1442/deixa',pg:'17.2',dataDir:'~/Library/Application Support/app.deixa.desktop/data',cookieSecure:false,ownUrl:true},
+};
+const U=()=>CFG.user[S.pid];
+const num=t=>parseFloat(String(t).replace(',','.'))||0;
+const usd=v=>'US$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const tokens=v=>v>=1e6?(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi':Math.round(v/1e3)+' mil';
+const provName=id=>id==='local'?'Cálculo local':(AI_PROVIDERS.find(x=>x.id===id)||{n:id}).n;
+const cfgGlobal=()=>S.cfg.scope==='global'&&!!P().admin;
+const cfgStore=()=>cfgGlobal()?CFG.global:U();
+function aiState(pid){
+  const u=CFG.user[pid],g=u.gen||CFG.global.gen;
+  const own=!!(u.keys[g.p]||u.urls[g.p]),glob=!!(CFG.global.keys[g.p]||CFG.global.urls[g.p]);
+  return {g,own,shared:!own&&glob,none:!own&&!glob};
+}
+function aiLimit(pid){const st=aiState(pid);if(st.none)return null;return st.own?CFG.user[pid].limit:(CFG.shared[pid]||CFG.sharedDefault)}
+function aiBlocked(pid){const l=aiLimit(pid),us=CFG.usage[pid];if(!l)return false;const d=num(l.day),m=num(l.month);return (d>0&&us.day>=d)||(m>0&&us.month>=m)}
+function cfgScope(mine,server){
+  if(!P().admin)return '';
+  return `<div class="seg">${[['user',mine],['global',server]].map(([k,l])=>`<button class="${S.cfg.scope===k?'on':''}" data-act="cfgscope" data-s="${k}">${l}</button>`).join('')}</div>`;
+}
+function keyCard(o){
+  const C=S.cfg,g=cfgGlobal(),st=cfgStore(),key=st.keys[o.id],url=st.urls[o.id];
+  const fromGlobal=!g&&!!(CFG.global.keys[o.id]||CFG.global.urls[o.id]);
+  const on=o.nokey?!!url:o.keyopt?!!url:!!key;
+  const chip=on?`<span class="chip good">${o.url?'Configurado':'Conectada'}</span>`:fromGlobal?'<span class="chip brand">Usando a global</span>':`<span class="chip">${o.url?'Não configurado':'Sem chave'}</span>`;
+  const open=C.open===o.id;
+  const line=on?`<span class="small muted mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.url?url:key)}</span>`:`<span class="small muted">${o.sub||'Sem chave cadastrada'}</span>`;
+  return `<div class="card col" style="gap:12px">
+    <button class="row" style="justify-content:space-between;width:100%;text-align:left" data-act="cfgkeyopen" data-id="${o.id}" aria-expanded="${open}">
+      <span class="col" style="gap:2px;min-width:0"><b>${o.n}</b>${line}</span>${chip}
+    </button>
+    ${open?`${o.url?`<div class="field"><label for="cfgurl">Endereço</label><input id="cfgurl" class="mono" value="${esc(url||'')}" placeholder="${o.url}" autocomplete="off" spellcheck="false"><span class="small muted">${g?'Vale para todas as contas.':'Quem chama esse endereço é o servidor do Deixa, não o seu aparelho.'}</span></div>`:''}
+      ${o.nokey?'':key?`<p class="small muted">Guardada criptografada. Ela nunca volta para o navegador${g?'':' nem é compartilhada com outras contas'}.</p>`:`<div class="field"><label for="cfgkey">Chave${o.keyopt?' (opcional)':''}</label><input id="cfgkey" class="mono" placeholder="${o.ph}" autocomplete="off" spellcheck="false">${o.help?`<span class="small muted">${o.help}</span>`:''}</div>`}
+      <div class="row">${on||key?`<button class="btn ghost" style="padding:10px 14px;font-size:13px" data-act="cfgkeyrm" data-id="${o.id}">Remover</button>`:''}${!key||o.url?`<button class="btn" style="padding:12px 14px;font-size:13px" data-act="cfgkeysave" data-id="${o.id}">Testar e salvar</button>`:''}</div>`:''}
+  </div>`;
+}
+function modelField(k,label,help){
+  const g=cfgGlobal(),st=cfgStore(),cur=st[k],dflt=CFG.global[k];
+  const has=id=>!!(st.keys[id]||st.urls[id]||(!g&&(CFG.global.keys[id]||CFG.global.urls[id])));
+  const opts=AI_PROVIDERS.filter(x=>k==='gen'||x.emb!==null).map(x=>`<option value="${x.id}" ${cur&&cur.p===x.id?'selected':''} ${has(x.id)?'':'disabled'}>${x.n}${has(x.id)?'':' (sem chave)'}</option>`).join('');
+  return `<div class="field"><label for="cfg-${k}">${label}</label>
+    <select id="cfg-${k}" data-cfg="${k}.p">${g?'':`<option value="" ${cur?'':'selected'}>Padrão do servidor: ${provName(dflt.p)}</option>`}${opts}${k==='emb'?`<option value="local" ${cur&&cur.p==='local'?'selected':''}>Cálculo local, sem IA</option>`:''}</select>
+    ${cur&&cur.p!=='local'?`<input class="mono" data-cfg="${k}.m" value="${esc(cur.m)}" placeholder="Nome do modelo" aria-label="Modelo" autocomplete="off" spellcheck="false">`:''}
+    <span class="small muted">${help}</span></div>`;
+}
+function cfgAi(){
+  const g=cfgGlobal(),st=aiState(S.pid);
+  const status=g?'':st.none?`<div class="hint"><span><b>Sem chave de IA.</b> Cards, traduções e tutor ficam em modo de demonstração até você cadastrar uma chave.</span></div>`
+    :st.shared?`<div class="hint"><span><b>Você usa a chave global deste servidor</b> (${provName(st.g.p)}), com limite definido pelo administrador. Com a sua própria chave, o limite passa a ser seu.</span></div>`:'';
+  return `<p class="small muted">${g?'Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode alterá-las.':'Cada serviço usa a sua chave. Sem ela, vale a chave global deste servidor, se houver. As chaves ficam criptografadas e nunca voltam para o navegador.'}</p>
+  ${cfgScope('Minhas chaves','Globais do servidor')}
+  ${status}
+  <section class="card col" style="gap:14px">
+    <h2 style="font-size:17px">${g?'Modelos padrão do servidor':'Modelos em uso'}</h2>
+    ${modelField('gen','Geração de texto','Cards, traduções, tutor, plano de aula e motivo das sugestões.')}
+    ${modelField('emb','Embeddings','Usados nas sugestões de obras. Trocar de modelo recalcula só os vetores que faltam; os antigos ficam guardados.')}
+  </section>
+  <div class="col" style="gap:10px"><span class="eyebrow">Provedores</span>${AI_PROVIDERS.map(keyCard).join('')}</div>`;
+}
+function meter(label,spent,limitText,tok){
+  const lim=num(limitText),pct=lim?Math.min(100,spent/lim*100):0,tone=lim&&spent>=lim?'var(--bad)':lim&&pct>=80?'var(--cue)':'var(--good)';
+  return `<div class="col" style="gap:8px"><div class="col" style="gap:2px"><span class="eyebrow">${label}</span><div class="sec-h"><h2 style="font-size:22px;white-space:nowrap">${usd(spent)}</h2><span class="small muted" style="text-align:right">${lim?'de '+usd(lim):'sem limite'}</span></div><span class="small muted">${tokens(tok)} tokens</span></div>
+    ${lim?`<div class="bar"><i style="width:${Math.max(2,pct)}%;background:${tone}"></i></div>`:''}</div>`;
+}
+function limitFields(l,scopeText){
+  return `<div class="seg"><button class="on">Em dólar</button><button>Em tokens</button></div>
+    <div class="row" style="align-items:flex-start"><div class="field" style="flex:1"><label for="cfglimd">Por dia</label><input id="cfglimd" class="mono" inputmode="decimal" value="${esc(l.day)}" placeholder="Sem limite"></div><div class="field" style="flex:1"><label for="cfglimm">Por mês</label><input id="cfglimm" class="mono" inputmode="decimal" value="${esc(l.month)}" placeholder="Sem limite"></div></div>
+    <p class="small muted">${scopeText} Ao passar do limite, toda a IA pausa até o período virar ou o limite subir. Ler, marcar e revisar continuam funcionando.</p>
+    <button class="btn" style="padding:12px;font-size:13px" data-act="cfgsave" data-m="Limite salvo.">Salvar limite</button>`;
+}
+function cfgUsage(){
+  if(cfgGlobal())return cfgUsageServer();
+  const us=CFG.usage[S.pid],st=aiState(S.pid),l=aiLimit(S.pid),blocked=aiBlocked(S.pid);
+  const maxW=Math.max(...us.week),maxO=Math.max(...us.ops.map(o=>o[1]))||1;
+  const days=['D','S','T','Q','Q','S','S'];
+  return `${cfgScope('Meu uso','Servidor')}
+  ${blocked?`<div class="hint" style="background:var(--bad-soft)"><span><b style="color:var(--bad)">IA pausada.</b> Você passou do limite ${num(l.month)&&us.month>=num(l.month)?'deste mês':'de hoje'}. Ela volta ${num(l.month)&&us.month>=num(l.month)?'no dia 1º':'amanhã'}${st.own?', ou quando você aumentar o limite':''}. Ler, marcar e revisar continuam funcionando.</span></div>`:''}
+  <section class="card col" style="gap:16px">
+    ${meter('Hoje',us.day,l?l.day:'',us.tokDay)}
+    ${meter('Este mês',us.month,l?l.month:'',us.tokMonth)}
+    <p class="note">Valores estimados pela tabela de preços de ${CFG.priceDate}. A cobrança real é a do provedor.</p>
+  </section>
+  <section class="card col" style="gap:10px">
+    <div class="sec-h"><h2 style="font-size:17px">Últimos 7 dias</h2><span class="small muted">em dólar</span></div>
+    <div class="bars">${us.week.map((v,i)=>`<div class="${i===6?'today':''}"><em>${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</em><i style="height:${Math.max(3,v/maxW*100*.82)}%"></i></div>`).join('')}</div>
+    <div class="barlbl">${days.map((d,i)=>`<span style="${i===6?'color:var(--brand)':''}">${i===6?'Hoje':d}</span>`).join('')}</div>
+  </section>
+  <section class="card col" style="gap:12px">
+    <div class="sec-h"><h2 style="font-size:17px">Por tipo de uso</h2><span class="small muted">este mês</span></div>
+    ${us.ops.map(([k,v])=>`<div class="skill" style="grid-template-columns:104px 1fr 68px"><span>${k}</span><div class="bar"><i style="width:${v/maxO*100}%"></i></div><b>${usd(v)}</b></div>`).join('')}
+  </section>
+  <section class="card col" style="gap:4px">
+    <div class="sec-h"><h2 style="font-size:17px">Por modelo</h2><span class="small muted">este mês</span></div>
+    ${us.models.map(([m,src,v,t])=>`<div class="dueitem"><span class="col" style="gap:2px;min-width:0"><b class="mono" style="font-size:13px">${m}</b><span class="small muted">${src} · ${t} tokens</span></span><b style="font-variant-numeric:tabular-nums">${usd(v)}</b></div>`).join('')}
+  </section>
+  <section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Seu limite</h2>
+    ${st.none?'<p class="small muted">Nenhuma chave de IA em uso. O limite aparece aqui quando houver uma.</p>'
+      :st.own?limitFields(U().limit,'Vale para o uso com a sua chave. Em branco, sem limite.')
+      :`<dl class="kv"><dt>Por dia</dt><dd>${num(l.day)?usd(num(l.day)):'Sem limite'}</dd><dt>Por mês</dt><dd>${num(l.month)?usd(num(l.month)):'Sem limite'}</dd></dl><p class="small muted">Definido pelo administrador para quem usa a chave global. Com a sua própria chave, o limite passa a ser seu.</p>`}
+  </section>`;
+}
+function cfgUsageServer(){
+  const C=S.cfg,people=Object.values(PROFILES),total=people.reduce((n,x)=>n+CFG.usage[x.id].month,0);
+  return `${cfgScope('Meu uso','Servidor')}
+  <section class="card col" style="gap:4px">
+    <div class="sec-h"><div class="col" style="gap:2px"><span class="eyebrow">Todas as contas · este mês</span><h2 style="font-size:22px">${usd(total)}</h2></div></div>
+    ${people.map(x=>{const st=aiState(x.id),us=CFG.usage[x.id],l=aiLimit(x.id),open=C.person===x.id;
+      return `<div class="dueitem" style="grid-template-columns:1fr"><button class="row" style="width:100%;text-align:left" data-act="cfgperson" data-id="${x.id}" aria-expanded="${open}">
+        <span class="avatar" style="background:${x.color};width:32px;height:32px;font-size:14px;border-radius:10px">${x.name[0]}</span>
+        <span class="col" style="gap:2px;flex:1;min-width:0"><b>${x.name}</b><span class="small muted">${st.none?'sem chave':st.own?'chave própria':'chave global · limite '+(num(l.month)?usd(num(l.month))+' por mês':'livre')}</span></span>
+        ${aiBlocked(x.id)?'<span class="chip bad">Pausada</span>':''}<b style="font-variant-numeric:tabular-nums">${usd(us.month)}</b></button>
+        ${open&&st.shared?`<div class="col" style="gap:12px;padding:8px 0 4px">${limitFields(l,'Vale só para '+x.name+', enquanto usar a chave global.')}</div>`:open?`<p class="small muted" style="padding:4px 0">${st.own?x.name+' usa a própria chave e define o próprio limite.':x.name+' ainda não usa IA.'}</p>`:''}
+      </div>`}).join('')}
+    <p class="small muted" style="padding-top:8px">Você vê só os totais. O que cada pessoa fez com a IA não aparece aqui.</p>
+  </section>
+  <section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Limite padrão da chave global</h2>
+    ${limitFields(CFG.sharedDefault,'Vale para cada conta que usa a chave global e não tem limite próprio.')}
+  </section>
+  <section class="card col" style="gap:4px">
+    <div class="col" style="gap:2px"><h2 style="font-size:17px">Preços por modelo</h2><span class="small muted">Em dólar, por 1 milhão de tokens</span></div>
+    <div class="dueitem" style="grid-template-columns:1fr 64px 64px"><span class="eyebrow">Modelo</span><span class="eyebrow" style="text-align:right">Entrada</span><span class="eyebrow" style="text-align:right">Saída</span></div>
+    ${CFG.prices.map(([m,i,o])=>`<div class="dueitem" style="grid-template-columns:1fr 64px 64px"><span class="mono" style="font-size:13px;overflow:hidden;text-overflow:ellipsis">${m}</span><span class="mono" style="text-align:right;font-size:13px">${i}</span><span class="mono" style="text-align:right;font-size:13px">${o}</span></div>`).join('')}
+    <p class="small muted" style="padding-top:8px">Atualizados em ${CFG.priceDate}. Modelo sem preço cadastrado tem os tokens contados e o valor aparece como desconhecido.</p>
+    <button class="btn ghost" style="padding:10px;font-size:13px;margin-top:8px" data-act="cfgsave" data-m="No app, cada linha vira um campo editável.">Editar preços</button>
+  </section>`;
+}
+function cfgCatalog(){
+  const g=cfgGlobal();
+  return `<p class="small muted">${g?'Chaves usadas por qualquer conta que não tenha a própria.':'O TMDB identifica as obras e o OpenSubtitles busca legendas quando você pede. Sem chave, valem as globais deste servidor, se houver.'}</p>
+  ${cfgScope('Minhas chaves','Globais do servidor')}
+  ${CATALOG_SERVICES.map(keyCard).join('')}
+  ${g?`<section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Legendas neste servidor</h2>
+    <div class="field"><label for="cfgdl">Downloads de legenda por conta, por dia</label><input id="cfgdl" class="mono" inputmode="numeric" value="${CFG.server.downloads}"><span class="small muted">Vale para quem usa a chave global do OpenSubtitles.</span></div>
+    <div class="field"><label for="cfgosu">Usuário do OpenSubtitles (opcional)</label><input id="cfgosu" autocomplete="off" spellcheck="false" placeholder="Aumenta a cota diária da chave global"></div>
+    <div class="field"><label for="cfgosp">Senha do OpenSubtitles (opcional)</label><input id="cfgosp" type="password" autocomplete="off"></div>
+    <button class="btn" style="padding:12px;font-size:13px" data-act="cfgsave">Salvar</button>
+  </section>`:''}`;
+}
+const MORE_MENUS=[
+  ['progress','Progresso','chart','Nível, sequência, XP e conquistas'],
+  ['data','Importar e exportar','swap','Pacotes de obras e cópia de segurança dos seus dados'],
+  ['settings','Configurações','sliders','Chaves, modelos de IA, uso e servidor'],
+];
+function renderSettings(){
+  const C=S.cfg,p=P();
+  const tabs=[['ai','IA'],['usage','Uso da IA'],['catalog','Catálogo']];
+  if(p.admin)tabs.push(['server','Servidor']);
+  if(!tabs.some(t=>t[0]===C.tab))C.tab='ai';
+  const body={ai:cfgAi,usage:cfgUsage,catalog:cfgCatalog,server:cfgServer}[C.tab]();
+  return `<h1 style="font-size:28px;padding-top:4px">Configurações</h1>
+  <div class="chips">${tabs.map(([k,l])=>`<button class="fchip ${C.tab===k?'on':''}" data-act="cfgtab" data-t="${k}">${l}</button>`).join('')}</div>
+  <div class="col" style="gap:18px;max-width:640px;width:100%">${body}</div>`;
+}
+function renderData(){
+  const D=S.data,me=D.scope==='me';
+  const scopes=[['me','Meus dados'],['work','Obra'],['season','Temporada'],['episode','Episódio']];
+  const pick=(k,t,sub)=>`<button class="result ${D.pick[k]?'on':''}" style="grid-template-columns:1fr 22px" data-act="datapick" data-k="${k}" aria-pressed="${!!D.pick[k]}"><span class="col" style="gap:2px;min-width:0"><b>${t}</b><span class="small muted">${sub}</span></span><span style="width:22px;height:22px;color:var(--brand)">${D.pick[k]?I.check:''}</span></button>`;
+  const imp=D.imp===0?`<label class="slot" data-act="dataimp" data-n="1"><span class="ic">ZIP</span><span class="col" style="gap:2px"><b>Escolher arquivo .deixa.zip</b><span class="small muted">O arquivo já traz tudo o que é preciso. Nada é gravado antes de você conferir.</span></span></label>`
+    :D.imp===1?`<dl class="kv"><dt>Arquivo</dt><dd class="mono" style="font-size:13px">friends-t1.deixa.zip</dd><dt>Origem</dt><dd>Deixa 0.1.0 · 10/10/2026</dd></dl>
+      <div><span class="eyebrow">O que vai entrar</span>
+        <div class="dueitem"><span class="col" style="gap:2px"><b>Episódios novos</b><span class="small muted">Friends · T1 · E3 e E4, com legendas</span></span><b>2</b></div>
+        <div class="dueitem"><span class="col" style="gap:2px"><b>Cards</b><span class="small muted">Entram como sugestão no catálogo</span></span><b>23</b></div>
+        <div class="dueitem"><span class="col" style="gap:2px"><b>Áudios</b><span class="small muted">Falas já geradas</span></span><b>212</b></div>
+        <div class="dueitem"><span class="col" style="gap:2px"><b>Dados pessoais</b><span class="small muted">De ana@example.com, cifrados. Entram na conta conectada.</span></span><span class="chip warn" style="align-self:start">Pede senha</span></div>
+        <div class="dueitem"><span class="col" style="gap:2px"><b class="muted">Já existe aqui</b><span class="small muted">Friends · T1 · E2 fica como está</span></span><b class="muted">1</b></div>
+      </div>
+      <div class="field"><label for="datapw">Senha de ana@example.com</label><input id="datapw" type="password" autocomplete="off"><span class="small muted">Sem a senha, os dados pessoais ficam de fora e o resto entra normalmente.</span></div>
+      <div class="row"><button class="btn ghost" style="padding:12px 14px;font-size:13px" data-act="dataimp" data-n="0">Cancelar</button><button class="btn" style="padding:12px 14px;font-size:13px;flex:1" data-act="dataimp" data-n="2">Importar</button></div>`
+    :`<div class="row"><span style="width:28px;height:28px;color:var(--good);flex:none">${I.check}</span><b>Importação concluída</b></div>
+      <div><div class="dueitem"><span>Episódios novos</span><b>2</b></div><div class="dueitem"><span>Cards sugeridos no catálogo</span><b>23</b></div><div class="dueitem"><span>Áudios</span><b>212</b></div><div class="dueitem"><span class="muted">Dados pessoais, sem a senha</span><b class="muted">de fora</b></div><div class="dueitem"><span class="muted">Já existiam</span><b class="muted">1 episódio</b></div></div>
+      <button class="btn ghost" style="padding:10px;font-size:13px" data-act="dataimp" data-n="0">Importar outro arquivo</button>`;
+  const exp=`<div class="seg">${scopes.map(([k,l])=>`<button class="${D.scope===k?'on':''}" data-act="datascope" data-s="${k}">${l}</button>`).join('')}</div>
+    ${me?`<p class="small muted">Preferências, progresso, marcações, seus cards com o estado de revisão, histórico, XP e conversas com o tutor.</p>
+      <div class="field"><label>Chaves de API</label><div class="seg">${[[false,'Sem as chaves'],[true,'Com as chaves']].map(([v,l])=>`<button class="${D.keys===v?'on':''}" data-act="datakeys" data-v="${v?1:''}">${l}</button>`).join('')}</div><span class="small muted">Com as chaves, elas entram cifradas junto com os seus dados.</span></div>
+      <div class="field"><label for="dataexppw">Sua senha</label><input id="dataexppw" type="password" autocomplete="current-password"><span class="small muted">Os dados pessoais saem cifrados com o seu e-mail e a sua senha. Sem a senha, o arquivo não abre.</span></div>`
+    :`<div class="field"><label for="datawork">Obra</label><select id="datawork">${CATALOG.map(m=>`<option ${D.work===m.id?'selected':''}>${esc(m.title)}</option>`).join('')}</select></div>
+      ${D.scope!=='work'?`<div class="row" style="align-items:flex-start"><div class="field" style="flex:1"><label for="datase">Temporada</label><select id="datase"><option>1</option><option>2</option></select></div>${D.scope==='episode'?`<div class="field" style="flex:1"><label for="dataep">Episódio</label><select id="dataep"><option>1</option><option>2</option><option>3</option></select></div>`:''}</div>`:''}
+      <div class="col" style="gap:8px"><span class="eyebrow">O que entra no pacote</span>
+        ${pick('subs','Legendas','Os arquivos .srt em inglês e português.')}
+        ${pick('cards','Cards do catálogo','Itens e explicações compartilhados. Cards privados só saem em "Meus dados".')}
+        ${pick('audio','Áudios gerados','Pode passar de centenas de MB por temporada.')}
+      </div>
+      <p class="note">Legendas e áudio de obras reais têm direitos autorais. Use o pacote como cópia pessoal.</p>`}
+    <button class="btn block" data-act="cfgsave" data-m="Pacote .deixa.zip gerado.">Exportar .deixa.zip</button>`;
+  return `<h1 style="font-size:28px;padding-top:4px">Importar e exportar</h1>
+  <p class="muted">Leve conteúdo de uma instalação para outra ou guarde uma cópia de segurança dos seus dados.</p>
+  <div class="col" style="gap:18px;max-width:640px;width:100%">
+    <section class="card col" style="gap:14px"><h2 style="font-size:17px">Importar</h2>${imp}<p class="small muted">O que já existe não é sobrescrito. Importar o mesmo arquivo duas vezes não duplica nada.</p></section>
+    <section class="card col" style="gap:14px" id="dataexp"><h2 style="font-size:17px">Exportar</h2>${exp}</section>
+  </div>`;
+}
+function cfgServer(){
+  const V=CFG.server;
+  const onoff=(k,label,help)=>`<div class="field"><label>${label}</label><div class="seg">${[[false,'Desligado'],[true,'Ligado']].map(([v,l])=>`<button class="${V[k]===v?'on':''}" data-act="cfgflag" data-k="${k}" data-v="${v?1:''}">${l}</button>`).join('')}</div><span class="small muted">${help}</span></div>`;
+  return `<p class="small muted">Valem para a instalação inteira. Só o administrador vê esta aba.</p>
+  <section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Voz</h2>
+    <div class="field"><label for="cfgkokoro">Endereço do Kokoro</label><input id="cfgkokoro" class="mono" value="${esc(V.kokoro)}" placeholder="http://localhost:1881" autocomplete="off" spellcheck="false"><span class="small muted">Só neste computador ou numa rede privada. Em branco, o áudio fica em silêncio.</span></div>
+    <button class="btn" style="padding:12px;font-size:13px" data-act="cfgsave">Salvar</button>
+  </section>
+  <section class="card col" style="gap:16px">
+    <h2 style="font-size:17px">Acesso</h2>
+    ${onoff('cookieSecure','Sessão só por HTTPS','Ligue apenas se o Deixa for aberto por HTTPS. Por HTTP, ninguém consegue entrar.')}
+    ${onoff('ownUrl','Endereço próprio de IA por conta','Vale para Ollama e para servidores compatíveis com OpenAI. Quem chama o endereço é este servidor.')}
+  </section>
+  <section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Banco de dados</h2>
+    <dl class="kv"><dt>Endereço</dt><dd class="mono" style="font-size:13px;word-break:break-all">${V.db}</dd><dt>Versão</dt><dd>PostgreSQL ${V.pg}</dd></dl>
+    <p class="small muted">A senha não é exibida. Trocar de banco abre o assistente de configuração e reinicia o servidor; os dados do banco atual não são copiados.</p>
+    <button class="btn ghost" style="padding:10px;font-size:13px" data-act="cfgsave" data-m="Abre o assistente de configuração.">Trocar de banco</button>
+  </section>
+  <section class="card col" style="gap:12px">
+    <h2 style="font-size:17px">Pasta de dados</h2>
+    <p class="mono" style="font-size:13px;word-break:break-all">${V.dataDir}</p>
+    <p class="small muted">Guarda as legendas enviadas e o áudio gerado. Trocar de pasta reinicia o servidor; os arquivos atuais não são movidos.</p>
+    <button class="btn ghost" style="padding:10px;font-size:13px" data-act="cfgsave" data-m="Pede a pasta nova e reinicia o servidor.">Trocar de pasta</button>
+  </section>
+  <section class="card col" style="gap:4px">
+    <h2 style="font-size:17px">Segurança</h2>
+    <div class="dueitem"><span class="col" style="gap:2px"><b>Chave mestra</b><span class="small muted">Protege as chaves guardadas. Nunca é exibida nem alterada por aqui.</span></span><span class="chip good" style="align-self:start">Presente</span></div>
+    <div class="dueitem"><span class="col" style="gap:2px"><b>Atalhos de desenvolvimento</b><span class="small muted">Definidos na instalação.</span></span><span class="chip" style="align-self:start">Desligados</span></div>
+  </section>`;
+}
+function sheetRow(act,attrs,icon,title,sub){
+  return `<div class="ep" style="grid-template-columns:1fr"><button class="scen" data-act="${act}" ${attrs}><span class="ic">${icon}</span><span class="col" style="gap:3px;min-width:0"><b>${title}</b><span class="small muted">${sub}</span></span><span style="color:var(--muted);width:20px;transform:rotate(180deg)">${I.back}</span></button></div>`;
+}
+function sheetMore(){
+  return `<h2 style="font-size:22px">Mais</h2>
+  <div class="card" style="padding:4px 16px">${MORE_MENUS.map(([k,l,i,d])=>sheetRow('tab',`data-t="${k}"`,I[i],l,d)).join('')}</div>`;
+}
+function sheetCatalog(){
+  const m=S.media&&media(S.media);
+  return `<h2 style="font-size:22px">${m?esc(m.title):'Catálogo'}</h2>
+  <div class="card" style="padding:4px 16px">
+    ${sheetRow('sheet','data-s="upload"',I.plus,'Adicionar',m?'Envie ou busque a legenda de outro episódio.':'Busque a obra e envie ou busque a legenda do episódio.')}
+    ${sheetRow('dataopen','data-m="imp"',I.upload,'Importar','De um arquivo .deixa.zip com obras, legendas, cards e áudio.')}
+    ${sheetRow('dataopen','data-m="exp"',I.swap,'Exportar',m?'Gerar um pacote desta obra, de uma temporada ou de um episódio.':'Gerar um pacote de uma obra, temporada ou episódio.')}
+  </div>`;
+}
+
 /* ---------- SHEETS ---------- */
 function renderSheet(){
   if(!S.sheet)return '';
   let c='';
   if(S.sheet==='profile')c=sheetProfile();
   if(S.sheet==='upload')c=sheetUpload();
+  if(S.sheet==='more')c=sheetMore();
+  if(S.sheet==='catalog')c=sheetCatalog();
   return `<div class="scrim" data-act="closesheet"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${c}</div></div>`;
 }
 function sheetProfile(){
@@ -1075,16 +1382,7 @@ function sheetProfile(){
   <div class="field"><label>Meta diária</label><div class="seg">${goals.map(([v,l])=>`<button class="${p.goal===v?'on':''}" data-act="goal" data-v="${v}">${l}<br><span class="mono small">${v} XP</span></button>`).join('')}</div></div>
   <div class="field"><label>Sotaque preferido do áudio</label><div class="seg">${[['US','Americano'],['UK','Britânico']].map(([v,l])=>`<button class="${p.accent===v?'on':''}" data-act="accent" data-v="${v}">${l}</button>`).join('')}</div></div>
   <div class="field"><label>Velocidade do áudio</label><div class="seg">${[.8,1,1.15].map(v=>`<button class="${p.speed===v?'on':''}" data-act="speed" data-v="${v}">${v}×</button>`).join('')}</div></div>
-  <div class="card col" style="gap:10px">
-    <div class="row">${I.key.replace('<svg','<svg width="22" height="22"')}<b>Chave do Google AI (Gemini)</b></div>
-    ${p.key?`<div class="row" style="justify-content:space-between"><span class="mono small">${p.key}</span><span class="chip good">Conectada</span></div>
-      <p class="small muted">Guardada criptografada no servidor. Ela nunca volta para o navegador nem é compartilhada com outras contas.</p>
-      <button class="btn ghost" style="padding:10px;font-size:13px" data-act="rmkey">Remover chave</button>`
-    :`<p class="small muted">Usada pelo tutor e por exercícios personalizados. O uso pode gerar cobrança na sua conta Google. O catálogo já processado continua disponível sem ela.</p>
-      <div class="field"><input id="keyin" placeholder="AIza…" autocomplete="off" spellcheck="false"></div>
-      <span class="small" id="keymsg"></span>
-      <button class="btn" style="padding:12px;font-size:13px" data-act="savekey">Testar e salvar</button>`}
-  </div>
+  <button class="btn ghost block" data-act="cfgopen" data-t="ai">${I.sliders.replace('<svg','<svg width="18" height="18"')} Configurações</button>
   <button class="btn ghost block" data-act="switch">Trocar de perfil</button>`;
 }
 const MOCK_SEARCH=[{id:'friends'},{id:'himym'},{id:'office'},{id:'tedlasso'},{id:'bb'},{id:'prada'},{id:'socialnetwork'},
@@ -1145,7 +1443,7 @@ function publishUpload(){
 const A={
   pick:d=>{S.pid=d.id;S.tab='home';S.rev=null;try{localStorage.setItem('deixa.pid',d.id)}catch(e){}render();window.scrollTo(0,0)},
   switch:()=>{S.pid=null;S.sheet=null;S.media=null;try{localStorage.removeItem('deixa.pid')}catch(e){}render()},
-  tab:d=>{S.tab=d.t;S.media=null;render();window.scrollTo(0,0)},
+  tab:d=>{S.tab=d.t;S.media=null;S.sheet=null;render();window.scrollTo(0,0)},
   filter:d=>{S.filter=d.f;render()},
   openmedia:d=>{S.tab='explore';S.media=d.id;S.season=null;render();window.scrollTo(0,0)},
   closemedia:()=>{S.media=null;render()},
@@ -1172,11 +1470,29 @@ const A={
   goal:d=>{P().goal=+d.v;render()},
   accent:d=>{P().accent=d.v;render()},
   speed:d=>{P().speed=+d.v;render()},
-  rmkey:()=>{P().key=null;render();toast('Chave removida. Revisões continuam funcionando.')},
-  savekey:()=>{const v=(document.getElementById('keyin').value||'').trim();const msg=document.getElementById('keymsg');
-    if(!/^AIza[\w-]{20,}$/.test(v)){msg.style.color='var(--bad)';msg.textContent='Essa chave não parece válida. Chaves do Google AI Studio começam com "AIza" e têm 39 caracteres.';return}
-    msg.style.color='var(--muted)';msg.textContent='Testando com uma requisição curta…';
-    setTimeout(()=>{P().key='AIza••••••••'+v.slice(-4);render();toast('Chave válida e salva com criptografia.')},800)},
+  cfgopen:d=>{S.sheet=null;S.media=null;S.tab='settings';S.cfg.tab=d.t||'ai';S.cfg.open=null;render();window.scrollTo(0,0)},
+  cfgtab:d=>{S.cfg.tab=d.t;S.cfg.open=null;render()},
+  cfgscope:d=>{S.cfg.scope=d.s;S.cfg.open=null;S.cfg.person=null;render()},
+  cfgkeyopen:d=>{S.cfg.open=S.cfg.open===d.id?null:d.id;render()},
+  cfgkeysave:d=>{const o=[...AI_PROVIDERS,...CATALOG_SERVICES].find(x=>x.id===d.id),st=cfgStore();
+    const k=document.getElementById('cfgkey'),u=document.getElementById('cfgurl'),kv=k?k.value.trim():'',uv=u?u.value.trim():'';
+    if(o.url&&!uv){toast('Informe o endereço.');return}
+    if(!o.url&&!st.keys[o.id]&&!kv){toast('Informe a chave.');return}
+    if(o.url)st.urls[o.id]=uv;
+    if(kv)st.keys[o.id]='••••••••'+kv.slice(-4);
+    if(o.id==='google'&&!cfgGlobal())P().key=st.keys.google;
+    S.cfg.open=null;render();toast(o.url?'Endereço respondeu e foi salvo.':'Chave válida e salva com criptografia.')},
+  cfgkeyrm:d=>{const st=cfgStore();delete st.keys[d.id];delete st.urls[d.id];if(st.gen&&st.gen.p===d.id)st.gen=cfgGlobal()?{p:'google',m:'gemini-2.5-flash'}:null;if(st.emb&&st.emb.p===d.id)st.emb=cfgGlobal()?{p:'local',m:''}:null;
+    if(d.id==='google'&&!cfgGlobal())P().key=null;S.cfg.open=null;render();toast('Removido.')},
+  cfgperson:d=>{S.cfg.person=S.cfg.person===d.id?null:d.id;render()},
+  cfgflag:d=>{CFG.server[d.k]=!!d.v;render()},
+  cfgsave:d=>toast(d.m||'Configurações salvas.'),
+  dataopen:d=>{if(S.media)S.data.work=S.media;S.sheet=null;S.media=null;S.tab='data';S.data.imp=0;if(d.m==='exp'&&S.data.scope==='me')S.data.scope='work';render();
+    if(d.m==='exp')document.getElementById('dataexp').scrollIntoView();else window.scrollTo(0,0)},
+  datascope:d=>{S.data.scope=d.s;render()},
+  datapick:d=>{S.data.pick[d.k]=!S.data.pick[d.k];render()},
+  datakeys:d=>{S.data.keys=!!d.v;render()},
+  dataimp:d=>{S.data.imp=+d.n;render()},
   upsel:d=>{S.up.sel=d.id;render()},
   upnext:()=>{S.up.step=2;const m=media(S.up.sel);if(m&&m.type==='movie')S.up.e=1;render()},
   upsample:()=>{const U=S.up;const m=media(U.sel)||MOCK_SEARCH.find(x=>x.id===U.sel);const base=m&&m.type!=='movie'?`${m.title.replace(/\W+/g,'.')}.S0${U.s}E0${U.e}`:'filme';U.file=base+'.en.srt';U.filePt=base+'.pt-BR.srt';U.err='';render()},
@@ -1221,6 +1537,11 @@ document.addEventListener('input',ev=>{
   if(t.id==='upe')S.up.e=Math.max(1,+t.value||1);
 });
 document.addEventListener('change',ev=>{
+  const cf=ev.target.dataset.cfg;
+  if(cf){const st=cfgStore(),k=cf.slice(0,3),v=ev.target.value;
+    if(cf.endsWith('.p')){const pr=AI_PROVIDERS.find(x=>x.id===v);st[k]=v?{p:v,m:pr?pr[k]||'':''}:null;render()}
+    else if(st[k])st[k].m=v;
+    return}
   const id=ev.target.id;
   if(id==='upai'){S.up.aiScript=ev.target.checked;return}
   const field={upfile:'file',upfilept:'filePt',upscript:'script'}[id];
