@@ -6,8 +6,10 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::Duration;
 
+use hmac::{Hmac, Mac};
 use qrcode::render::svg;
 use qrcode::QrCode;
+use sha2::Sha256;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
@@ -31,6 +33,10 @@ const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
 const DESKTOP_TOKEN_HEADER: &str = "x-deixa-desktop-token";
 const DESKTOP_TOKEN_BYTES: usize = 32;
 const STATUS_PATH: &str = "/api/desktop/status";
+const HELLO_PATH: &str = "/api/desktop/hello";
+const TICKET_PATH: &str = "/api/desktop/ticket";
+const NONCE_BYTES: usize = 16;
+const PROOF_PREFIX: &str = "hello:";
 const MAX_STATUS_BYTES: u64 = 64 * 1024;
 const RESUME_EMPTY: &str = "Nada em andamento";
 const INBOX_EMPTY: &str = "Sem notificações novas";
@@ -75,6 +81,10 @@ fn network_url() -> String {
 }
 
 fn http_get(path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<String> {
+    http_request("GET", path, header, limit)
+}
+
+fn http_request(method: &str, path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<String> {
     let address = SocketAddr::from((LOOPBACK, server_port()));
     let mut stream = TcpStream::connect_timeout(&address, PROBE_TIMEOUT).ok()?;
     stream.set_read_timeout(Some(REQUEST_TIMEOUT)).ok()?;
@@ -83,7 +93,8 @@ fn http_get(path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<Stri
         .map(|(name, value)| format!("{}: {}\r\n", name, value))
         .unwrap_or_default();
     let request = format!(
-        "GET {} HTTP/1.0\r\nHost: {}:{}\r\nAccept: application/json\r\n{}Connection: close\r\n\r\n",
+        "{} {} HTTP/1.0\r\nHost: {}:{}\r\nAccept: application/json\r\nContent-Length: 0\r\n{}Connection: close\r\n\r\n",
+        method,
         path,
         LOOPBACK,
         server_port(),
@@ -115,6 +126,54 @@ fn server_is_up() -> bool {
 
 struct ServerProcess(Mutex<Option<Child>>);
 struct DesktopToken(Mutex<Option<String>>);
+struct VerifiedPeer(Mutex<Option<u32>>);
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{:02x}", byte)).collect()
+}
+
+fn json_field(response: &str, field: &str) -> Option<String> {
+    if !is_ok(response) {
+        return None;
+    }
+    let body = response.split_once("\r\n\r\n")?.1;
+    let parsed: serde_json::Value = serde_json::from_str(body).ok()?;
+    parsed.get(field)?.as_str().map(str::to_string)
+}
+
+fn peer_proves_token(token: &str) -> bool {
+    let mut bytes = [0u8; NONCE_BYTES];
+    if getrandom::fill(&mut bytes).is_err() {
+        return false;
+    }
+    let nonce = hex(&bytes);
+    let Some(response) = http_get(&format!("{}?nonce={}", HELLO_PATH, nonce), None, MAX_STATUS_BYTES)
+    else {
+        return false;
+    };
+    let Some(proof) = json_field(&response, "proof") else {
+        return false;
+    };
+    let Ok(mut expected) = Hmac::<Sha256>::new_from_slice(token.as_bytes()) else {
+        return false;
+    };
+    expected.update(format!("{}{}", PROOF_PREFIX, nonce).as_bytes());
+    let Ok(given) = (0..proof.len())
+        .step_by(2)
+        .map(|index| u8::from_str_radix(proof.get(index..index + 2).unwrap_or("zz"), 16))
+        .collect::<Result<Vec<u8>, _>>()
+    else {
+        return false;
+    };
+    expected.verify_slice(&given).is_ok()
+}
+
+fn running_child_id(app: &AppHandle) -> Option<u32> {
+    let process = app.state::<ServerProcess>();
+    let mut slot = process.0.lock().ok()?;
+    let child = slot.as_mut()?;
+    matches!(child.try_wait(), Ok(None)).then(|| child.id())
+}
 
 struct OwnerStatus {
     resume: Option<String>,
@@ -124,7 +183,7 @@ struct OwnerStatus {
 fn issue_desktop_token(home: &PathBuf) -> Option<String> {
     let mut bytes = [0u8; DESKTOP_TOKEN_BYTES];
     getrandom::fill(&mut bytes).ok()?;
-    let token: String = bytes.iter().map(|byte| format!("{:02x}", byte)).collect();
+    let token = hex(&bytes);
     let path = home.join(DESKTOP_TOKEN_FILE);
     let _ = std::fs::remove_file(&path);
     let mut options = std::fs::OpenOptions::new();
@@ -140,10 +199,28 @@ fn issue_desktop_token(home: &PathBuf) -> Option<String> {
 }
 
 fn current_token(app: &AppHandle) -> Option<String> {
-    if !owns_running_server(app) {
-        return None;
+    let child = running_child_id(app)?;
+    let token = app.state::<DesktopToken>().0.lock().ok()?.clone()?;
+    let peer = app.state::<VerifiedPeer>();
+    let mut verified = peer.0.lock().ok()?;
+    if *verified != Some(child) {
+        if !peer_proves_token(&token) {
+            return None;
+        }
+        *verified = Some(child);
     }
-    app.state::<DesktopToken>().0.lock().ok()?.clone()
+    Some(token)
+}
+
+fn request_entry_ticket(app: &AppHandle) -> Option<String> {
+    let token = current_token(app)?;
+    let response = http_request(
+        "POST",
+        TICKET_PATH,
+        Some((DESKTOP_TOKEN_HEADER, &token)),
+        MAX_STATUS_BYTES,
+    )?;
+    json_field(&response, "ticket").filter(|ticket| ticket.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
 fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
@@ -298,18 +375,15 @@ fn wait_until_up() -> bool {
     false
 }
 
-fn owns_running_server(app: &AppHandle) -> bool {
-    match app.state::<ServerProcess>().0.lock() {
-        Ok(mut slot) => match slot.as_mut() {
-            Some(child) => matches!(child.try_wait(), Ok(None)),
-            None => false,
-        },
-        Err(_) => false,
+fn report_entry(kind: &str) {
+    if cfg!(debug_assertions) {
+        eprintln!("entrada da janela: {}", kind);
     }
 }
 
 fn entry_url(app: &AppHandle) -> String {
-    if !owns_running_server(app) {
+    if current_token(app).is_none() {
+        report_entry("sem servidor próprio conferido");
         return local_url();
     }
     let code = data_home(app)
@@ -317,11 +391,18 @@ fn entry_url(app: &AppHandle) -> String {
         .map(|code| code.trim().to_string())
         .filter(|code| !code.is_empty() && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'));
     if let Some(code) = code {
+        report_entry("configuração destravada");
         return format!("{}/setup/unlock?code={}", local_url(), code);
     }
-    match current_token(app) {
-        Some(token) => format!("{}/desktop/enter?token={}", local_url(), token),
-        None => local_url(),
+    match request_entry_ticket(app) {
+        Some(ticket) => {
+            report_entry("bilhete do dono");
+            format!("{}/desktop/enter?ticket={}", local_url(), ticket)
+        }
+        None => {
+            report_entry("sem bilhete");
+            local_url()
+        }
     }
 }
 
@@ -472,6 +553,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(ServerProcess(Mutex::new(None)))
         .manage(DesktopToken(Mutex::new(None)))
+        .manage(VerifiedPeer(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))

@@ -224,7 +224,10 @@ Sessão do dono (12/10/2026, branch `feat/owner-session`):
 
 - [x] Ao subir o servidor, a casca grava um token aleatório em `desktop-token.txt` (só o dono lê) e o troca
       a cada abertura. Sem esse arquivo, as rotas da casca respondem como inexistentes.
-- [x] A janela entra sozinha como a conta administradora por `/desktop/enter`. Quem já tem sessão continua
+- [x] Antes de mandar o token ou o código de configuração, a casca exige que o servidor prove que conhece
+      o token (desafio com HMAC). O token só viaja em cabeçalho, nunca em URL.
+- [x] A janela entra sozinha como a conta administradora por `/desktop/enter`, com um bilhete de uso único
+      que vale 30 segundos. Quem já tem sessão continua
       com a sua; sem conta nenhuma, vai para o cadastro.
 - [x] O menu da bandeja mostra "Continuar: obra · episódio (progresso)" e a quantidade de notificações
       novas, lidos de `/api/desktop/status` a cada 5 segundos.
