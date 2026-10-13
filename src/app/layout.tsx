@@ -1,26 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Figtree, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { APP_NAME, APP_TAGLINE } from "@/shared/app";
 import { ServiceWorkerRegistration } from "@/ui/shell/service-worker";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  subsets: ["latin"],
-  weight: ["600", "800"],
+const bricolage = localFont({
+  src: "./fonts/bricolage-grotesque.woff2",
+  weight: "200 800",
   variable: "--font-bricolage",
   display: "swap",
 });
 
-const figtree = Figtree({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const figtree = localFont({
+  src: "./fonts/figtree.woff2",
+  weight: "300 900",
   variable: "--font-figtree",
   display: "swap",
 });
 
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["500", "700"],
+const jetbrains = localFont({
+  src: "./fonts/jetbrains-mono.woff2",
+  weight: "100 800",
   variable: "--font-jetbrains",
   display: "swap",
 });

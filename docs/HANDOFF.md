@@ -297,15 +297,16 @@ Feito em 12/10/2026 (branch `feat/ci-release`):
 - [x] `README` com instalação e liberação do app não assinado.
 - [x] Tela Sobre com autor e contato, no perfil e no menu nativo.
 
-**Nada disso rodou ainda**: o repositório não tem remote. Os dois fluxos foram validados só como YAML. As
-partes da casca específicas de Windows e de Linux nunca foram compiladas, então é esperado que a primeira
-execução do CI aponte ajustes.
+Primeira execução do CI em 12/10/2026, depois do push da `main` para `matheus-caldeira/deixa` (privado):
+testes e build passaram, e a casca compilou em macOS e em Windows. O job de Linux falhou no build do Next,
+ao baixar as fontes do Google; a correção (fontes no repositório) está no branch `fix/ci-fonts`. O fluxo de
+release ainda não rodou: depende de uma tag.
 
 Falta:
 
-- [ ] Criar o repositório no GitHub e fazer o primeiro push (ação do Matheus; nada de push sem pedido).
+- [x] Repositório criado e `main` enviada (12/10/2026).
 - [ ] Escolher a licença.
-- [ ] Corrigir o que a primeira execução do CI apontar em Windows e Linux.
+- [ ] Confirmar no CI que a casca compila em Linux depois da correção das fontes.
 - [ ] Conferir o rótulo do executor Intel do macOS (`macos-15-intel`), que muda com o tempo.
 - [ ] Aviso de versão nova consultando os releases, com link para o download manual (depende do endereço do
       repositório).
