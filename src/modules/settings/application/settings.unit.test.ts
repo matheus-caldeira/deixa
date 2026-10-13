@@ -7,6 +7,7 @@ const defaults: AppSettings = {
   geminiModel: "gemini-2.5-flash",
   subtitleDownloadsPerUserPerDay: 10,
   kokoroUrl: null,
+  aiSharedLimit: { usdPerDay: null, usdPerMonth: null, tokensPerDay: null, tokensPerMonth: null },
 };
 const admin = { userId: "dono", isAdmin: true };
 

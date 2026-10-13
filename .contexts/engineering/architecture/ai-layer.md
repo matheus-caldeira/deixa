@@ -28,6 +28,13 @@ A saída passa por schema Zod. Item inválido derruba a geração com erro trat�
 | Fala sem par, ou episódio sem legenda PT        | LLM (`llm`), etiqueta **IA**    |
 | Significado de palavra ou expressão no contexto | LLM, com a legenda PT no prompt |
 
+## Medição e limite de uso
+
+Todo adapter recebe um medidor (`AiUsageMeter`, módulo `ai-usage`): confere o limite antes da chamada e grava
+tokens, modelo, operação e valor estimado depois (ADR 0015). Limite por dia e por mês, em dólar ou tokens, no
+fuso da pessoa: próprio para quem usa a própria chave; padrão do servidor (`aiSharedLimit`) ou definido pelo
+administrador para quem usa a chave compartilhada. Passou do limite, `AI_LIMIT_REACHED` e toda a IA pausa.
+
 ## Chave por usuário
 
 - `user_ai_credentials` guarda `encrypted_api_key` (AES-256-GCM: IV, tag e texto cifrado) e `key_version`.

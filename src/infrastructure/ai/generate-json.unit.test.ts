@@ -57,6 +57,7 @@ describe("generateJson", () => {
     }, meter);
     expect(result).toEqual({ ok: true });
     expect(asked).toEqual(["gemini-2.5-flash"]);
+    expect(meter.checks).toBe(1);
     expect(meter.calls).toEqual([
       {
         provider: "google",

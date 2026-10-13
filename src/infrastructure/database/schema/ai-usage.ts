@@ -1,4 +1,5 @@
 import {
+  bigint,
   doublePrecision,
   index,
   integer,
@@ -40,4 +41,21 @@ export const aiModelPrices = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.provider, table.model] })],
+);
+
+export const aiUsageLimits = pgTable(
+  "ai_usage_limits",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    keySource: text("key_source").notNull(),
+    usdPerDay: doublePrecision("usd_per_day"),
+    usdPerMonth: doublePrecision("usd_per_month"),
+    tokensPerDay: bigint("tokens_per_day", { mode: "number" }),
+    tokensPerMonth: bigint("tokens_per_month", { mode: "number" }),
+    updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.keySource] })],
 );

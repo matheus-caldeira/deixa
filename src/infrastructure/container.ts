@@ -64,6 +64,7 @@ import {
 } from "@/modules/highlights";
 import { DrizzleHighlightRepository } from "@/modules/highlights/infrastructure/drizzle-highlight-repository";
 import {
+  DEFAULT_TIMEZONE,
   makeFindOwner,
   makeGetSessionUser,
   makeSignIn,
@@ -120,10 +121,23 @@ import { DrizzleRecommendationRepository } from "@/modules/recommendations/infra
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
-import { makeRecordAiUsage, meterFor, type AiUsageMeter } from "@/modules/ai-usage";
+import {
+  NO_LIMIT,
+  makeEnsureAiAllowed,
+  makeGetAiUsageOverview,
+  makeGetAiUsageSummary,
+  makeRecordAiUsage,
+  makeSaveModelPrice,
+  makeSetAiUsageLimit,
+  meterFor,
+  type AiUsageMeter,
+  type KeySource,
+  type UsagePerson,
+} from "@/modules/ai-usage";
 import {
   DrizzleAiUsageRepository,
   DrizzleModelPriceRepository,
+  DrizzleUsageLimitRepository,
 } from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
 import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
@@ -144,7 +158,6 @@ import { AiLlmProvider } from "./ai/ai-llm-provider";
 import { AiSuggestionWriter } from "./ai/ai-suggestion-writer";
 import { AiTutorProvider } from "./ai/ai-tutor-provider";
 import type { AiAccess } from "./ai/models";
-import { SharedKeyBudget, budgetedLlm, budgetedTutor } from "./ai/shared-key-budget";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger, type Logger } from "./logger/logger";
 import { LocalFileStorage } from "./storage/local-file-storage";
@@ -172,7 +185,7 @@ export type ContainerOptions = {
   subtitleSource?: SubtitleSourceProvider;
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
-  plannerForUser?: (userId: string, usage: "charge" | "already-charged") => Promise<LessonPlanner | null>;
+  plannerForUser?: (userId: string) => Promise<LessonPlanner | null>;
   tutorForUser?: (userId: string) => Promise<TutorProvider>;
   embeddingForUser?: (userId: string) => Promise<EmbeddingProvider>;
   suggestionWriterForUser?: (userId: string) => Promise<SuggestionWriter | null>;
@@ -186,6 +199,7 @@ export function settingsFromEnvironment(env: Env): AppSettings {
     geminiModel: env.GEMINI_MODEL,
     subtitleDownloadsPerUserPerDay: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
     kokoroUrl: env.KOKORO_URL ?? null,
+    aiSharedLimit: NO_LIMIT,
   };
 }
 
@@ -209,8 +223,11 @@ export function buildContainer(options: ContainerOptions) {
   const gamification = new DrizzleGamificationRepository(db);
   const study = new DrizzleStudyRepository(db);
   const notificationRepository = new DrizzleNotificationRepository(db);
+  const settingsDeps = { settings: new DrizzleSettingsRepository(db), defaults: settingDefaults, clock };
+  const getSettings = makeGetSettings(settingsDeps);
   const aiUsage = new DrizzleAiUsageRepository(db);
   const modelPrices = new DrizzleModelPriceRepository(db);
+  const usageLimits = new DrizzleUsageLimitRepository(db);
   const recordAiUsage = makeRecordAiUsage({ usage: aiUsage, prices: modelPrices, clock, ids });
   const notify = makeNotify({ notifications: notificationRepository, clock, ids });
 
@@ -221,7 +238,6 @@ export function buildContainer(options: ContainerOptions) {
   const masterKey = options.masterKey ?? env.AI_CREDENTIALS_MASTER_KEY;
   if (!masterKey) throw new Error("chave mestra ausente");
   const cipher = new AesGcmCipher(masterKey);
-  const sharedBudget = new SharedKeyBudget(db, clock);
   const resolveCredential = makeResolveCredential({ credentials, cipher });
   const environmentServices = new Set<CredentialService>();
   if (env.GEMINI_API_KEY) environmentServices.add("gemini");
@@ -283,8 +299,32 @@ export function buildContainer(options: ContainerOptions) {
     if (stored) return { provider: "google", apiKey: stored.secret, shared: stored.origin === "global" };
     return env.GEMINI_API_KEY ? { provider: "google", apiKey: env.GEMINI_API_KEY, shared: true } : null;
   }
+  const keySourceOf = async (userId: string): Promise<KeySource | null> => {
+    const access = await aiAccessFor(userId);
+    return access ? (access.shared ? "global" : "user") : null;
+  };
+  const asPerson = async (user: { id: string; name: string; avatarColor: string }): Promise<UsagePerson> => ({
+    id: user.id,
+    name: user.name,
+    avatarColor: user.avatarColor,
+    timezone: (await identity.get(user.id))?.timezone ?? DEFAULT_TIMEZONE,
+  });
+  const usageDeps = {
+    usage: aiUsage,
+    prices: modelPrices,
+    limits: usageLimits,
+    clock,
+    sharedDefault: async () => (await getSettings()).aiSharedLimit,
+    personOf: async (userId: string) => {
+      const user = await identity.findById(userId);
+      return user ? asPerson(user) : null;
+    },
+    keySourceOf,
+    listPeople: async () => Promise.all((await identity.listByEmailSuffix("")).map(asPerson)),
+  };
+  const ensureAiAllowed = makeEnsureAiAllowed(usageDeps);
   function aiMeterFor(userId: string, access: ResolvedAiAccess): AiUsageMeter {
-    return meterFor(recordAiUsage, userId, access.shared ? "global" : "user");
+    return meterFor(recordAiUsage, ensureAiAllowed, userId, access.shared ? "global" : "user");
   }
 
   const fakeLlm = new FakeLlmProvider();
@@ -293,16 +333,16 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<LlmProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeLlm;
-      const provider = new AiLlmProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
-      return access.shared ? budgetedLlm(provider, () => sharedBudget.spend(userId)) : provider;
+      return new AiLlmProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
     });
   const resolvePlanner =
     options.plannerForUser ??
-    (async (userId: string, usage: "charge" | "already-charged"): Promise<LessonPlanner | null> => {
+    (async (userId: string): Promise<LessonPlanner | null> => {
       const access = await aiAccessFor(userId);
       if (!access) return null;
-      if (access.shared && usage === "charge") await sharedBudget.spend(userId);
-      return new AiLessonPlanner(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
+      const meter = aiMeterFor(userId, access);
+      await meter.ensureAllowed();
+      return new AiLessonPlanner(access, settings.geminiModel, { meter });
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -311,8 +351,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<TutorProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeTutor;
-      const tutor = new AiTutorProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
-      return access.shared ? budgetedTutor(tutor, () => sharedBudget.spend(userId)) : tutor;
+      return new AiTutorProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
     });
   const conversations = new DrizzleConversationRepository(db);
 
@@ -322,23 +361,13 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<EmbeddingProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return localEmbedding;
-      const provider = new AiEmbeddingProvider(access, aiMeterFor(userId, access));
-      if (!access.shared) return provider;
-      return {
-        name: provider.name,
-        model: provider.model,
-        embed: async (texts) => {
-          await sharedBudget.spend(userId);
-          return provider.embed(texts);
-        },
-      };
+      return new AiEmbeddingProvider(access, aiMeterFor(userId, access));
     });
   const resolveSuggestionWriter =
     options.suggestionWriterForUser ??
     (async (userId: string): Promise<SuggestionWriter | null> => {
       const access = await aiAccessFor(userId);
       if (!access) return null;
-      if (access.shared) await sharedBudget.spend(userId);
       return new AiSuggestionWriter(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
     });
   const recommendationDeps = {
@@ -602,7 +631,6 @@ export function buildContainer(options: ContainerOptions) {
     sourceUseCases.set(key, created);
     return created;
   }
-  const settingsDeps = { settings: new DrizzleSettingsRepository(db), defaults: settingDefaults, clock };
   const credentialDeps = {
     credentials,
     cipher,
@@ -725,8 +753,12 @@ export function buildContainer(options: ContainerOptions) {
     anticipateReview: makeAnticipateReview({ cards, clock, ids }),
     addCards,
 
-    getSettings: makeGetSettings(settingsDeps),
+    getSettings,
     updateSettings: makeUpdateSettings(settingsDeps),
+    getAiUsageSummary: makeGetAiUsageSummary(usageDeps),
+    getAiUsageOverview: makeGetAiUsageOverview(usageDeps),
+    setAiUsageLimit: makeSetAiUsageLimit(usageDeps),
+    saveModelPrice: makeSaveModelPrice(usageDeps),
     saveCredential: makeSaveCredential(credentialDeps),
     removeCredential: makeRemoveCredential(credentialDeps),
     getCredentialOverview: makeGetCredentialOverview(credentialDeps),

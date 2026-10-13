@@ -97,15 +97,3 @@ export const notifications = pgTable(
   },
   (table) => [index("notifications_user_created").on(table.userId, table.createdAt)],
 );
-
-export const aiUsage = pgTable(
-  "ai_usage",
-  {
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    day: text("day").notNull(),
-    calls: integer("calls").notNull(),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.day] })],
-);

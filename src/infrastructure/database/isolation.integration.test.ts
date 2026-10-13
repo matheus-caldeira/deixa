@@ -12,6 +12,7 @@ import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/
 import {
   DrizzleAiUsageRepository,
   DrizzleModelPriceRepository,
+  DrizzleUsageLimitRepository,
 } from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
 import { InMemoryFileStorage } from "@/shared/storage";
 import { parseEnv } from "../config/env";
@@ -280,6 +281,17 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     await prices.save({ ...price, outputUsdPerMillion: 3 }, ana, now);
     expect(await prices.list()).toHaveLength(1);
     expect((await prices.find("google", "gemini-2.5-flash"))?.outputUsdPerMillion).toBe(3);
+
+    const limits = new DrizzleUsageLimitRepository(handle.db);
+    const limit = { usdPerDay: 0.5, usdPerMonth: null, tokensPerDay: null, tokensPerMonth: 1_000_000 };
+    await limits.save(ana, "user", limit, ana, now);
+    await limits.save(ana, "user", { ...limit, usdPerDay: 1 }, ana, now);
+    expect(await limits.find(ana, "user")).toEqual({ ...limit, usdPerDay: 1 });
+    expect(await limits.find(ana, "global")).toBeNull();
+    expect(await limits.find(lucas, "user")).toBeNull();
+    const totals = await usage.totalsByUser(since);
+    expect(totals.find((entry) => entry.userId === ana)?.tokens).toBe(240);
+    expect(totals.find((entry) => entry.userId === lucas)?.tokens).toBe(120);
   });
 
   it("gera o áudio uma vez e serve do cache no segundo pedido, para qualquer usuário", async () => {

@@ -81,6 +81,7 @@ export async function generateJson(
   deps: AiDeps,
 ): Promise<unknown> {
   const createModel = deps.createModel ?? languageModel;
+  await deps.meter.ensureAllowed();
   const fallbacks = FALLBACK_MODELS[request.access.provider].filter((id) => id !== request.model);
   let lastStatus = 0;
   for (const modelId of [request.model, ...fallbacks]) {

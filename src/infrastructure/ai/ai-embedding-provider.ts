@@ -57,6 +57,7 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
   }
 
   async embed(texts: string[]): Promise<number[][]> {
+    await this.meter.ensureAllowed();
     const vectors: number[][] = [];
     for (let start = 0; start < texts.length; start += BATCH_SIZE) {
       vectors.push(...(await this.embedBatch(texts.slice(start, start + BATCH_SIZE))));

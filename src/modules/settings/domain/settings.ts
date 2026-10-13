@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { usageLimitSchema } from "@/modules/ai-usage";
 
 export const MAX_DAILY_DOWNLOADS = 1000;
 
@@ -44,6 +45,7 @@ export const appSettingsSchema = z.object({
       return canonical;
     })
     .nullable(),
+  aiSharedLimit: usageLimitSchema,
 });
 
 export type AppSettings = z.infer<typeof appSettingsSchema>;

@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const planner = new AiLessonPlanner(
     { provider: "google", apiKey },
     process.env.GEMINI_MODEL || "gemini-2.5-flash",
-    { meter: { record: async () => undefined } },
+    { meter: { ensureAllowed: async () => undefined, record: async () => undefined } },
   );
   await mkdir(PLANS_DIR, { recursive: true });
   const jobs = SEED_DIALOGUES.flatMap((name) => SEED_PLAN_LEVELS.map((level) => ({ name, level })));

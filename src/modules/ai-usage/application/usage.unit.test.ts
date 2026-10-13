@@ -63,8 +63,9 @@ describe("recordAiUsage", () => {
 
   it("o medidor de um usuário só registra no nome dele", async () => {
     const { usage, record } = setup();
-    const ana = meterFor(record, "ana", "user");
-    const lucas = meterFor(record, "lucas", "global");
+    const allow = async () => undefined;
+    const ana = meterFor(record, allow, "ana", "user");
+    const lucas = meterFor(record, allow, "lucas", "global");
     const call = {
       provider: "google",
       model: "x",

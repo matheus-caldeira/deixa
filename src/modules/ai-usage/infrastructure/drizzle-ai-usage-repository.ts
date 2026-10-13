@@ -1,7 +1,14 @@
-import { and, desc, eq, gte } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
-import { aiModelPrices, aiUsageEvents } from "@/infrastructure/database/schema";
-import type { AiUsageRepository, ModelPriceRepository, StoredModelPrice } from "../application/ports";
+import { aiModelPrices, aiUsageEvents, aiUsageLimits } from "@/infrastructure/database/schema";
+import type {
+  AiUsageRepository,
+  ModelPriceRepository,
+  StoredModelPrice,
+  UsageLimitRepository,
+  UserTotals,
+} from "../application/ports";
+import type { UsageLimit } from "../domain/limits";
 import {
   AI_OPERATIONS,
   KEY_SOURCES,
@@ -32,6 +39,25 @@ export class DrizzleAiUsageRepository implements AiUsageRepository {
       ...row,
       operation: asOperation(row.operation),
       keySource: asKeySource(row.keySource),
+    }));
+  }
+
+  async totalsByUser(since: Date): Promise<UserTotals[]> {
+    const rows = await this.db
+      .select({
+        userId: aiUsageEvents.userId,
+        usd: sql<number>`coalesce(sum(${aiUsageEvents.estimatedCostUsd}), 0)::float8`,
+        tokens: sql<number>`coalesce(sum(${aiUsageEvents.inputTokens} + ${aiUsageEvents.outputTokens}), 0)::int`,
+        unknownCostCalls: sql<number>`count(*) filter (where ${aiUsageEvents.estimatedCostUsd} is null)::int`,
+      })
+      .from(aiUsageEvents)
+      .where(gte(aiUsageEvents.createdAt, since))
+      .groupBy(aiUsageEvents.userId);
+    return rows.map((row) => ({
+      ...row,
+      usd: Number(row.usd),
+      tokens: Number(row.tokens),
+      unknownCostCalls: Number(row.unknownCostCalls),
     }));
   }
 }
@@ -68,6 +94,35 @@ export class DrizzleModelPriceRepository implements ModelPriceRepository {
           updatedBy,
           updatedAt: now,
         },
+      });
+  }
+}
+
+export class DrizzleUsageLimitRepository implements UsageLimitRepository {
+  constructor(private readonly db: Database) {}
+
+  async find(userId: string, keySource: KeySource): Promise<UsageLimit | null> {
+    const [row] = await this.db
+      .select()
+      .from(aiUsageLimits)
+      .where(and(eq(aiUsageLimits.userId, userId), eq(aiUsageLimits.keySource, keySource)))
+      .limit(1);
+    if (!row) return null;
+    return {
+      usdPerDay: row.usdPerDay,
+      usdPerMonth: row.usdPerMonth,
+      tokensPerDay: row.tokensPerDay,
+      tokensPerMonth: row.tokensPerMonth,
+    };
+  }
+
+  async save(userId: string, keySource: KeySource, limit: UsageLimit, updatedBy: string, now: Date) {
+    await this.db
+      .insert(aiUsageLimits)
+      .values({ userId, keySource, ...limit, updatedBy, updatedAt: now })
+      .onConflictDoUpdate({
+        target: [aiUsageLimits.userId, aiUsageLimits.keySource],
+        set: { ...limit, updatedBy, updatedAt: now },
       });
   }
 }

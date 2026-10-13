@@ -43,7 +43,7 @@ nohup pnpm dev > data/app.log 2>&1 &
 ### Fase 06 restante
 
 - [ ] Fala em tempo real no Conversar.
-- [ ] Limites de uso por conta.
+- [x] Limites de uso por conta (13/10/2026): por dia e por mês, em dólar ou tokens, com trava total (ADR 0015).
 - [ ] HTTPS na rede interna: sem ele, microfone e instalação como PWA só funcionam em `localhost`. Ver 3.5.
 
 ### Pendências menores

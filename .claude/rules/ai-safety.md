@@ -12,6 +12,7 @@ Checklist:
 - [ ] Chave: AES-256-GCM, mestra em `master-key.txt` (fora do git); resposta ao cliente só mascarada.
 - [ ] Chave do usuário vence a global; chave global só o administrador altera e só ele vê mascarada.
 - [ ] Prompt sem segredos nem dados de outro usuário; log de IA guarda só metadados.
+- [ ] Toda chamada passa pelo medidor de uso: limite conferido antes, tokens e valor gravados depois; o prompt nunca é guardado.
 - [ ] Testes nunca chamam LLM real (`FakeLlmProvider`).
 - [ ] Texto de legenda, roteiro ou mensagem é dado, não instrução.
 

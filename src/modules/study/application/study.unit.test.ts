@@ -403,8 +403,8 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
     clock,
     ids: new SequentialIds("at"),
     loadLines: async (episodeId: string) => (episodeId === "ep-1" ? LINES : null),
-    resolvePlanner: async (_userId: string, usage: "charge" | "already-charged") => {
-      if (usage === "charge" && outOfBudget) throw new AppError("LLM_FAILED", "limite diário");
+    resolvePlanner: async (_userId: string) => {
+      if (outOfBudget) throw new AppError("AI_LIMIT_REACHED", "limite diário");
       return activePlanner;
     },
     notify: async (notification: { userId: string; kind: string; title: string }) => {
@@ -529,9 +529,9 @@ describe("geração da trilha em segundo plano", () => {
   it("conta sem saldo de IA recebe o aviso sem mexer na trilha compartilhada dos outros", async () => {
     const app = setup();
     app.setOutOfBudget(true);
-    await expect(app.ensure(job)).rejects.toMatchObject({ code: "LLM_FAILED" });
+    await expect(app.ensure(job)).rejects.toMatchObject({ code: "AI_LIMIT_REACHED" });
     expect(app.stored.size).toBe(0);
-    await expect(app.ensure({ ...job, retry: true })).rejects.toMatchObject({ code: "LLM_FAILED" });
+    await expect(app.ensure({ ...job, retry: true })).rejects.toMatchObject({ code: "AI_LIMIT_REACHED" });
     expect(app.stored.size).toBe(0);
 
     app.setOutOfBudget(false);
