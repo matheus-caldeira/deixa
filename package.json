@@ -32,7 +32,8 @@
     "desktop:check": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo check",
     "desktop:run": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo run",
     "desktop:server": "node scripts/build-desktop-server.mjs",
-    "desktop:build": "pnpm desktop:server && PATH=\"$HOME/.cargo/bin:$PATH\" tauri build"
+    "desktop:build": "pnpm desktop:server && PATH=\"$HOME/.cargo/bin:$PATH\" tauri build --bundles app",
+    "desktop:installer": "pnpm desktop:server && PATH=\"$HOME/.cargo/bin:$PATH\" tauri build"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

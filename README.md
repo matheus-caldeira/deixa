@@ -202,7 +202,8 @@ própria, no navegador ou por QR code no celular. Precisa do Rust instalado.
 ```bash
 pnpm desktop:server   # gera o servidor embutido (build do Next + Node) em src-tauri/
 pnpm desktop:run      # executa a casca em modo de desenvolvimento
-pnpm desktop:build    # gera o aplicativo instalável em src-tauri/target/release/bundle
+pnpm desktop:build      # gera só o aplicativo em src-tauri/target/release/bundle
+pnpm desktop:installer  # gera também o instalador (no macOS, um .dmg que o Finder abre ao terminar)
 ```
 
 Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
