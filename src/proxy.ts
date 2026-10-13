@@ -3,6 +3,8 @@ import { SESSION_COOKIE } from "@/shared/session-cookie";
 
 const PUBLIC_PATHS = [
   "/setup",
+  "/desktop/enter",
+  "/api/desktop",
   "/login",
   "/signup",
   "/manifest.webmanifest",

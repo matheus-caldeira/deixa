@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 export const DATABASE_URL_FILE = "database-url.txt";
 export const SETUP_CODE_FILE = "setup-code.txt";
+export const DESKTOP_TOKEN_FILE = "desktop-token.txt";
 const OWNER_ONLY = 0o600;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 12;
@@ -58,4 +59,8 @@ export function normalizeSetupCode(value: string): string {
 
 export function clearSetupCode(directory: string): void {
   rmSync(join(directory, SETUP_CODE_FILE), { force: true });
+}
+
+export function readDesktopToken(directory: string): string | null {
+  return readTrimmed(join(directory, DESKTOP_TOKEN_FILE));
 }

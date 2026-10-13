@@ -58,6 +58,22 @@ export class DrizzleIdentityRepository implements UserRepository, SessionReposit
     return row ?? null;
   }
 
+  async findAdmin(): Promise<User | null> {
+    const [row] = await this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        avatarColor: users.avatarColor,
+        isAdmin: users.isAdmin,
+      })
+      .from(users)
+      .where(eq(users.isAdmin, true))
+      .orderBy(users.createdAt, users.email)
+      .limit(1);
+    return row ?? null;
+  }
+
   async create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void> {
     await this.db.transaction(async (tx) => {
       await tx.execute(sql`select pg_advisory_xact_lock(${FIRST_ACCOUNT_LOCK})`);

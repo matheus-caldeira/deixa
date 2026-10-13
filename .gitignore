@@ -20,6 +20,7 @@ master-key.txt
 master-key.invalid-*.txt
 database-url.txt
 setup-code.txt
+desktop-token.txt
 *.wav
 *.mp3
 !fixtures/**/*.wav

@@ -64,10 +64,12 @@ import {
 } from "@/modules/highlights";
 import { DrizzleHighlightRepository } from "@/modules/highlights/infrastructure/drizzle-highlight-repository";
 import {
+  makeFindOwner,
   makeGetSessionUser,
   makeSignIn,
   makeSignOut,
   makeSignUp,
+  makeStartOwnerSession,
   makeUpdatePreferences,
 } from "@/modules/identity";
 import { AttemptThrottle } from "@/modules/identity/infrastructure/attempt-throttle";
@@ -607,6 +609,9 @@ export function buildContainer(options: ContainerOptions) {
     signIn: makeSignIn(sessionDeps),
     signUp: makeSignUp(sessionDeps),
     signOut: makeSignOut(sessionDeps),
+    findOwner: makeFindOwner(sessionDeps),
+    getPreferences: (userId: string) => identity.get(userId),
+    startOwnerSession: makeStartOwnerSession(sessionDeps),
     getSessionUser: makeGetSessionUser(sessionDeps),
     updatePreferences: makeUpdatePreferences({ preferences: identity }),
     listPeople: () => identity.listByEmailSuffix(""),

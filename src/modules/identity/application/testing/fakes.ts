@@ -25,6 +25,13 @@ export class InMemoryIdentityStore implements UserRepository, SessionRepository,
     return user;
   }
 
+  async findAdmin(): Promise<User | null> {
+    const record = [...this.users.values()].find((user) => user.isAdmin);
+    if (!record) return null;
+    const { passwordHash: _passwordHash, ...user } = record;
+    return user;
+  }
+
   async create(user: NewUser, preferences: Preferences): Promise<void> {
     const isAdmin = this.users.size === 0;
     this.users.set(user.id, { ...user, isAdmin });

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::path::PathBuf;
@@ -10,6 +11,7 @@ use qrcode::QrCode;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
 const DEFAULT_PORT: u16 = 1300;
@@ -18,12 +20,20 @@ const MAIN_WINDOW: &str = "main";
 const QR_WINDOW: &str = "qr";
 const STATUS_INTERVAL: Duration = Duration::from_secs(5);
 const PROBE_TIMEOUT: Duration = Duration::from_millis(600);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(4);
 const LOOPBACK: Ipv4Addr = Ipv4Addr::LOCALHOST;
 const IDENTITY_PATH: &str = "/manifest.webmanifest";
 const IDENTITY_MARK: &str = "Deixa";
 const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
+const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
+const DESKTOP_TOKEN_HEADER: &str = "x-deixa-desktop-token";
+const DESKTOP_TOKEN_BYTES: usize = 32;
+const STATUS_PATH: &str = "/api/desktop/status";
+const MAX_STATUS_BYTES: u64 = 64 * 1024;
+const RESUME_EMPTY: &str = "Nada em andamento";
+const INBOX_EMPTY: &str = "Sem notificações novas";
 const SERVER_FOLDER: &str = "server";
 const SERVER_ENTRY: &str = "server.js";
 const NODE_BINARY: &str = if cfg!(windows) { "node.exe" } else { "node" };
@@ -64,30 +74,107 @@ fn network_url() -> String {
     }
 }
 
-fn read_identity() -> Option<String> {
+fn http_get(path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<String> {
     let address = SocketAddr::from((LOOPBACK, server_port()));
     let mut stream = TcpStream::connect_timeout(&address, PROBE_TIMEOUT).ok()?;
-    stream.set_read_timeout(Some(PROBE_TIMEOUT)).ok()?;
+    stream.set_read_timeout(Some(REQUEST_TIMEOUT)).ok()?;
     stream.set_write_timeout(Some(PROBE_TIMEOUT)).ok()?;
+    let extra = header
+        .map(|(name, value)| format!("{}: {}\r\n", name, value))
+        .unwrap_or_default();
     let request = format!(
-        "GET {} HTTP/1.1\r\nHost: {}:{}\r\nAccept: application/json\r\nConnection: close\r\n\r\n",
-        IDENTITY_PATH,
+        "GET {} HTTP/1.0\r\nHost: {}:{}\r\nAccept: application/json\r\n{}Connection: close\r\n\r\n",
+        path,
         LOOPBACK,
-        server_port()
+        server_port(),
+        extra
     );
     stream.write_all(request.as_bytes()).ok()?;
     let mut response = String::new();
-    stream.take(MAX_IDENTITY_BYTES).read_to_string(&mut response).ok()?;
+    stream.take(limit).read_to_string(&mut response).ok()?;
     Some(response)
+}
+
+fn read_identity() -> Option<String> {
+    http_get(IDENTITY_PATH, None, MAX_IDENTITY_BYTES)
+}
+
+fn is_ok(response: &str) -> bool {
+    response
+        .split_whitespace()
+        .nth(1)
+        .map(|status| status == "200")
+        .unwrap_or(false)
 }
 
 fn server_is_up() -> bool {
     read_identity()
-        .map(|response| response.starts_with("HTTP/1.1 200") && response.contains(IDENTITY_MARK))
+        .map(|response| is_ok(&response) && response.contains(IDENTITY_MARK))
         .unwrap_or(false)
 }
 
 struct ServerProcess(Mutex<Option<Child>>);
+struct DesktopToken(Mutex<Option<String>>);
+
+struct OwnerStatus {
+    resume: Option<String>,
+    notifications: Vec<(String, String, String)>,
+}
+
+fn issue_desktop_token(home: &PathBuf) -> Option<String> {
+    let mut bytes = [0u8; DESKTOP_TOKEN_BYTES];
+    getrandom::fill(&mut bytes).ok()?;
+    let token: String = bytes.iter().map(|byte| format!("{:02x}", byte)).collect();
+    let path = home.join(DESKTOP_TOKEN_FILE);
+    let _ = std::fs::remove_file(&path);
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(&path).ok()?;
+    file.write_all(token.as_bytes()).ok()?;
+    Some(token)
+}
+
+fn current_token(app: &AppHandle) -> Option<String> {
+    if !owns_running_server(app) {
+        return None;
+    }
+    app.state::<DesktopToken>().0.lock().ok()?.clone()
+}
+
+fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
+    let token = current_token(app)?;
+    let response = http_get(STATUS_PATH, Some((DESKTOP_TOKEN_HEADER, &token)), MAX_STATUS_BYTES)?;
+    if !is_ok(&response) {
+        return None;
+    }
+    let body = response.split_once("\r\n\r\n")?.1;
+    let status: serde_json::Value = serde_json::from_str(body).ok()?;
+    let text = |value: &serde_json::Value, key: &str| value.get(key)?.as_str().map(str::to_string);
+    let resume = status.get("current").filter(|current| !current.is_null()).and_then(|current| {
+        let percent = current.get("progressPercent")?.as_u64()?;
+        Some(format!(
+            "Continuar: {} · {} ({}%)",
+            text(current, "title")?,
+            text(current, "label")?,
+            percent
+        ))
+    });
+    let notifications = status
+        .get("notifications")
+        .and_then(|list| list.as_array())
+        .map(|list| {
+            list.iter()
+                .filter_map(|item| Some((text(item, "id")?, text(item, "title")?, text(item, "body")?)))
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(OwnerStatus { resume, notifications })
+}
 
 enum Startup {
     AlreadyRunning,
@@ -159,6 +246,7 @@ fn start_server(app: &AppHandle) -> Startup {
     if std::fs::create_dir_all(&home).is_err() {
         return Startup::Missing;
     }
+    let token = issue_desktop_token(&home);
     let mut command = Command::new(node);
     command.arg(SERVER_ENTRY).current_dir(folder).env_clear();
     for name in INHERITED_VARIABLES {
@@ -181,6 +269,9 @@ fn start_server(app: &AppHandle) -> Startup {
         Ok(child) => {
             if let Ok(mut slot) = app.state::<ServerProcess>().0.lock() {
                 *slot = Some(child);
+            }
+            if let Ok(mut slot) = app.state::<DesktopToken>().0.lock() {
+                *slot = token;
             }
             Startup::Started
         }
@@ -225,8 +316,11 @@ fn entry_url(app: &AppHandle) -> String {
         .and_then(|home| std::fs::read_to_string(home.join(SETUP_CODE_FILE)).ok())
         .map(|code| code.trim().to_string())
         .filter(|code| !code.is_empty() && code.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'));
-    match code {
-        Some(code) => format!("{}/setup/unlock?code={}", local_url(), code),
+    if let Some(code) = code {
+        return format!("{}/setup/unlock?code={}", local_url(), code);
+    }
+    match current_token(app) {
+        Some(token) => format!("{}/desktop/enter?token={}", local_url(), token),
         None => local_url(),
     }
 }
@@ -290,6 +384,8 @@ fn show_qr_window(app: &AppHandle) {
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let status = MenuItem::with_id(app, "status", STATUS_DOWN, false, None::<&str>)?;
+    let resume = MenuItem::with_id(app, "resume", RESUME_EMPTY, false, None::<&str>)?;
+    let inbox = MenuItem::with_id(app, "inbox", INBOX_EMPTY, false, None::<&str>)?;
     let open = MenuItem::with_id(app, "open", "Abrir o Deixa", true, None::<&str>)?;
     let browser = MenuItem::with_id(app, "browser", "Abrir no navegador", true, None::<&str>)?;
     let qr = MenuItem::with_id(app, "qr", "Abrir no celular (QR code)", true, None::<&str>)?;
@@ -298,6 +394,8 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         app,
         &[
             &status,
+            &resume,
+            &inbox,
             &PredefinedMenuItem::separator(app)?,
             &open,
             &browser,
@@ -311,7 +409,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "open" => show_main_window(app),
+            "open" | "resume" | "inbox" => show_main_window(app),
             "browser" => {
                 let _ = app.opener().open_url(local_url(), None::<&str>);
             }
@@ -338,9 +436,32 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         }
         let opener = handle.clone();
         let _ = handle.run_on_main_thread(move || show_main_window(&opener));
+        let mut announced: Option<HashSet<String>> = None;
         loop {
             let text = if server_is_up() { STATUS_UP } else { trouble.unwrap_or(STATUS_DOWN) };
             let _ = status.set_text(text);
+            let owner = read_owner_status(&handle);
+            let resume_text = owner.as_ref().and_then(|current| current.resume.clone());
+            let _ = resume.set_enabled(resume_text.is_some());
+            let _ = resume.set_text(resume_text.unwrap_or_else(|| RESUME_EMPTY.to_string()));
+            let pending = owner.as_ref().map(|current| current.notifications.len()).unwrap_or(0);
+            let _ = inbox.set_enabled(pending > 0);
+            let _ = inbox.set_text(match pending {
+                0 => INBOX_EMPTY.to_string(),
+                1 => "1 notificação nova".to_string(),
+                count => format!("{} notificações novas", count),
+            });
+            if let Some(current) = owner {
+                let ids: HashSet<String> = current.notifications.iter().map(|item| item.0.clone()).collect();
+                if let Some(known) = &announced {
+                    for (id, title, body) in &current.notifications {
+                        if !known.contains(id) {
+                            let _ = handle.notification().builder().title(title).body(body).show();
+                        }
+                    }
+                }
+                announced = Some(ids);
+            }
             std::thread::sleep(STATUS_INTERVAL);
         }
     });
@@ -350,10 +471,12 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 pub fn run() {
     tauri::Builder::default()
         .manage(ServerProcess(Mutex::new(None)))
+        .manage(DesktopToken(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);

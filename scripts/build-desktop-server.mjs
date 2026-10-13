@@ -23,7 +23,7 @@ const BINARIES = join(ROOT, "src-tauri", "binaries");
 const MIGRATIONS = ["src", "infrastructure", "database", "migrations"];
 const EXECUTABLE = 0o755;
 const MIN_SECRET_LENGTH = 12;
-const SECRET_FILES = ["master-key.txt", "database-url.txt", "setup-code.txt"];
+const SECRET_FILES = ["master-key.txt", "database-url.txt", "setup-code.txt", "desktop-token.txt"];
 const NOT_SECRET = new Set([
   "NODE_ENV",
   "DATA_DIR",

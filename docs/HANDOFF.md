@@ -220,6 +220,29 @@ Falta:
 - [x] `pnpm desktop:build` gera `Deixa.app` (171 MB: 116 do Node, 51 do servidor). Conferido executando o
       binário do pacote: sobe o servidor de dentro do próprio pacote e encerra junto.
 
+Sessão do dono (12/10/2026, branch `feat/owner-session`):
+
+- [x] Ao subir o servidor, a casca grava um token aleatório em `desktop-token.txt` (só o dono lê) e o troca
+      a cada abertura. Sem esse arquivo, as rotas da casca respondem como inexistentes.
+- [x] A janela entra sozinha como a conta administradora por `/desktop/enter`. Quem já tem sessão continua
+      com a sua; sem conta nenhuma, vai para o cadastro.
+- [x] O menu da bandeja mostra "Continuar: obra · episódio (progresso)" e a quantidade de notificações
+      novas, lidos de `/api/desktop/status` a cada 5 segundos.
+- [x] Notificação nova vira aviso nativo do sistema. As que já existiam quando a casca abriu não são
+      reanunciadas.
+- [x] Tudo isso só vale quando o servidor foi iniciado pela própria casca; com um servidor externo na porta,
+      a janela pede login normal e a bandeja mostra só o estado.
+
+Conferido pelas rotas, com a casca rodando o servidor embutido ligado ao banco de dev. O texto do menu e o
+aviso nativo na tela não foram vistos por automação: falta o teste manual.
+
+Falta nesta parte:
+
+- [ ] Clicar no aviso nativo ou em "Continuar" só abre a janela; ainda não leva direto ao episódio.
+- [ ] Sair da conta na janela e reabrir a casca entra de novo como o dono. Avaliar uma opção "não entrar
+      sozinho".
+- [ ] Em compilação de desenvolvimento no macOS, o aviso nativo pode aparecer em nome do terminal.
+
 Limites desta etapa:
 
 - [ ] O Node embutido é uma cópia do Node instalado na máquina de build. Para distribuir, baixar o Node
@@ -231,9 +254,6 @@ Limites desta etapa:
 - [ ] Se a casca for morta à força, o servidor fica órfão; na abertura seguinte ela reaproveita o que achar.
 - [ ] O fluxo completo pelo app empacotado (configurar banco, criar conta, estudar) não foi percorrido; só a
       subida do servidor e a chegada em `/setup`. O fluxo em si é coberto pelo e2e no servidor comum.
-- [ ] Sessão do dono: token de longa duração injetado só na janela local.
-- [ ] "Onde parei" no menu da bandeja (depende da sessão do dono).
-- [ ] Notificações nativas a partir da caixa de notificações do dono.
 - [ ] Início com o sistema (opcional) e detecção de porta ocupada.
 - [ ] Ícone monocromático para a barra de menus do macOS.
 - [ ] Compilar e testar em Windows e Linux (WebView2 e WebKitGTK).

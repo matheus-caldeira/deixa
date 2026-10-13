@@ -140,6 +140,17 @@ Branch `feat/desktop-shell`. Detalhes e pendências em [HANDOFF.md](HANDOFF.md),
 | 70  | Teste manual do menu e das janelas                     | Conferido pelo autor                                     | [ ]    |
 | 71  | Servidor embutido como sidecar                         | App instalável sobe sem `pnpm dev`                       | [ ]    |
 
+## Etapa 9: sessão do dono na casca
+
+Branch `feat/owner-session`. Detalhes em [HANDOFF.md](HANDOFF.md), seção 3.3 D.
+
+| Nº  | Item                                                | Critério de pronto                                   | Estado |
+| --- | --------------------------------------------------- | ---------------------------------------------------- | ------ |
+| 73  | Token local da casca e entrada automática como dono | Testes unitários; token errado não entra             | [x]    |
+| 74  | "Onde parei" e notificações no menu da bandeja      | Rota de estado conferida com a casca rodando         | [x]    |
+| 75  | Aviso nativo para notificação nova                  | Casca permanece estável ao receber um aviso de teste | [x]    |
+| 76  | Teste manual do menu e dos avisos na tela           | Conferido pelo autor                                 | [ ]    |
+
 ## Próximo
 
 - Fase 03 restante: worker separado, áudio em lote, roteiro.
