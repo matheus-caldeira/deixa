@@ -22,7 +22,7 @@ import {
 export type TutorMessage = { text: string } | { audio: { mimeType: string; base64: string } };
 
 export interface TutorProvider {
-  readonly name: "gemini" | "fake";
+  readonly name: string;
   reply(input: {
     level: CefrLevel;
     theme: string;

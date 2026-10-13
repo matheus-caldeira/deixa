@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { tmdbSecretKind, type CredentialService } from "@/modules/ai-credentials";
+import { isAiService, parseEndpoint, tmdbSecretKind, type CredentialService } from "@/modules/ai-credentials";
 import { testAiApiKey } from "./ai/test-api-key";
 import { TmdbClient } from "./tmdb/client";
 
@@ -34,7 +34,14 @@ async function testOpenSubtitles(secret: string): Promise<boolean> {
 }
 
 export async function testServiceCredential(service: CredentialService, secret: string): Promise<boolean> {
-  if (service === "gemini") return testAiApiKey({ provider: "google", apiKey: secret });
+  if (isAiService(service)) {
+    const endpoint = parseEndpoint(secret);
+    return testAiApiKey(
+      endpoint
+        ? { provider: service, apiKey: endpoint.apiKey, baseUrl: endpoint.baseUrl }
+        : { provider: service, apiKey: secret, baseUrl: null },
+    );
+  }
   if (service === "tmdb") return testTmdb(secret);
   return testOpenSubtitles(secret);
 }

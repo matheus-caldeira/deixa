@@ -38,7 +38,10 @@
     "desktop:installer": "pnpm desktop:server && PATH=\"$HOME/.cargo/bin:$PATH\" tauri build"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.78",
     "@ai-sdk/google": "^4.0.93",
+    "@ai-sdk/openai": "^4.0.91",
+    "@ai-sdk/openai-compatible": "^3.0.67",
     "ai": "^7.0.137",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.0",

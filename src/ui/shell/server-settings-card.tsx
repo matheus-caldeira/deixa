@@ -10,7 +10,7 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
-  const [model, setModel] = useState(initial.geminiModel);
+  const [customEndpoints, setCustomEndpoints] = useState(initial.aiCustomEndpointsAllowed);
   const [downloads, setDownloads] = useState(String(initial.subtitleDownloadsPerUserPerDay));
   const [kokoroUrl, setKokoroUrl] = useState(initial.kokoroUrl ?? "");
   const [error, setError] = useState("");
@@ -20,7 +20,9 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
     setError("");
     startTransition(async () => {
       const result = await updateSettingsAction({
-        geminiModel: model.trim(),
+        aiGeneration: initial.aiGeneration,
+        aiEmbedding: initial.aiEmbedding,
+        aiCustomEndpointsAllowed: customEndpoints,
         subtitleDownloadsPerUserPerDay: Number(downloads),
         kokoroUrl: kokoroUrl.trim() === "" ? null : kokoroUrl.trim(),
         aiSharedLimit: initial.aiSharedLimit,
@@ -37,17 +39,6 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
   return (
     <form className="col" style={{ gap: 10 }} onSubmit={save}>
       <div className="card col" style={{ gap: 10 }}>
-        <div className="field">
-          <label htmlFor="settings-model">Modelo do Gemini</label>
-          <input
-            id="settings-model"
-            value={model}
-            onChange={(event) => setModel(event.target.value)}
-            autoCapitalize="none"
-            spellCheck={false}
-            required
-          />
-        </div>
         <div className="field">
           <label htmlFor="settings-downloads">Downloads de legenda por conta, por dia</label>
           <input
@@ -71,6 +62,28 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
           />
           <span className="small muted">
             Só neste computador ou numa rede privada. Em branco, o áudio fica em silêncio.
+          </span>
+        </div>
+        <div className="field">
+          <label>Endereço próprio de IA por conta</label>
+          <div className="seg" role="radiogroup" aria-label="Endereço próprio de IA por conta">
+            <button
+              type="button"
+              className={customEndpoints ? "" : "on"}
+              onClick={() => setCustomEndpoints(false)}
+            >
+              Desligado
+            </button>
+            <button
+              type="button"
+              className={customEndpoints ? "on" : ""}
+              onClick={() => setCustomEndpoints(true)}
+            >
+              Ligado
+            </button>
+          </div>
+          <span className="small muted">
+            Vale para Ollama e para servidores compatíveis com OpenAI. Quem chama o endereço é este servidor.
           </span>
         </div>
         {error ? <p className="formerr">{error}</p> : null}

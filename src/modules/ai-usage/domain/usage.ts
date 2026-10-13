@@ -36,10 +36,17 @@ export type ModelPrice = z.infer<typeof modelPriceSchema>;
 export const DEFAULT_PRICES_DATE = new Date("2026-10-01T12:00:00Z");
 
 export const DEFAULT_MODEL_PRICES: ModelPrice[] = [
-  { provider: "google", model: "gemini-2.5-flash", inputUsdPerMillion: 0.3, outputUsdPerMillion: 2.5 },
-  { provider: "google", model: "gemini-flash-latest", inputUsdPerMillion: 0.3, outputUsdPerMillion: 2.5 },
-  { provider: "google", model: "gemini-2.5-flash-lite", inputUsdPerMillion: 0.1, outputUsdPerMillion: 0.4 },
-  { provider: "google", model: "gemini-embedding-001", inputUsdPerMillion: 0.15, outputUsdPerMillion: 0 },
+  { provider: "gemini", model: "gemini-2.5-flash", inputUsdPerMillion: 0.3, outputUsdPerMillion: 2.5 },
+  { provider: "gemini", model: "gemini-flash-latest", inputUsdPerMillion: 0.3, outputUsdPerMillion: 2.5 },
+  { provider: "gemini", model: "gemini-2.5-flash-lite", inputUsdPerMillion: 0.1, outputUsdPerMillion: 0.4 },
+  { provider: "gemini", model: "gemini-embedding-001", inputUsdPerMillion: 0.15, outputUsdPerMillion: 0 },
+  { provider: "openai", model: "gpt-4o-mini", inputUsdPerMillion: 0.15, outputUsdPerMillion: 0.6 },
+  { provider: "openai", model: "gpt-4.1-mini", inputUsdPerMillion: 0.4, outputUsdPerMillion: 1.6 },
+  { provider: "openai", model: "text-embedding-3-small", inputUsdPerMillion: 0.02, outputUsdPerMillion: 0 },
+  { provider: "anthropic", model: "claude-haiku-4-5", inputUsdPerMillion: 1, outputUsdPerMillion: 5 },
+  { provider: "anthropic", model: "claude-sonnet-4-5", inputUsdPerMillion: 3, outputUsdPerMillion: 15 },
+  { provider: "ollama", model: "llama3.1", inputUsdPerMillion: 0, outputUsdPerMillion: 0 },
+  { provider: "ollama", model: "nomic-embed-text", inputUsdPerMillion: 0, outputUsdPerMillion: 0 },
 ];
 
 export function findDefaultPrice(provider: string, model: string): ModelPrice | null {

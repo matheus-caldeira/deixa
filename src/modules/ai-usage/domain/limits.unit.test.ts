@@ -13,7 +13,7 @@ import type { AiUsageEvent } from "./usage";
 const event = (createdAt: string, usd: number | null, tokens = 100): AiUsageEvent => ({
   id: createdAt,
   userId: "ana",
-  provider: "google",
+  provider: "gemini",
   model: "m",
   operation: "cards",
   keySource: "user",

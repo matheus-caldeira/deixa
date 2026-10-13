@@ -4,30 +4,42 @@ import type { EmbeddingProvider } from "@/modules/recommendations";
 import { AppError } from "@/shared/errors";
 import { embeddingModel, type AiAccess } from "./models";
 
-const MODEL = "gemini-embedding-001";
 const DIMENSIONS = 256;
 const BATCH_SIZE = 50;
 const TIMEOUT_MS = 30_000;
 const MAX_TEXT_CHARS = 2000;
 const KEY_REJECTED = [400, 401, 403];
+const FIXED_DIMENSION_PROVIDERS = new Set<AiAccess["provider"]>(["gemini", "openai"]);
 
 export class AiEmbeddingProvider implements EmbeddingProvider {
-  readonly name = "gemini" as const;
-  readonly model = `${MODEL}-${DIMENSIONS}`;
+  readonly name: string;
+  readonly model: string;
 
   constructor(
     private readonly access: AiAccess,
+    private readonly modelId: string,
     private readonly meter: AiUsageMeter,
-  ) {}
+  ) {
+    this.name = access.provider;
+    const suffix = FIXED_DIMENSION_PROVIDERS.has(access.provider) ? `-${DIMENSIONS}` : "";
+    this.model = `${access.provider}/${modelId}${suffix}`;
+  }
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
+    const model = embeddingModel(this.access, this.modelId);
+    if (!model) throw new AppError("LLM_FAILED", "Esse provedor não oferece embeddings.");
+    const fixed = FIXED_DIMENSION_PROVIDERS.has(this.access.provider);
     let embeddings: number[][];
     let tokens = 0;
     try {
       const result = await embedMany({
-        model: embeddingModel(this.access, MODEL),
+        model,
         values: texts.map((text) => text.slice(0, MAX_TEXT_CHARS)),
-        providerOptions: { google: { outputDimensionality: DIMENSIONS, taskType: "SEMANTIC_SIMILARITY" } },
+        dimensions: fixed ? DIMENSIONS : undefined,
+        providerOptions:
+          this.access.provider === "gemini"
+            ? { google: { outputDimensionality: DIMENSIONS, taskType: "SEMANTIC_SIMILARITY" } }
+            : undefined,
         abortSignal: AbortSignal.timeout(TIMEOUT_MS),
         maxRetries: 0,
       });
@@ -41,14 +53,17 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
       if (status > 0) throw new AppError("LLM_FAILED", `O serviço de vetores da IA respondeu ${status}.`);
       throw new AppError("LLM_FAILED", "O serviço de vetores da IA não respondeu.");
     }
+    const width = fixed ? DIMENSIONS : (embeddings[0]?.length ?? 0);
     const wellFormed =
-      embeddings.length === texts.length && embeddings.every((vector) => vector.length === DIMENSIONS);
+      embeddings.length === texts.length &&
+      width > 0 &&
+      embeddings.every((vector) => vector.length === width);
     if (!wellFormed) {
       throw new AppError("LLM_INVALID_OUTPUT", "O serviço de vetores devolveu um formato inesperado.");
     }
     await this.meter.record({
       provider: this.access.provider,
-      model: MODEL,
+      model: this.modelId,
       operation: "embeddings",
       inputTokens: tokens,
       outputTokens: 0,

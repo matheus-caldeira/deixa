@@ -3,8 +3,8 @@ import type { CefrLevel } from "@/shared/levels";
 import type { Challenge, LearnerSignals } from "../domain/learner";
 import type { Vector } from "../domain/vectors";
 
-export type EmbeddingProviderName = "gemini" | "local";
-export type WriterName = "gemini" | "local";
+export type EmbeddingProviderName = string;
+export type WriterName = string;
 
 export interface EmbeddingProvider {
   readonly name: EmbeddingProviderName;
@@ -35,7 +35,7 @@ export type WriterInput = {
 };
 
 export interface SuggestionWriter {
-  readonly name: "gemini";
+  readonly name: string;
   write(input: WriterInput): Promise<unknown>;
 }
 

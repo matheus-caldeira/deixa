@@ -19,16 +19,22 @@ casos de uso nem prompts.
 
 - Tudo em `src/infrastructure/ai/`. Nenhum outro lugar importa `ai` nem `@ai-sdk/*`.
 - `models.ts`: `languageModel(access, modelId)` e `embeddingModel(access, modelId)` montam o modelo a partir
-  de `AiAccess` (`provider` e `apiKey`). Hoje só o Google está ligado; cada provedor novo entra aqui, com o
-  pacote `@ai-sdk/<provedor>` correspondente.
+  de `AiAccess` (`provider`, `apiKey`, `baseUrl`). Provedores: Google (`@ai-sdk/google`), OpenAI
+  (`@ai-sdk/openai`), Anthropic (`@ai-sdk/anthropic`, sem embeddings) e, pelo `@ai-sdk/openai-compatible`,
+  OpenRouter, Ollama (endereço do usuário mais `/v1`) e qualquer servidor compatível com OpenAI.
+- O provedor e o modelo vêm da escolha da conta (`user_ai_models`) ou do padrão do servidor
+  (`aiGeneration`, `aiEmbedding` em `app_settings`); a chave vem da conta ou da global. Para Ollama e
+  servidor compatível o segredo guardado é o endereço (e a chave, se houver), em JSON cifrado, validado por
+  `canonicalServiceUrl`; o administrador pode desligar endereços próprios (`aiCustomEndpointsAllowed`).
 - `generate-json.ts`: `generateText` com `Output.json()`, `instructions` como system prompt, `maxRetries: 0`
   e `timeout`. Mantém a lista de modelos de reserva por provedor e traduz os erros do SDK para `AppError`:
   `APICallError` 400/401/403 vira `AI_KEY_REJECTED`; 404, 429, 500, 503 e falha de rede passam ao modelo
   seguinte; `NoObjectGeneratedError` e `JSONParseError` viram `LLM_INVALID_OUTPUT`.
-- Um adapter por port: `AiLlmProvider`, `AiTutorProvider` (áudio como `FilePart`), `AiLessonPlanner`,
-  `AiSuggestionWriter` e `AiEmbeddingProvider` (`embedMany` com `providerOptions.google` para 256 dimensões).
+- Um adapter por port: `AiLlmProvider`, `AiTutorProvider` (áudio como `FilePart` em bytes), `AiLessonPlanner`,
+  `AiSuggestionWriter` e `AiEmbeddingProvider` (`embedMany`; 256 dimensões no Google e na OpenAI, a largura do
+  modelo nos demais; a chave em `work_embeddings` é `provedor/modelo`).
 - A saída continua `unknown` e passa pelo schema Zod do caso de uso, como antes.
-- Teste de chave do Google: listagem de modelos por HTTP, sem gastar tokens (`test-api-key.ts`).
+- Teste de chave por provedor: listagem de modelos por HTTP, sem gastar tokens (`test-api-key.ts`).
 
 ## Testes
 

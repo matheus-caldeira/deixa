@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { ServiceOverview } from "@/modules/ai-credentials";
+import { AI_SERVICES, SECRET_KINDS, type AiModels, type ServiceOverview } from "@/modules/ai-credentials";
 import type { UsageOverview, UsageSummary } from "@/modules/ai-usage";
 import type { AppSettings } from "@/modules/settings";
 import { CredentialCard } from "../shell/credential-card";
 import { ServerSettingsCard } from "../shell/server-settings-card";
 import { AiUsageSection } from "./ai-usage-section";
+import { ModelChoiceCard } from "./model-choice-card";
 import { ServerUsageSection } from "./server-usage-section";
 
 export type SettingsTab = "ai" | "usage" | "catalog" | "server";
@@ -21,6 +22,9 @@ export type SettingsView = {
   usage: UsageSummary;
   overview: UsageOverview | null;
   settings: AppSettings | null;
+  aiModels: AiModels;
+  aiDefaults: { aiGeneration: AppSettings["aiGeneration"]; aiEmbedding: AppSettings["aiEmbedding"] };
+  customEndpointsAllowed: boolean;
 };
 
 const TABS: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
@@ -30,7 +34,7 @@ const TABS: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
   { key: "server", label: "Servidor", adminOnly: true },
 ];
 
-const AI_SERVICES = new Set(["gemini"]);
+const AI_SERVICE_SET = new Set<string>(AI_SERVICES);
 
 function href(tab: SettingsTab, scope: SettingsScope): string {
   return scope === "global" ? `/settings?tab=${tab}&scope=global` : `/settings?tab=${tab}`;
@@ -85,8 +89,12 @@ function KeysTab({
 }
 
 export function SettingsScreen({ view }: { view: SettingsView }) {
-  const aiServices = view.credentials.filter((entry) => AI_SERVICES.has(entry.service));
-  const catalogServices = view.credentials.filter((entry) => !AI_SERVICES.has(entry.service));
+  const aiServices = view.credentials.filter(
+    (entry) =>
+      AI_SERVICE_SET.has(entry.service) &&
+      (view.customEndpointsAllowed || SECRET_KINDS[entry.service] !== "endpoint"),
+  );
+  const catalogServices = view.credentials.filter((entry) => !AI_SERVICE_SET.has(entry.service));
   return (
     <>
       <h1 style={{ fontSize: 28, paddingTop: 4 }}>Configurações</h1>
@@ -105,11 +113,33 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
       </div>
       <div className="col" style={{ gap: 18, maxWidth: 640, width: "100%" }}>
         {view.tab === "ai" ? (
-          <KeysTab
-            view={view}
-            services={aiServices}
-            intro="A IA explica o que você marca, monta trilhas, sugere obras e conversa com você. Sem a sua chave, vale a chave global deste servidor, se houver. As chaves ficam criptografadas e nunca voltam para o navegador."
-          />
+          <>
+            <p className="small muted">
+              A IA explica o que você marca, monta trilhas, sugere obras e conversa com você. Sem a sua chave,
+              vale a chave global deste servidor, se houver. As chaves ficam criptografadas e nunca voltam
+              para o navegador.
+            </p>
+            <ScopeSwitch view={view} mine="Minhas chaves" server="Globais do servidor" />
+            <ModelChoiceCard
+              view={{
+                scope: view.scope,
+                models: view.aiModels,
+                defaults: view.aiDefaults,
+                credentials: view.credentials,
+                customEndpointsAllowed: view.customEndpointsAllowed,
+              }}
+            />
+            <span className="eyebrow">Provedores</span>
+            {view.scope === "global" ? (
+              <p className="small muted">
+                Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode
+                alterá-las.
+              </p>
+            ) : null}
+            {aiServices.map((entry) => (
+              <CredentialCard key={entry.service} entry={entry} scope={view.scope} />
+            ))}
+          </>
         ) : null}
         {view.tab === "usage" ? (
           <>

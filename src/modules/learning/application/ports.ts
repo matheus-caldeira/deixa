@@ -10,7 +10,7 @@ export type ExplainRequestItem = {
 };
 
 export type ExplainRequest = { learnerLevel: CefrLevel; items: ExplainRequestItem[] };
-export type LlmProviderName = "gemini" | "fake";
+export type LlmProviderName = string;
 
 export interface LlmProvider {
   readonly name: LlmProviderName;

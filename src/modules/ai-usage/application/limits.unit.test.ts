@@ -44,7 +44,7 @@ function setup(keySources: Record<string, "user" | "global" | null> = { ana: "us
   };
 }
 
-const call = { provider: "google", model: "gemini-2.5-flash", operation: "cards" as const };
+const call = { provider: "gemini", model: "gemini-2.5-flash", operation: "cards" as const };
 const spend = (inputTokens: number) => ({ ...call, inputTokens, outputTokens: 0 });
 
 async function codeOf(promise: Promise<unknown>): Promise<string> {

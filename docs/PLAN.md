@@ -175,7 +175,7 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da vers�
 | 85  | Medição de tokens e valor por chamada                                                                  | Evento por chamada; preços por modelo; isolamento no Postgres                            | [x]    |
 | 86  | Limite por dia e por mês com trava total                                                               | Chamada acima do limite recusada em toda operação; padrão fechado para a chave global    | [x]    |
 | 87  | Tela Configurações, Uso da IA, menu Mais e perfil enxuto                                               | E2E passa; capturas em 390 e 1280 sem erro                                               | [x]    |
-| 88  | Escolha de provedor e de modelo (Google, OpenAI, Anthropic, OpenRouter, Ollama, compatível com OpenAI) | Dois provedores de ponta a ponta; embeddings por modelo                                  | [ ]    |
+| 88  | Escolha de provedor e de modelo (Google, OpenAI, Anthropic, OpenRouter, Ollama, compatível com OpenAI) | Dois provedores de ponta a ponta; embeddings por modelo                                  | [x]    |
 | 89  | Importar e exportar: formato, legendas, dados pessoais, cards, áudio                                   | Reimportar não duplica; pacote adulterado recusado; isolamento                           | [ ]    |
 | 90  | Opções do catálogo e tela Importar e exportar; menu Arquivo do Tauri                                   | Conforme o protótipo                                                                     | [ ]    |
 

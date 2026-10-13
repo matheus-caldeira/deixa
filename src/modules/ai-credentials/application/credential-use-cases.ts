@@ -1,6 +1,6 @@
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
-import { maskApiKey } from "../domain/api-key";
+import { maskSecret } from "../domain/api-key";
 import {
   CREDENTIAL_SERVICES,
   SERVICE_LABELS,
@@ -43,10 +43,16 @@ function read(cipher: KeyCipher, stored: StoredCredential | null | undefined): s
   }
 }
 
-function describeStored(cipher: KeyCipher, stored: StoredCredential | null | undefined): StoredState {
+function describeStored(
+  cipher: KeyCipher,
+  service: CredentialService,
+  stored: StoredCredential | null | undefined,
+): StoredState {
   const secret = read(cipher, stored);
   if (secret === null) return { state: "absent" };
-  return secret === "unreadable" ? { state: "unreadable" } : { state: "ready", masked: maskApiKey(secret) };
+  return secret === "unreadable"
+    ? { state: "unreadable" }
+    : { state: "ready", masked: maskSecret(service, secret) };
 }
 
 function requireAdmin(actor: CredentialActor, scope: CredentialScope): void {
@@ -79,7 +85,7 @@ export function makeSaveCredential(deps: Deps) {
     } else {
       await deps.credentials.upsertForUser(input.actor.userId, input.service, stored, deps.clock.now());
     }
-    return { state: "ready", masked: maskApiKey(secret) };
+    return { state: "ready", masked: maskSecret(input.service, secret) };
   };
 }
 
@@ -106,10 +112,12 @@ export function makeGetCredentialOverview(
     return CREDENTIAL_SERVICES.map((service) => {
       const ownState = describeStored(
         deps.cipher,
+        service,
         own.find((entry) => entry.service === service),
       );
       const globalState = describeStored(
         deps.cipher,
+        service,
         global.find((entry) => entry.service === service),
       );
       const fromEnvironment = deps.environmentServices.has(service);

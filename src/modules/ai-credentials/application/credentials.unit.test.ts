@@ -113,6 +113,11 @@ describe("chaves por usuário e chave global", () => {
     const overview = await app.overview(ana);
     expect(overview.map((entry) => [entry.service, entry.own.state, entry.active])).toEqual([
       ["gemini", "ready", "own"],
+      ["openai", "absent", "none"],
+      ["anthropic", "absent", "none"],
+      ["openrouter", "absent", "none"],
+      ["ollama", "absent", "none"],
+      ["openai_compatible", "absent", "none"],
       ["tmdb", "absent", "none"],
       ["opensubtitles", "ready", "own"],
     ]);

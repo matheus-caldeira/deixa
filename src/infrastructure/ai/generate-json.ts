@@ -12,8 +12,8 @@ import type { AiOperation, AiUsageMeter } from "@/modules/ai-usage";
 import { AppError } from "@/shared/errors";
 import { languageModel, type AiAccess } from "./models";
 
-const FALLBACK_MODELS: Record<AiAccess["provider"], string[]> = {
-  google: ["gemini-flash-latest", "gemini-2.5-flash-lite"],
+const FALLBACK_MODELS: Partial<Record<AiAccess["provider"], string[]>> = {
+  gemini: ["gemini-flash-latest", "gemini-2.5-flash-lite"],
 };
 const KEY_REJECTED = [400, 401, 403];
 const TRY_NEXT_MODEL = [404, 429, 500, 503];
@@ -82,7 +82,7 @@ export async function generateJson(
 ): Promise<unknown> {
   const createModel = deps.createModel ?? languageModel;
   await deps.meter.ensureAllowed();
-  const fallbacks = FALLBACK_MODELS[request.access.provider].filter((id) => id !== request.model);
+  const fallbacks = (FALLBACK_MODELS[request.access.provider] ?? []).filter((id) => id !== request.model);
   let lastStatus = 0;
   for (const modelId of [request.model, ...fallbacks]) {
     try {

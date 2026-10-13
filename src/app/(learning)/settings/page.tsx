@@ -14,15 +14,28 @@ export default async function SettingsPage(props: {
   const tab = requested === "server" && !user.isAdmin ? "ai" : requested;
   const scope: SettingsScope = user.isAdmin && params.scope === "global" ? "global" : "user";
   const actor = { userId: user.id, isAdmin: user.isAdmin };
-  const [credentials, usage, overview, settings] = await Promise.all([
+  const [credentials, usage, overview, settings, aiModels] = await Promise.all([
     container.getCredentialOverview(actor),
     container.getAiUsageSummary(user.id),
     user.isAdmin && tab === "usage" && scope === "global" ? container.getAiUsageOverview(actor) : null,
-    user.isAdmin ? container.getSettings() : null,
+    container.getSettings(),
+    container.getAiModels(user.id),
   ]);
   return (
     <SettingsScreen
-      view={{ tab, scope, isAdmin: user.isAdmin, name: user.name, credentials, usage, overview, settings }}
+      view={{
+        tab,
+        scope,
+        isAdmin: user.isAdmin,
+        name: user.name,
+        credentials,
+        usage,
+        overview,
+        settings: user.isAdmin ? settings : null,
+        aiModels,
+        aiDefaults: { aiGeneration: settings.aiGeneration, aiEmbedding: settings.aiEmbedding },
+        customEndpointsAllowed: settings.aiCustomEndpointsAllowed,
+      }}
     />
   );
 }

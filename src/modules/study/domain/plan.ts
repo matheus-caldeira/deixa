@@ -22,7 +22,7 @@ const MAX_SENTENCE = 200;
 const MAX_WORD = 30;
 const FINAL_TITLE = "Desafio final";
 
-export type PlanProvider = "gemini" | "fallback";
+export type PlanProvider = string;
 
 export type PlanBlock = {
   index: number;
@@ -318,7 +318,7 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
 export const lessonPlanSchema = z.object({
   version: z.number(),
   level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
-  provider: z.enum(["gemini", "fallback"]),
+  provider: z.string().min(1),
   blocks: z.array(
     z.object({
       index: z.number(),

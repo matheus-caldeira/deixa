@@ -6,7 +6,7 @@ import { isAppError } from "@/shared/errors";
 import { generateJson, type JsonRequest, type ModelFactory } from "./generate-json";
 
 const request: JsonRequest = {
-  access: { provider: "google", apiKey: "k" },
+  access: { provider: "gemini", apiKey: "k", baseUrl: null },
   model: "gemini-2.5-flash",
   system: "Responda em JSON.",
   messages: [{ role: "user", content: "[]" }],
@@ -60,7 +60,7 @@ describe("generateJson", () => {
     expect(meter.checks).toBe(1);
     expect(meter.calls).toEqual([
       {
-        provider: "google",
+        provider: "gemini",
         model: "gemini-2.5-flash",
         operation: "cards",
         inputTokens: 120,

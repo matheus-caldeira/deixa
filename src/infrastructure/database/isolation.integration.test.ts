@@ -191,9 +191,11 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       secret: "AbCdEfGhIjKlMnOpQrStUvWx",
     });
     const own = (actor: typeof anaActor) =>
-      app.getCredentialOverview(actor).then((list) => list.map((entry) => entry.own.state));
-    expect(await own(anaActor)).toEqual(["ready", "absent", "ready"]);
-    expect(await own(lucasActor)).toEqual(["absent", "absent", "absent"]);
+      app
+        .getCredentialOverview(actor)
+        .then((list) => list.filter((entry) => entry.own.state === "ready").map((entry) => entry.service));
+    expect(await own(anaActor)).toEqual(["gemini", "opensubtitles"]);
+    expect(await own(lucasActor)).toEqual([]);
     await expect(
       app.saveCredential({ actor: lucasActor, service: "gemini", scope: "global", secret: geminiKey }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -202,7 +204,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     expect(forLucas).toMatchObject({ active: "global", global: { source: "database", stored: null } });
     await app.removeCredential({ actor: anaActor, service: "gemini", scope: "global" });
     await app.removeCredential({ actor: anaActor, service: "opensubtitles", scope: "user" });
-    expect(await own(anaActor)).toEqual(["ready", "absent", "absent"]);
+    expect(await own(anaActor)).toEqual(["gemini"]);
     await handle.db.update(users).set({ isAdmin: false }).where(eq(users.id, ana));
     const signUps = await Promise.all(
       ["bia", "caio", "duda"].map((name) =>
@@ -252,7 +254,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     const prices = new DrizzleModelPriceRepository(handle.db);
     const now = new Date("2026-10-13T10:00:00Z");
     const base = {
-      provider: "google",
+      provider: "gemini",
       model: "gemini-2.5-flash",
       operation: "cards" as const,
       keySource: "user" as const,
@@ -272,7 +274,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     expect((await usage.listEvents(lucas, since)).map((event) => event.userId)).toEqual([lucas]);
 
     const price = {
-      provider: "google",
+      provider: "gemini",
       model: "gemini-2.5-flash",
       inputUsdPerMillion: 1,
       outputUsdPerMillion: 2,
@@ -280,7 +282,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     await prices.save(price, ana, now);
     await prices.save({ ...price, outputUsdPerMillion: 3 }, ana, now);
     expect(await prices.list()).toHaveLength(1);
-    expect((await prices.find("google", "gemini-2.5-flash"))?.outputUsdPerMillion).toBe(3);
+    expect((await prices.find("gemini", "gemini-2.5-flash"))?.outputUsdPerMillion).toBe(3);
 
     const limits = new DrizzleUsageLimitRepository(handle.db);
     const limit = { usdPerDay: 0.5, usdPerMonth: null, tokensPerDay: null, tokensPerMonth: 1_000_000 };

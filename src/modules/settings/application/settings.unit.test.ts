@@ -4,7 +4,9 @@ import { canonicalServiceUrl, mergeSettings, type AppSettings, type SettingKey }
 import { makeGetSettings, makeUpdateSettings, type SettingsRepository } from "./settings-use-cases";
 
 const defaults: AppSettings = {
-  geminiModel: "gemini-2.5-flash",
+  aiGeneration: { provider: "gemini", model: "gemini-2.5-flash" },
+  aiEmbedding: { provider: "gemini", model: "gemini-embedding-001" },
+  aiCustomEndpointsAllowed: true,
   subtitleDownloadsPerUserPerDay: 10,
   kokoroUrl: null,
   aiSharedLimit: { usdPerDay: null, usdPerMonth: null, tokensPerDay: null, tokensPerMonth: null },
@@ -28,17 +30,21 @@ describe("configurações do servidor", () => {
   it("sem nada guardado valem os padrões; valor guardado vence; valor inválido guardado é ignorado", async () => {
     expect(await setup().get()).toEqual(defaults);
     expect(await setup({ subtitleDownloadsPerUserPerDay: 100 }).get()).toMatchObject({
-      geminiModel: "gemini-2.5-flash",
+      aiGeneration: { provider: "gemini", model: "gemini-2.5-flash" },
       subtitleDownloadsPerUserPerDay: 100,
     });
-    expect(mergeSettings(defaults, { geminiModel: "Modelo Inválido!", kokoroUrl: "ftp://x" })).toEqual(
-      defaults,
-    );
+    expect(
+      mergeSettings(defaults, { aiGeneration: { provider: "x", model: "y" }, kokoroUrl: "ftp://x" }),
+    ).toEqual(defaults);
   });
 
   it("só o administrador altera, e o que ele salva passa a valer", async () => {
     const app = setup();
-    const values = { ...defaults, geminiModel: "gemini-flash-latest", kokoroUrl: "http://localhost:1881" };
+    const values = {
+      ...defaults,
+      aiGeneration: { provider: "gemini", model: "gemini-flash-latest" },
+      kokoroUrl: "http://localhost:1881",
+    };
     await expect(app.update({ actor: { userId: "ana", isAdmin: false }, values })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
@@ -63,7 +69,7 @@ describe("configurações do servidor", () => {
   it("recusa modelo fora do formato, quantidade fora da faixa e endereço que não é http", async () => {
     const app = setup();
     for (const values of [
-      { ...defaults, geminiModel: "x" },
+      { ...defaults, aiGeneration: { provider: "gemini", model: "modelo inválido!" } },
       { ...defaults, subtitleDownloadsPerUserPerDay: -1 },
       { ...defaults, subtitleDownloadsPerUserPerDay: 1001 },
       { ...defaults, subtitleDownloadsPerUserPerDay: 2.5 },
@@ -79,7 +85,7 @@ describe("configurações do servidor", () => {
       { ...defaults, kokoroUrl: "http://[fe80::1]:1881" },
       { ...defaults, kokoroUrl: "http://metadata.google.internal./" },
       { ...defaults, kokoroUrl: "http://169.254.169.254./" },
-      { geminiModel: "gemini-2.5-flash" },
+      { aiGeneration: { provider: "gemini", model: "gemini-2.5-flash" } },
     ]) {
       await expect(app.update({ actor: admin, values })).rejects.toMatchObject({ code: "INVALID_INPUT" });
     }

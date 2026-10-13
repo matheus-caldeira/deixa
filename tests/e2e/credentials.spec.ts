@@ -67,7 +67,6 @@ test("configurações: chaves por usuário em IA e Catálogo; globais e servidor
   await expect(page.getByText("Limite salvo.")).toBeVisible();
 
   await page.getByRole("tab", { name: "Servidor" }).click();
-  await expect(page.getByLabel("Modelo do Gemini")).toHaveValue("gemini-2.5-flash");
   await page.getByLabel("Downloads de legenda por conta, por dia").fill("5000");
   await page.getByRole("button", { name: "Salvar configurações" }).click();
   await expect(page.getByText(/downloads entre 0 e 1000/)).toBeVisible();

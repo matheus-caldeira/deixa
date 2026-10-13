@@ -255,7 +255,7 @@ export function makeGetTrail(deps: Pick<Deps, "plans" | "study">) {
     return {
       episodeId,
       progressPercent: trailProgressPercent(plan.blocks.length, completed),
-      generatedByAi: plan.provider === "gemini",
+      generatedByAi: plan.provider !== "fallback",
       currentIndex: current >= 0 ? current : null,
       nodes: plan.blocks.map((block, index) => ({
         index: block.index,

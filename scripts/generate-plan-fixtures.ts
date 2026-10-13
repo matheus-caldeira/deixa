@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY ausente no .env");
   const planner = new AiLessonPlanner(
-    { provider: "google", apiKey },
+    { provider: "gemini", apiKey, baseUrl: null },
     process.env.GEMINI_MODEL || "gemini-2.5-flash",
     { meter: { ensureAllowed: async () => undefined, record: async () => undefined } },
   );

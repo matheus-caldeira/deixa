@@ -109,7 +109,7 @@ export function makeGetRecommendations(deps: Deps) {
         items.length > 0 ? "ready" : waiting ? "pending" : run?.status === "FAILED" ? "failed" : "empty",
       items,
       insight: run?.insight ?? null,
-      writtenByAi: run?.writer === "gemini",
+      writtenByAi: run?.writer != null && run.writer !== "local",
       updating: waiting,
       refresh,
     };
@@ -297,9 +297,11 @@ async function writeSuggestions(
       levels: draft.levels,
     }));
   let fromAi: Written[] = [];
+  let writerName: WriterName = "local";
   try {
     const writer = await deps.resolveWriter(userId);
     if (writer) {
+      writerName = writer.name;
       fromAi = readWriterOutput(
         await writer.write(writerInput(signals, assessment, shortlist, studied)),
         shortlist,
@@ -312,7 +314,7 @@ async function writeSuggestions(
   const filler = local(shortlist.filter((draft) => !chosen.has(draft)));
   return {
     written: [...fromAi, ...filler].slice(0, MAX_SUGGESTIONS),
-    writer: fromAi.length > 0 ? "gemini" : "local",
+    writer: fromAi.length > 0 ? writerName : "local",
   };
 }
 

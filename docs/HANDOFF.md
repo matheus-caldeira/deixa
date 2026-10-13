@@ -146,7 +146,8 @@ Falta:
 Feito em 12/10/2026 (branch `feat/user-credentials`):
 
 - [x] Chaves de Gemini, TMDB e OpenSubtitles por usuário, na tabela `user_ai_credentials` (uma linha por
-      serviço), com AES-256-GCM e resposta mascarada.
+      serviço), com AES-256-GCM e resposta mascarada. Em 13/10/2026 entraram OpenAI, Anthropic, OpenRouter,
+      Ollama e servidor compatível com OpenAI, com escolha de provedor e modelo por conta (`user_ai_models`).
 - [x] Chave global opcional em `app_credentials`, alterada só pelo administrador. Ordem de uso: usuário →
       global no banco → global no `.env` → provider de reserva.
 - [x] Providers resolvidos por usuário no `container.ts` (antes eram montados uma vez).

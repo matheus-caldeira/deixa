@@ -55,8 +55,8 @@ const suggestionSchema = z.object({
 const runSchema = z.object({
   status: z.enum(["RUNNING", "READY", "FAILED"]),
   fingerprint: z.string().nullable(),
-  writer: z.enum(["gemini", "local"]).nullable(),
-  embedding: z.enum(["gemini", "local"]).nullable(),
+  writer: z.string().nullable(),
+  embedding: z.string().nullable(),
   insight: z.string().nullable(),
   startedAt: z.date(),
   finishedAt: z.date().nullable(),

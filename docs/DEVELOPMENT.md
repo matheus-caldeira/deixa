@@ -62,7 +62,7 @@ configurado na tela `/setup` e o resto no perfil.
 | `OPENSUBTITLES_USERNAME`              | Opcional: usuário para login antes do download                               |
 | `OPENSUBTITLES_PASSWORD`              | Opcional: senha desse usuário                                                |
 | `GEMINI_API_KEY`                      | Chave global do Gemini, para quem não cadastrou a própria                    |
-| `GEMINI_MODEL`                        | Padrão do modelo do Gemini; o administrador pode trocar no perfil            |
+| `GEMINI_MODEL`                        | Modelo inicial de geração (Google); o administrador troca em Configurações   |
 | `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` | Padrão do teto de downloads por conta; o administrador pode trocar no perfil |
 | `KOKORO_URL`                          | Padrão do endereço do Kokoro; o administrador pode trocar no perfil          |
 | `DATA_DIR`                            | Diretório das legendas e dos áudios (padrão `data`, fora do git)             |
@@ -72,7 +72,8 @@ configurado na tela `/setup` e o resto no perfil.
 
 ### Chaves de API
 
-- Cada conta cadastra as próprias chaves de Gemini, TMDB e OpenSubtitles no perfil. A chave do usuário sempre
+- Cada conta cadastra as próprias chaves de IA (Google, OpenAI, Anthropic, OpenRouter, Ollama ou servidor
+  compatível com OpenAI), TMDB e OpenSubtitles em Configurações. A chave do usuário sempre
   vence; sem ela, vale a chave global (definida pelo administrador no perfil ou no `.env`); sem nenhuma, o
   serviço funciona em modo de demonstração.
 - A primeira conta criada é a administradora.

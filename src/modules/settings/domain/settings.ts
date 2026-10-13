@@ -1,37 +1,18 @@
 import { z } from "zod";
+import { modelChoiceSchema } from "@/modules/ai-credentials";
 import { usageLimitSchema } from "@/modules/ai-usage";
+import { canonicalServiceUrl } from "@/shared/service-url";
 
 export const MAX_DAILY_DOWNLOADS = 1000;
 
-const BLOCKED_IPV4 = /^(0\.|169\.254\.)/;
-const BLOCKED_NAMES = new Set(["metadata.google.internal", "metadata"]);
-const LOOPBACK_IPV6 = "[::1]";
-
-export function canonicalServiceUrl(value: string): string | null {
-  let url: URL;
-  try {
-    url = new URL(value.trim());
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") return null;
-  const host = url.hostname.toLowerCase().replace(/\.+$/, "");
-  const isIpv6 = host.startsWith("[");
-  if (host === "" || BLOCKED_IPV4.test(host) || BLOCKED_NAMES.has(host)) return null;
-  if (isIpv6 && host !== LOOPBACK_IPV6) return null;
-  const path = url.pathname.replace(/\/+$/, "");
-  const port = url.port === "" ? "" : `:${url.port}`;
-  return `${url.protocol}//${host}${port}${path}`;
-}
+export { canonicalServiceUrl };
 
 const FAIL_CLOSED: Partial<AppSettings> = { subtitleDownloadsPerUserPerDay: 0, kokoroUrl: null };
 
 export const appSettingsSchema = z.object({
-  geminiModel: z
-    .string()
-    .trim()
-    .regex(/^[a-z0-9][a-z0-9.-]{2,59}$/),
+  aiGeneration: modelChoiceSchema,
+  aiEmbedding: modelChoiceSchema.nullable(),
+  aiCustomEndpointsAllowed: z.boolean(),
   subtitleDownloadsPerUserPerDay: z.number().int().min(0).max(MAX_DAILY_DOWNLOADS),
   kokoroUrl: z
     .string()

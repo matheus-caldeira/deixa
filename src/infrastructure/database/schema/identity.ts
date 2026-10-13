@@ -97,3 +97,11 @@ export const notifications = pgTable(
   },
   (table) => [index("notifications_user_created").on(table.userId, table.createdAt)],
 );
+
+export const userAiModels = pgTable("user_ai_models", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  models: jsonb("models").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});

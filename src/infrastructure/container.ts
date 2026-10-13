@@ -2,11 +2,17 @@ import { createHash } from "node:crypto";
 import { DrizzleCredentialRepository } from "@/modules/ai-credentials/infrastructure/drizzle-credential-repository";
 import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-cipher";
 import {
+  PROVIDERS_WITH_EMBEDDINGS,
+  SECRET_KINDS,
+  makeGetAiModels,
   makeGetCredentialOverview,
   makeRemoveCredential,
   makeResolveCredential,
   makeSaveCredential,
+  makeSetAiModels,
+  parseEndpoint,
   tmdbSecretKind,
+  type AiService,
   type CredentialService,
   type CredentialTester,
 } from "@/modules/ai-credentials";
@@ -121,6 +127,7 @@ import { DrizzleRecommendationRepository } from "@/modules/recommendations/infra
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import { makeGetSettings, makeUpdateSettings, mergeSettings, type AppSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
+import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
 import {
   SHARED_KEY_DEFAULT_LIMIT,
   makeEnsureAiAllowed,
@@ -168,6 +175,7 @@ import { TmdbMetadataProvider } from "./tmdb/tmdb-metadata-provider";
 
 const MAX_AUDIO_GENERATIONS_PER_USER = 2;
 const MAX_LOGIN_FAILURES = 8;
+const DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001";
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const FINGERPRINT_CHARS = 16;
 const UNLIMITED_DOWNLOADS = Number.MAX_SAFE_INTEGER;
@@ -196,7 +204,9 @@ export type ContainerOptions = {
 
 export function settingsFromEnvironment(env: Env): AppSettings {
   return {
-    geminiModel: env.GEMINI_MODEL,
+    aiGeneration: { provider: "gemini", model: env.GEMINI_MODEL },
+    aiEmbedding: { provider: "gemini", model: DEFAULT_EMBEDDING_MODEL },
+    aiCustomEndpointsAllowed: true,
     subtitleDownloadsPerUserPerDay: env.SUBTITLE_DOWNLOADS_PER_USER_PER_DAY,
     kokoroUrl: env.KOKORO_URL ?? null,
     aiSharedLimit: SHARED_KEY_DEFAULT_LIMIT,
@@ -293,11 +303,41 @@ export function buildContainer(options: ContainerOptions) {
     return { provider, quotaKey: `${provider.name}:${key}`, ownKey: stored.origin === "user" };
   }
 
-  type ResolvedAiAccess = AiAccess & { shared: boolean };
-  async function aiAccessFor(userId: string): Promise<ResolvedAiAccess | null> {
-    const stored = await resolveCredential(userId, "gemini");
-    if (stored) return { provider: "google", apiKey: stored.secret, shared: stored.origin === "global" };
-    return env.GEMINI_API_KEY ? { provider: "google", apiKey: env.GEMINI_API_KEY, shared: true } : null;
+  type ResolvedAiAccess = AiAccess & { shared: boolean; model: string };
+  type AiPurpose = "generation" | "embedding";
+  const modelChoices = new DrizzleModelChoiceRepository(db);
+  const getAiModels = makeGetAiModels({ choices: modelChoices });
+  async function aiCredentialFor(
+    userId: string,
+    service: AiService,
+  ): Promise<(AiAccess & { shared: boolean }) | null> {
+    const stored = await resolveCredential(userId, service);
+    if (stored) {
+      const endpoint = parseEndpoint(stored.secret);
+      const shared = stored.origin === "global";
+      return endpoint
+        ? { provider: service, apiKey: endpoint.apiKey, baseUrl: endpoint.baseUrl, shared }
+        : { provider: service, apiKey: stored.secret, baseUrl: null, shared };
+    }
+    if (service === "gemini" && env.GEMINI_API_KEY) {
+      return { provider: "gemini", apiKey: env.GEMINI_API_KEY, baseUrl: null, shared: true };
+    }
+    return null;
+  }
+  async function aiAccessFor(
+    userId: string,
+    purpose: AiPurpose = "generation",
+  ): Promise<ResolvedAiAccess | null> {
+    const chosen = (await getAiModels(userId))[purpose];
+    if (chosen === "local") return null;
+    const fallback = purpose === "generation" ? settings.aiGeneration : settings.aiEmbedding;
+    for (const choice of [chosen, fallback]) {
+      if (!choice) continue;
+      if (!settings.aiCustomEndpointsAllowed && SECRET_KINDS[choice.provider] === "endpoint") continue;
+      const credential = await aiCredentialFor(userId, choice.provider);
+      if (credential) return { ...credential, model: choice.model };
+    }
+    return null;
   }
   const keySourceOf = async (userId: string): Promise<KeySource | null> => {
     const access = await aiAccessFor(userId);
@@ -333,7 +373,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<LlmProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeLlm;
-      return new AiLlmProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
+      return new AiLlmProvider(access, access.model, { meter: aiMeterFor(userId, access) });
     });
   const resolvePlanner =
     options.plannerForUser ??
@@ -342,7 +382,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return null;
       const meter = aiMeterFor(userId, access);
       await meter.ensureAllowed();
-      return new AiLessonPlanner(access, settings.geminiModel, { meter });
+      return new AiLessonPlanner(access, access.model, { meter });
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -351,7 +391,7 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<TutorProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeTutor;
-      return new AiTutorProvider(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
+      return new AiTutorProvider(access, access.model, { meter: aiMeterFor(userId, access) });
     });
   const conversations = new DrizzleConversationRepository(db);
 
@@ -359,16 +399,16 @@ export function buildContainer(options: ContainerOptions) {
   const resolveEmbedding =
     options.embeddingForUser ??
     (async (userId: string): Promise<EmbeddingProvider> => {
-      const access = await aiAccessFor(userId);
-      if (!access) return localEmbedding;
-      return new AiEmbeddingProvider(access, aiMeterFor(userId, access));
+      const access = await aiAccessFor(userId, "embedding");
+      if (!access || !PROVIDERS_WITH_EMBEDDINGS.has(access.provider)) return localEmbedding;
+      return new AiEmbeddingProvider(access, access.model, aiMeterFor(userId, access));
     });
   const resolveSuggestionWriter =
     options.suggestionWriterForUser ??
     (async (userId: string): Promise<SuggestionWriter | null> => {
       const access = await aiAccessFor(userId);
       if (!access) return null;
-      return new AiSuggestionWriter(access, settings.geminiModel, { meter: aiMeterFor(userId, access) });
+      return new AiSuggestionWriter(access, access.model, { meter: aiMeterFor(userId, access) });
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),
@@ -762,6 +802,8 @@ export function buildContainer(options: ContainerOptions) {
     saveCredential: makeSaveCredential(credentialDeps),
     removeCredential: makeRemoveCredential(credentialDeps),
     getCredentialOverview: makeGetCredentialOverview(credentialDeps),
+    getAiModels,
+    setAiModels: makeSetAiModels({ choices: modelChoices, clock }),
 
     getRecommendations: makeGetRecommendations(recommendationDeps),
     refreshRecommendations: makeRefreshRecommendations(recommendationDeps),
