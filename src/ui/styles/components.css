@@ -2249,3 +2249,104 @@
     font-size: 14px;
   }
 }
+
+@layer components {
+  .navbrand {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .app {
+      max-width: none;
+    }
+    .shell {
+      --rail: 232px;
+      padding-left: var(--rail);
+    }
+    .shell .nav {
+      top: 0;
+      bottom: 0;
+      left: 0;
+      transform: none;
+      width: var(--rail);
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 4px;
+      padding: 20px 14px;
+      border-top: 0;
+      border-right: 1px solid var(--line);
+    }
+    .shell .navbrand {
+      display: block;
+      padding: 4px 10px 22px;
+    }
+    .shell .nav a {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .shell .topbar,
+    .shell .main {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding-left: 36px;
+      padding-right: 36px;
+    }
+    .shell .topbar {
+      padding-top: 18px;
+    }
+    .shell .main {
+      padding-bottom: 56px;
+      gap: 24px;
+    }
+    .shell .pgrid {
+      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+      gap: 22px;
+    }
+    .shell .hscroll {
+      margin: 0;
+      padding: 4px 0 8px;
+      flex-wrap: wrap;
+    }
+    .shell .dback {
+      aspect-ratio: auto;
+      height: 300px;
+    }
+    .shell .dback img {
+      object-position: center 25%;
+    }
+    .shell .fab {
+      align-self: flex-start;
+      padding: 14px 22px;
+    }
+    .lesson,
+    .tx,
+    .chat {
+      width: min(100%, 780px);
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    .picker {
+      width: min(100%, 460px);
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+    .scrim {
+      align-items: center;
+      padding: 24px;
+    }
+    .sheet {
+      width: min(100%, 560px);
+      max-height: min(86vh, 900px);
+      border-radius: 22px;
+      padding-bottom: 24px;
+    }
+    .sheet-top .grab {
+      visibility: hidden;
+    }
+    .toast {
+      bottom: 32px;
+    }
+  }
+}

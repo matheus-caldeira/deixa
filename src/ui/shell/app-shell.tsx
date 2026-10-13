@@ -18,6 +18,7 @@ import {
   HomeIcon,
 } from "../icons";
 import { UploadSheet } from "../catalog/upload-sheet";
+import { Logo } from "./logo";
 import { NotificationsSheet } from "./notifications-sheet";
 import { ProfileSheet, type ProfileSheetData } from "./profile-sheet";
 
@@ -100,76 +101,81 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
 
   return (
     <ShellContext.Provider value={actions}>
-      <header className={`topbar ${scrolled ? "scrolled" : ""}`}>
-        <button
-          className="avatar"
-          style={{ background: data.avatarColor }}
-          onClick={actions.openProfile}
-          aria-label={`Perfil de ${data.name}`}
-        >
-          {data.name.slice(0, 1)}
-        </button>
-        <Link className="lvlchip" href="/progress" title={LEVEL_NAMES[data.level]}>
-          {data.level}
-        </Link>
-        <span className="spacer" />
-        <button
-          className="stat bell"
-          onClick={() => {
-            refreshInbox();
-            setSheet({ kind: "notifications" });
-          }}
-          aria-label={inbox.unread > 0 ? `Notificações: ${inbox.unread} novas` : "Notificações"}
-        >
-          <BellIcon />
-          {inbox.unread > 0 ? <span className="badge">{inbox.unread}</span> : null}
-        </button>
-        <Link
-          className="stat"
-          href="/people"
-          title="Sequência"
-          aria-label={`Sequência de ${data.streak} dias: ver quem está estudando`}
-        >
-          {data.goalMet ? <FlameIcon /> : <FlameOffIcon />}
-          {data.streak}
-        </Link>
-        <Link
-          className="stat"
-          href="/people"
-          title="XP hoje"
-          aria-label={`${data.xpToday} XP hoje: ver quem está estudando`}
-        >
-          <BoltIcon />
-          {data.xpToday}
-        </Link>
-      </header>
-      <main className="main">
-        {data.unreadableKeys.length > 0 ? (
-          <div className="alertbar" role="alert">
-            <span>
-              <b>Chave ilegível: {data.unreadableKeys.join(", ")}.</b> A chave mestra deste servidor mudou ou
-              o dado foi corrompido. Cadastre a chave de novo.
-            </span>
-            <button className="link small" onClick={actions.openProfile}>
-              Abrir perfil
-            </button>
-          </div>
-        ) : null}
-        {children}
-      </main>
-      <nav className="nav" aria-label="Áreas">
-        {TABS.map(({ href, label, Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={isActive(href) ? "on" : ""}
-            aria-current={isActive(href) ? "page" : undefined}
+      <div className="shell">
+        <header className={`topbar ${scrolled ? "scrolled" : ""}`}>
+          <button
+            className="avatar"
+            style={{ background: data.avatarColor }}
+            onClick={actions.openProfile}
+            aria-label={`Perfil de ${data.name}`}
           >
-            <Icon />
-            <span>{label}</span>
+            {data.name.slice(0, 1)}
+          </button>
+          <Link className="lvlchip" href="/progress" title={LEVEL_NAMES[data.level]}>
+            {data.level}
           </Link>
-        ))}
-      </nav>
+          <span className="spacer" />
+          <button
+            className="stat bell"
+            onClick={() => {
+              refreshInbox();
+              setSheet({ kind: "notifications" });
+            }}
+            aria-label={inbox.unread > 0 ? `Notificações: ${inbox.unread} novas` : "Notificações"}
+          >
+            <BellIcon />
+            {inbox.unread > 0 ? <span className="badge">{inbox.unread}</span> : null}
+          </button>
+          <Link
+            className="stat"
+            href="/people"
+            title="Sequência"
+            aria-label={`Sequência de ${data.streak} dias: ver quem está estudando`}
+          >
+            {data.goalMet ? <FlameIcon /> : <FlameOffIcon />}
+            {data.streak}
+          </Link>
+          <Link
+            className="stat"
+            href="/people"
+            title="XP hoje"
+            aria-label={`${data.xpToday} XP hoje: ver quem está estudando`}
+          >
+            <BoltIcon />
+            {data.xpToday}
+          </Link>
+        </header>
+        <main className="main">
+          {data.unreadableKeys.length > 0 ? (
+            <div className="alertbar" role="alert">
+              <span>
+                <b>Chave ilegível: {data.unreadableKeys.join(", ")}.</b> A chave mestra deste servidor mudou
+                ou o dado foi corrompido. Cadastre a chave de novo.
+              </span>
+              <button className="link small" onClick={actions.openProfile}>
+                Abrir perfil
+              </button>
+            </div>
+          ) : null}
+          {children}
+        </main>
+        <nav className="nav" aria-label="Áreas">
+          <span className="navbrand">
+            <Logo />
+          </span>
+          {TABS.map(({ href, label, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className={isActive(href) ? "on" : ""}
+              aria-current={isActive(href) ? "page" : undefined}
+            >
+              <Icon />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
       {sheet?.kind === "profile" ? <ProfileSheet data={data.profile} onClose={() => setSheet(null)} /> : null}
       {sheet?.kind === "notifications" ? (
         <NotificationsSheet inbox={inbox} onChange={refreshInbox} onClose={() => setSheet(null)} />

@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
 import type { EpisodeStatus } from "@/modules/catalog";
 import type { LevelFit } from "@/shared/levels";
-import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, UploadIcon } from "../icons";
+import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, PlusIcon, UploadIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
@@ -97,9 +97,18 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
 
   return (
     <>
-      <Link className="back" href="/catalog">
-        <BackIcon /> Explorar
-      </Link>
+      <div className="sec-h" style={{ paddingTop: 4, alignItems: "center" }}>
+        <Link className="back" href="/catalog">
+          <BackIcon /> Explorar
+        </Link>
+        <button
+          className="playbtn"
+          onClick={() => openUpload(media.id)}
+          aria-label="Adicionar legenda de um episódio"
+        >
+          <PlusIcon />
+        </button>
+      </div>
       {media.backdropUrl ? (
         <div className="dback">
           <Image

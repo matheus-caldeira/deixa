@@ -596,7 +596,10 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 if let Some(known) = &announced {
                     for (id, title, body) in &current.notifications {
                         if !known.contains(id) {
-                            let _ = handle.notification().builder().title(title).body(body).show();
+                            let shown = handle.notification().builder().title(title).body(body).show();
+                            if cfg!(debug_assertions) {
+                                eprintln!("aviso nativo: {:?}", shown.map(|_| "enviado ao sistema"));
+                            }
                         }
                     }
                 }

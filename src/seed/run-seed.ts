@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 import type { Container } from "@/infrastructure/container";
 import type { Database } from "@/infrastructure/database/client";
 import {
-  episodes,
   learningItemExplanations,
   lessonAttempts,
   mediaItems,
@@ -167,10 +166,6 @@ export async function runSeed(input: {
     for (const [key, state] of Object.entries(work.episodes) as [EpisodeKey, string][]) {
       const episodeId = episodeIdByKey.get(key);
       if (!episodeId || !uploaderId) continue;
-      if (state === "PROCESSING" || state === "NEEDS_REVIEW") {
-        await db.update(episodes).set({ status: state }).where(eq(episodes.id, episodeId));
-        continue;
-      }
       const dialogue = dialogues[importedEpisodes % dialogues.length];
       importedEpisodes += 1;
       if (!dialogue) continue;

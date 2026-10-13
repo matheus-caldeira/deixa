@@ -187,7 +187,7 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
   },
 ];
 
-export type SeedEpisodeState = "READY_PT" | "READY_EN" | "PROCESSING" | "NEEDS_REVIEW";
+export type SeedEpisodeState = "READY_PT" | "READY_EN";
 
 export const SEED_WORKS: readonly {
   slug: string;
@@ -211,7 +211,6 @@ export const SEED_WORKS: readonly {
       "friends-1-1": "READY_PT",
       "friends-1-2": "READY_PT",
       "friends-1-3": "READY_PT",
-      "friends-1-4": "PROCESSING",
     },
   },
   {
@@ -227,7 +226,6 @@ export const SEED_WORKS: readonly {
       "himym-1-2": "READY_PT",
       "himym-1-3": "READY_PT",
       "himym-1-4": "READY_PT",
-      "himym-1-5": "NEEDS_REVIEW",
     },
   },
   {
@@ -238,7 +236,7 @@ export const SEED_WORKS: readonly {
     levels: ["B1", "C1"],
     accent: "EUA",
     uploader: "lucas",
-    episodes: { "office-1-1": "READY_PT", "office-1-2": "READY_EN", "office-1-3": "PROCESSING" },
+    episodes: { "office-1-1": "READY_PT", "office-1-2": "READY_EN" },
   },
   {
     slug: "tedlasso",

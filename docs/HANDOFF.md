@@ -248,6 +248,9 @@ Falta nesta parte:
 - [ ] Sair da conta na janela e reabrir a casca entra de novo como o dono. Avaliar uma opção "não entrar
       sozinho".
 - [ ] Em compilação de desenvolvimento no macOS, o aviso nativo pode aparecer em nome do terminal.
+- [ ] Aviso nativo no macOS: o primeiro teste do autor não mostrou nenhum aviso (macOS 26.6). O pacote
+      passou a ser assinado localmente com a identidade `app.deixa.desktop`; falta o autor confirmar se isso
+      resolveu. Se não resolver, a biblioteca usada (API antiga `NSUserNotification`) precisa ser trocada.
 
 Limites desta etapa:
 
