@@ -1,6 +1,6 @@
 {
   "name": "deixa",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "author": "Matheus Caldeira <matheuscardozo4@gmail.com>",
   "private": true,
   "packageManager": "pnpm@12.10.1",
