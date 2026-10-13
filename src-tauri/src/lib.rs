@@ -3,6 +3,8 @@ use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -28,6 +30,25 @@ const IDENTITY_PATH: &str = "/manifest.webmanifest";
 const IDENTITY_MARK: &str = "Deixa";
 const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+fn hidden_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    without_console_window(Command::new(program))
+}
+
+#[cfg(windows)]
+fn without_console_window(mut command: Command) -> Command {
+    command.creation_flags(CREATE_NO_WINDOW);
+    command
+}
+
+#[cfg(not(windows))]
+fn without_console_window(command: Command) -> Command {
+    command
+}
+
 const EMBEDDED_POSTGRES_DIRECTORY: &str = "postgres";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
 const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
@@ -205,7 +226,7 @@ fn signed_request(token: &str, method: &str, path: &str) -> Option<String> {
 #[cfg(unix)]
 fn listener_ids() -> Option<Vec<u32>> {
     let tool = LISTENER_TOOLS.iter().find(|path| std::path::Path::new(path).exists())?;
-    let output = Command::new(tool)
+    let output = hidden_command(tool)
         .args(["-nP", &format!("-iTCP:{}", server_port()), "-sTCP:LISTEN", "-t"])
         .stdin(Stdio::null())
         .stderr(Stdio::null())
@@ -220,7 +241,7 @@ fn listener_ids() -> Option<Vec<u32>> {
 
 #[cfg(windows)]
 fn listener_ids() -> Option<Vec<u32>> {
-    let output = Command::new("netstat")
+    let output = hidden_command("netstat")
         .args(["-ano", "-p", "TCP"])
         .stdin(Stdio::null())
         .stderr(Stdio::null())
@@ -399,7 +420,7 @@ fn start_server(app: &AppHandle) -> Startup {
         return Startup::Missing;
     }
     let token = issue_desktop_token(&home);
-    let mut command = Command::new(node);
+    let mut command = hidden_command(node);
     command.arg(SERVER_ENTRY).current_dir(folder).env_clear();
     for name in INHERITED_VARIABLES {
         if let Ok(value) = std::env::var(name) {
@@ -456,9 +477,9 @@ fn stop_embedded_postgres(app: &AppHandle) {
         return;
     }
     #[cfg(windows)]
-    let _ = Command::new("taskkill").args(["/PID", pid, "/T", "/F"]).output();
+    let _ = hidden_command("taskkill").args(["/PID", pid, "/T", "/F"]).output();
     #[cfg(not(windows))]
-    let _ = Command::new("kill").args(["-TERM", pid]).output();
+    let _ = hidden_command("kill").args(["-TERM", pid]).output();
 }
 
 fn wait_until_up() -> bool {

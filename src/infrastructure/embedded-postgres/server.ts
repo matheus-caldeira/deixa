@@ -110,7 +110,10 @@ export class EmbeddedPostgres {
 
   private run(tool: "initdb" | "pg_ctl", args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
-      const child = spawn(binaryPath(this.home, tool), args, { stdio: ["ignore", "ignore", "pipe"] });
+      const child = spawn(binaryPath(this.home, tool), args, {
+        stdio: ["ignore", "ignore", "pipe"],
+        windowsHide: true,
+      });
       let stderr = "";
       child.stderr?.on("data", (chunk: Buffer) => {
         stderr += chunk.toString();
@@ -174,7 +177,7 @@ export class EmbeddedPostgres {
         "-c",
         "unix_socket_directories=",
       ],
-      { stdio: "ignore", detached: process.platform !== "win32" },
+      { stdio: "ignore", detached: process.platform !== "win32", windowsHide: true },
     );
     child.once("exit", () => {
       if (this.child === child) this.child = null;
