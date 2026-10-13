@@ -3,6 +3,10 @@ import { configDirectory, readDesktopToken } from "../config/local-config";
 
 const MIN_TOKEN_CHARS = 40;
 const NONCE_SHAPE = /^[0-9a-f]{32,64}$/;
+const STAMP_SHAPE = /^\d{9,12}$/;
+const PROOF_SHAPE = /^[0-9a-f]{64}$/;
+const MS_PER_SECOND = 1000;
+const MAX_CLOCK_SKEW_MS = 60_000;
 const PROOF_PREFIX = "hello:";
 const TICKET_BYTES = 32;
 const TICKET_TTL_MS = 30_000;
@@ -15,12 +19,19 @@ function currentToken(): string | null {
   return token && token.length >= MIN_TOKEN_CHARS ? token : null;
 }
 
-export function isDesktopToken(candidate: string | null | undefined): boolean {
-  const expected = currentToken();
-  if (!expected || !candidate) return false;
-  const given = Buffer.from(candidate);
-  const known = Buffer.from(expected);
-  return given.length === known.length && timingSafeEqual(given, known);
+export function verifyDesktopRequest(
+  request: { method: string; path: string; signature: string | null | undefined },
+  now: number = Date.now(),
+): boolean {
+  const token = currentToken();
+  const [stamp, proof] = (request.signature ?? "").split(".");
+  if (!token || !stamp || !proof || !STAMP_SHAPE.test(stamp) || !PROOF_SHAPE.test(proof)) return false;
+  if (Math.abs(now - Number(stamp) * MS_PER_SECOND) > MAX_CLOCK_SKEW_MS) return false;
+  const expected = createHmac("sha256", token)
+    .update(`${request.method}\n${request.path}\n${stamp}`)
+    .digest();
+  const given = Buffer.from(proof, "hex");
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
 export function proveDesktopPeer(nonce: string | null | undefined): string | null {

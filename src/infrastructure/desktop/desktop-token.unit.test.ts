@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DESKTOP_TOKEN_FILE } from "../config/local-config";
 import { createHmac } from "node:crypto";
-import { isDesktopToken, issueEntryTicket, proveDesktopPeer, redeemEntryTicket } from "./index";
+import { issueEntryTicket, proveDesktopPeer, redeemEntryTicket, verifyDesktopRequest } from "./index";
 
 describe("token local da casca", () => {
   const directory = mkdtempSync(join(tmpdir(), "deixa-desktop-"));
@@ -20,20 +20,34 @@ describe("token local da casca", () => {
     rmSync(directory, { recursive: true, force: true });
   });
 
-  it("sem o arquivo da casca, nenhum token é aceito", () => {
-    expect(isDesktopToken(token)).toBe(false);
-    expect(isDesktopToken(undefined)).toBe(false);
+  const NOW = 1_800_000_000_000;
+  const sign = (method: string, path: string, at = NOW, key = token): string => {
+    const stamp = String(Math.floor(at / 1000));
+    return `${stamp}.${createHmac("sha256", key).update(`${method}\n${path}\n${stamp}`).digest("hex")}`;
+  };
+  const status = { method: "GET", path: "/api/desktop/status" };
+
+  it("sem o arquivo da casca, nenhum pedido é aceito", () => {
+    expect(verifyDesktopRequest({ ...status, signature: sign("GET", status.path) }, NOW)).toBe(false);
+    expect(verifyDesktopRequest({ ...status, signature: undefined }, NOW)).toBe(false);
   });
 
-  it("aceita só o token exato do arquivo e ignora arquivo com token curto demais", () => {
+  it("aceita só a assinatura feita com o token, para aquele método e caminho, e por pouco tempo", () => {
     writeFileSync(join(directory, DESKTOP_TOKEN_FILE), `${token}\n`);
-    expect(isDesktopToken(token)).toBe(true);
-    expect(isDesktopToken(token.toUpperCase())).toBe(false);
-    expect(isDesktopToken(`${token}0`)).toBe(false);
-    expect(isDesktopToken("")).toBe(false);
-    expect(isDesktopToken(null)).toBe(false);
+    const signature = sign("GET", status.path);
+    expect(verifyDesktopRequest({ ...status, signature }, NOW)).toBe(true);
+    expect(signature).not.toContain(token);
+    expect(verifyDesktopRequest({ method: "POST", path: "/api/desktop/ticket", signature }, NOW)).toBe(false);
+    expect(verifyDesktopRequest({ ...status, signature }, NOW + 61_000)).toBe(false);
+    expect(
+      verifyDesktopRequest({ ...status, signature: sign("GET", status.path, NOW, "b2".repeat(32)) }, NOW),
+    ).toBe(false);
+    expect(verifyDesktopRequest({ ...status, signature: token }, NOW)).toBe(false);
+    expect(verifyDesktopRequest({ ...status, signature: "" }, NOW)).toBe(false);
     writeFileSync(join(directory, DESKTOP_TOKEN_FILE), "curto\n");
-    expect(isDesktopToken("curto")).toBe(false);
+    expect(verifyDesktopRequest({ ...status, signature: sign("GET", status.path, NOW, "curto") }, NOW)).toBe(
+      false,
+    );
   });
 
   it("prova que conhece o token sem revelá-lo, e só para um desafio bem formado", () => {

@@ -224,8 +224,11 @@ Sessão do dono (12/10/2026, branch `feat/owner-session`):
 
 - [x] Ao subir o servidor, a casca grava um token aleatório em `desktop-token.txt` (só o dono lê) e o troca
       a cada abertura. Sem esse arquivo, as rotas da casca respondem como inexistentes.
-- [x] Antes de mandar o token ou o código de configuração, a casca exige que o servidor prove que conhece
-      o token (desafio com HMAC). O token só viaja em cabeçalho, nunca em URL.
+- [x] Antes de usar o token ou o código de configuração, a casca confere que só o servidor que ela iniciou
+      escuta na porta e exige que ele prove que conhece o token (desafio com HMAC). O token nunca sai da
+      casca: cada pedido leva uma assinatura com prazo de 60 segundos.
+- [ ] A conferência de quem escuta na porta usa `lsof` (macOS e Linux) e `netstat` (Windows). A do Windows
+      nunca foi executada; num Linux sem `lsof`, a janela não entra sozinha e pede login.
 - [x] A janela entra sozinha como a conta administradora por `/desktop/enter`, com um bilhete de uso único
       que vale 30 segundos. Quem já tem sessão continua
       com a sua; sem conta nenhuma, vai para o cadastro.

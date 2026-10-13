@@ -4,7 +4,7 @@ use std::net::{Ipv4Addr, SocketAddr, TcpStream};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use hmac::{Hmac, Mac};
 use qrcode::render::svg;
@@ -30,7 +30,8 @@ const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
 const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
-const DESKTOP_TOKEN_HEADER: &str = "x-deixa-desktop-token";
+const DESKTOP_SIGNATURE_HEADER: &str = "x-deixa-desktop-signature";
+const LISTENER_TOOLS: [&str; 2] = ["/usr/sbin/lsof", "/usr/bin/lsof"];
 const DESKTOP_TOKEN_BYTES: usize = 32;
 const STATUS_PATH: &str = "/api/desktop/status";
 const HELLO_PATH: &str = "/api/desktop/hello";
@@ -168,6 +169,66 @@ fn peer_proves_token(token: &str) -> bool {
     expected.verify_slice(&given).is_ok()
 }
 
+fn sign_request(token: &str, method: &str, path: &str) -> Option<String> {
+    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs();
+    let mut mac = Hmac::<Sha256>::new_from_slice(token.as_bytes()).ok()?;
+    mac.update(format!("{}\n{}\n{}", method, path, stamp).as_bytes());
+    Some(format!("{}.{}", stamp, hex(&mac.finalize().into_bytes())))
+}
+
+fn signed_request(token: &str, method: &str, path: &str) -> Option<String> {
+    let signature = sign_request(token, method, path)?;
+    http_request(
+        method,
+        path,
+        Some((DESKTOP_SIGNATURE_HEADER, &signature)),
+        MAX_STATUS_BYTES,
+    )
+}
+
+#[cfg(unix)]
+fn listener_ids() -> Option<Vec<u32>> {
+    let tool = LISTENER_TOOLS.iter().find(|path| std::path::Path::new(path).exists())?;
+    let output = Command::new(tool)
+        .args(["-nP", &format!("-iTCP:{}", server_port()), "-sTCP:LISTEN", "-t"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| line.trim().parse().ok())
+        .collect();
+    Some(ids)
+}
+
+#[cfg(windows)]
+fn listener_ids() -> Option<Vec<u32>> {
+    let output = Command::new("netstat")
+        .args(["-ano", "-p", "TCP"])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    let suffix = format!(":{}", server_port());
+    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+            let listening = fields.len() >= 5 && fields[3] == "LISTENING" && fields[1].ends_with(&suffix);
+            listening.then(|| fields[4].parse().ok()).flatten()
+        })
+        .collect();
+    Some(ids)
+}
+
+fn only_child_listens(child: u32) -> bool {
+    match listener_ids() {
+        Some(ids) => !ids.is_empty() && ids.iter().all(|id| *id == child),
+        None => false,
+    }
+}
+
 fn running_child_id(app: &AppHandle) -> Option<u32> {
     let process = app.state::<ServerProcess>();
     let mut slot = process.0.lock().ok()?;
@@ -200,6 +261,9 @@ fn issue_desktop_token(home: &PathBuf) -> Option<String> {
 
 fn current_token(app: &AppHandle) -> Option<String> {
     let child = running_child_id(app)?;
+    if !only_child_listens(child) {
+        return None;
+    }
     let token = app.state::<DesktopToken>().0.lock().ok()?.clone()?;
     let peer = app.state::<VerifiedPeer>();
     let mut verified = peer.0.lock().ok()?;
@@ -214,18 +278,13 @@ fn current_token(app: &AppHandle) -> Option<String> {
 
 fn request_entry_ticket(app: &AppHandle) -> Option<String> {
     let token = current_token(app)?;
-    let response = http_request(
-        "POST",
-        TICKET_PATH,
-        Some((DESKTOP_TOKEN_HEADER, &token)),
-        MAX_STATUS_BYTES,
-    )?;
+    let response = signed_request(&token, "POST", TICKET_PATH)?;
     json_field(&response, "ticket").filter(|ticket| ticket.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
 fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
     let token = current_token(app)?;
-    let response = http_get(STATUS_PATH, Some((DESKTOP_TOKEN_HEADER, &token)), MAX_STATUS_BYTES)?;
+    let response = signed_request(&token, "GET", STATUS_PATH)?;
     if !is_ok(&response) {
         return None;
     }
