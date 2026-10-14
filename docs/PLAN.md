@@ -183,8 +183,13 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da vers�
 
 ## Próximo
 
-- Fase 03 restante: worker separado, áudio em lote, roteiro.
-- Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
-- Fase 06: fala em tempo real, HTTPS para PWA e microfone.
-- App nativo instalável (Tauri, banco embutido, configuração no banco): ver `docs/HANDOFF.md`.
-- Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), depois da etapa 11.
+Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
+
+1. Confirmar a 0.0.5 no Windows: janela de console oculta e Postgres embutido instalando.
+2. Interface em N idiomas (frente A): textos em `locales/<idioma>.json`, pt-BR e inglês primeiro.
+3. Estudo de N idiomas (frente B): par base → estudo por conta entre inglês, português, espanhol e francês,
+   com mais de um par por conta e um ativo por vez.
+4. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
+5. Fase 03 restante: worker separado, áudio em lote, roteiro.
+6. Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), que herda as frentes A e B prontas.
+7. Fase 06: fala em tempo real, HTTPS para PWA e microfone.
