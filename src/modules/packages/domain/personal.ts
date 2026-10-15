@@ -96,7 +96,7 @@ export const personalDataSchema = z.object({
   xp: z
     .array(z.object({ source: SHORT, sourceId: SHORT, amount: z.number().int(), createdAt: ISO }))
     .max(500_000),
-  snapshot: z.object({ data: z.unknown(), updatedAt: ISO }).nullable(),
+  snapshot: z.object({ data: z.unknown(), updatedAt: ISO }).nullable().optional(),
   credentials: z.array(z.object({ service: SHORT, secret: z.string().max(4000) })).max(20),
 });
 export type PersonalData = z.infer<typeof personalDataSchema>;

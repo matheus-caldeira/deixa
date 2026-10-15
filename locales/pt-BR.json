@@ -869,7 +869,9 @@
       "good": "Bom",
       "easy": "Fácil"
     },
-    "showAnswer": "Mostrar resposta"
+    "showAnswer": "Mostrar resposta",
+    "recurringErrors": "Erros recorrentes",
+    "missCount": "{count, plural, one {# erro} other {# erros}}"
   },
   "sources": {
     "downloads": "{count} downloads",

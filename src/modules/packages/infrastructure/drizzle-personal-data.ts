@@ -7,7 +7,6 @@ import {
   learningItemExplanations,
   learningItems,
   mediaItems,
-  progressSnapshots,
   reviewLogs,
   seasons,
   subtitleCues,
@@ -168,11 +167,6 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       : [];
     const progressRows = await db.select().from(episodeProgress).where(eq(episodeProgress.userId, userId));
     const xpRows = await db.select().from(xpEvents).where(eq(xpEvents.userId, userId));
-    const [snapshot] = await db
-      .select()
-      .from(progressSnapshots)
-      .where(eq(progressSnapshots.userId, userId))
-      .limit(1);
     const episodeIds = [
       ...highlightRows.map((row) => row.episodeId),
       ...progressRows.map((row) => row.episodeId),
@@ -316,7 +310,6 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         amount: row.amount,
         createdAt: row.createdAt.toISOString(),
       })),
-      snapshot: snapshot ? { data: snapshot.data, updatedAt: snapshot.updatedAt.toISOString() } : null,
       credentials,
     };
   }
@@ -594,27 +587,6 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         .onConflictDoNothing()
         .returning({ id: xpEvents.id });
       report.xp += inserted.length;
-    }
-
-    if (data.snapshot) {
-      const [local] = await db
-        .select()
-        .from(progressSnapshots)
-        .where(eq(progressSnapshots.userId, userId))
-        .limit(1);
-      if (!local || local.updatedAt < new Date(data.snapshot.updatedAt)) {
-        await db
-          .insert(progressSnapshots)
-          .values({
-            userId,
-            data: data.snapshot.data as object,
-            updatedAt: new Date(data.snapshot.updatedAt),
-          })
-          .onConflictDoUpdate({
-            target: progressSnapshots.userId,
-            set: { data: data.snapshot.data as object, updatedAt: new Date(data.snapshot.updatedAt) },
-          });
-      }
     }
 
     for (const credential of data.credentials) {

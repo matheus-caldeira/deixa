@@ -29,6 +29,7 @@ export type LessonAttempt = {
   seconds: number;
   replay: boolean;
   passed: boolean;
+  kinds: Record<string, { correct: number; total: number }>;
   createdAt: Date;
 };
 
@@ -356,6 +357,14 @@ export function makeCompleteLesson(deps: Deps) {
     }));
     const graded = outcomes.filter((outcome) => outcome.gradable);
     const correct = graded.filter((outcome) => outcome.right).length;
+    const kinds: Record<string, { correct: number; total: number }> = {};
+    for (const outcome of graded) {
+      const known = kinds[outcome.exercise.kind] ?? { correct: 0, total: 0 };
+      kinds[outcome.exercise.kind] = {
+        correct: known.correct + (outcome.right ? 1 : 0),
+        total: known.total + 1,
+      };
+    }
     const total = graded.length;
     const accuracy = accuracyOf(correct, total);
     const passed = accuracy >= PASS_ACCURACY;
@@ -381,6 +390,7 @@ export function makeCompleteLesson(deps: Deps) {
       seconds: Math.max(0, Math.min(MAX_LESSON_SECONDS, Math.round(input.seconds))),
       replay,
       passed,
+      kinds,
       createdAt: now,
     });
 

@@ -7,9 +7,14 @@ export default async function ReviewPage() {
   const user = await requireUser();
   const container = getContainer();
   const pair = pairOf(user.preferences);
-  const [queue, anticipation] = await Promise.all([
+  const [queue, anticipation, summary] = await Promise.all([
     container.listDueCards(user.id, pair),
     container.getAnticipationStatus(user.id, user.preferences.timezone, pair),
+    container.getProfileSummary({
+      userId: user.id,
+      dailyGoal: user.preferences.dailyGoal,
+      timezone: user.preferences.timezone,
+    }),
   ]);
   return (
     <ReviewScreen
@@ -18,6 +23,7 @@ export default async function ReviewPage() {
         dueCount: queue.dueCount,
         anticipation: { available: anticipation.available, batchSize: anticipation.batchSize },
         audioSpeed: user.preferences.audioSpeed,
+        recurringErrors: summary.recurringErrors,
         cards: queue.cards.map((card) => ({
           cardId: card.cardId,
           learningItemId: card.learningItemId,

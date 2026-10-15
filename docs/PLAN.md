@@ -208,6 +208,13 @@ Pendente desta etapa: menus nativos da casca (Tauri) no idioma da conta.
 Pendente desta etapa: validar com uma legenda real em espanhol e francês no OpenSubtitles e ouvir as vozes
 `ef_dora`, `ff_siwis` e `pf_dora` no Kokoro (lista em `docs/TESTES-MANUAIS.md`).
 
+## Etapa 14: progresso com fonte real (fase 04 restante)
+
+| #   | Tarefa                                                                       | Critério de pronto                                                                  | Estado |
+| --- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------ |
+| 105 | Tentativa de lição grava acertos por tipo de exercício                       | `lesson_attempts.kinds` preenchido ao concluir a lição                              | [x]    |
+| 106 | Perfil calculado: nível, acertos, habilidades, erros recorrentes, conquistas | Sem `progress_snapshots`; teste unitário das fórmulas; erros recorrentes na Revisão | [x]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
@@ -216,9 +223,11 @@ Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
    `docs/TESTES-MANUAIS.md`).
 2. ~~Interface em N idiomas (frente A)~~ Pronta na etapa 12.
 3. ~~Estudo de N idiomas (frente B)~~ Pronta na etapa 13.
-   Antes: estudo de N idiomas (frente B): par base → estudo por conta entre inglês, português, espanhol e francês,
+   Antes: estudo de N idiomas (frente B)
+4. ~~Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.~~ Pronta na etapa 14.
+   Antes: fase 04 restante: par base → estudo por conta entre inglês, português, espanhol e francês,
    com mais de um par por conta e um ativo por vez.
-4. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
-5. Fase 03 restante: worker separado, áudio em lote, roteiro.
-6. Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), que herda as frentes A e B prontas.
-7. Fase 06: fala em tempo real, HTTPS para PWA e microfone.
+5. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
+6. Fase 03 restante: worker separado, áudio em lote, roteiro.
+7. Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), que herda as frentes A e B prontas.
+8. Fase 06: fala em tempo real, HTTPS para PWA e microfone.

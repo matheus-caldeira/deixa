@@ -55,12 +55,7 @@ import {
 } from "@/modules/conversations";
 import { DrizzleConversationRepository } from "@/modules/conversations/infrastructure/drizzle-conversation-repository";
 import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
-import {
-  makeAwardXp,
-  makeGetProfileSummary,
-  makeSaveSnapshot,
-  makeSettleMissions,
-} from "@/modules/gamification";
+import { makeAwardXp, makeGetProfileSummary, makeSettleMissions } from "@/modules/gamification";
 import { DrizzleGamificationRepository } from "@/modules/gamification/infrastructure/drizzle-gamification-repository";
 import {
   makeGetReadingView,
@@ -922,12 +917,10 @@ export function buildContainer(options: ContainerOptions) {
 
     getProfileSummary: makeGetProfileSummary({
       xp: gamification,
-      snapshots: gamification,
       counts: gamification,
       clock,
     }),
     settleMissions: makeSettleMissions({ xp: gamification, counts: gamification, clock, ids }),
-    saveSnapshot: makeSaveSnapshot({ snapshots: gamification, clock }),
     awardXp,
   };
 }

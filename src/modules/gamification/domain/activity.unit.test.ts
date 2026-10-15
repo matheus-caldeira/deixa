@@ -100,12 +100,15 @@ describe("atividade calculada dos eventos de XP", () => {
       ["lesson", 0, 1],
       ["tutor", 0, 5],
     ]);
-    expect(earnedAchievements({ longestStreak: 8, lessonsEver: 2, base: ["ep10"] }).sort()).toEqual([
-      "ep10",
-      "first",
-      "streak3",
-      "streak7",
-    ]);
-    expect(earnedAchievements({ longestStreak: 0, lessonsEver: 0, base: [] })).toEqual([]);
+    const none = {
+      phrasalCards: 0,
+      episodesCompleted: 0,
+      conversationsReviewed: 0,
+      perfectDictations: 0,
+    };
+    expect(
+      earnedAchievements({ ...none, longestStreak: 8, lessonsEver: 2, episodesCompleted: 10 }).sort(),
+    ).toEqual(["ep10", "first", "streak3", "streak7"]);
+    expect(earnedAchievements({ ...none, longestStreak: 0, lessonsEver: 0 })).toEqual([]);
   });
 });

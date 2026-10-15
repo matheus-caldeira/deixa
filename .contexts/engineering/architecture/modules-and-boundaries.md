@@ -32,7 +32,7 @@ fixtures/             SRT fictícios EN e PT
 | `flashcards`      | Cards do usuário, agendamento de revisão, histórico                           |
 | `ai-credentials`  | Chave Gemini por usuário: cifra, teste, máscara, remoção                      |
 | `audio`           | `TtsProvider`, cache de áudio por hash                                        |
-| `gamification`    | XP por eventos e retrato de demonstração de Início, Conversar e Progresso     |
+| `gamification`    | XP por eventos, missões, conquistas e perfil calculado das lições e revisões  |
 | `settings`        | Configurações do servidor guardadas no banco, alteradas só pelo administrador |
 | `recommendations` | Retrato do aluno, vetores das obras, ranqueamento e sugestões personalizadas  |
 | `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites       |

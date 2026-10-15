@@ -119,13 +119,24 @@ const STREAK_ACHIEVEMENTS: readonly [string, number][] = [
   ["streak30", 30],
 ];
 
+const PHRASAL_TARGET = 25;
+const EPISODES_TARGET = 10;
+const CONVERSATIONS_TARGET = 10;
+
 export function earnedAchievements(input: {
   longestStreak: number;
   lessonsEver: number;
-  base: readonly string[];
+  phrasalCards: number;
+  episodesCompleted: number;
+  conversationsReviewed: number;
+  perfectDictations: number;
 }): string[] {
-  const earned = new Set(input.base);
+  const earned = new Set<string>();
   if (input.lessonsEver > 0) earned.add("first");
   for (const [id, days] of STREAK_ACHIEVEMENTS) if (input.longestStreak >= days) earned.add(id);
+  if (input.phrasalCards >= PHRASAL_TARGET) earned.add("phrasal25");
+  if (input.episodesCompleted >= EPISODES_TARGET) earned.add("ep10");
+  if (input.conversationsReviewed >= CONVERSATIONS_TARGET) earned.add("tutor10");
+  if (input.perfectDictations > 0) earned.add("nosub");
   return [...earned];
 }

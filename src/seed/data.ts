@@ -1,4 +1,3 @@
-import type { ProfileSnapshot } from "@/modules/gamification";
 import type { Accent } from "@/modules/identity";
 import type { CefrLevel } from "@/shared/levels";
 
@@ -36,15 +35,7 @@ export type SeedProfile = {
   prelines: number[];
   reviews: { en: string; pt: string; episode: EpisodeKey }[];
   history: { streak: number; xpToday: number; totalXp: number };
-  snapshot: ProfileSnapshot;
 };
-
-const skills = (listening: number, vocabulary: number, grammar: number, conversation: number) => [
-  { key: "listening" as const, percent: listening },
-  { key: "vocabulary" as const, percent: vocabulary },
-  { key: "grammar" as const, percent: grammar },
-  { key: "conversation" as const, percent: conversation },
-];
 
 export const SEED_PROFILES: readonly SeedProfile[] = [
   {
@@ -75,13 +66,6 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
       { en: "Me too.", pt: "Eu também.", episode: "friends-1-2" },
     ],
     history: { streak: 3, xpToday: 30, totalXp: 420 },
-    snapshot: {
-      levelPct: 64,
-      learnedBase: 38,
-      accuracy: 81,
-      skills: skills(42, 58, 35, 20),
-      achievements: ["first", "streak3"],
-    },
   },
   {
     slug: "matheus",
@@ -118,13 +102,6 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
       { en: "What a small world.", pt: "Que mundo pequeno.", episode: "office-1-1" },
     ],
     history: { streak: 7, xpToday: 120, totalXp: 6840 },
-    snapshot: {
-      levelPct: 38,
-      learnedBase: 412,
-      accuracy: 88,
-      skills: skills(66, 72, 61, 48),
-      achievements: ["first", "streak3", "streak7", "phrasal25", "ep10"],
-    },
   },
   {
     slug: "lucas",
@@ -159,13 +136,6 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
       { en: "to cut corners", pt: "fazer de qualquer jeito para economizar", episode: "bb-1-1" },
     ],
     history: { streak: 41, xpToday: 260, totalXp: 24310 },
-    snapshot: {
-      levelPct: 22,
-      learnedBase: 1890,
-      accuracy: 93,
-      skills: skills(88, 91, 84, 79),
-      achievements: ["first", "streak3", "streak7", "streak30", "phrasal25", "ep10", "nosub", "tutor10"],
-    },
   },
 ];
 

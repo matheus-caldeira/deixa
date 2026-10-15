@@ -4,7 +4,7 @@ O catálogo é compartilhado; o aprendizado é individual. O `userId` vem só da
 
 Checklist:
 
-- [ ] Tabelas individuais (`user_preferences`, `user_ai_credentials`, `user_highlights`, `highlight_card_batches`, `user_cards`, `review_logs`, `episode_progress`, `xp_events`, `progress_snapshots`, `sessions`, `user_recommendations`, `recommendation_feedback`, `recommendation_runs`, `ai_usage_events`, `ai_usage_limits`, `user_ai_models`, `user_language_pairs`) só são acessadas com `userId` da sessão.
+- [ ] Tabelas individuais (`user_preferences`, `user_ai_credentials`, `user_highlights`, `highlight_card_batches`, `user_cards`, `review_logs`, `episode_progress`, `xp_events`, `sessions`, `user_recommendations`, `recommendation_feedback`, `recommendation_runs`, `ai_usage_events`, `ai_usage_limits`, `user_ai_models`, `user_language_pairs`) só são acessadas com `userId` da sessão.
 - [ ] Nenhum schema de entrada aceita `userId` do cliente.
 - [ ] `learning_items` com `visibility = private` só é lido, reutilizado ou promovido pelo `owner_user_id`.
 - [ ] `highlight_stats` guarda só contagem; nunca id de usuário. Só aparece a partir do mínimo de marcações.

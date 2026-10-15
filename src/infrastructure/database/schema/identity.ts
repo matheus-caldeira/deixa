@@ -89,14 +89,6 @@ export const appSettings = pgTable("app_settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
 
-export const progressSnapshots = pgTable("progress_snapshots", {
-  userId: uuid("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  data: jsonb("data").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
-});
-
 export const notifications = pgTable(
   "notifications",
   {

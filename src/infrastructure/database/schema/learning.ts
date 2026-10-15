@@ -222,6 +222,7 @@ export const lessonAttempts = pgTable(
     seconds: integer("seconds").notNull(),
     replay: boolean("replay").notNull(),
     passed: boolean("passed").notNull().default(true),
+    kinds: jsonb("kinds").$type<Record<string, { correct: number; total: number }>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [index("lesson_attempts_user_episode").on(table.userId, table.episodeId)],

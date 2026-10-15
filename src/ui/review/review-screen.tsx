@@ -32,6 +32,7 @@ export type ReviewView = {
   dueCount: number;
   anticipation: { available: boolean; batchSize: number };
   audioSpeed: number;
+  recurringErrors: { term: string; count: number }[];
 };
 
 export function ReviewScreen({ view }: { view: ReviewView }) {
@@ -59,6 +60,20 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
   };
   const intervalLabel = (interval: Interval): string =>
     t(`interval.${interval.unit}`, { count: interval.value });
+  const errors =
+    view.recurringErrors.length > 0 ? (
+      <section className="card col" style={{ gap: 4 }}>
+        <div className="sec-h">
+          <h2 style={{ fontSize: 17 }}>{t("recurringErrors")}</h2>
+        </div>
+        {view.recurringErrors.map((entry) => (
+          <div className="dueitem" key={entry.term}>
+            <span>{entry.term}</span>
+            <span className="chip bad">{t("missCount", { count: entry.count })}</span>
+          </div>
+        ))}
+      </section>
+    ) : null;
 
   const grade = (rating: Rating) => {
     if (!card) return;
@@ -123,6 +138,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
             </>
           ) : null}
         </div>
+        {errors}
       </>
     );
   }
@@ -195,6 +211,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
           {t("showAnswer")}
         </button>
       )}
+      {errors}
     </>
   );
 }

@@ -316,7 +316,6 @@ export async function runSeed(input: {
   for (const profile of SEED_PROFILES) {
     const userId = userIdBySlug.get(profile.slug);
     if (!userId) continue;
-    await container.saveSnapshot(userId, profile.snapshot);
     await seedXpHistory(userId, profile);
     for (const [key, percent] of Object.entries(profile.progress) as [EpisodeKey, number][]) {
       const episodeId = episodeIdByKey.get(key);
@@ -349,6 +348,7 @@ export async function runSeed(input: {
           seconds: 180,
           replay: false,
           passed: true,
+          kinds: { choice: { correct: 3, total: 3 }, listen: { correct: 2, total: 3 } },
           createdAt: new Date(now.getTime() - (profile.scenesDone - nodeIndex) * 3_600_000),
         });
       }

@@ -1,6 +1,6 @@
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
-import { localDateKey, startOfLocalDay } from "@/shared/time";
+import { MS_PER_DAY, localDateKey, startOfLocalDay } from "@/shared/time";
 import {
   MISSION_XP,
   computeActivity,
@@ -9,17 +9,27 @@ import {
   type Activity,
   type Mission,
 } from "../domain/activity";
-import { EMPTY_SNAPSHOT, type ProfileSnapshot } from "../domain/profile";
-import type { ActivityCounts, SnapshotRepository, XpRepository } from "./ports";
+import { levelProgressPercent, overallAccuracy, skillPercents, type Skill } from "../domain/profile";
+import type { ActivityCounts, XpRepository } from "./ports";
 
 const MAX_XP_PER_EVENT = 100_000;
+const WINDOW_DAYS = 30;
+const RECURRING_LIMIT = 5;
+const DICTATION_KIND = "type";
 
-export type ProfileSummary = Omit<ProfileSnapshot, "achievements" | "learnedBase"> &
-  Activity & { dailyGoal: number; missions: Mission[]; achievements: string[]; learned: number };
+export type ProfileSummary = Activity & {
+  dailyGoal: number;
+  missions: Mission[];
+  achievements: string[];
+  learned: number;
+  levelPct: number;
+  accuracy: number;
+  skills: { key: Skill; percent: number }[];
+  recurringErrors: { term: string; count: number }[];
+};
 
 type Deps = {
   xp: XpRepository;
-  snapshots: SnapshotRepository;
   counts: ActivityCounts;
   clock: Clock;
   ids: IdGenerator;
@@ -45,7 +55,7 @@ export function makeAwardXp(deps: Pick<Deps, "xp" | "clock" | "ids">) {
   };
 }
 
-export function makeGetProfileSummary(deps: Pick<Deps, "xp" | "snapshots" | "counts" | "clock">) {
+export function makeGetProfileSummary(deps: Pick<Deps, "xp" | "counts" | "clock">) {
   return async function getProfileSummary(input: {
     userId: string;
     dailyGoal: number;
@@ -53,26 +63,52 @@ export function makeGetProfileSummary(deps: Pick<Deps, "xp" | "snapshots" | "cou
   }): Promise<ProfileSummary> {
     const now = deps.clock.now();
     const dayStart = startOfLocalDay(now, input.timezone);
-    const [stored, days, reviewsToday, lessonsToday, lessonsEver, cardsOwned] = await Promise.all([
-      deps.snapshots.get(input.userId),
+    const windowStart = new Date(now.getTime() - WINDOW_DAYS * MS_PER_DAY);
+    const [
+      days,
+      reviewsToday,
+      lessonsToday,
+      lessonsEver,
+      cardsOwned,
+      recentLessons,
+      allLessons,
+      reviews,
+      recurringErrors,
+      episodesCompleted,
+      conversationScores,
+      phrasalCards,
+    ] = await Promise.all([
       deps.xp.dailyTotals(input.userId, input.timezone),
       deps.counts.reviewsSince(input.userId, dayStart),
       deps.counts.lessonsSince(input.userId, dayStart),
       deps.counts.lessonsEver(input.userId),
       deps.counts.cardsOwned(input.userId),
+      deps.counts.lessonStats(input.userId, windowStart),
+      deps.counts.lessonStats(input.userId, null),
+      deps.counts.reviewOutcomesSince(input.userId, windowStart),
+      deps.counts.recurringMisses(input.userId, windowStart, RECURRING_LIMIT),
+      deps.counts.episodesCompleted(input.userId),
+      deps.counts.conversationScores(input.userId),
+      deps.counts.phrasalCards(input.userId),
     ]);
-    const { achievements, learnedBase, ...snapshot } = stored ?? EMPTY_SNAPSHOT;
     const activity = computeActivity({ days, now, timeZone: input.timezone, dailyGoal: input.dailyGoal });
+    const dictation = allLessons.byKind[DICTATION_KIND];
     return {
-      ...snapshot,
       ...activity,
       dailyGoal: input.dailyGoal,
-      learned: learnedBase + cardsOwned,
+      learned: cardsOwned,
+      levelPct: levelProgressPercent({ lessonsPassed: allLessons.passed, cardsOwned }),
+      accuracy: overallAccuracy({ lessons: recentLessons, reviews }),
+      skills: skillPercents({ lessons: recentLessons, reviews, conversationScores }),
+      recurringErrors,
       missions: dailyMissions({ reviewsToday, lessonsToday }),
       achievements: earnedAchievements({
         longestStreak: activity.longestStreak,
         lessonsEver,
-        base: achievements,
+        phrasalCards,
+        episodesCompleted,
+        conversationsReviewed: conversationScores.length,
+        perfectDictations: dictation && dictation.total > 0 && dictation.correct === dictation.total ? 1 : 0,
       }),
     };
   };
@@ -92,11 +128,5 @@ export function makeSettleMissions(deps: Pick<Deps, "xp" | "counts" | "clock" | 
       if (mission.value < mission.max) continue;
       await awardXp({ userId, source: "mission", sourceId: `${mission.kind}:${today}`, amount: MISSION_XP });
     }
-  };
-}
-
-export function makeSaveSnapshot(deps: Pick<Deps, "snapshots" | "clock">) {
-  return async function saveSnapshot(userId: string, snapshot: ProfileSnapshot): Promise<void> {
-    await deps.snapshots.upsert(userId, snapshot, deps.clock.now());
   };
 }
