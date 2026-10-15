@@ -3,10 +3,20 @@
 import { readFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { posterUrl, type Episode, type MediaItem, type Season } from "@/modules/catalog";
-import { pairOf } from "@/modules/identity";
+import { voiceFor } from "@/modules/audio";
+import {
+  episodeLabel,
+  posterUrl,
+  type Episode,
+  type EpisodeContext,
+  type MediaItem,
+  type Season,
+} from "@/modules/catalog";
+import { pairOf, type Preferences } from "@/modules/identity";
+import type { ProcessingStep } from "@/modules/subtitles";
 import type { StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
+import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 import type {
@@ -22,6 +32,8 @@ import type {
 const SAMPLES_DIR = "fixtures";
 const MAX_UPLOAD_BYTES = 5_000_000;
 const MAX_UPLOAD_MB = 5;
+const MAX_SCRIPT_UPLOAD_BYTES = 2_000_000;
+const MAX_SCRIPT_UPLOAD_MB = 2;
 const MAX_OPTIONS = 8;
 const MAX_RELEASE_CHARS = 120;
 const MAX_UPLOADER_CHARS = 40;
@@ -138,6 +150,45 @@ async function readUpload(
   return { filename: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) };
 }
 
+async function readScriptUpload(
+  entry: FormDataEntryValue | null,
+): Promise<{ filename: string; bytes: Uint8Array } | undefined> {
+  if (!(entry instanceof File) || entry.size === 0) return undefined;
+  if (entry.size > MAX_SCRIPT_UPLOAD_BYTES) {
+    throw new AppError("SCRIPT_INVALID", { key: "tooLarge", params: { mb: MAX_SCRIPT_UPLOAD_MB } });
+  }
+  return { filename: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) };
+}
+
+async function scheduleEpisodeAudio(input: {
+  userId: string;
+  preferences: Preferences;
+  episodeId: string;
+  label: string;
+}): Promise<void> {
+  const container = app();
+  if (!container.audioBatchAvailable) return;
+  const language = input.preferences.targetLanguage;
+  const pending = await container.hasPendingJob("episode_audio", { episodeId: input.episodeId, language });
+  if (pending) return;
+  await scheduleJob(
+    container,
+    "episode_audio",
+    {
+      userId: input.userId,
+      episodeId: input.episodeId,
+      language,
+      voice: voiceFor(language, input.preferences.preferredAccent),
+      episodeLabel: input.label,
+    },
+    input.userId,
+  );
+}
+
+function fullEpisodeLabel(context: EpisodeContext): string {
+  return `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`;
+}
+
 async function readSample(language: StudyLanguage) {
   const filename = `sample.${language}.srt`;
   return { filename, bytes: new Uint8Array(await readFile(`${SAMPLES_DIR}/${filename}`)) };
@@ -169,24 +220,46 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
     const sample = fields.data.useSample === "true" && app().devShortcuts;
     const target = sample ? await readSample(pair.target) : await readUpload(form.get("target"));
     const native = sample ? await readSample(pair.native) : await readUpload(form.get("native"));
-    if (!target) throw new AppError("SUBTITLE_INVALID", "targetRequired");
+    const script = await readScriptUpload(form.get("script"));
+    const hasTargetSubtitle = context.episode.subtitleLanguages.includes(pair.target);
+    if (!target && !(script && hasTargetSubtitle)) throw new AppError("SUBTITLE_INVALID", "targetRequired");
 
-    const result = await app().importEpisodeSubtitles({
-      userId: user.id,
-      episodeId,
-      target: { language: pair.target, upload: target },
-      native: native ? { language: pair.native, upload: native } : undefined,
-    });
+    const result = target
+      ? await app().importEpisodeSubtitles({
+          userId: user.id,
+          episodeId,
+          target: { language: pair.target, upload: target },
+          native: native ? { language: pair.native, upload: native } : undefined,
+        })
+      : null;
+    const scriptSteps: ProcessingStep[] = script
+      ? (
+          await app().importEpisodeScript({
+            userId: user.id,
+            episodeId,
+            language: pair.target,
+            upload: script,
+          })
+        ).steps
+      : [];
+    if (result?.outcome === "PROCESSED") {
+      await scheduleEpisodeAudio({
+        userId: user.id,
+        preferences: user.preferences,
+        episodeId,
+        label: fullEpisodeLabel(context),
+      });
+    }
     revalidatePath("/catalog");
     revalidatePath(`/catalog/${context.media.id}`);
     return {
-      outcome: result.outcome,
-      steps: result.steps,
-      hasNative: result.hasNative,
+      outcome: result?.outcome ?? "PROCESSED",
+      steps: [...(result?.steps ?? []), ...scriptSteps],
+      hasNative: result?.hasNative ?? context.episode.subtitleLanguages.includes(pair.native),
       episodeId,
       mediaId: context.media.id,
       seasonNumber: context.season.seasonNumber,
-      filename: target.filename,
+      filename: target?.filename ?? script?.filename ?? "",
     };
   });
 }
@@ -260,6 +333,14 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
       targetFileId,
       nativeFileId,
     });
+    if (result.outcome === "PROCESSED") {
+      await scheduleEpisodeAudio({
+        userId: user.id,
+        preferences: user.preferences,
+        episodeId,
+        label: fullEpisodeLabel(context),
+      });
+    }
     revalidatePath("/catalog");
     revalidatePath(`/catalog/${mediaId}`);
     return {

@@ -31,6 +31,7 @@ export type ReadLine = {
   translation: string | null;
   translationSource: "subtitle_pt" | "llm" | null;
   markedByCount: number | null;
+  scriptText: string | null;
 };
 
 export type ReadView = {
@@ -590,6 +591,12 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     </span>
                   ))}
                 </div>
+                {line.scriptText ? (
+                  <div className="pt" data-testid="script-line">
+                    <span className="src">{t("scriptTag")}</span>
+                    {line.scriptText}
+                  </div>
+                ) : null}
                 <button
                   className={`mkbtn ${wholeLine ? "on" : ""}`}
                   onClick={() => toggleLine(line.cueId)}

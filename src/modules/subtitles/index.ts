@@ -13,6 +13,7 @@ export type {
 } from "./application/ports";
 export {
   makeImportEpisodeSubtitles,
+  type AudioMode,
   type ImportResult,
   type SubtitleUpload,
   type UploadedSubtitle,

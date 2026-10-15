@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { z } from "zod";
 import { episodeLabel } from "@/modules/catalog";
 import { pairOf } from "@/modules/identity";
 import type { LanguagePair } from "@/shared/study-languages";
 import type { CardBatchState, ConfirmedBatch } from "@/modules/learning";
 import { AppError } from "@/shared/errors";
+import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -76,7 +76,7 @@ export async function startCardGenerationAction(input: unknown): Promise<ActionR
       pair: pairOf(user.preferences),
       episodeLabel: `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`,
     };
-    after(() => app().processCardBatch(job));
+    await scheduleJob(app(), "card_batch", job, user.id);
     return { batchId };
   });
 }

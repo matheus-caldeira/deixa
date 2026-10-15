@@ -13,6 +13,7 @@ import {
 import { PerUserGate } from "../infrastructure/per-user-gate";
 import { SilentTtsProvider } from "../infrastructure/silent-tts-provider";
 import { makeGetSpeechAudio, makeListCachedSpeech } from "./get-speech-audio";
+import { makeSynthesizeLines } from "./synthesize-lines";
 import type { AudioAsset, AudioAssetRepository, TtsProvider } from "./ports";
 
 class InMemoryAssets implements AudioAssetRepository {
@@ -78,6 +79,8 @@ function setup() {
     failures,
     getAudio: makeGetSpeechAudio(deps),
     listCached: makeListCachedSpeech(deps),
+    synthesizeBatch: makeSynthesizeLines(deps),
+    synthesizeSilent: makeSynthesizeLines({ ...deps, primary: fallback }),
   };
 }
 
@@ -187,5 +190,37 @@ describe("áudio sob demanda com cache", () => {
     await expect(app.getAudio({ userId: "ana", text: "   ", voice: US })).rejects.toMatchObject({
       code: "AUDIO_UNAVAILABLE",
     });
+  });
+});
+
+describe("áudio em lote do episódio", () => {
+  const lines = [
+    { id: "c1", text: "Hey, what are you up to tonight?" },
+    { id: "c2", text: "Nothing much." },
+    { id: "c3", text: "  nothing MUCH.  " },
+    { id: "c4", text: "   " },
+  ];
+
+  it("gera só o que falta, reaproveita o cache e ignora texto vazio ou repetido", async () => {
+    const app = setup();
+    await app.getAudio({ userId: "ana", text: "Nothing much.", voice: US });
+    app.primary.calls = [];
+    const result = await app.synthesizeBatch({ voice: US, lines });
+    expect(result).toEqual({ generated: 1, cached: 1, skipped: 2 });
+    expect(app.primary.calls.map((call) => call.text)).toEqual(["Hey, what are you up to tonight?"]);
+    expect(await app.listCached({ voice: US, lines })).toEqual(["c1", "c2", "c3"]);
+    expect(await app.synthesizeBatch({ voice: US, lines })).toEqual({ generated: 0, cached: 2, skipped: 2 });
+  });
+
+  it("não gera nada com o provedor silencioso e desiste depois de três falhas seguidas", async () => {
+    const app = setup();
+    expect(await app.synthesizeSilent({ voice: US, lines })).toEqual({ generated: 0, cached: 0, skipped: 4 });
+    app.primary.failing = true;
+    const many = [...lines, { id: "c5", text: "Come on, let's hang out." }, { id: "c6", text: "Deal." }];
+    await expect(app.synthesizeBatch({ voice: US, lines: many })).rejects.toMatchObject({
+      code: "AUDIO_UNAVAILABLE",
+    });
+    expect(app.primary.calls).toHaveLength(3);
+    expect(app.assets.rows).toHaveLength(0);
   });
 });

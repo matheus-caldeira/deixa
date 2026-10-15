@@ -65,6 +65,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
   let ana: string;
   let lucas: string;
   let episodeId: string;
+  let mediaId: string;
 
   beforeAll(async () => {
     const url = testDatabaseUrl();
@@ -89,11 +90,11 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     lucas = (
       await app.signUp({ name: "Lucas", email: "lucas@example.com", password: "segredo123", level: "C1" })
     ).userId;
-    const { mediaId } = await app.registerWork({
+    ({ mediaId } = await app.registerWork({
       userId: ana,
       type: "series",
       externalId: fakeExternalId("suits"),
-    });
+    }));
     const { episodes } = await app.loadSeasonEpisodes({ userId: ana, mediaId, seasonNumber: 1 });
     episodeId = episodes[0]?.id ?? "";
   });
@@ -117,6 +118,12 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       alignmentPairs: 22,
       subtitleLanguages: ["en", "pt-BR"],
     });
+
+    const season = await app.loadSeasonEpisodes({ userId: ana, mediaId, seasonNumber: 1 });
+    expect(season.episodes.find((episode) => episode.id === episodeId)?.subtitleLanguages).toEqual([
+      "en",
+      "pt-BR",
+    ]);
 
     const again = await app.importEpisodeSubtitles({ userId: lucas, ...upload });
     expect(again.outcome).toBe("DUPLICATE");

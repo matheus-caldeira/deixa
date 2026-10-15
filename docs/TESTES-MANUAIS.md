@@ -1,6 +1,6 @@
 ---
 title: Testes manuais pendentes
-updated: 2026-10-14
+updated: 2026-10-15
 source: conversa de 14/10/2026
 ---
 
@@ -33,6 +33,18 @@ validar e anote o resultado; o que falhar vira tarefa.
       português (`pf_dora`): voz no idioma certo. Inglês segue com o sotaque do perfil.
 - [ ] Com uma chave de IA, gerar cards numa conta espanhol → português: explicações em português sobre termos
       em espanhol; na conta inglês → espanhol, explicações em espanhol.
+
+## Áudio em lote e worker (máquina com Docker)
+
+- [ ] Com `pnpm infra:up` (Kokoro de pé) e `KOKORO_URL` no `.env`, importar um episódio novo: a etapa "Áudio
+      das falas (Kokoro)" diz "na fila · gerado em segundo plano"; em alguns minutos chega o aviso "Áudio do
+      episódio pronto" no sino, e ao abrir a leitura todas as falas tocam sem o estado "gerando". (O job em si já
+      foi conferido em 15/10/2026 pelo `pnpm worker` com o Kokoro local: 24 falas geradas, `job.done`.)
+- [ ] Com `JOBS_MODE=worker` no `.env`, subir `pnpm dev` e `pnpm worker` em terminais separados e gerar uma
+      trilha: o log do worker mostra `job.done` com `kind=generate_plan` e a trilha aparece na Início. Sem o
+      worker rodando, a trilha fica "montando" até ele subir.
+- [ ] Com o Kokoro parado e `JOBS_MODE=worker`, importar um episódio: o worker registra `job.retry`, e ao
+      religar o Kokoro o job termina sozinho na próxima tentativa.
 
 ## Linux
 

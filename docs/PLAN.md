@@ -215,6 +215,14 @@ Pendente desta etapa: validar com uma legenda real em espanhol e francês no Ope
 | 105 | Tentativa de lição grava acertos por tipo de exercício                       | `lesson_attempts.kinds` preenchido ao concluir a lição                              | [x]    |
 | 106 | Perfil calculado: nível, acertos, habilidades, erros recorrentes, conquistas | Sem `progress_snapshots`; teste unitário das fórmulas; erros recorrentes na Revisão | [x]    |
 
+## Etapa 15: worker separado, áudio em lote e roteiro (fase 03 restante)
+
+| #   | Tarefa                                                                       | Critério de pronto                                                                                       | Estado |
+| --- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| 107 | Fila `job_queue` com `SKIP LOCKED`, tentativas e dois modos (inline, worker) | Trilha, cards e sugestões saem do `after()` direto; `pnpm worker` consome; integração com dois claims    | [x]    |
+| 108 | Áudio em lote do episódio depois da importação                               | Job `episode_audio` gera o que falta no cache e avisa no sino; etapa da importação diz "na fila"         | [x]    |
+| 109 | Roteiro `.txt` conferido contra a legenda e falas completadas na leitura     | `episode_scripts` e `script_lines`; e2e envia `.srt` + `.txt` e vê "Roteiro conferido" e a fala completa | [x]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
@@ -228,6 +236,7 @@ Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
    Antes: fase 04 restante: par base → estudo por conta entre inglês, português, espanhol e francês,
    com mais de um par por conta e um ativo por vez.
 5. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
-6. Fase 03 restante: worker separado, áudio em lote, roteiro.
+6. ~~Fase 03 restante: worker separado, áudio em lote, roteiro.~~ Pronta na etapa 15 (sem PDF e sem busca de
+   transcrição por IA).
 7. Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), que herda as frentes A e B prontas.
 8. Fase 06: fala em tempo real, HTTPS para PWA e microfone.

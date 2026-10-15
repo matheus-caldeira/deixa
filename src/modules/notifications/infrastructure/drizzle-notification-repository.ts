@@ -3,14 +3,14 @@ import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { notifications } from "@/infrastructure/database/schema";
 import type { MessageParams } from "@/shared/errors";
-import type {
-  NewNotification,
-  Notification,
-  NotificationKind,
-  NotificationRepository,
+import {
+  NOTIFICATION_KINDS,
+  type NewNotification,
+  type Notification,
+  type NotificationRepository,
 } from "../application/notifications";
 
-const KINDS: readonly NotificationKind[] = ["cards_ready", "cards_failed", "trail_ready", "trail_failed"];
+const KINDS = NOTIFICATION_KINDS;
 const paramsSchema = z.record(z.string(), z.union([z.string(), z.number()]));
 
 function readParams(value: unknown): MessageParams {

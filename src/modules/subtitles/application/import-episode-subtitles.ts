@@ -25,6 +25,7 @@ import type {
 } from "./ports";
 
 export type UploadedSubtitle = { filename: string; bytes: Uint8Array; origin?: SubtitleOrigin };
+export type AudioMode = "onDemand" | "queued";
 export type SubtitleUpload = { language: StudyLanguage; upload: UploadedSubtitle };
 
 export type ImportResult = {
@@ -79,6 +80,7 @@ export function makeImportEpisodeSubtitles(deps: {
     episodeId: string;
     target: SubtitleUpload;
     native?: SubtitleUpload;
+    audioMode?: AudioMode;
   }): Promise<ImportResult> {
     if (input.native && input.native.language === input.target.language) {
       throw new AppError("INVALID_INPUT");
@@ -204,7 +206,7 @@ export function makeImportEpisodeSubtitles(deps: {
         }
       }
       steps.push({ key: "publish", detail: { key: "ready" } });
-      steps.push({ key: "audio", detail: { key: "onDemand" } });
+      steps.push({ key: "audio", detail: { key: input.audioMode ?? "onDemand" } });
 
       await deps.subtitles.saveImport({
         episodeId: input.episodeId,

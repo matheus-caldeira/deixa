@@ -115,6 +115,10 @@
     "trail_failed": {
       "title": "Não deu para montar a trilha",
       "body": "{episode}: {reason}"
+    },
+    "audio_ready": {
+      "title": "Áudio do episódio pronto",
+      "body": "{episode}: {count, plural, one {# fala} other {# falas}} com áudio para ouvir sem espera."
     }
   },
   "errors": {
@@ -212,12 +216,17 @@
       "previousBlock": "Conclua o bloco anterior para liberar este.",
       "searchAgainBeforeImport": "Busque as legendas de novo antes de importar.",
       "pairExists": "Você já estuda esse par de idiomas.",
-      "pairMissing": "Esse par de idiomas não está na sua conta."
+      "pairMissing": "Esse par de idiomas não está na sua conta.",
+      "onlyTxt": "O roteiro precisa ser um arquivo .txt.",
+      "noLines": "Não encontramos falas nesse roteiro.",
+      "noSubtitle": "Envie a legenda do idioma de estudo antes do roteiro.",
+      "versionConflict": "Este episódio já tem um roteiro enviado por outra pessoa. Só quem enviou pode trocá-lo."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
     "PLAN_FAILED": "Não foi possível montar a trilha com IA. Tente de novo.",
-    "EMBEDDED_DATABASE_FAILED": "Não foi possível instalar o Postgres embutido. Confira a conexão com a internet e tente de novo."
+    "EMBEDDED_DATABASE_FAILED": "Não foi possível instalar o Postgres embutido. Confira a conexão com a internet e tente de novo.",
+    "SCRIPT_INVALID": "Esse arquivo de roteiro não é válido."
   },
   "locales": {
     "pt-BR": "Português (Brasil)",
@@ -806,7 +815,10 @@
     "suggestionTitle": "Sugestão de quem já estudou este episódio",
     "audioNote": "{count} falas. O áudio de cada fala só é gerado na primeira vez que alguém toca em \"ouvir\" e depois fica salvo para todos.",
     "marks": "marcações",
-    "generateCards": "Gerar cards"
+    "generateCards": "Gerar cards",
+    "scriptTag": "Roteiro",
+    "scriptVerified": "Roteiro conferido: {matched} de {total} falas batem",
+    "scriptNeedsReview": "Roteiro não verificado: só {matched} de {total} falas batem"
   },
   "processing": {
     "steps": {
@@ -818,7 +830,11 @@
       "align": "Alinhando EN ↔ PT pelo tempo",
       "publish": "Publicando no catálogo",
       "audio": "Áudio das falas (Kokoro)",
-      "download": "Baixando do OpenSubtitles"
+      "download": "Baixando do OpenSubtitles",
+      "validateScript": "Validando o roteiro",
+      "readScript": "Lendo o roteiro",
+      "matchScript": "Conferindo o roteiro contra a legenda",
+      "publishScript": "Guardando o roteiro"
     },
     "details": {
       "bothSizes": "EN {target} · PT {native}",
@@ -832,7 +848,14 @@
       "ready": "READY",
       "onDemand": "sob demanda, no primeiro toque",
       "alreadyInCatalog": "já estava no catálogo",
-      "downloads": "{count} download(s)"
+      "downloads": "{count} download(s)",
+      "queued": "na fila · gerado em segundo plano",
+      "scriptSize": "UTF-8 · {size}",
+      "scriptIdentical": "roteiro idêntico encontrado",
+      "scriptLines": "{count} linhas de fala",
+      "scriptMatched": "{matched} de {total} falas · {percent}",
+      "scriptVerified": "conferido",
+      "scriptNeedsReview": "não verificado · poucas falas batem"
     }
   },
   "review": {
@@ -979,7 +1002,7 @@
     "nativeHint": ".srt · opcional · as falas já chegam traduzidas, sem gastar IA",
     "nativeFile": "Arquivo da legenda em {native}",
     "script": "Roteiro ou transcrição",
-    "scriptHint": ".txt ou .pdf · chega numa próxima fase",
+    "scriptHint": ".txt · opcional · completa as falas que a legenda cortou",
     "scriptFile": "Arquivo de roteiro",
     "soon": "Em breve",
     "change": "Trocar",
@@ -994,7 +1017,8 @@
     "duplicate": "Essa legenda já existe no catálogo. Nada foi reprocessado e o episódio já está disponível para todas as contas.",
     "published": "Episódio publicado. Já dá para ler a legenda inteira; o áudio de cada fala é gerado no primeiro toque. Todas as contas veem o episódio sem novo upload.",
     "publishedBoth": "Episódio publicado. Já dá para ler a legenda inteira em {target} e {native}; o áudio de cada fala é gerado no primeiro toque. Todas as contas veem o episódio sem novo upload.",
-    "seeInCatalog": "Ver no catálogo"
+    "seeInCatalog": "Ver no catálogo",
+    "onlyTxt": "O roteiro precisa ser um arquivo .txt."
   },
   "transfer": {
     "title": "Importar e exportar",

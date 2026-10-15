@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
@@ -6,6 +5,7 @@ import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { formatTimecode } from "@/shared/time";
 import { HomeScreen } from "@/ui/home/home-screen";
+import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
 
 export default async function HomePage() {
@@ -44,8 +44,7 @@ export default async function HomePage() {
           })
       : null;
   if (planStatus?.status === "PENDING" && planStatus.job) {
-    const job = planStatus.job;
-    after(() => container.generatePlan(job));
+    await scheduleJob(container, "generate_plan", planStatus.job, user.id);
   }
   const trail =
     planStatus?.status === "READY" && context

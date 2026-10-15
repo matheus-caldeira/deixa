@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { z } from "zod";
 import { AppError } from "@/shared/errors";
+import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -49,7 +49,7 @@ export async function refreshRecommendationsAction(): Promise<ActionResult<null>
       level: user.preferences.level,
       language: user.preferences.targetLanguage,
     };
-    after(() => container.refreshRecommendations(input).catch(() => undefined));
+    await scheduleJob(container, "refresh_recommendations", input, user.id);
     return null;
   });
 }

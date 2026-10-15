@@ -15,6 +15,7 @@ src/modules/<m>/      domain/ · application/ (casos de uso e ports) · infrastr
 src/infrastructure/   config/ database/ storage/ tmdb/ ai/ kokoro/ logger/ container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
 src/seed/             seed de demonstração (idempotente)
+src/worker/           processo separado que consome a job_queue (pnpm worker)
 tests/                e2e (Playwright), bundle
 fixtures/             SRT fictícios EN e PT
 ```
@@ -37,8 +38,10 @@ fixtures/             SRT fictícios EN e PT
 | `recommendations` | Retrato do aluno, vetores das obras, ranqueamento e sugestões personalizadas  |
 | `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites       |
 | `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio      |
+| `jobs`            | Fila `job_queue`: enfileirar, reivindicar com `SKIP LOCKED`, tentativas       |
+| `scripts`         | Roteiro `.txt` conferido contra a legenda; falas completadas na leitura       |
 
-Os módulos `scripts`, `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
+Os módulos `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
 chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.
 
 ## Regras de dependência

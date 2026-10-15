@@ -2,7 +2,14 @@ import type { Clock } from "@/shared/clock";
 import type { MessageParams } from "@/shared/errors";
 import type { IdGenerator } from "@/shared/ids";
 
-export type NotificationKind = "cards_ready" | "cards_failed" | "trail_ready" | "trail_failed";
+export const NOTIFICATION_KINDS = [
+  "cards_ready",
+  "cards_failed",
+  "trail_ready",
+  "trail_failed",
+  "audio_ready",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export type Notification = {
   id: string;

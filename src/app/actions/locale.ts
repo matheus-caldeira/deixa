@@ -11,4 +11,3 @@ export async function rememberLocale(locale: Locale): Promise<void> {
     expires: new Date(Date.now() + LOCALE_COOKIE_DAYS * MS_PER_DAY),
   });
 }
-

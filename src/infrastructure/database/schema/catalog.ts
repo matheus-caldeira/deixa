@@ -233,3 +233,43 @@ export const externalApiQuota = pgTable("external_api_quota", {
   resetAt: timestamp("reset_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
+
+export const episodeScripts = pgTable(
+  "episode_scripts",
+  {
+    id: uuid("id").primaryKey(),
+    episodeId: uuid("episode_id")
+      .notNull()
+      .references(() => episodes.id, { onDelete: "cascade" }),
+    language: text("language").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url"),
+    storagePath: text("storage_path").notNull(),
+    sha256: text("sha256").notNull(),
+    status: text("status").notNull(),
+    lineCount: integer("line_count").notNull(),
+    matchedCount: integer("matched_count").notNull(),
+    cueCount: integer("cue_count").notNull(),
+    uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [uniqueIndex("episode_scripts_episode_language").on(table.episodeId, table.language)],
+);
+
+export const scriptLines = pgTable(
+  "script_lines",
+  {
+    id: uuid("id").primaryKey(),
+    scriptId: uuid("script_id")
+      .notNull()
+      .references(() => episodeScripts.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    text: text("text").notNull(),
+    matchedCueId: uuid("matched_cue_id").references(() => subtitleCues.id, { onDelete: "set null" }),
+    verified: boolean("verified").notNull(),
+  },
+  (table) => [
+    index("script_lines_script_sequence").on(table.scriptId, table.sequence),
+    index("script_lines_cue").on(table.matchedCueId),
+  ],
+);

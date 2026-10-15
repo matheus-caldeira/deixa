@@ -27,7 +27,10 @@
 
 ## Shell & Command Reliability
 
-1. **[2026-10-10] No zsh, glob sem correspondência aborta o comando inteiro**
+1. **[2026-10-15] `pnpm db:generate` é interativo quando há renomeação de coluna**
+   Do instead: rodar `(sleep 5; printf '\r'; sleep 2; printf '\r'; sleep 2; printf '\r') | script -q /dev/null pnpm db:generate` e revisar o SQL gerado; tabela nova não pergunta nada.
+
+2. **[2026-10-10] No zsh, glob sem correspondência aborta o comando inteiro**
    Do instead: usar caminhos exatos ou `grep -r --include='*.ts'` com aspas.
-2. **[2026-10-10] Seed e fixtures nunca usam domínio de e-mail registrável**
+3. **[2026-10-10] Seed e fixtures nunca usam domínio de e-mail registrável**
    Do instead: usar `example.com` ou o TLD `.example` (RFC 2606).

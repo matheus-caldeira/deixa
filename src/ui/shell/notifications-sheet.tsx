@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { markNotificationReadAction, type InboxView } from "@/app/actions/notifications";
-import { CheckIcon, SparkIcon, XIcon } from "../icons";
+import { CheckIcon, SoundIcon, SparkIcon, XIcon } from "../icons";
 import { Sheet } from "./sheet";
 import { useErrorText } from "./use-error-text";
 
@@ -63,7 +63,15 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
                   }}
                 >
                   <span style={{ width: 22, height: 22, display: "grid" }}>
-                    {failed ? <XIcon /> : item.kind === "cards_ready" ? <SparkIcon /> : <CheckIcon />}
+                    {failed ? (
+                      <XIcon />
+                    ) : item.kind === "cards_ready" ? (
+                      <SparkIcon />
+                    ) : item.kind === "audio_ready" ? (
+                      <SoundIcon />
+                    ) : (
+                      <CheckIcon />
+                    )}
                   </span>
                 </span>
                 <span className="col" style={{ gap: 2, minWidth: 0 }}>

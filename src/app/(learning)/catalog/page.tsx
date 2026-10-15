@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { posterUrl, type MediaItem } from "@/modules/catalog";
@@ -8,6 +7,7 @@ import { posterColorsFor } from "@/modules/catalog";
 import { fitFor, levelIndex } from "@/shared/levels";
 import { CatalogScreen } from "@/ui/catalog/catalog-screen";
 import type { PosterData } from "@/ui/catalog/poster";
+import { scheduleJob } from "../../schedule";
 import { requireUser } from "../../session";
 
 const levelRange = (media: MediaItem): string => `${media.levelMin}–${media.levelMax}`;
@@ -33,10 +33,11 @@ export default async function CatalogPage() {
     container.getRecommendations({ userId: user.id, level, language: pair.target }),
   ]);
   if (recommendations.refresh) {
-    after(() =>
-      container
-        .refreshRecommendations({ userId: user.id, level, language: pair.target })
-        .catch(() => undefined),
+    await scheduleJob(
+      container,
+      "refresh_recommendations",
+      { userId: user.id, level, language: pair.target },
+      user.id,
     );
   }
   const t = await getTranslations("suggestions");

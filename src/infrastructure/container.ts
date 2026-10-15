@@ -16,7 +16,13 @@ import {
   type CredentialService,
   type CredentialTester,
 } from "@/modules/ai-credentials";
-import { ALL_VOICES, makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider } from "@/modules/audio";
+import {
+  ALL_VOICES,
+  makeGetSpeechAudio,
+  makeListCachedSpeech,
+  makeSynthesizeLines,
+  type TtsProvider,
+} from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
 import { PerUserGate } from "@/modules/audio/infrastructure/per-user-gate";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
@@ -158,7 +164,23 @@ import {
   DrizzleModelPriceRepository,
   DrizzleUsageLimitRepository,
 } from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
-import { makeGetEpisodeScript, makeImportEpisodeSubtitles } from "@/modules/subtitles";
+import {
+  makeGetEpisodeScript,
+  makeImportEpisodeSubtitles,
+  type AudioMode,
+  type FindEpisodeLocation,
+} from "@/modules/subtitles";
+import {
+  makeEnqueueJob,
+  makeHasPendingJob,
+  makeRunClaimedJob,
+  makeRunJobInline,
+  makeRunNextJob,
+  type JobHandlers,
+} from "@/modules/jobs";
+import { DrizzleJobRepository } from "@/modules/jobs/infrastructure/drizzle-job-repository";
+import { makeGetScriptSummary, makeImportEpisodeScript, makeListScriptCompletions } from "@/modules/scripts";
+import { DrizzleScriptRepository } from "@/modules/scripts/infrastructure/drizzle-script-repository";
 import { DrizzleSubtitleRepository } from "@/modules/subtitles/infrastructure/drizzle-subtitle-repository";
 import { systemClock, type Clock } from "@/shared/clock";
 import { AppError } from "@/shared/errors";
@@ -635,22 +657,41 @@ export function buildContainer(options: ContainerOptions) {
     return cue && cue.language === language ? cue : null;
   }
 
-  const importEpisodeSubtitles = makeImportEpisodeSubtitles({
+  const findEpisodeLocation: FindEpisodeLocation = async (episodeId) => {
+    const context = await catalog.findEpisodeContext(episodeId);
+    if (!context) return null;
+    return {
+      episodeId,
+      mediaId: context.media.id,
+      mediaType: context.media.type,
+      seasonNumber: context.season.seasonNumber,
+    };
+  };
+  const audioMode: AudioMode = tts.name === "silent" ? "onDemand" : "queued";
+  const importSubtitlesUseCase = makeImportEpisodeSubtitles({
     subtitles,
     storage,
     clock,
     ids,
-    findEpisodeLocation: async (episodeId) => {
-      const context = await catalog.findEpisodeContext(episodeId);
-      if (!context) return null;
-      return {
-        episodeId,
-        mediaId: context.media.id,
-        mediaType: context.media.type,
-        seasonNumber: context.season.seasonNumber,
-      };
-    },
+    findEpisodeLocation,
   });
+  const importEpisodeSubtitles = (input: Omit<Parameters<typeof importSubtitlesUseCase>[0], "audioMode">) =>
+    importSubtitlesUseCase({ ...input, audioMode });
+  async function listCuesInLanguage(episodeId: string, language: StudyLanguage) {
+    const file = (await subtitles.listFiles(episodeId)).find((candidate) => candidate.language === language);
+    return file ? subtitles.listCues(file.id) : null;
+  }
+  const scripts = new DrizzleScriptRepository(db);
+  const importEpisodeScript = makeImportEpisodeScript({
+    scripts,
+    storage,
+    clock,
+    ids,
+    findEpisodeLocation,
+    loadCues: listCuesInLanguage,
+  });
+  const listScriptCompletions = makeListScriptCompletions({ scripts });
+  const getScriptSummary = makeGetScriptSummary({ scripts });
   const findEpisodeSource = async (
     subtitleSource: SubtitleSourceProvider,
     episodeId: string,
@@ -751,8 +792,54 @@ export function buildContainer(options: ContainerOptions) {
     account,
   };
 
+  const generatePlan = makeGeneratePlan(studyDeps);
+  const processCardBatch = makeProcessCardBatch({ learning, generate: generateCardDrafts, notify });
+  const refreshRecommendations = makeRefreshRecommendations(recommendationDeps);
+  const synthesizeLines = makeSynthesizeLines({ assets: audioAssets, storage, primary: tts, clock, ids });
+  const audioBatchAvailable = tts.name !== "silent";
+  const synthesizeEpisodeAudio = async (input: {
+    userId: string;
+    episodeId: string;
+    language: StudyLanguage;
+    voice: { voiceId: string; language: string };
+    episodeLabel: string;
+  }): Promise<void> => {
+    const cues = await listCuesInLanguage(input.episodeId, input.language);
+    if (!cues || cues.length === 0) return;
+    const result = await synthesizeLines({ voice: input.voice, lines: cues });
+    log.info("audio.batch", { episodeId: input.episodeId, ...result });
+    if (result.generated === 0) return;
+    await notify({
+      userId: input.userId,
+      kind: "audio_ready",
+      params: { episode: input.episodeLabel, count: result.generated + result.cached },
+      href: `/read/${input.episodeId}`,
+    });
+  };
+  const jobs = new DrizzleJobRepository(db);
+  const jobHandlers: JobHandlers = {
+    generate_plan: generatePlan,
+    card_batch: processCardBatch,
+    refresh_recommendations: async (payload) => {
+      await refreshRecommendations(payload);
+    },
+    episode_audio: synthesizeEpisodeAudio,
+  };
+  const runClaimedJob = makeRunClaimedJob({ jobs, handlers: jobHandlers, clock });
+  const runJobInline = makeRunJobInline({ jobs, run: runClaimedJob, clock });
+  const runNextJob = makeRunNextJob({ jobs, run: runClaimedJob, clock });
+
   return {
     providers: { metadata: defaultMetadata.name, tts: tts.name, subtitles: defaultSubtitleSource.name },
+    jobsMode: env.JOBS_MODE,
+    audioBatchAvailable,
+    enqueueJob: makeEnqueueJob({ jobs, clock, ids }),
+    runJobInline,
+    runNextJob,
+    hasPendingJob: makeHasPendingJob({ jobs }),
+    importEpisodeScript,
+    listScriptCompletions,
+    getScriptSummary,
     listCatalogWorks: async () => (await catalog.listCatalog()).map((entry) => entry.media),
     listEpisodesByMedia: (mediaId: string) => catalog.listEpisodesByMedia(mediaId),
     exportPackage: makeExportPackage(packageDeps),
@@ -818,7 +905,7 @@ export function buildContainer(options: ContainerOptions) {
     getEpisodeScript,
 
     ensurePlan: makeEnsurePlan(studyDeps),
-    generatePlan: makeGeneratePlan(studyDeps),
+    generatePlan,
     savePlan: (input: Parameters<typeof study.saveReady>[0]) => study.saveReady(input),
     getTrail: makeGetTrail(studyDeps),
 
@@ -837,7 +924,7 @@ export function buildContainer(options: ContainerOptions) {
 
     generateCardDrafts,
     requestCardDrafts: makeRequestCardDrafts({ learning, clock, ids }),
-    processCardBatch: makeProcessCardBatch({ learning, generate: generateCardDrafts, notify }),
+    processCardBatch,
     getCardBatch: makeGetCardBatch({ learning, clock }),
     notify,
     getInbox: makeGetInbox({ notifications: notificationRepository }),
@@ -897,7 +984,7 @@ export function buildContainer(options: ContainerOptions) {
     setAiModels: makeSetAiModels({ choices: modelChoices, clock }),
 
     getRecommendations: makeGetRecommendations(recommendationDeps),
-    refreshRecommendations: makeRefreshRecommendations(recommendationDeps),
+    refreshRecommendations,
     dismissRecommendation: makeDismissRecommendation(recommendationDeps),
     acceptRecommendation: makeAcceptRecommendation(recommendationDeps),
     findRecommendation: (userId: string, workKey: string) =>

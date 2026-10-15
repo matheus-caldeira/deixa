@@ -22,6 +22,8 @@ const SEARCH_DEBOUNCE_MS = 350;
 const STEP_REVEAL_MS = 420;
 const MAX_FILE_BYTES = 5_000_000;
 const MAX_FILE_MB = 5;
+const MAX_SCRIPT_BYTES = 2_000_000;
+const MAX_SCRIPT_MB = 2;
 
 type Stage = "search" | "files" | "processing";
 
@@ -88,6 +90,7 @@ export function UploadSheet(props: {
   const [episodeId, setEpisodeId] = useState("");
   const [english, setEnglish] = useState<File | null>(null);
   const [portuguese, setPortuguese] = useState<File | null>(null);
+  const [script, setScript] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [manual, setManual] = useState(false);
   const [outcome, setOutcome] = useState<ImportView | null>(null);
@@ -188,6 +191,19 @@ export function UploadSheet(props: {
     setter(file);
   }
 
+  function pickScript(file: File | null) {
+    if (file && !/\.txt$/i.test(file.name)) {
+      setError(t("onlyTxt"));
+      return;
+    }
+    if (file && file.size > MAX_SCRIPT_BYTES) {
+      setError(t("tooLarge", { mb: MAX_SCRIPT_MB }));
+      return;
+    }
+    setError("");
+    setScript(file);
+  }
+
   function submit(useSample: boolean) {
     if (!target) return;
     const form = new FormData();
@@ -196,6 +212,7 @@ export function UploadSheet(props: {
     form.set("useSample", String(useSample));
     if (english) form.set("target", english);
     if (portuguese) form.set("native", portuguese);
+    if (script) form.set("script", script);
     setError("");
     startTransition(async () => {
       const result = await uploadSubtitlesAction(form);
@@ -210,6 +227,12 @@ export function UploadSheet(props: {
   }
 
   const hasEpisode = episodeId !== "";
+  const selectedEpisode = episodes.find((episode) => episode.id === episodeId) ?? null;
+  const episodeHasTarget =
+    target?.type === "movie"
+      ? (target.movieEpisode?.subtitleLanguages.includes(props.pair.target) ?? false)
+      : (selectedEpisode?.subtitleLanguages.includes(props.pair.target) ?? false);
+  const canSubmit = hasEpisode && (english !== null || (script !== null && episodeHasTarget));
   const finished = outcome !== null && revealed >= outcome.steps.length;
 
   return (
@@ -372,11 +395,10 @@ export function UploadSheet(props: {
                 tag="TXT"
                 title={t("script")}
                 hint={t("scriptHint")}
-                file={null}
-                accept=".txt,.pdf"
+                file={script}
+                accept=".txt"
                 inputLabel={t("scriptFile")}
-                disabled
-                onPick={() => undefined}
+                onPick={pickScript}
               />
               {props.devShortcuts ? (
                 <button
@@ -392,11 +414,7 @@ export function UploadSheet(props: {
                 </button>
               ) : null}
               {error ? <p className="formerr">{error}</p> : null}
-              <button
-                className="btn wide"
-                onClick={() => submit(false)}
-                disabled={!english || !hasEpisode || pending}
-              >
+              <button className="btn wide" onClick={() => submit(false)} disabled={!canSubmit || pending}>
                 {pending ? t("sending") : t("sendAndProcess")}
               </button>
               <button className="link" style={{ alignSelf: "center" }} onClick={() => setManual(false)}>

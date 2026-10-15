@@ -42,12 +42,13 @@ src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do
 src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastructure/ · index.ts
                       identity, catalog, subtitles, alignment, highlights, learning, flashcards,
                       ai-credentials, audio, gamification, study, notifications, conversations,
-                      subtitle-sources, recommendations, settings, ai-usage, packages
+                      subtitle-sources, recommendations, settings, ai-usage, packages, jobs, scripts
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, locales, study-languages (par de idiomas), clock, ids
 src/i18n/             request.ts (idioma por pedido), messages.ts (carrega locales/<idioma>.json)
 locales/              pt-BR.json e en.json: todo texto da interface, por tela (ADR 0018)
 src/seed/             seed de demonstração
+src/worker/           processo separado que consome a job_queue (pnpm worker)
 tests/                e2e (Playwright), bundle
 fixtures/             SRT fictícios EN e PT
 ```
@@ -65,6 +66,7 @@ pnpm infra:up          # Postgres (1442) e Kokoro (1881)
 pnpm db:migrate        # aplica as migrações
 pnpm db:seed           # perfis, obras e episódios de demonstração
 pnpm dev               # http://localhost:1300
+pnpm worker            # consome a job_queue (só com JOBS_MODE=worker no .env)
 pnpm typecheck && pnpm lint && pnpm lint:comments && pnpm test
 pnpm test:integration  # Postgres + TMDB real (pulado sem token)
 pnpm build && pnpm test:bundle   # token do TMDB fora de .next/static

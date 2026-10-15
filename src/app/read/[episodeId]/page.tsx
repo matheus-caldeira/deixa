@@ -27,10 +27,12 @@ export default async function ReadPage(props: {
   const pair = pairOf(user.preferences);
   if (!context.episode.subtitleLanguages.includes(pair.target)) notFound();
 
-  const [view, suggestions, origins] = await Promise.all([
+  const [view, suggestions, origins, scriptCompletions, scriptSummary] = await Promise.all([
     container.getReadingView(user.id, episodeId, pair),
     container.listCatalogSuggestions(episodeId, pair.target),
     container.listSubtitleOrigins(episodeId),
+    container.listScriptCompletions(episodeId, pair.target),
+    container.getScriptSummary(episodeId, pair.target),
   ]);
   const t = await getTranslations("read");
   const subtitleCredits = origins.flatMap(({ language, origin }) =>
@@ -42,6 +44,14 @@ export default async function ReadPage(props: {
         ]
       : [],
   );
+  if (scriptSummary) {
+    subtitleCredits.push(
+      t(scriptSummary.status === "VERIFIED" ? "scriptVerified" : "scriptNeedsReview", {
+        matched: scriptSummary.matchedCount,
+        total: scriptSummary.cueCount,
+      }),
+    );
+  }
   const cachedAudioCueIds = await container.listCachedSpeech({
     voice: voiceFor(pair.target, user.preferences.preferredAccent),
     lines: view.lines.map((line) => ({ id: line.cueId, text: line.text })),
@@ -86,6 +96,7 @@ export default async function ReadPage(props: {
             translation: line.translation,
             translationSource: line.translationSource,
             markedByCount: line.markedByCount,
+            scriptText: scriptCompletions.get(line.cueId) ?? null,
           })),
         }}
       />

@@ -1,6 +1,6 @@
 ---
 title: Pipeline de processamento
-updated: 2026-10-10
+updated: 2026-10-15
 source: PROJETO.md §5, §6 e §9
 ---
 
@@ -54,7 +54,25 @@ Puro e determinístico (`modules/alignment/domain`):
 A leitura divide o episódio em cenas por silêncio: um intervalo maior que `SCENE_GAP_MS` entre duas falas abre
 uma cena nova.
 
-## O que entra na fase 03
+## Roteiro
 
-Normalização e agrupamento de falas, seleção pedagógica com LLM, explicações estruturadas, conferência de
-roteiro, áudio dos itens da trilha e o worker separado com a tabela de jobs e bloqueio transacional.
+Arquivo `.txt` opcional, conferido contra a legenda do idioma de estudo sem LLM (`modules/scripts/domain`):
+
+1. Ler as linhas; tirar nome de personagem (`SAM:`), rubricas `[...]` e `(...)`, cabeçalhos `INT./EXT.` e música.
+2. Para cada fala, em ordem, procurar nas próximas 40 linhas a de maior cobertura de palavras; aceitar a partir
+   de 0,6 (fala de uma palavra só com igualdade exata). O cursor só anda para a frente.
+3. Gravar `episode_scripts` (um por episódio e idioma) e `script_lines` com `matched_cue_id` e `verified`.
+   Metade ou mais das falas batendo: `VERIFIED`; senão `NEEDS_REVIEW`.
+4. Na leitura, a linha do roteiro aparece sob a fala quando tem duas ou mais palavras a mais que a legenda.
+
+## Jobs em segundo plano
+
+Trilha, cards, sugestões e áudio do episódio entram na `job_queue` (módulo `jobs`) e rodam no próprio processo
+(`JOBS_MODE=inline`, padrão) ou no `pnpm worker`. O áudio em lote gera, para a voz da conta que importou, as
+falas que ainda não estão no cache por hash, e avisa no sino ao terminar. Detalhes em
+@.contexts/engineering/decisions/0021-worker-audio-em-lote-e-roteiro.md
+
+## Fora desta fase
+
+Normalização e agrupamento de falas, seleção pedagógica com LLM e explicações estruturadas no processamento;
+roteiro em PDF; busca de transcrição por IA.

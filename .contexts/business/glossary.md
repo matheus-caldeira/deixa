@@ -44,6 +44,8 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Sugestão             | `user_recommendation`       | Obra indicada ao usuário pelo gosto e pelo nível, com o motivo               |
 | Retrato do aluno     | `learner_assessment`        | Resumo do estudo recente que orienta o desafio das sugestões                 |
 | Pacote               | `package` (`.deixa.zip`)    | Arquivo com obras, legendas, cards e áudio para importar em outra instalação |
+| Roteiro              | `episode_script`            | Transcrição `.txt` conferida contra a legenda; completa falas cortadas       |
+| Job                  | `job_queue`                 | Trabalho em segundo plano (trilha, cards, sugestões, áudio do episódio)      |
 | Idioma base          | `native_language`           | Idioma em que a pessoa lê as traduções e explicações                         |
 | Idioma de estudo     | `target_language`           | Idioma que a pessoa está aprendendo: inglês, português, espanhol ou francês  |
 | Par de idiomas       | `user_language_pairs`       | Idioma de estudo + idioma base de uma conta, com o nível; um par ativo       |

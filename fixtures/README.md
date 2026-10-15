@@ -6,6 +6,8 @@ Par de legendas de exemplo com **diálogo fictício** (o mesmo do protótipo), n
 | ------- | -------- |
 | `sample.en.srt` | 23 falas em inglês, em quatro cenas |
 | `sample.pt-BR.srt` | 22 falas em português |
+| `sample.es.srt` | tradução fictícia em espanhol |
+| `sample.en.txt` | transcrição fictícia do mesmo diálogo, com nomes de personagem, rubricas e duas falas mais longas que a legenda (2 e 8) |
 
 A legenda em português está levemente desalinhada de propósito, para exercitar o alinhamento por tempo:
 

@@ -115,6 +115,10 @@
     "trail_failed": {
       "title": "We could not build the trail",
       "body": "{episode}: {reason}"
+    },
+    "audio_ready": {
+      "title": "Episode audio is ready",
+      "body": "{episode}: {count, plural, one {# line} other {# lines}} with audio, no waiting."
     }
   },
   "errors": {
@@ -212,12 +216,17 @@
       "previousBlock": "Finish the previous block to unlock this one.",
       "searchAgainBeforeImport": "Search the subtitles again before importing.",
       "pairExists": "You already study this language pair.",
-      "pairMissing": "This language pair is not on your account."
+      "pairMissing": "This language pair is not on your account.",
+      "onlyTxt": "The script must be a .txt file.",
+      "noLines": "We found no dialogue lines in that script.",
+      "noSubtitle": "Upload the study-language subtitle before the script.",
+      "versionConflict": "This episode already has a script uploaded by someone else. Only the uploader can replace it."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
     "PLAN_FAILED": "We could not build the trail with AI. Try again.",
-    "EMBEDDED_DATABASE_FAILED": "Could not install the embedded Postgres. Check your internet connection and try again."
+    "EMBEDDED_DATABASE_FAILED": "Could not install the embedded Postgres. Check your internet connection and try again.",
+    "SCRIPT_INVALID": "That script file is not valid."
   },
   "locales": {
     "pt-BR": "Português (Brasil)",
@@ -806,7 +815,10 @@
     "suggestionTitle": "Suggestion from people who studied this episode",
     "audioNote": "{count} lines. The audio of each line is only generated the first time someone taps \"listen\" and is then kept for everyone.",
     "marks": "highlights",
-    "generateCards": "Generate cards"
+    "generateCards": "Generate cards",
+    "scriptTag": "Script",
+    "scriptVerified": "Script verified: {matched} of {total} lines match",
+    "scriptNeedsReview": "Script unverified: only {matched} of {total} lines match"
   },
   "processing": {
     "steps": {
@@ -818,7 +830,11 @@
       "align": "Aligning EN ↔ PT by time",
       "publish": "Publishing to the catalog",
       "audio": "Line audio (Kokoro)",
-      "download": "Downloading from OpenSubtitles"
+      "download": "Downloading from OpenSubtitles",
+      "validateScript": "Validating the script",
+      "readScript": "Reading the script",
+      "matchScript": "Checking the script against the subtitle",
+      "publishScript": "Saving the script"
     },
     "details": {
       "bothSizes": "EN {target} · PT {native}",
@@ -832,7 +848,14 @@
       "ready": "READY",
       "onDemand": "on demand, on first tap",
       "alreadyInCatalog": "already in the catalog",
-      "downloads": "{count} download(s)"
+      "downloads": "{count} download(s)",
+      "queued": "queued · generated in the background",
+      "scriptSize": "UTF-8 · {size}",
+      "scriptIdentical": "identical script found",
+      "scriptLines": "{count} dialogue lines",
+      "scriptMatched": "{matched} of {total} lines · {percent}",
+      "scriptVerified": "verified",
+      "scriptNeedsReview": "unverified · too few lines match"
     }
   },
   "review": {
@@ -979,7 +1002,7 @@
     "nativeHint": ".srt · optional · lines arrive already translated, without spending AI",
     "nativeFile": "{native} subtitle file",
     "script": "Script or transcript",
-    "scriptHint": ".txt or .pdf · coming in a later phase",
+    "scriptHint": ".txt · optional · completes lines the subtitle cut short",
     "scriptFile": "Script file",
     "soon": "Soon",
     "change": "Change",
@@ -994,7 +1017,8 @@
     "duplicate": "This subtitle already exists in the catalog. Nothing was reprocessed and the episode is already available to every account.",
     "published": "Episode published. You can already read the whole subtitle; the audio of each line is generated on first tap. Every account sees the episode without a new upload.",
     "publishedBoth": "Episode published. You can already read the whole subtitle in {target} and {native}; the audio of each line is generated on first tap. Every account sees the episode without a new upload.",
-    "seeInCatalog": "See in the catalog"
+    "seeInCatalog": "See in the catalog",
+    "onlyTxt": "The script must be a .txt file."
   },
   "transfer": {
     "title": "Import and export",

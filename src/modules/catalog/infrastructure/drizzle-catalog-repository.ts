@@ -114,7 +114,7 @@ function toEpisode(row: EpisodeRow, subtitleLanguages: string[] | null): Episode
 
 const subtitleLanguagesOf = sql<
   string[] | null
->`(select array_agg(${subtitleFiles.language} order by ${subtitleFiles.language}) from ${subtitleFiles} where ${subtitleFiles.episodeId} = ${episodes.id})`;
+>`(select array_agg(${subtitleFiles.language} order by ${subtitleFiles.language}) from ${subtitleFiles} where ${subtitleFiles.episodeId} = ${episodes}.id)`;
 
 export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgressRepository {
   constructor(private readonly db: Database) {}

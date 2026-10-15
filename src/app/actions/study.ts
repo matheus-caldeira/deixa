@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { episodeLabel } from "@/modules/catalog";
 import { pairOf } from "@/modules/identity";
 import { z } from "zod";
 import type { LessonResult } from "@/modules/study";
 import { AppError } from "@/shared/errors";
+import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -59,8 +59,7 @@ export async function retryTrailAction(episodeId: unknown): Promise<ActionResult
       retry: true,
     });
     if (status.status === "PENDING" && status.job) {
-      const job = status.job;
-      after(() => app().generatePlan(job));
+      await scheduleJob(app(), "generate_plan", status.job, user.id);
     }
     revalidatePath("/");
     return { status: status.status };

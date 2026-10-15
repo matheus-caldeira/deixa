@@ -1,4 +1,5 @@
 export {
+  NOTIFICATION_KINDS,
   makeGetInbox,
   makeMarkNotificationsRead,
   makeNotify,

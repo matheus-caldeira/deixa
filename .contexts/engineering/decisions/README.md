@@ -36,3 +36,4 @@ Alternativas descartadas. ADR aceito não é reescrito: uma decisão nova o subs
 | 0018 | [Interface em N idiomas](0018-interface-em-n-idiomas.md) |
 | 0019 | [Estudo em N idiomas](0019-estudo-em-n-idiomas.md) |
 | 0020 | [Progresso com fonte real](0020-progresso-com-fonte-real.md) |
+| 0021 | [Worker separado, áudio em lote e roteiro](0021-worker-audio-em-lote-e-roteiro.md) |

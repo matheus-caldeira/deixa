@@ -24,6 +24,7 @@
     "setup:env": "node scripts/setup-env.mjs",
     "infra:up": "docker compose up -d --wait postgres && docker compose up -d kokoro",
     "infra:down": "docker compose down",
+    "worker": "tsx --env-file-if-exists=.env src/worker/main.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/infrastructure/database/migrate-cli.ts",
     "db:seed": "tsx --env-file-if-exists=.env src/seed/main.ts",
