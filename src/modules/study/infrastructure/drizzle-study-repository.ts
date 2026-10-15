@@ -1,8 +1,8 @@
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne, or, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
 import { lessonAttempts, lessonPlans } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
-import { lessonPlanSchema } from "../domain/plan";
+import { PLAN_VERSION, lessonPlanSchema } from "../domain/plan";
 import type {
   LessonAttempt,
   PlanRepository,
@@ -51,8 +51,9 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
     if (!row) return null;
     const parsed = row.plan ? lessonPlanSchema.safeParse(row.plan) : null;
     const status = STATUSES.find((candidate) => candidate === row.status) ?? "FAILED";
+    if (status === "READY" && !parsed?.success) return null;
     return {
-      status: status === "READY" && !parsed?.success ? "FAILED" : status,
+      status,
       plan: parsed?.success ? parsed.data : null,
       failureReason: row.failureReason,
       updatedAt: row.updatedAt,
@@ -83,7 +84,10 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
       .onConflictDoUpdate({
         target: [lessonPlans.episodeId, lessonPlans.level],
         set: { ...values, updatedAt: input.now },
-        setWhere: ne(lessonPlans.status, "READY"),
+        setWhere: or(
+          ne(lessonPlans.status, "READY"),
+          sql`coalesce((${lessonPlans.plan}->>'version')::int, 0) <> ${PLAN_VERSION}`,
+        ),
       });
   }
 

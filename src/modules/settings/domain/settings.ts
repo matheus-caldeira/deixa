@@ -20,7 +20,7 @@ export const appSettingsSchema = z.object({
     .transform((value, context) => {
       const canonical = canonicalServiceUrl(value);
       if (canonical === null) {
-        context.addIssue({ code: "custom", message: "endereço de serviço inválido" });
+        context.addIssue({ code: "custom", message: "invalid service url" });
         return z.NEVER;
       }
       return canonical;

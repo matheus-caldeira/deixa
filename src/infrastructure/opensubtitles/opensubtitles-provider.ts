@@ -188,10 +188,10 @@ export class OpenSubtitlesProvider implements SubtitleSourceProvider {
     try {
       target = new URL(link);
     } catch {
-      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "OpenSubtitles devolveu um link inválido.");
+      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "sourceLinkInvalid");
     }
     if (target.protocol !== "https:" || !ALLOWED_DOWNLOAD_HOST.test(target.hostname)) {
-      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "OpenSubtitles devolveu um link fora do domínio.");
+      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "sourceLinkInvalid");
     }
     let response: Response;
     try {
@@ -201,7 +201,7 @@ export class OpenSubtitlesProvider implements SubtitleSourceProvider {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch {
-      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "O arquivo da legenda não respondeu.");
+      throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "sourceFileSilent");
     }
     if (!response.ok) throw this.failure(response);
     const declared = Number(response.headers.get("content-length"));

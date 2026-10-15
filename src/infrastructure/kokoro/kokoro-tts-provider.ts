@@ -88,16 +88,16 @@ export class KokoroTtsProvider implements TtsProvider {
   }): Promise<PinnedResponse> {
     const signal = AbortSignal.timeout(request.timeoutMs);
     const expired = new Promise<never>((_resolve, reject) => {
-      signal.addEventListener("abort", () => reject(new Error("Kokoro não respondeu a tempo")), {
+      signal.addEventListener("abort", () => reject(new Error("Kokoro did not answer in time")), {
         once: true,
       });
     });
     expired.catch(() => undefined);
     const targets = await Promise.race([resolveAllowedAddresses(this.baseUrl), expired]);
     if (targets.length === 0) {
-      throw new Error("o endereço do Kokoro não é deste computador nem de uma rede privada");
+      throw new Error("Kokoro address is neither local nor on a private network");
     }
-    let failure: unknown = new Error("Kokoro sem endereço para conectar");
+    let failure: unknown = new Error("Kokoro has no address to connect to");
     for (const target of targets) {
       try {
         return await sendTo({
@@ -129,7 +129,7 @@ export class KokoroTtsProvider implements TtsProvider {
     });
     if (response.status !== OK) throw new Error(`Kokoro respondeu ${response.status}`);
     if (!response.contentType.startsWith(AUDIO_TYPE)) {
-      throw new Error("Kokoro respondeu com um conteúdo que não é áudio");
+      throw new Error("Kokoro answered with non-audio content");
     }
     return response.bytes;
   }

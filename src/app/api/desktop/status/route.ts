@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getTranslations } from "next-intl/server";
+import { DEFAULT_LOCALE } from "@/shared/locales";
 import { getContainer } from "@/infrastructure/container";
 import { verifyDesktopRequest } from "@/infrastructure/desktop";
 import { getDatabaseStatus } from "@/infrastructure/setup";
@@ -39,6 +41,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const latest =
     overview.inProgress.find((entry) => entry.episodeId === preferences?.currentEpisodeId) ??
     overview.inProgress.at(-1);
+  const t = await getTranslations({ locale: preferences?.locale ?? DEFAULT_LOCALE, namespace: "inbox" });
+  const errors = await getTranslations({
+    locale: preferences?.locale ?? DEFAULT_LOCALE,
+    namespace: "errors",
+  });
+  const describe = (item: (typeof inbox.items)[number]) => {
+    const params = { ...item.params };
+    if (typeof params.reason === "string") {
+      params.reason = errors.has(params.reason) ? errors(params.reason) : errors("generic");
+    }
+    return {
+      title: t.has(`${item.kind}.title`) ? t(`${item.kind}.title`, params) : item.kind,
+      body: t.has(`${item.kind}.body`) ? t(`${item.kind}.body`, params) : "",
+    };
+  };
   return reply({
     state: "ready",
     owner: owner.name,
@@ -51,6 +68,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       : null,
     notifications: inbox.items
       .slice(0, MAX_NOTIFICATIONS)
-      .map((item) => ({ id: item.id, title: item.title, body: item.body })),
+      .map((item) => ({ id: item.id, ...describe(item) })),
   });
 }

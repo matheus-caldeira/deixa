@@ -198,18 +198,31 @@ const writerOutputSchema = z.object({
 
 type Draft = { work: WorkCandidate; ranked: RankedWork; levels: readonly [CefrLevel, CefrLevel] };
 
+export const localReasonSchema = z.object({
+  relatedTitle: z.string().nullable(),
+  fit: z.enum(["fit", "challenging", "easy"]),
+});
+export type LocalReason = z.infer<typeof localReasonSchema>;
+
+export function parseLocalReason(text: string): LocalReason | null {
+  try {
+    const parsed = localReasonSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 function localReason(draft: Draft, studied: StudiedWork[], assessment: LearnerAssessment): string {
   const related =
     draft.ranked.closestIndex !== null && draft.ranked.similarity >= RELATED_SIMILARITY
       ? studied[draft.ranked.closestIndex]
       : undefined;
-  const opening = related
-    ? `Tem a ver com ${related.title}, que você estudou`
-    : "Está em alta entre obras em inglês";
-  const fit = fitLabel(assessment.targetIndex, draft.levels[0], draft.levels[1]);
-  if (fit === "challenging") return `${opening}, e o nível estimado puxa um pouco acima do seu.`;
-  if (fit === "easy") return `${opening}, e o nível estimado é tranquilo para você.`;
-  return `${opening}, e o nível estimado combina com o seu.`;
+  const reason: LocalReason = {
+    relatedTitle: related?.title ?? null,
+    fit: fitLabel(assessment.targetIndex, draft.levels[0], draft.levels[1]),
+  };
+  return JSON.stringify(reason);
 }
 
 const MAX_TITLE_CHARS = 80;
@@ -439,7 +452,7 @@ export function makeRefreshRecommendations(deps: Deps) {
           fingerprint: signalsFingerprint(signals, feedback.length),
           writer,
           embedding: provider.name,
-          insight: assessment.insight,
+          insight: JSON.stringify(assessment.insight),
           failureReason: null,
         },
         finishedAt,

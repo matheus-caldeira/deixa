@@ -41,10 +41,7 @@ export function makeExportPersonalPackage(deps: Deps) {
   }): Promise<ExportedPackage> {
     const email = await deps.account.emailOf(input.userId);
     if (!email || !(await deps.account.verifyPassword(input.userId, input.password))) {
-      throw new AppError(
-        "INVALID_CREDENTIALS",
-        "Senha incorreta. A exportação pessoal pede a senha da sua conta.",
-      );
+      throw new AppError("INVALID_CREDENTIALS", "personalPasswordWrong");
     }
     const data = { ...(await deps.personal.collect(input.userId, input.includeCredentials)), email };
     const works: PackagedCatalog["works"] = [];

@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next";
-import { APP_NAME, APP_TAGLINE } from "@/shared/app";
+import { getLocale, getTranslations } from "next-intl/server";
+import { APP_NAME } from "@/shared/app";
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const t = await getTranslations("app");
   return {
     name: APP_NAME,
     short_name: APP_NAME,
-    description: APP_TAGLINE,
-    lang: "pt-BR",
+    description: t("tagline"),
+    lang: await getLocale(),
     start_url: "/",
     scope: "/",
     display: "standalone",

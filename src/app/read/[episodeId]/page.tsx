@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import { episodeLabel } from "@/modules/catalog";
@@ -26,10 +27,11 @@ export default async function ReadPage(props: {
     container.listCatalogSuggestions(episodeId),
     container.listSubtitleOrigins(episodeId),
   ]);
+  const t = await getTranslations("read");
   const subtitleCredits = origins.flatMap(({ language, origin }) =>
     origin
       ? [
-          [`Legenda ${language === "en" ? "EN" : "PT"}: OpenSubtitles`, origin.releaseName, origin.author]
+          [t("credit", { tag: language === "en" ? "EN" : "PT" }), origin.releaseName, origin.author]
             .filter(Boolean)
             .join(" · "),
         ]

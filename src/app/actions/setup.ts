@@ -1,6 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import {
@@ -16,9 +17,15 @@ import {
 import { SETUP_COOKIE } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
 
-const ALREADY_READY = "O banco já está configurado. Entre normalmente.";
-const LOCKED = "Informe o código de configuração de novo.";
 const ONE_HOUR_SECONDS = 3600;
+
+type SetupMessage = "alreadyReady" | "locked" | "wrongCode" | "invalidFields";
+type SetupNotice = { key: "untestedVersion"; params: Record<string, string | number> };
+
+async function fail(key: SetupMessage): Promise<{ ok: false; message: string }> {
+  const t = await getTranslations("setup.messages");
+  return { ok: false, message: t(key) };
+}
 
 const fieldsSchema = z.object({
   mode: z.literal("fields"),
@@ -44,11 +51,9 @@ function toUrl(input: z.infer<typeof connectionSchema>): string {
 }
 
 export async function unlockSetupAction(code: unknown): Promise<ActionResult<null>> {
-  if ((await getDatabaseStatus()).state === "ready") return { ok: false, message: ALREADY_READY };
+  if ((await getDatabaseStatus()).state === "ready") return fail("alreadyReady");
   const parsed = z.string().max(40).safeParse(code);
-  if (!parsed.success || !(await verifySetupCode(parsed.data))) {
-    return { ok: false, message: "Código incorreto. Confira o arquivo no computador onde o Deixa roda." };
-  }
+  if (!parsed.success || !(await verifySetupCode(parsed.data))) return fail("wrongCode");
   (await cookies()).set(SETUP_COOKIE, parsed.data, {
     httpOnly: true,
     sameSite: "strict",
@@ -60,20 +65,18 @@ export async function unlockSetupAction(code: unknown): Promise<ActionResult<nul
 
 export async function connectDatabaseAction(
   input: unknown,
-): Promise<ActionResult<{ next: "/login" | "/signup"; notice: string | null }>> {
+): Promise<ActionResult<{ next: "/login" | "/signup"; notice: SetupNotice | null }>> {
   const status = await getDatabaseStatus();
-  if (status.state === "ready") return { ok: false, message: ALREADY_READY };
+  if (status.state === "ready") return fail("alreadyReady");
   const store = await cookies();
-  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return fail("locked");
   const parsed = connectionSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      message: "Confira os dados. O nome do banco aceita só letras minúsculas, números e sublinhado.",
-    };
-  }
+  if (!parsed.success) return fail("invalidFields");
   const result = await configureDatabase(toUrl(parsed.data));
-  if (!result.ok) return result;
+  if (!result.ok) {
+    const t = await getTranslations("setup.reasons");
+    return { ok: false, message: t(result.failure) };
+  }
   store.delete(SETUP_COOKIE);
   const hasAccounts = (await getContainer().listPeople()).length > 0;
   const untested = result.majorVersion !== null && result.majorVersion < TESTED_MAJOR_VERSION;
@@ -82,16 +85,19 @@ export async function connectDatabaseAction(
     data: {
       next: hasAccounts ? "/login" : "/signup",
       notice: untested
-        ? `Conectado ao Postgres ${result.majorVersion}. O Deixa foi testado a partir do ${TESTED_MAJOR_VERSION}; se algo falhar, atualize o Postgres.`
+        ? {
+            key: "untestedVersion",
+            params: { version: result.majorVersion ?? 0, tested: TESTED_MAJOR_VERSION },
+          }
         : null,
     },
   };
 }
 
 export async function installEmbeddedDatabaseAction(): Promise<ActionResult<null>> {
-  if ((await getDatabaseStatus()).state === "ready") return { ok: false, message: ALREADY_READY };
+  if ((await getDatabaseStatus()).state === "ready") return fail("alreadyReady");
   const store = await cookies();
-  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return fail("locked");
   startEmbeddedDatabaseInstall();
   return { ok: true, data: null };
 }
@@ -100,7 +106,7 @@ export async function embeddedDatabaseProgressAction(): Promise<
   ActionResult<{ phase: EmbeddedPhase; next: "/login" | "/signup" | null }>
 > {
   const store = await cookies();
-  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return { ok: false, message: LOCKED };
+  if (!(await verifySetupCode(store.get(SETUP_COOKIE)?.value))) return fail("locked");
   const phase = embeddedDatabaseStatus();
   if (phase.phase !== "ready") return { ok: true, data: { phase, next: null } };
   if ((await getDatabaseStatus()).state !== "ready") {

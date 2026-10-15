@@ -27,7 +27,7 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
 
   private async embedBatch(texts: string[]): Promise<number[][]> {
     const model = embeddingModel(this.access, this.modelId);
-    if (!model) throw new AppError("LLM_FAILED", "Esse provedor não oferece embeddings.");
+    if (!model) throw new AppError("LLM_FAILED", "noEmbeddings");
     const fixed = FIXED_DIMENSION_PROVIDERS.has(this.access.provider);
     let embeddings: number[][];
     let tokens = 0;
@@ -50,8 +50,8 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
       if (KEY_REJECTED.includes(status)) {
         throw new AppError("AI_KEY_REJECTED", "O provedor recusou a chave de IA ao gerar vetores.");
       }
-      if (status > 0) throw new AppError("LLM_FAILED", `O serviço de vetores da IA respondeu ${status}.`);
-      throw new AppError("LLM_FAILED", "O serviço de vetores da IA não respondeu.");
+      if (status > 0) throw new AppError("LLM_FAILED", { key: "embeddingStatus", params: { status } });
+      throw new AppError("LLM_FAILED", "embeddingSilent");
     }
     const width = fixed ? DIMENSIONS : (embeddings[0]?.length ?? 0);
     const wellFormed =
@@ -59,7 +59,7 @@ export class AiEmbeddingProvider implements EmbeddingProvider {
       width > 0 &&
       embeddings.every((vector) => vector.length === width);
     if (!wellFormed) {
-      throw new AppError("LLM_INVALID_OUTPUT", "O serviço de vetores devolveu um formato inesperado.");
+      throw new AppError("LLM_INVALID_OUTPUT", "embeddingMalformed");
     }
     await this.meter.record({
       provider: this.access.provider,

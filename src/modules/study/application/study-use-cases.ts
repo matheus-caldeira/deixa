@@ -1,4 +1,4 @@
-import { AppError } from "@/shared/errors";
+import { AppError, type MessageParams } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
@@ -85,8 +85,7 @@ export type StudyCollaborators = {
   notify: (input: {
     userId: string;
     kind: "trail_ready" | "trail_failed";
-    title: string;
-    body: string;
+    params: MessageParams;
     href: string;
   }) => Promise<void>;
 };
@@ -100,11 +99,11 @@ type Deps = StudyCollaborators & {
 
 export const PLAN_TIMEOUT_MS = 5 * 60 * 1000;
 const MAX_LESSON_SECONDS = 3600;
-const PLAN_FAILURE = "Não foi possível montar a trilha com IA. Tente de novo.";
+const PLAN_FAILURE = "PLAN_FAILED";
 
 export type PlanJob = { userId: string; episodeId: string; level: CefrLevel; episodeLabel: string };
 export type PlanStatus =
-  { status: "READY" } | { status: "PENDING"; job: PlanJob | null } | { status: "FAILED"; message: string };
+  { status: "READY" } | { status: "PENDING"; job: PlanJob | null } | { status: "FAILED"; reason: string };
 
 export type TrailView = {
   episodeId: string;
@@ -114,6 +113,7 @@ export type TrailView = {
     index: number;
     startMs: number;
     title: string;
+    isFinal: boolean;
     icon: "quote" | "ear" | "pen" | "chest";
     state: NodeState;
   }[];
@@ -153,7 +153,7 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
       stored?.status === "PENDING" && now.getTime() - stored.updatedAt.getTime() > PLAN_TIMEOUT_MS;
     if (stored?.status === "PENDING" && !stale) return { status: "PENDING", job: null };
     if (stored?.status === "FAILED" && !input.retry) {
-      return { status: "FAILED", message: stored.failureReason ?? PLAN_FAILURE };
+      return { status: "FAILED", reason: stored.failureReason ?? PLAN_FAILURE };
     }
 
     const lines = await deps.loadLines(input.episodeId);
@@ -213,8 +213,7 @@ export function makeGeneratePlan(
       await deps.notify({
         userId: job.userId,
         kind: "trail_ready",
-        title: "Sua trilha está pronta",
-        body: `${job.episodeLabel}: ${plan.blocks.length - 1} blocos e o desafio final, no nível ${job.level}.`,
+        params: { episode: job.episodeLabel, blocks: plan.blocks.length - 1, level: job.level },
         href: "/",
       });
     } catch {
@@ -227,8 +226,7 @@ export function makeGeneratePlan(
       await deps.notify({
         userId: job.userId,
         kind: "trail_failed",
-        title: "Não deu para montar a trilha",
-        body: `${job.episodeLabel}: ${PLAN_FAILURE}`,
+        params: { episode: job.episodeLabel, reason: PLAN_FAILURE },
         href: "/",
       });
     }
@@ -261,6 +259,7 @@ export function makeGetTrail(deps: Pick<Deps, "plans" | "study">) {
         index: block.index,
         startMs: block.startMs,
         title: block.title,
+        isFinal: block.isFinal,
         icon: block.isFinal ? ("chest" as const) : (ICONS[index % ICONS.length] ?? "quote"),
         state: states[index] ?? "locked",
       })),
@@ -278,7 +277,7 @@ export function makeStartLesson(deps: Pick<Deps, "plans" | "study">) {
     const { plan, states } = await loadPlanState(deps, input.userId, input.episodeId, input.level);
     const block = plan.blocks[input.nodeIndex];
     if (!block || states[input.nodeIndex] === "locked") {
-      throw new AppError("EPISODE_NOT_READY", "Conclua o bloco anterior para liberar este.");
+      throw new AppError("EPISODE_NOT_READY", "previousBlock");
     }
     return {
       nodeIndex: block.index,

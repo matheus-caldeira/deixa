@@ -78,7 +78,7 @@ export class TmdbClient {
 
     if (response.status === UNAUTHORIZED)
       throw new AppError("METADATA_UNAUTHORIZED", `TMDB recusou as credenciais em ${path}`);
-    if (response.status === NOT_FOUND) throw new AppError("METADATA_NOT_FOUND", `TMDB não encontrou ${path}`);
+    if (response.status === NOT_FOUND) throw new AppError("METADATA_NOT_FOUND");
     if (!response.ok)
       throw new AppError("METADATA_UNAVAILABLE", `TMDB respondeu ${response.status} em ${path}`);
 

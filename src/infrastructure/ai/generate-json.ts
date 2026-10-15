@@ -92,15 +92,10 @@ export async function generateJson(
       lastStatus = statusOf(error);
       if (TRY_NEXT_MODEL.includes(lastStatus) || lastStatus === 0) continue;
       if (KEY_REJECTED.includes(lastStatus)) {
-        throw new AppError("AI_KEY_REJECTED", "O provedor recusou a chave de IA. Confira a chave no perfil.");
+        throw new AppError("AI_KEY_REJECTED", "aiKeyRejected");
       }
-      throw new AppError("LLM_FAILED", `A IA respondeu com erro (${lastStatus}).`);
+      throw new AppError("LLM_FAILED", { key: "aiStatus", params: { status: lastStatus } });
     }
   }
-  throw new AppError(
-    "LLM_FAILED",
-    lastStatus === RATE_LIMITED
-      ? "A cota diária da chave de IA acabou. Tente de novo amanhã ou use outra chave."
-      : "A IA não respondeu. Tente de novo em instantes.",
-  );
+  throw new AppError("LLM_FAILED", lastStatus === RATE_LIMITED ? "aiQuotaExhausted" : undefined);
 }

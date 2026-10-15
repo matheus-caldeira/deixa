@@ -1,3 +1,4 @@
+import type { ProcessingStep } from "@/modules/subtitles";
 import type { EpisodeStatus, MediaType, PosterColors } from "@/modules/catalog";
 
 export type SearchResultView = {
@@ -34,7 +35,7 @@ export type UploadTargetView = {
 
 export type ImportView = {
   outcome: "PROCESSED" | "DUPLICATE";
-  steps: { label: string; detail: string }[];
+  steps: ProcessingStep[];
   hasPortuguese: boolean;
   episodeId: string;
   mediaId: string;

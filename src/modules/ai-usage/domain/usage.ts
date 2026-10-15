@@ -10,15 +10,6 @@ export const AI_OPERATIONS = [
 ] as const;
 export type AiOperation = (typeof AI_OPERATIONS)[number];
 
-export const OPERATION_LABELS: Record<AiOperation, string> = {
-  cards: "Cards",
-  translation: "Tradução",
-  tutor: "Tutor",
-  lesson_plan: "Plano de aula",
-  suggestions: "Sugestões",
-  embeddings: "Embeddings",
-};
-
 export const KEY_SOURCES = ["user", "global"] as const;
 export type KeySource = (typeof KEY_SOURCES)[number];
 

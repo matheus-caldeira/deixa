@@ -19,7 +19,7 @@ import type {
   ScriptLineForCards,
 } from "./ports";
 
-export type GenerationStep = { label: string; detail: string };
+export type GenerationStep = { key: string; counts: Record<string, number | string> };
 
 export type GeneratedDrafts = {
   batchId: string;
@@ -144,14 +144,14 @@ export function makeGenerateCardDrafts(deps: Deps) {
       raw = await provider.explainTerms({ learnerLevel, items });
     } catch (error) {
       if (isAppError(error)) throw error;
-      throw new AppError("LLM_FAILED", "A IA não respondeu. Tente de novo em instantes.");
+      throw new AppError("LLM_FAILED");
     }
     const parsed = explainedTermsSchema.safeParse(raw);
     if (!parsed.success)
       throw new AppError("LLM_INVALID_OUTPUT", "A IA devolveu uma resposta fora do formato.");
     const byId = new Map(parsed.data.map((entry) => [entry.id, entry]));
     if (items.some((item) => !byId.has(item.id))) {
-      throw new AppError("LLM_INVALID_OUTPUT", "A IA não explicou todos os termos marcados.");
+      throw new AppError("LLM_INVALID_OUTPUT", "termsMissing");
     }
     return { byId, providerName: provider.name };
   }
@@ -248,29 +248,14 @@ export function makeGenerateCardDrafts(deps: Deps) {
       llmCalls,
       translationsFromSubtitle,
       steps: [
+        { key: "group", counts: { highlights: pending.length, expressions } },
         {
-          label: "Agrupando marcações vizinhas em expressões",
-          detail: `${pending.length} marcações · ${expressions} expressões`,
+          key: translatedByLlm === 0 ? "translateFromSubtitle" : "translateMissing",
+          counts: { fromSubtitle: translationsFromSubtitle, byLlm: translatedByLlm },
         },
-        {
-          label:
-            translatedByLlm === 0
-              ? "Pegando a tradução das falas na legenda PT"
-              : "Traduzindo as falas sem par na legenda PT",
-          detail:
-            translatedByLlm === 0
-              ? "0 chamadas LLM"
-              : `${translationsFromSubtitle} da legenda · ${translatedByLlm} por IA`,
-        },
-        {
-          label: "Explicando cada termo no contexto da cena",
-          detail:
-            llmCalls === 0
-              ? `${reusedCount} reaproveitados · 0 chamadas`
-              : `${llmProvider === "fake" ? "IA simulada" : "Gemini"} · 1 chamada em lote`,
-        },
-        { label: "Validando a saída", detail: "formato conferido" },
-        { label: "Montando os cards", detail: `${drafts.length} cards` },
+        { key: "explain", counts: { reused: reusedCount, llmCalls, provider: llmProvider } },
+        { key: "validate", counts: {} },
+        { key: "assemble", counts: { cards: drafts.length } },
       ],
     };
   };

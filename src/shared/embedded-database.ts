@@ -5,4 +5,4 @@ export type EmbeddedDatabasePhase =
   | { phase: "initializing" }
   | { phase: "starting" }
   | { phase: "ready" }
-  | { phase: "failed"; message: string };
+  | { phase: "failed"; reason: string };

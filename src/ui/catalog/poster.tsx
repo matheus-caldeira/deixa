@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { MediaType, PosterColors } from "@/modules/catalog";
 
 export type PosterData = {
@@ -20,13 +23,14 @@ export function Poster({
   media: PosterData;
   sizes?: string;
 }) {
-  const kind = media.type === "movie" ? "Filme" : "Série";
+  const t = useTranslations("poster");
+  const kind = t(media.type === "movie" ? "movie" : "series");
   if (media.posterUrl) {
     return (
       <div className="poster real">
         <Image
           src={media.posterUrl}
-          alt={`Pôster de ${media.title}`}
+          alt={t("posterOf", { title: media.title })}
           width={POSTER_WIDTH}
           height={POSTER_HEIGHT}
           sizes={sizes}

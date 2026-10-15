@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
+import { useFormatter, useTranslations } from "next-intl";
+import type { CefrLevel } from "@/shared/levels";
 import { BackIcon, BoltIcon, FlameIcon, FlameOffIcon } from "../icons";
 
 export type PersonRow = {
@@ -13,18 +16,17 @@ export type PersonRow = {
   isYou: boolean;
 };
 
-const number = new Intl.NumberFormat("pt-BR");
-
 export function PeopleScreen({ people }: { people: PersonRow[] }) {
+  const t = useTranslations("people");
+  const levels = useTranslations("levels");
+  const format = useFormatter();
   return (
     <>
       <Link className="back" href="/">
-        <BackIcon /> Início
+        <BackIcon /> {t("home")}
       </Link>
-      <h1 style={{ fontSize: 28 }}>Quem está estudando</h1>
-      <p className="muted">
-        Nível, dias de ofensiva e XP de cada conta. Marcações, cards e revisões continuam só de cada um.
-      </p>
+      <h1 style={{ fontSize: 28 }}>{t("title")}</h1>
+      <p className="muted">{t("intro")}</p>
       <section className="card" style={{ padding: "4px 16px" }}>
         {people.map((person) => (
           <div className="ep" style={{ gridTemplateColumns: "44px 1fr auto" }} key={person.id}>
@@ -36,23 +38,23 @@ export function PeopleScreen({ people }: { people: PersonRow[] }) {
                 {person.name}
                 {person.isYou ? (
                   <span className="chip brand" style={{ marginLeft: 8 }}>
-                    você
+                    {t("you")}
                   </span>
                 ) : null}
               </div>
               <div className="row" style={{ gap: 6, marginTop: 4, flexWrap: "wrap" }}>
                 <span className="lvlchip">{person.level}</span>
-                <span className="small muted">{LEVEL_NAMES[person.level]}</span>
+                <span className="small muted">{levels(person.level)}</span>
               </div>
             </div>
             <div className="col" style={{ gap: 4, alignItems: "flex-end" }}>
               <span className="stat" style={{ boxShadow: "none", background: "var(--surface-2)" }}>
                 {person.streak > 0 ? <FlameIcon /> : <FlameOffIcon />}
-                {person.streak} {person.streak === 1 ? "dia" : "dias"}
+                {t("days", { count: person.streak })}
               </span>
               <span className="stat" style={{ boxShadow: "none", background: "var(--surface-2)" }}>
                 <BoltIcon />
-                {number.format(person.totalXp)} XP
+                {format.number(person.totalXp)} XP
               </span>
             </div>
           </div>

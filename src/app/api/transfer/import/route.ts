@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getTranslations } from "next-intl/server";
+import { describeAppError } from "@/app/actions/result";
 import { getContainer } from "@/infrastructure/container";
 import { MAX_PACKAGE_BYTES } from "@/modules/packages";
 import { isAppError } from "@/shared/errors";
@@ -9,14 +11,12 @@ export async function POST(request: NextRequest): Promise<Response> {
   if (!user) return new NextResponse(null, { status: 401 });
   const form = await request.formData();
   const file = form.get("file");
+  const t = await getTranslations("errors.detail");
   if (!(file instanceof File) || file.size === 0) {
-    return NextResponse.json({ ok: false, message: "Escolha um arquivo .deixa.zip." }, { status: 400 });
+    return NextResponse.json({ ok: false, message: t("chooseZip") }, { status: 400 });
   }
   if (file.size > MAX_PACKAGE_BYTES) {
-    return NextResponse.json(
-      { ok: false, message: "O arquivo passa do tamanho máximo de 1 GB." },
-      { status: 413 },
-    );
+    return NextResponse.json({ ok: false, message: t("packageTooLarge", { gb: 1 }) }, { status: 413 });
   }
   try {
     const preview = await getContainer().inspectPackage({
@@ -25,7 +25,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     });
     return NextResponse.json({ ok: true, data: preview });
   } catch (error) {
-    if (isAppError(error)) return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
+    if (isAppError(error)) {
+      return NextResponse.json({ ok: false, message: await describeAppError(error) }, { status: 400 });
+    }
     throw error;
   }
 }

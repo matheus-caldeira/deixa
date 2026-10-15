@@ -6,7 +6,7 @@ source: conversa de 14/10/2026
 
 # Rascunho: interface em N idiomas e estudo de N idiomas
 
-**Estado: rascunho aprovado em 14/10/2026, sem implementação.** Duas frentes, feitas nesta ordem: a interface
+**Estado: frente A pronta em 15/10/2026 (ADR 0018, etapa 12 do plano); frente B em andamento.** Duas frentes, feitas nesta ordem: a interface
 primeiro (A), porque a segunda (B) mexe nos mesmos textos e seria traduzida duas vezes.
 
 ## Decisões tomadas

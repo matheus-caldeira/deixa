@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getInboxAction, type InboxView } from "@/app/actions/notifications";
 import type { CefrLevel } from "@/shared/levels";
-import { LEVEL_NAMES } from "@/shared/levels";
 import {
   BellIcon,
   BoltIcon,
@@ -52,10 +52,10 @@ export function useShell(): ShellActions {
 }
 
 const TABS = [
-  { href: "/", label: "Início", Icon: HomeIcon },
-  { href: "/catalog", label: "Explorar", Icon: FilmIcon },
-  { href: "/review", label: "Revisar", Icon: CardsIcon },
-  { href: "/tutor", label: "Conversar", Icon: ChatIcon },
+  { href: "/", key: "home", Icon: HomeIcon },
+  { href: "/catalog", key: "catalog", Icon: FilmIcon },
+  { href: "/review", key: "review", Icon: CardsIcon },
+  { href: "/tutor", key: "tutor", Icon: ChatIcon },
 ] as const;
 
 const SCROLL_THRESHOLD = 4;
@@ -72,6 +72,9 @@ const INBOX_REFRESH_MS = 15_000;
 const EMPTY_INBOX: InboxView = { unread: 0, items: [] };
 
 export function AppShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
+  const t = useTranslations("shell");
+  const more = useTranslations("more");
+  const levels = useTranslations("levels");
   const pathname = usePathname();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -127,11 +130,11 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
             className="avatar"
             style={{ background: data.avatarColor }}
             onClick={actions.openProfile}
-            aria-label={`Perfil de ${data.name}`}
+            aria-label={t("profileOf", { name: data.name })}
           >
             {data.name.slice(0, 1)}
           </button>
-          <Link className="lvlchip" href="/progress" title={LEVEL_NAMES[data.level]}>
+          <Link className="lvlchip" href="/progress" title={levels(data.level)}>
             {data.level}
           </Link>
           <span className="spacer" />
@@ -141,7 +144,9 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
               refreshInbox();
               setSheet({ kind: "notifications" });
             }}
-            aria-label={inbox.unread > 0 ? `Notificações: ${inbox.unread} novas` : "Notificações"}
+            aria-label={
+              inbox.unread > 0 ? t("notificationsNew", { count: inbox.unread }) : t("notifications")
+            }
           >
             <BellIcon />
             {inbox.unread > 0 ? <span className="badge">{inbox.unread}</span> : null}
@@ -149,8 +154,8 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           <Link
             className="stat"
             href="/people"
-            title="Sequência"
-            aria-label={`Sequência de ${data.streak} dias: ver quem está estudando`}
+            title={t("streak")}
+            aria-label={t("streakLabel", { days: data.streak })}
           >
             {data.goalMet ? <FlameIcon /> : <FlameOffIcon />}
             {data.streak}
@@ -158,8 +163,8 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           <Link
             className="stat"
             href="/people"
-            title="XP hoje"
-            aria-label={`${data.xpToday} XP hoje: ver quem está estudando`}
+            title={t("xpToday")}
+            aria-label={t("xpTodayLabel", { xp: data.xpToday })}
           >
             <BoltIcon />
             {data.xpToday}
@@ -169,21 +174,20 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
           {data.unreadableKeys.length > 0 ? (
             <div className="alertbar" role="alert">
               <span>
-                <b>Chave ilegível: {data.unreadableKeys.join(", ")}.</b> A chave mestra deste servidor mudou
-                ou o dado foi corrompido. Cadastre a chave de novo.
+                <b>{t("unreadableKeys", { keys: data.unreadableKeys.join(", ") })}</b> {t("unreadableBody")}
               </span>
               <Link className="link small" href="/settings">
-                Abrir configurações
+                {t("openSettings")}
               </Link>
             </div>
           ) : null}
           {children}
         </main>
-        <nav className="nav" aria-label="Áreas">
+        <nav className="nav" aria-label={t("areas")}>
           <span className="navbrand">
             <Logo />
           </span>
-          {TABS.map(({ href, label, Icon }) => (
+          {TABS.map(({ href, key, Icon }) => (
             <Link
               key={href}
               href={href}
@@ -191,10 +195,10 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
               aria-current={isActive(href) ? "page" : undefined}
             >
               <Icon />
-              <span>{label}</span>
+              <span>{t(`tabs.${key}`)}</span>
             </Link>
           ))}
-          {MORE_LINKS.map(({ href, label, Icon }) => (
+          {MORE_LINKS.map(({ href, key, Icon }) => (
             <Link
               key={href}
               href={href}
@@ -202,17 +206,17 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
               aria-current={isActive(href) ? "page" : undefined}
             >
               <Icon />
-              <span>{label}</span>
+              <span>{more(key)}</span>
             </Link>
           ))}
           <button
             className={`mob ${inMore ? "on" : ""}`}
             onClick={() => setSheet({ kind: "more" })}
             aria-haspopup="dialog"
-            aria-label="Mais áreas"
+            aria-label={t("moreAreas")}
           >
             <MoreIcon />
-            <span>Mais</span>
+            <span>{t("more")}</span>
           </button>
         </nav>
       </div>

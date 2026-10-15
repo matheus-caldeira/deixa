@@ -15,7 +15,6 @@ export default async function ProgressPage() {
       view={{
         level: user.preferences.level,
         levelPct: summary.levelPct,
-        nextStep: summary.nextStep,
         streak: summary.streak,
         longest: summary.longestStreak,
         totalXp: summary.totalXp,

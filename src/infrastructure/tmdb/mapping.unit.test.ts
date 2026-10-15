@@ -159,7 +159,7 @@ describe("mapeamento da resposta do TMDB", () => {
       { episodeNumber: 2, title: "Second One", overview: "More.", runtimeMinutes: 21, stillPath: null },
     ]);
     expect(mapSeasonEpisodes(seasonDetailsSchema.parse({ episodes: [{ episode_number: 3 }] }))).toEqual([
-      { episodeNumber: 3, title: "Episódio 3", overview: "", runtimeMinutes: null, stillPath: null },
+      { episodeNumber: 3, title: "Episode 3", overview: "", runtimeMinutes: null, stillPath: null },
     ]);
   });
 

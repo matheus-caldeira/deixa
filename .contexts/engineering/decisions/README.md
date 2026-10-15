@@ -33,3 +33,4 @@ Decisões permanentes de arquitetura. O diário do dia a dia, com as escolhas fe
 Front-matter (`title`, `updated`, `source`, `status`) e quatro seções: Contexto, Decisão, Consequências,
 Alternativas descartadas. ADR aceito não é reescrito: uma decisão nova o substitui e cita o anterior.
 | 0017 | [Postgres embutido na instalação local](0017-postgres-embutido.md) |
+| 0018 | [Interface em N idiomas](0018-interface-em-n-idiomas.md) |

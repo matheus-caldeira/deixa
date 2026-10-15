@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { updateSettingsAction } from "@/app/actions/profile";
 import type { AppSettings } from "@/modules/settings";
 import { useToast } from "./toast";
 
 export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
+  const t = useTranslations("serverSettings");
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -31,7 +33,7 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
         setError(result.message);
         return;
       }
-      toast("Configurações do servidor salvas.");
+      toast(t("saved"));
       router.refresh();
     });
   };
@@ -40,7 +42,7 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
     <form className="col" style={{ gap: 10 }} onSubmit={save}>
       <div className="card col" style={{ gap: 10 }}>
         <div className="field">
-          <label htmlFor="settings-downloads">Downloads de legenda por conta, por dia</label>
+          <label htmlFor="settings-downloads">{t("downloads")}</label>
           <input
             id="settings-downloads"
             value={downloads}
@@ -48,10 +50,10 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
             inputMode="numeric"
             required
           />
-          <span className="small muted">Vale para quem usa a chave global do OpenSubtitles.</span>
+          <span className="small muted">{t("downloadsNote")}</span>
         </div>
         <div className="field">
-          <label htmlFor="settings-kokoro">Endereço do Kokoro (voz)</label>
+          <label htmlFor="settings-kokoro">{t("kokoro")}</label>
           <input
             id="settings-kokoro"
             value={kokoroUrl}
@@ -60,35 +62,31 @@ export function ServerSettingsCard({ initial }: { initial: AppSettings }) {
             autoCapitalize="none"
             spellCheck={false}
           />
-          <span className="small muted">
-            Só neste computador ou numa rede privada. Em branco, o áudio fica em silêncio.
-          </span>
+          <span className="small muted">{t("kokoroNote")}</span>
         </div>
         <div className="field">
-          <label>Endereço próprio de IA por conta</label>
-          <div className="seg" role="radiogroup" aria-label="Endereço próprio de IA por conta">
+          <label>{t("customEndpoints")}</label>
+          <div className="seg" role="radiogroup" aria-label={t("customEndpoints")}>
             <button
               type="button"
               className={customEndpoints ? "" : "on"}
               onClick={() => setCustomEndpoints(false)}
             >
-              Desligado
+              {t("off")}
             </button>
             <button
               type="button"
               className={customEndpoints ? "on" : ""}
               onClick={() => setCustomEndpoints(true)}
             >
-              Ligado
+              {t("on")}
             </button>
           </div>
-          <span className="small muted">
-            Vale para Ollama e para servidores compatíveis com OpenAI. Quem chama o endereço é este servidor.
-          </span>
+          <span className="small muted">{t("customEndpointsNote")}</span>
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button className="btn" style={{ padding: 12, fontSize: 13 }} type="submit" disabled={pending}>
-          {pending ? "Salvando…" : "Salvar configurações"}
+          {pending ? t("saving") : t("save")}
         </button>
       </div>
     </form>

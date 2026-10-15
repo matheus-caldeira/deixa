@@ -17,7 +17,15 @@ export {
   makeDismissRecommendation,
   makeGetRecommendations,
   makeRefreshRecommendations,
+  parseLocalReason,
+  type LocalReason,
   type RecommendationsView,
 } from "./application/recommendation-use-cases";
-export { fitLabel, type LearnerSignals, type StudiedWork } from "./domain/learner";
+export {
+  fitLabel,
+  parseLearnerInsight,
+  type LearnerInsight,
+  type LearnerSignals,
+  type StudiedWork,
+} from "./domain/learner";
 export type { Vector } from "./domain/vectors";

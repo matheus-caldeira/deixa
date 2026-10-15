@@ -32,7 +32,7 @@ export async function updateSharedAiLimitAction(input: unknown): Promise<ActionR
   const user = await requireUser();
   return runAction("updateSharedAiLimit", async () => {
     const parsed = usageLimitSchema.safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira os valores do limite.");
+    if (!parsed.success) throw new AppError("INVALID_INPUT", "limitInvalid");
     const current = await app().getSettings();
     const saved = await app().updateSettings({
       actor: { userId: user.id, isAdmin: user.isAdmin },

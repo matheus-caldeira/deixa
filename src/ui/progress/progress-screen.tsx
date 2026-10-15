@@ -1,10 +1,12 @@
-import { CEFR_LEVELS, LEVEL_NAMES, levelIndex, nextLevel, type CefrLevel } from "@/shared/levels";
+"use client";
+
+import { useFormatter, useTranslations } from "next-intl";
+import { CEFR_LEVELS, levelIndex, nextLevel, type CefrLevel } from "@/shared/levels";
 import { BoltIcon, FlameIcon, Icon, LockIcon, QuoteIcon, TargetIcon, type IconName } from "../icons";
 
 export type ProgressView = {
   level: CefrLevel;
   levelPct: number;
-  nextStep: string;
   streak: number;
   longest: number;
   totalXp: number;
@@ -14,16 +16,18 @@ export type ProgressView = {
   goalMet: boolean;
   weekly: number[];
   heat: number[];
-  skills: { name: string; percent: number }[];
-  achievements: { id: string; title: string; detail: string; icon: IconName; unlocked: boolean }[];
+  skills: { key: string; percent: number }[];
+  achievements: { id: string; icon: IconName; unlocked: boolean }[];
 };
 
-const DAYS = ["D", "S", "T", "Q", "Q", "S", "S"];
-const HEAT_TITLES = ["sem estudo", "meta parcial", "meta cumprida", "meta + bônus"];
 const TODAY = 6;
-const number = new Intl.NumberFormat("pt-BR");
+const HEAT_LEVELS = ["none", "partial", "met", "bonus"] as const;
 
 export function ProgressScreen({ view }: { view: ProgressView }) {
+  const t = useTranslations("progress");
+  const levels = useTranslations("levels");
+  const format = useFormatter();
+  const weekDays = t("weekDays").split(" ");
   const current = levelIndex(view.level);
   const upcoming = nextLevel(view.level);
   const highest = Math.max(...view.weekly, view.dailyGoal, 1);
@@ -31,17 +35,17 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
 
   return (
     <>
-      <h1 style={{ fontSize: 28, paddingTop: 4 }}>Progresso</h1>
+      <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
       <section className="card col" style={{ gap: 14 }}>
         <div className="sec-h">
           <div className="col" style={{ gap: 2 }}>
-            <span className="eyebrow">Seu nível (QECR)</span>
+            <span className="eyebrow">{t("yourLevel")}</span>
             <h2 style={{ fontSize: 22 }}>
-              {view.level} · {LEVEL_NAMES[view.level]}
+              {view.level} · {levels(view.level)}
             </h2>
           </div>
           <span className="small muted mono">
-            {view.levelPct}% até {upcoming ?? "—"}
+            {t("untilNext", { percent: view.levelPct, level: upcoming ?? "—" })}
           </span>
         </div>
         <div className="ladder">
@@ -54,42 +58,42 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
             </div>
           ))}
         </div>
-        <p className="small muted">{view.nextStep}</p>
+        <p className="small muted">{t(`nextStep.${view.level}`)}</p>
       </section>
       <div className="tiles">
         <div className="tile">
           <FlameIcon />
           <div>
-            <b>{view.streak} dias</b>
-            <small>Sequência · recorde {view.longest}</small>
+            <b>{t("days", { count: view.streak })}</b>
+            <small>{t("streakRecord", { record: view.longest })}</small>
           </div>
         </div>
         <div className="tile">
           <BoltIcon />
           <div>
-            <b>{number.format(view.totalXp)}</b>
-            <small>XP total</small>
+            <b>{format.number(view.totalXp)}</b>
+            <small>{t("totalXp")}</small>
           </div>
         </div>
         <div className="tile" style={{ color: "var(--brand)" }}>
           <QuoteIcon />
           <div style={{ color: "var(--ink)" }}>
-            <b>{number.format(view.learned)}</b>
-            <small>Expressões aprendidas</small>
+            <b>{format.number(view.learned)}</b>
+            <small>{t("learned")}</small>
           </div>
         </div>
         <div className="tile" style={{ color: "var(--good)" }}>
           <TargetIcon />
           <div style={{ color: "var(--ink)" }}>
             <b>{view.accuracy}%</b>
-            <small>Acertos (30 dias)</small>
+            <small>{t("accuracy")}</small>
           </div>
         </div>
       </div>
       <section className="card col" style={{ gap: 10 }}>
         <div className="sec-h">
-          <h2 style={{ fontSize: 17 }}>XP da semana</h2>
-          <span className="small muted">meta {view.dailyGoal}/dia</span>
+          <h2 style={{ fontSize: 17 }}>{t("weekXp")}</h2>
+          <span className="small muted">{t("goalPerDay", { goal: view.dailyGoal })}</span>
         </div>
         <div className="bars">
           {view.weekly.map((value, index) => (
@@ -100,33 +104,33 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
           ))}
         </div>
         <div className="barlbl">
-          {DAYS.map((day, index) => (
+          {weekDays.map((day, index) => (
             <span key={index} style={index === TODAY ? { color: "var(--brand)" } : undefined}>
-              {index === TODAY ? "Hoje" : day}
+              {index === TODAY ? t("today") : day}
             </span>
           ))}
         </div>
       </section>
       <section className="card col" style={{ gap: 10 }}>
         <div className="sec-h">
-          <h2 style={{ fontSize: 17 }}>Dias estudados</h2>
-          <span className="small muted">últimas 5 semanas</span>
+          <h2 style={{ fontSize: 17 }}>{t("studiedDays")}</h2>
+          <span className="small muted">{t("lastWeeks", { weeks: 5 })}</span>
         </div>
         <div className="heat">
           {view.heat.map((level, index) => (
             <i
               key={index}
               className={`h${level} ${index === view.heat.length - 1 ? "today" : ""}`}
-              title={HEAT_TITLES[level]}
+              title={t(`heat.${HEAT_LEVELS[level] ?? "none"}`)}
             />
           ))}
         </div>
       </section>
       <section className="card col" style={{ gap: 12 }}>
-        <h2 style={{ fontSize: 17 }}>Compreensão por habilidade</h2>
+        <h2 style={{ fontSize: 17 }}>{t("skills")}</h2>
         {view.skills.map((skill) => (
-          <div className="skill" key={skill.name}>
-            <span>{skill.name}</span>
+          <div className="skill" key={skill.key}>
+            <span>{t(`skill.${skill.key}`)}</span>
             <div className="bar">
               <i style={{ width: `${skill.percent}%` }} />
             </div>
@@ -136,7 +140,7 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
       </section>
       <section className="col" style={{ gap: 10 }}>
         <div className="sec-h">
-          <h2 style={{ fontSize: 18 }}>Conquistas</h2>
+          <h2 style={{ fontSize: 18 }}>{t("achievements")}</h2>
           <span className="small muted">
             {unlocked}/{view.achievements.length}
           </span>
@@ -147,8 +151,8 @@ export function ProgressScreen({ view }: { view: ProgressView }) {
               <span className="medal">
                 {achievement.unlocked ? <Icon name={achievement.icon} /> : <LockIcon />}
               </span>
-              <b>{achievement.title}</b>
-              <small>{achievement.detail}</small>
+              <b>{t(`achievement.${achievement.id}.title`)}</b>
+              <small>{t(`achievement.${achievement.id}.detail`)}</small>
             </div>
           ))}
         </div>

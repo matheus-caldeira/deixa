@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type SpeechKind = "cue" | "item" | "turn";
@@ -10,6 +11,7 @@ export function useSpeech(options: { speed: number; onError: (message: string) =
   const [readyIds, setReadyIds] = useState<Set<string>>(() => new Set());
   const urls = useRef(new Map<string, string>());
   const player = useRef<HTMLAudioElement | null>(null);
+  const errors = useTranslations("errors");
   const { speed, onError } = options;
 
   useEffect(() => {
@@ -30,18 +32,14 @@ export function useSpeech(options: { speed: number; onError: (message: string) =
         try {
           const response = await fetch(`/api/audio/${kind}/${id}`);
           if (!response.ok) {
-            onError(
-              response.status === BUSY
-                ? "Já estamos gerando outros áudios para você. Tente de novo em instantes."
-                : "Não foi possível gerar o áudio agora.",
-            );
+            onError(errors(response.status === BUSY ? "AUDIO_BUSY" : "AUDIO_UNAVAILABLE"));
             return;
           }
           url = URL.createObjectURL(await response.blob());
           urls.current.set(id, url);
           setReadyIds((current) => new Set(current).add(id));
         } catch {
-          onError("Não foi possível gerar o áudio agora.");
+          onError(errors("AUDIO_UNAVAILABLE"));
           return;
         } finally {
           setLoadingId(null);
@@ -53,7 +51,7 @@ export function useSpeech(options: { speed: number; onError: (message: string) =
       player.current = audio;
       audio.play().catch(() => undefined);
     },
-    [loadingId, onError, speed],
+    [errors, loadingId, onError, speed],
   );
 
   return { play, loadingId, readyIds };

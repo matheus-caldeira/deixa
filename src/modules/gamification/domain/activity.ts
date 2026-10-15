@@ -86,7 +86,6 @@ export type MissionKind = "reviews" | "lesson" | "tutor";
 export type Mission = {
   kind: MissionKind;
   icon: "cards" | "ear" | "chat";
-  title: string;
   value: number;
   max: number;
 };
@@ -101,18 +100,16 @@ export function dailyMissions(counts: { reviewsToday: number; lessonsToday: numb
     {
       kind: "reviews",
       icon: "cards",
-      title: `Revise ${REVIEW_TARGET} cartões`,
       value: Math.min(REVIEW_TARGET, counts.reviewsToday),
       max: REVIEW_TARGET,
     },
     {
       kind: "lesson",
       icon: "ear",
-      title: "Complete 1 lição da trilha",
       value: Math.min(LESSON_TARGET, counts.lessonsToday),
       max: LESSON_TARGET,
     },
-    { kind: "tutor", icon: "chat", title: "Converse 5 min com o tutor", value: 0, max: TUTOR_TARGET_MINUTES },
+    { kind: "tutor", icon: "chat", value: 0, max: TUTOR_TARGET_MINUTES },
   ];
 }
 

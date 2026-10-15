@@ -36,22 +36,34 @@ export async function detectLocalServers(
   return found.flat().map((port) => ({ host: "localhost", port }));
 }
 
-const MESSAGES: Record<string, string> = {
-  ECONNREFUSED: "Não há Postgres respondendo nesse endereço e porta.",
-  ENOTFOUND: "Não encontramos esse servidor. Confira o endereço.",
-  ETIMEDOUT: "O servidor não respondeu a tempo. Confira o endereço e a porta.",
-  CONNECT_TIMEOUT: "O servidor não respondeu a tempo. Confira o endereço e a porta.",
-  "28P01": "Usuário ou senha recusados pelo Postgres.",
-  "28000": "O Postgres não autorizou esse usuário. Confira usuário, senha e as regras de acesso do servidor.",
-  "3D000": "Esse banco não existe e não foi possível criá-lo. Crie o banco ou informe outro.",
-  "42501": "Esse usuário não tem permissão para criar o banco ou as tabelas. Use um usuário com permissão.",
-  "53300": "O Postgres está sem conexões livres. Tente de novo em instantes.",
-};
-const GENERIC = "Não foi possível conectar. Confira os dados e tente de novo.";
+export type ConnectionFailure =
+  | "connectionRefused"
+  | "hostNotFound"
+  | "timeout"
+  | "authFailed"
+  | "notAuthorized"
+  | "databaseMissing"
+  | "noPermission"
+  | "noConnections"
+  | "invalidUrl"
+  | "fromEnvironment"
+  | "generic";
 
-export function describeConnectionError(error: unknown): string {
+const FAILURES: Record<string, ConnectionFailure> = {
+  ECONNREFUSED: "connectionRefused",
+  ENOTFOUND: "hostNotFound",
+  ETIMEDOUT: "timeout",
+  CONNECT_TIMEOUT: "timeout",
+  "28P01": "authFailed",
+  "28000": "notAuthorized",
+  "3D000": "databaseMissing",
+  "42501": "noPermission",
+  "53300": "noConnections",
+};
+
+export function describeConnectionError(error: unknown): ConnectionFailure {
   const code = (error as { code?: unknown } | null)?.code;
-  return (typeof code === "string" ? MESSAGES[code] : undefined) ?? GENERIC;
+  return (typeof code === "string" ? FAILURES[code] : undefined) ?? "generic";
 }
 
 const HOST_SHAPE = /^(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:]+\])$/i;
@@ -98,19 +110,15 @@ async function readMajorVersion(url: string): Promise<number | null> {
 
 export async function connectAndPrepare(
   input: string,
-): Promise<{ ok: true; url: string; majorVersion: number | null } | { ok: false; message: string }> {
+): Promise<
+  { ok: true; url: string; majorVersion: number | null } | { ok: false; failure: ConnectionFailure }
+> {
   const url = normalizePostgresUrl(input);
-  if (!url) {
-    return {
-      ok: false,
-      message:
-        "Endereço inválido. Use postgres://usuario:senha@servidor:porta/banco, com o nome do banco em minúsculas.",
-    };
-  }
+  if (!url) return { ok: false, failure: "invalidUrl" };
   try {
     await runMigrations(url);
     return { ok: true, url, majorVersion: await readMajorVersion(url) };
   } catch (error) {
-    return { ok: false, message: describeConnectionError(error) };
+    return { ok: false, failure: describeConnectionError(error) };
   }
 }

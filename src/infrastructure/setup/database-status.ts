@@ -1,10 +1,10 @@
 import { pingDatabase, refreshSettings, resolveDatabaseUrl } from "../container";
 import { ensureEmbeddedPostgres } from "../embedded-postgres";
 import { runMigrations } from "../database/migrate";
-import { describeConnectionError } from "./database-probe";
+import { describeConnectionError, type ConnectionFailure } from "./database-probe";
 
 export type DatabaseStatus =
-  { state: "ready" } | { state: "unconfigured" } | { state: "unreachable"; reason: string };
+  { state: "ready" } | { state: "unconfigured" } | { state: "unreachable"; reason: ConnectionFailure };
 
 const READY_FOR_MS = 15_000;
 const FAILED_FOR_MS = 3000;

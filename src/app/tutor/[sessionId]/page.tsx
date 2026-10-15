@@ -21,9 +21,10 @@ export default async function ConversationPage(props: { params: Promise<{ sessio
       <ChatScreen
         view={{
           sessionId,
+          themeId: conversation.session.themeId,
           title: conversation.session.themeTitle,
           level: user.preferences.level,
-          accentLabel: user.preferences.preferredAccent === "UK" ? "sotaque britânico" : "sotaque americano",
+          accent: user.preferences.preferredAccent,
           audioSpeed: user.preferences.audioSpeed,
           simulated: conversation.simulated,
           turnsLeft: conversation.turnsLeft,

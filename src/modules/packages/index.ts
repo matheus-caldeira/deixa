@@ -42,6 +42,7 @@ export {
   makeInspectPackage,
   makePeekPersonalEmail,
   type ImportReport,
+  type ImportWarning,
   type PackagePreview,
   type PackagePreviewEpisode,
 } from "./application/import-package";

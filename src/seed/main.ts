@@ -50,6 +50,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : "falha no seed");
+  console.error(error instanceof Error ? (error.stack ?? error.message) : "seed failed");
   process.exit(1);
 });

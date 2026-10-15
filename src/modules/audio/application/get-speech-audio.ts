@@ -38,7 +38,7 @@ export function makeGetSpeechAudio(deps: Deps) {
   async function generate(provider: TtsProvider, text: string, accent: Accent): Promise<Uint8Array> {
     const voice = provider.voiceFor(VOICE_BY_ACCENT[accent]);
     const bytes = await provider.synthesize({ text, voice });
-    if (!looksLikeWav(bytes)) throw new Error("áudio gerado em formato inesperado");
+    if (!looksLikeWav(bytes)) throw new Error("generated audio in unexpected format");
     const hash = audioHash({ text, ...voice, modelVersion: provider.modelVersion });
     const storagePath = audioStoragePath(voice.voiceId, hash);
     await deps.storage.write(storagePath, bytes);
@@ -69,10 +69,7 @@ export function makeGetSpeechAudio(deps: Deps) {
     if (cached) return { bytes: cached, cache: "hit", provider: deps.primary.name };
 
     if (!deps.gate.tryEnter(input.userId)) {
-      throw new AppError(
-        "AUDIO_BUSY",
-        "Já estamos gerando outros áudios para você. Tente de novo em instantes.",
-      );
+      throw new AppError("AUDIO_BUSY");
     }
     try {
       try {

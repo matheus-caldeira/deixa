@@ -117,7 +117,7 @@ export function makeGetAiUsageOverview(deps: OverviewDeps) {
     userId: string;
     isAdmin: boolean;
   }): Promise<UsageOverview> {
-    if (!actor.isAdmin) throw new AppError("FORBIDDEN", "Só o administrador vê o uso de todas as contas.");
+    if (!actor.isAdmin) throw new AppError("FORBIDDEN", "adminOnlyUsage");
     const people = await deps.listPeople();
     const now = deps.clock.now();
     const entries: PersonUsage[] = [];
@@ -159,10 +159,9 @@ export function makeSaveModelPrice(deps: Pick<SummaryDeps, "prices" | "clock">) 
     actor: { userId: string; isAdmin: boolean };
     price: unknown;
   }): Promise<ModelPrice> {
-    if (!input.actor.isAdmin) throw new AppError("FORBIDDEN", "Só o administrador altera os preços.");
+    if (!input.actor.isAdmin) throw new AppError("FORBIDDEN", "adminOnlyPrices");
     const parsed = modelPriceSchema.safeParse(input.price);
-    if (!parsed.success)
-      throw new AppError("INVALID_INPUT", "Confira o modelo e os preços por milhão de tokens.");
+    if (!parsed.success) throw new AppError("INVALID_INPUT", "pricesInvalid");
     await deps.prices.save(parsed.data, input.actor.userId, deps.clock.now());
     return parsed.data;
   };

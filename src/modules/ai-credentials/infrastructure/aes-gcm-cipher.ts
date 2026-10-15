@@ -32,7 +32,7 @@ export class AesGcmCipher implements KeyCipher {
     const parts = payload.split(".");
     const [version, iv, tag, encrypted] = parts;
     if (parts.length !== PARTS || version !== `v${this.version}` || !iv || !tag || encrypted === undefined) {
-      throw new Error("formato de chave cifrada inválido");
+      throw new Error("invalid encrypted key format");
     }
     const decipher = createDecipheriv(ALGORITHM, this.key, Buffer.from(iv, "base64"));
     decipher.setAuthTag(Buffer.from(tag, "base64"));

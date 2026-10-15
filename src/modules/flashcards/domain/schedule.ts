@@ -3,12 +3,7 @@ import { MS_PER_DAY } from "@/shared/time";
 export const RATINGS = ["again", "hard", "good", "easy"] as const;
 export type Rating = (typeof RATINGS)[number];
 
-export const RATING_LABELS: Record<Rating, string> = {
-  again: "De novo",
-  hard: "Difícil",
-  good: "Bom",
-  easy: "Fácil",
-};
+export type Interval = { unit: "minutes" | "days" | "months"; value: number };
 
 export type CardState = {
   intervalDays: number;
@@ -35,6 +30,7 @@ const HARD_FACTOR = 1.2;
 const EASY_BONUS = 1.3;
 const EASE_STEP: Record<Rating, number> = { again: -0.2, hard: -0.15, good: 0, easy: 0.15 };
 const DAYS_PER_MONTH = 30;
+const SHORT_INTERVAL_MINUTES = 10;
 
 const clampEase = (ease: number): number =>
   Math.min(MAX_EASE, Math.max(MIN_EASE, Math.round(ease * 100) / 100));
@@ -69,20 +65,19 @@ export function review(state: CardState, rating: Rating): { state: CardState; du
   };
 }
 
-export function formatInterval(dueInMs: number): string {
-  if (dueInMs < MS_PER_DAY) return "<10 min";
+export function intervalOf(dueInMs: number): Interval {
+  if (dueInMs < MS_PER_DAY) return { unit: "minutes", value: SHORT_INTERVAL_MINUTES };
   const days = Math.round(dueInMs / MS_PER_DAY);
-  if (days < DAYS_PER_MONTH) return days === 1 ? "1 dia" : `${days} dias`;
-  const months = Math.round(days / DAYS_PER_MONTH);
-  return months === 1 ? "1 mês" : `${months} meses`;
+  if (days < DAYS_PER_MONTH) return { unit: "days", value: days };
+  return { unit: "months", value: Math.round(days / DAYS_PER_MONTH) };
 }
 
-export function previewIntervals(state: CardState): Record<Rating, string> {
+export function previewIntervals(state: CardState): Record<Rating, Interval> {
   return {
-    again: formatInterval(review(state, "again").dueInMs),
-    hard: formatInterval(review(state, "hard").dueInMs),
-    good: formatInterval(review(state, "good").dueInMs),
-    easy: formatInterval(review(state, "easy").dueInMs),
+    again: intervalOf(review(state, "again").dueInMs),
+    hard: intervalOf(review(state, "hard").dueInMs),
+    good: intervalOf(review(state, "good").dueInMs),
+    easy: intervalOf(review(state, "easy").dueInMs),
   };
 }
 

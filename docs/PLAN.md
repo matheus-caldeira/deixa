@@ -181,12 +181,26 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da vers�
 | 91  | Pacote pessoal cifrado (preferências, progresso, marcações, cards, histórico) com e-mail e senha       | Exportar e importar na outra conta sem duplicar; senha errada e arquivo adulterado dão o mesmo erro | [x]    |
 | 92  | Postgres embutido na instalação local (ADR 0017)                                                       | Assistente instala, sobe e grava a conexão; para no SIGTERM e volta no reinício                     | [x]    |
 
+## Etapa 12: interface em N idiomas (frente A)
+
+| #   | Tarefa                                                                                   | Critério de pronto                                                           | Estado |
+| --- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------ |
+| 93  | `next-intl` sem rotas por idioma; `locales/pt-BR.json` e `locales/en.json`               | Idioma por cookie, navegador e preferência da conta; `<html lang>` acompanha | [x]    |
+| 94  | Toda a interface por chaves (telas, folhas, setup, configurações, transferência)         | Nenhum texto em português fora de `locales/`, seed e fakes                   | [x]    |
+| 95  | `AppError` só com código e detalhe; borda traduz                                         | Mensagens de erro trocam de idioma; módulos sem frases                       | [x]    |
+| 96  | Dado gravado sem frase: notificações, passos, falhas, retrato, motivos, títulos de bloco | Migração 0018; notificações antigas aparecem no idioma atual                 | [x]    |
+| 97  | Prompts em inglês com o idioma da interface como idioma nativo                           | Explicações, tutor, trilha e sugestões respondem no idioma da conta          | [x]    |
+| 98  | Idioma no perfil; teste de paridade dos JSON; e2e trocando de idioma                     | `messages.unit.test.ts` falha com chave faltando; `language.spec.ts` passa   | [x]    |
+
+Pendente desta etapa: menus nativos da casca (Tauri) no idioma da conta.
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
 
-1. Confirmar a 0.0.5 no Windows: janela de console oculta e Postgres embutido instalando.
-2. Interface em N idiomas (frente A): textos em `locales/<idioma>.json`, pt-BR e inglês primeiro.
+1. Confirmar a 0.0.5 no Windows: janela de console oculta e Postgres embutido instalando (lista em
+   `docs/TESTES-MANUAIS.md`).
+2. ~~Interface em N idiomas (frente A)~~ Pronta na etapa 12.
 3. Estudo de N idiomas (frente B): par base → estudo por conta entre inglês, português, espanhol e francês,
    com mais de um par por conta e um ativo por vez.
 4. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.

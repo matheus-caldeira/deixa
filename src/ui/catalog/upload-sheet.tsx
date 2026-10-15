@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   loadEpisodesAction,
@@ -19,14 +20,7 @@ import { SubtitleSourcePicker } from "./subtitle-source-picker";
 const SEARCH_DEBOUNCE_MS = 350;
 const STEP_REVEAL_MS = 420;
 const MAX_FILE_BYTES = 5_000_000;
-const STATUS_LABEL: Record<string, string> = {
-  READY: "pronto",
-  PROCESSING: "processando",
-  UPLOADED: "processando",
-  NEEDS_REVIEW: "em revisão",
-  FAILED: "falhou",
-  NONE: "sem legenda",
-};
+const MAX_FILE_MB = 5;
 
 type Stage = "search" | "files" | "processing";
 
@@ -40,6 +34,7 @@ function Slot(props: {
   disabled?: boolean;
   onPick: (file: File | null) => void;
 }) {
+  const t = useTranslations("upload");
   return (
     <label
       className={`slot ${props.file ? "ok" : ""}`}
@@ -53,9 +48,9 @@ function Slot(props: {
         </span>
       </span>
       {props.disabled ? (
-        <span className="chip">Em breve</span>
+        <span className="chip">{t("soon")}</span>
       ) : (
-        <span className="link small">{props.file ? "Trocar" : "Escolher"}</span>
+        <span className="link small">{props.file ? t("change") : t("choose")}</span>
       )}
       <input
         type="file"
@@ -70,6 +65,8 @@ function Slot(props: {
 }
 
 export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; onClose: () => void }) {
+  const t = useTranslations("upload");
+  const steps = useTranslations("processing");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [stage, setStage] = useState<Stage>(props.mediaId ? "files" : "search");
@@ -172,11 +169,11 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
 
   function pickFile(setter: (file: File | null) => void, file: File | null) {
     if (file && !/\.srt$/i.test(file.name)) {
-      setError("Envie um arquivo .srt. Outros formatos ainda não são aceitos.");
+      setError(t("onlySrt"));
       return;
     }
     if (file && file.size > MAX_FILE_BYTES) {
-      setError("Arquivo maior que 5 MB. Confira se é o arquivo certo.");
+      setError(t("tooLarge", { mb: MAX_FILE_MB }));
       return;
     }
     setError("");
@@ -208,11 +205,11 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
   const finished = outcome !== null && revealed >= outcome.steps.length;
 
   return (
-    <Sheet label="Adicionar ao catálogo" onClose={props.onClose}>
+    <Sheet label={t("title")} onClose={props.onClose}>
       {stage === "search" ? (
         <>
-          <h2 style={{ fontSize: 22 }}>Adicionar ao catálogo</h2>
-          <p className="small muted">Passo 1 de 3 · Encontre a obra (metadados via TMDB).</p>
+          <h2 style={{ fontSize: 22 }}>{t("title")}</h2>
+          <p className="small muted">{t("step1")}</p>
           <label className="search">
             <SearchIcon />
             <input
@@ -221,9 +218,9 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                 setQuery(event.target.value);
                 setSelected(null);
               }}
-              placeholder="Nome da série ou filme"
+              placeholder={t("workName")}
               autoComplete="off"
-              aria-label="Nome da série ou filme"
+              aria-label={t("workName")}
             />
           </label>
           <div className="col">
@@ -246,28 +243,26 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                 <span className="col" style={{ gap: 2, minWidth: 0 }}>
                   <b>{work.title}</b>
                   <span className="small muted">
-                    {work.type === "movie" ? "Filme" : "Série"}
+                    {t(work.type === "movie" ? "movie" : "series")}
                     {work.year ? ` · ${work.year}` : ""}
                     {work.originalTitle !== work.title ? ` · ${work.originalTitle}` : ""}
-                    {work.inCatalog ? " · já no catálogo" : ""}
+                    {work.inCatalog ? ` · ${t("inCatalog")}` : ""}
                   </span>
                 </span>
               </button>
             ))}
             {searched && results.length === 0 && !error ? (
-              <p className="small muted">
-                Nada encontrado no TMDB para &quot;{query}&quot;. Tente o título original.
-              </p>
+              <p className="small muted">{t("nothingFound", { query })}</p>
             ) : null}
           </div>
           {error ? <p className="formerr">{error}</p> : null}
           <button className="btn wide" onClick={continueWithSelected} disabled={!selected || pending}>
-            Continuar
+            {t("continue")}
           </button>
         </>
       ) : null}
 
-      {stage === "files" && !target ? <p className="muted">{error || "Carregando…"}</p> : null}
+      {stage === "files" && !target ? <p className="muted">{error || t("loading")}</p> : null}
 
       {stage === "files" && target ? (
         <>
@@ -287,7 +282,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             <div className="col" style={{ gap: 4, minWidth: 0 }}>
               <h2 style={{ fontSize: 22 }}>{target.title}</h2>
               {target.originalTitle !== target.title ? (
-                <span className="small muted">Título original: {target.originalTitle}</span>
+                <span className="small muted">{t("originalTitle", { title: target.originalTitle })}</span>
               ) : null}
               {target.overview ? (
                 <p
@@ -305,17 +300,13 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             </div>
           </div>
           <p className="small muted">
-            Passo 2 de 3 ·{" "}
-            {target.type === "movie"
-              ? "Busque as legendas do filme ou envie os arquivos."
-              : "Escolha o episódio e busque as legendas, ou envie os arquivos."}{" "}
-            Com a legenda em português, a tradução das falas não passa pela IA.
+            {t("step2")} {target.type === "movie" ? t("step2Movie") : t("step2Series")} {t("step2Native")}
           </p>
 
           {target.type === "series" ? (
             <div className="row" style={{ alignItems: "flex-start" }}>
               <div className="field" style={{ flex: 1, minWidth: 0 }}>
-                <label htmlFor="upload-season">Temporada</label>
+                <label htmlFor="upload-season">{t("season")}</label>
                 <select
                   id="upload-season"
                   value={seasonNumber ?? ""}
@@ -329,18 +320,18 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                 </select>
               </div>
               <div className="field" style={{ flex: 2, minWidth: 0 }}>
-                <label htmlFor="upload-episode">Episódio</label>
+                <label htmlFor="upload-episode">{t("episode")}</label>
                 <select
                   id="upload-episode"
                   value={episodeId}
                   onChange={(event) => setEpisodeId(event.target.value)}
                   disabled={episodes.length === 0}
                 >
-                  {episodes.length === 0 ? <option value="">Carregando…</option> : null}
+                  {episodes.length === 0 ? <option value="">{t("loading")}</option> : null}
                   {episodes.map((episode) => (
                     <option key={episode.id} value={episode.id}>
                       E{String(episode.episodeNumber).padStart(2, "0")} · {episode.title} (
-                      {STATUS_LABEL[episode.status]})
+                      {t(`status.${episode.status}`)})
                     </option>
                   ))}
                 </select>
@@ -352,29 +343,29 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             <>
               <Slot
                 tag="EN"
-                title="Legenda em inglês"
-                hint=".srt · obrigatória"
+                title={t("targetSubtitle")}
+                hint={t("targetHint")}
                 file={english}
                 accept=".srt"
-                inputLabel="Arquivo da legenda em inglês"
+                inputLabel={t("targetFile")}
                 onPick={(file) => pickFile(setEnglish, file)}
               />
               <Slot
                 tag="PT"
-                title="Legenda em português"
-                hint=".srt · opcional · as falas já chegam traduzidas, sem gastar IA"
+                title={t("nativeSubtitle")}
+                hint={t("nativeHint")}
                 file={portuguese}
                 accept=".srt"
-                inputLabel="Arquivo da legenda em português"
+                inputLabel={t("nativeFile")}
                 onPick={(file) => pickFile(setPortuguese, file)}
               />
               <Slot
                 tag="TXT"
-                title="Roteiro ou transcrição"
-                hint=".txt ou .pdf · chega numa próxima fase"
+                title={t("script")}
+                hint={t("scriptHint")}
                 file={null}
                 accept=".txt,.pdf"
-                inputLabel="Arquivo de roteiro"
+                inputLabel={t("scriptFile")}
                 disabled
                 onPick={() => undefined}
               />
@@ -385,7 +376,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                   onClick={() => submit(true)}
                   disabled={!hasEpisode || pending}
                 >
-                  Usar arquivos de exemplo (EN + PT)
+                  {t("useSample")}
                 </button>
               ) : null}
               {error ? <p className="formerr">{error}</p> : null}
@@ -394,10 +385,10 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                 onClick={() => submit(false)}
                 disabled={!english || !hasEpisode || pending}
               >
-                {pending ? "Enviando…" : "Enviar e processar"}
+                {pending ? t("sending") : t("sendAndProcess")}
               </button>
               <button className="link" style={{ alignSelf: "center" }} onClick={() => setManual(false)}>
-                Buscar legendas no OpenSubtitles
+                {t("searchOpenSubtitles")}
               </button>
             </>
           ) : (
@@ -421,16 +412,18 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
 
       {stage === "processing" && outcome ? (
         <>
-          <h2 style={{ fontSize: 22 }}>Processando</h2>
+          <h2 style={{ fontSize: 22 }}>{t("processing")}</h2>
           <p className="small muted mono">{outcome.filename}</p>
           <div className="col" style={{ gap: 12 }}>
             {outcome.steps.map((step, index) => {
               const state = index < revealed ? "done" : index === revealed ? "run" : "wait";
               return (
-                <div key={step.label} className={`pstep ${state}`}>
+                <div key={step.key} className={`pstep ${state}`}>
                   <span className="s">{state === "done" ? <CheckIcon /> : null}</span>
-                  <span>{step.label}</span>
-                  <span className="small muted mono">{state === "wait" ? "" : step.detail}</span>
+                  <span>{steps(`steps.${step.key}`)}</span>
+                  <span className="small muted mono">
+                    {state === "wait" ? "" : steps(`details.${step.detail.key}`, step.detail.params)}
+                  </span>
                 </div>
               );
             })}
@@ -438,15 +431,10 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
           {finished ? (
             <>
               {outcome.outcome === "DUPLICATE" ? (
-                <div className="hint">
-                  Essa legenda já existe no catálogo. Nada foi reprocessado e o episódio já está disponível
-                  para todas as contas.
-                </div>
+                <div className="hint">{t("duplicate")}</div>
               ) : (
                 <div className="hint" style={{ background: "var(--good-soft)" }}>
-                  Episódio publicado. Já dá para ler a legenda inteira
-                  {outcome.hasPortuguese ? " em inglês e português" : ""}; o áudio de cada fala é gerado no
-                  primeiro toque. Todas as contas veem o episódio sem novo upload.
+                  {outcome.hasPortuguese ? t("publishedBoth") : t("published")}
                 </div>
               )}
               <button
@@ -457,7 +445,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                   router.refresh();
                 }}
               >
-                Ver no catálogo
+                {t("seeInCatalog")}
               </button>
             </>
           ) : null}

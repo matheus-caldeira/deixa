@@ -20,6 +20,7 @@ import type {
 const SAMPLE_ENGLISH = "fixtures/sample.en.srt";
 const SAMPLE_PORTUGUESE = "fixtures/sample.pt-BR.srt";
 const MAX_UPLOAD_BYTES = 5_000_000;
+const MAX_UPLOAD_MB = 5;
 const MAX_OPTIONS = 8;
 const MAX_RELEASE_CHARS = 120;
 const MAX_UPLOADER_CHARS = 40;
@@ -131,7 +132,7 @@ async function readUpload(
 ): Promise<{ filename: string; bytes: Uint8Array } | undefined> {
   if (!(entry instanceof File) || entry.size === 0) return undefined;
   if (entry.size > MAX_UPLOAD_BYTES) {
-    throw new AppError("SUBTITLE_INVALID", "Arquivo maior que 5 MB. Confira se é o arquivo certo.");
+    throw new AppError("SUBTITLE_INVALID", { key: "tooLarge", params: { mb: MAX_UPLOAD_MB } });
   }
   return { filename: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) };
 }
@@ -169,7 +170,7 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
     const portuguese = sample
       ? await readSample(SAMPLE_PORTUGUESE, "sample.pt-BR.srt")
       : await readUpload(form.get("portuguese"));
-    if (!english) throw new AppError("SUBTITLE_INVALID", "Envie a legenda em inglês (.srt).");
+    if (!english) throw new AppError("SUBTITLE_INVALID", "targetRequired");
 
     const result = await app().importEpisodeSubtitles({ userId: user.id, episodeId, english, portuguese });
     revalidatePath("/catalog");
@@ -258,9 +259,11 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
       outcome: result.outcome,
       steps: [
         {
-          label: "Baixando do OpenSubtitles",
+          key: "download",
           detail:
-            result.downloadsUsed === 0 ? "já estava no catálogo" : `${result.downloadsUsed} download(s)`,
+            result.downloadsUsed === 0
+              ? { key: "alreadyInCatalog" }
+              : { key: "downloads", params: { count: result.downloadsUsed } },
         },
         ...result.steps,
       ],
@@ -268,7 +271,7 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
       episodeId,
       mediaId,
       seasonNumber: context.season.seasonNumber,
-      filename: "legendas do OpenSubtitles",
+      filename: "OpenSubtitles",
       downloadsUsed: result.downloadsUsed,
       quota: quotaView(result.quota),
     };

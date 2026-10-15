@@ -14,13 +14,16 @@ import {
   type IconName,
 } from "../icons";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useTransition } from "react";
 import { retryTrailAction } from "@/app/actions/study";
+import { MISSION_XP } from "@/modules/gamification";
+import type { CefrLevel } from "@/shared/levels";
 import { useToast } from "../shell/toast";
+import { useErrorText } from "../shell/use-error-text";
 
 export type HomeView = {
-  level: string;
-  levelName: string;
+  level: CefrLevel;
   current: {
     episodeId: string;
     mediaTitle: string;
@@ -39,8 +42,8 @@ export type HomeView = {
   studyHref: string | null;
   trailStatus: "ready" | "pending" | "failed";
   trailByAi: boolean;
-  trailMessage: string | null;
-  missions: { icon: "cards" | "ear" | "chat"; title: string; value: number; max: number }[];
+  trailFailure: string | null;
+  missions: { icon: "cards" | "ear" | "chat"; kind: string; value: number; max: number }[];
 };
 
 const MISSION_ICONS = { cards: CardsIcon, ear: EarIcon, chat: ChatIcon };
@@ -80,6 +83,9 @@ function GoalRing({ value, max }: { value: number; max: number }) {
 }
 
 export function HomeScreen({ view }: { view: HomeView }) {
+  const t = useTranslations("home");
+  const levels = useTranslations("levels");
+  const errorText = useErrorText();
   const toast = useToast();
   const router = useRouter();
   const [retrying, startRetry] = useTransition();
@@ -96,7 +102,7 @@ export function HomeScreen({ view }: { view: HomeView }) {
     const episodeId = view.current.episodeId;
     startRetry(async () => {
       const result = await retryTrailAction(episodeId).catch(() => null);
-      if (!result?.ok) toast(result?.message ?? "Não deu para falar com o servidor.");
+      if (!result?.ok) toast(result?.message ?? errorText(null));
       router.refresh();
     });
   };
@@ -118,7 +124,7 @@ export function HomeScreen({ view }: { view: HomeView }) {
           ) : null}
           <div className="col" style={{ gap: 4, minWidth: 0 }}>
             <span className="eyebrow">
-              Continuar · {view.current.mediaTitle} · {view.current.label}
+              {t("continue")} · {view.current.mediaTitle} · {view.current.label}
             </span>
             <h1>{view.current.episodeTitle}</h1>
           </div>
@@ -133,28 +139,28 @@ export function HomeScreen({ view }: { view: HomeView }) {
           </div>
           {view.studyHref ? (
             <Link className="btn cue wide" href={view.studyHref}>
-              <PlayIcon width={18} height={18} /> Continuar estudando
+              <PlayIcon width={18} height={18} /> {t("keepStudying")}
             </Link>
           ) : view.trailStatus === "pending" ? (
             <button className="btn cue wide" disabled>
-              Montando sua trilha…
+              {t("buildingTrail")}
             </button>
           ) : null}
           {view.current.ready ? (
             <Link className="btn onDark wide" href={`/read/${view.current.episodeId}`}>
-              <MarkerIcon width={18} height={18} /> Ler episódio e marcar
+              <MarkerIcon width={18} height={18} /> {t("readAndMark")}
             </Link>
           ) : null}
         </section>
       ) : (
         <section className="hero">
           <div className="col" style={{ gap: 4 }}>
-            <span className="eyebrow">Comece por aqui</span>
-            <h1>Escolha um episódio</h1>
+            <span className="eyebrow">{t("startHere")}</span>
+            <h1>{t("pickEpisode")}</h1>
           </div>
-          <span className="subline">Pick an episode.</span>
+          <span className="subline">{t("pickEpisodeTarget")}</span>
           <Link className="btn cue wide" href="/catalog">
-            <PlayIcon width={18} height={18} /> Explorar o catálogo
+            <PlayIcon width={18} height={18} /> {t("exploreCatalog")}
           </Link>
         </section>
       )}
@@ -162,14 +168,12 @@ export function HomeScreen({ view }: { view: HomeView }) {
       <section className="card goalrow">
         <GoalRing value={view.xpToday} max={view.dailyGoal} />
         <div className="col" style={{ gap: 4, minWidth: 0 }}>
-          <span className="eyebrow">Meta do dia</span>
-          <b style={{ fontSize: 17 }}>
-            {view.xpToday} de {view.dailyGoal} XP
-          </b>
+          <span className="eyebrow">{t("dailyGoal")}</span>
+          <b style={{ fontSize: 17 }}>{t("xpOfGoal", { xp: view.xpToday, goal: view.dailyGoal })}</b>
           <span className="small muted">
             {goalMet
-              ? `Meta cumprida. Sequência garantida: ${view.streak} dias.`
-              : `Faltam ${view.dailyGoal - view.xpToday} XP para manter os ${view.streak} dias de sequência.`}
+              ? t("goalMet", { days: view.streak })
+              : t("goalMissing", { xp: view.dailyGoal - view.xpToday, days: view.streak })}
           </span>
         </div>
       </section>
@@ -178,51 +182,44 @@ export function HomeScreen({ view }: { view: HomeView }) {
         <section className="card col" style={{ gap: 10 }}>
           <div className="pstep run">
             <span className="s" />
-            <b>Montando sua trilha com IA</b>
+            <b>{t("buildingTrailAi")}</b>
             <span className="small muted mono">{view.level}</span>
           </div>
-          <p className="small muted">
-            A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de
-            um minuto; avisamos no sino quando terminar.
-          </p>
+          <p className="small muted">{t("buildingTrailBody")}</p>
         </section>
       ) : null}
       {view.trailStatus === "failed" ? (
         <section className="card col" style={{ gap: 10 }}>
-          <b>Não deu para montar a trilha deste episódio</b>
+          <b>{t("trailFailed")}</b>
           <p className="small muted">
-            {view.trailMessage ?? "A IA não respondeu a tempo."} Suas marcações e revisões continuam
-            funcionando.
+            {errorText(view.trailFailure)} {t("trailFailedBody")}
           </p>
           <button className="btn" onClick={retryTrail} disabled={retrying}>
-            {retrying ? "Tentando…" : "Tentar de novo"}
+            {retrying ? t("retrying") : t("retry")}
           </button>
         </section>
       ) : null}
       {view.trail.length > 0 ? (
         <section className="col" style={{ gap: 4 }}>
           <div className="sec-h">
-            <h2>Trilha do episódio</h2>
+            <h2>{t("episodeTrail")}</h2>
             <span className="chip brand">
-              {view.level} · {view.trailByAi ? "feita por IA" : view.levelName}
+              {view.level} · {view.trailByAi ? t("madeByAi") : levels(view.level)}
             </span>
           </div>
-          <p className="small muted">
-            Cada bloco junta as falas de um trecho do episódio. Você precisa de 70% de acerto para liberar o
-            próximo.
-          </p>
+          <p className="small muted">{t("trailBody")}</p>
           <div className="trail">
             {view.trail.map((node, index) => {
               const state = node.state === "current" ? "cur" : node.state === "locked" ? "lock" : "done";
               const href = view.current ? `/study/${view.current.episodeId}/${node.index}` : "/";
               return (
                 <div key={node.index} className={`tnode ${index % 2 ? "r" : "l"} ${state}`}>
-                  {state === "cur" ? <span className="startpop">COMEÇAR</span> : null}
+                  {state === "cur" ? <span className="startpop">{t("start")}</span> : null}
                   {state === "lock" ? (
                     <button
                       className="dot"
-                      aria-label={`${node.nm} (bloqueada)`}
-                      onClick={() => toast("Conclua o bloco anterior para liberar este.")}
+                      aria-label={t("lockedNode", { name: node.nm })}
+                      onClick={() => toast(t("unlockHint"))}
                     >
                       <LockIcon />
                     </button>
@@ -244,36 +241,32 @@ export function HomeScreen({ view }: { view: HomeView }) {
 
       <section className="card col" style={{ gap: 12 }}>
         <div className="sec-h">
-          <h2 style={{ fontSize: 18 }}>Revisões de hoje</h2>
+          <h2 style={{ fontSize: 18 }}>{t("todayReviews")}</h2>
           <Link className="link" href="/review">
-            Revisar
+            {t("review")}
           </Link>
         </div>
         <div className="row">
           <b style={{ fontFamily: "var(--f-display)", fontSize: 34, lineHeight: 1 }}>{view.dueCount}</b>
-          <span className="small muted">
-            {view.dueCount === 0
-              ? "Nenhum cartão vencido. Marque falas num episódio para criar novos."
-              : "cartões vencidos. Revisar agora rende XP extra e protege a memória."}
-          </span>
+          <span className="small muted">{view.dueCount === 0 ? t("noDueCards") : t("dueCards")}</span>
         </div>
       </section>
 
       {view.missions.length > 0 ? (
         <section className="card missions">
           <div className="sec-h">
-            <h2 style={{ fontSize: 18 }}>Missões do dia</h2>
-            <span className="small muted">+20 XP cada</span>
+            <h2 style={{ fontSize: 18 }}>{t("missions")}</h2>
+            <span className="small muted">{t("missionXp", { xp: MISSION_XP })}</span>
           </div>
           {view.missions.map((mission) => {
             const MissionIcon = MISSION_ICONS[mission.icon];
             return (
-              <div className="mission" key={mission.title}>
+              <div className="mission" key={mission.kind}>
                 <span className="ic">
                   <MissionIcon />
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <b className="small">{mission.title}</b>
+                  <b className="small">{t(`mission.${mission.kind}`, { target: mission.max })}</b>
                   <div className="bar cue">
                     <i style={{ width: `${(mission.value / mission.max) * 100}%` }} />
                   </div>

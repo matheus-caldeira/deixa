@@ -49,7 +49,7 @@ export function parseEnv(source: Record<string, string | undefined>): Env {
   const parsed = envSchema.safeParse(source);
   if (!parsed.success) {
     const names = parsed.error.issues.map((issue) => issue.path.join(".")).join(", ");
-    throw new Error(`Variáveis de ambiente inválidas ou ausentes: ${names}. Rode pnpm setup:env.`);
+    throw new Error(`Invalid or missing environment variables: ${names}. Run pnpm setup:env.`);
   }
   return parsed.data;
 }

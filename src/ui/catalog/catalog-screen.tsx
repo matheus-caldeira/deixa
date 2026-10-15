@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { LevelFit } from "@/shared/levels";
 import { PlusIcon, SearchIcon } from "../icons";
@@ -19,18 +20,9 @@ export type InProgressTile = {
 };
 
 type Filter = "all" | "fit" | "series" | "movie";
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: "all", label: "Todos" },
-  { key: "fit", label: "No meu nível" },
-  { key: "series", label: "Séries" },
-  { key: "movie", label: "Filmes" },
-];
+const FILTERS: Filter[] = ["all", "fit", "series", "movie"];
 
-export const FIT_CHIP: Record<LevelFit, { label: string; className: string }> = {
-  fit: { label: "No seu nível", className: "good" },
-  challenging: { label: "Desafiador", className: "warn" },
-  easy: { label: "Tranquilo", className: "" },
-};
+export const FIT_CLASS: Record<LevelFit, string> = { fit: "good", challenging: "warn", easy: "" };
 
 export function CatalogScreen({
   tiles,
@@ -41,6 +33,8 @@ export function CatalogScreen({
   inProgress: InProgressTile[];
   suggestions: SuggestionsView;
 }) {
+  const t = useTranslations("catalog");
+  const fits = useTranslations("fit");
   const { openCatalogOptions } = useShell();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -55,11 +49,11 @@ export function CatalogScreen({
   return (
     <>
       <div className="sec-h" style={{ paddingTop: 4, alignItems: "center" }}>
-        <h1 style={{ fontSize: 28 }}>Explorar</h1>
+        <h1 style={{ fontSize: 28 }}>{t("title")}</h1>
         <button
           className="playbtn"
-          onClick={() => openCatalogOptions("Catálogo")}
-          aria-label="Adicionar, importar ou exportar"
+          onClick={() => openCatalogOptions(t("catalog"))}
+          aria-label={t("options")}
           aria-haspopup="dialog"
         >
           <PlusIcon />
@@ -70,26 +64,26 @@ export function CatalogScreen({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar série ou filme"
+          placeholder={t("search")}
           autoComplete="off"
-          aria-label="Buscar série ou filme"
+          aria-label={t("search")}
         />
       </label>
       <div className="chips">
         {FILTERS.map((option) => (
           <button
-            key={option.key}
-            className={`fchip ${filter === option.key ? "on" : ""}`}
-            onClick={() => setFilter(option.key)}
+            key={option}
+            className={`fchip ${filter === option ? "on" : ""}`}
+            onClick={() => setFilter(option)}
           >
-            {option.label}
+            {t(`filters.${option}`)}
           </button>
         ))}
       </div>
       {inProgress.length > 0 && !needle ? (
         <section className="col" style={{ gap: 10 }}>
           <div className="sec-h">
-            <h2 style={{ fontSize: 18 }}>Em andamento</h2>
+            <h2 style={{ fontSize: 18 }}>{t("inProgress")}</h2>
           </div>
           <div className="hscroll">
             {inProgress.map((entry) => (
@@ -117,8 +111,8 @@ export function CatalogScreen({
       {!needle && filter === "all" ? <SuggestionsSection view={suggestions} /> : null}
       <section className="col" style={{ gap: 10 }}>
         <div className="sec-h">
-          <h2 style={{ fontSize: 18 }}>Catálogo</h2>
-          <span className="small muted">{visible.length} títulos</span>
+          <h2 style={{ fontSize: 18 }}>{t("catalog")}</h2>
+          <span className="small muted">{t("titles", { count: visible.length })}</span>
         </div>
         {visible.length > 0 ? (
           <div className="pgrid">
@@ -126,22 +120,18 @@ export function CatalogScreen({
               <Link key={tile.id} className="ptile" href={`/catalog/${tile.id}`} aria-label={tile.title}>
                 <Poster media={tile} />
                 <div className="meta">
-                  <span className={`chip ${FIT_CHIP[tile.fit].className}`}>{FIT_CHIP[tile.fit].label}</span>
+                  <span className={`chip ${FIT_CLASS[tile.fit]}`}>{fits(tile.fit)}</span>
                   <span className="chip mono">{tile.levelRange}</span>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <p className="muted">
-            {needle
-              ? `Nada encontrado para "${query}". Você pode buscar no TMDB e adicionar abaixo.`
-              : "O catálogo ainda está vazio. Adicione o primeiro episódio abaixo."}
-          </p>
+          <p className="muted">{needle ? t("nothingFound", { query }) : t("empty")}</p>
         )}
       </section>
-      <button className="fab" onClick={() => openCatalogOptions("Catálogo")} aria-haspopup="dialog">
-        <PlusIcon /> Adicionar, importar ou exportar
+      <button className="fab" onClick={() => openCatalogOptions(t("catalog"))} aria-haspopup="dialog">
+        <PlusIcon /> {t("options")}
       </button>
     </>
   );

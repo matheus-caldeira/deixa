@@ -67,7 +67,7 @@ describe("retrato do aluno", () => {
   it("sem estudo suficiente mantém o nível e explica que ainda há pouco dado", () => {
     const assessment = assessLearner({ level: "B1", ...EMPTY_SIGNALS });
     expect(assessment).toMatchObject({ challenge: "steady", targetIndex: 2, accuracy: null });
-    expect(assessment.insight).toContain("pouco estudo");
+    expect(assessment.insight).toMatchObject({ accuracyPercent: null, againPercent: null });
   });
 
   it("acertos altos, poucos esquecimentos e poucas marcações sobem o desafio", () => {
@@ -80,8 +80,7 @@ describe("retrato do aluno", () => {
     });
     expect(assessment.challenge).toBe("harder");
     expect(assessment.targetIndex).toBe(2.5);
-    expect(assessment.insight).toContain("acertou 92% dos exercícios");
-    expect(assessment.insight).toContain("subir o desafio");
+    expect(assessment.insight).toMatchObject({ accuracyPercent: 92, challenge: "harder" });
   });
 
   it("muitos erros ou muitos esquecimentos pedem algo mais tranquilo", () => {
@@ -187,8 +186,8 @@ describe("sugestões para o usuário", () => {
     expect(result.items.length).toBeLessThanOrEqual(MAX_SUGGESTIONS);
     expect(result.items.map((item) => item.workKey)).not.toContain(SUITS.workKey);
     expect(result.items.map((item) => item.position)).toEqual(result.items.map((_, index) => index));
-    expect(result.items[0]?.reason).toMatch(/Suits|em alta/);
-    expect(result.insight).toContain("pouco estudo");
+    expect(result.items[0]?.reason).toMatch(/relatedTitle/);
+    expect(result.insight).toContain("accuracyPercent");
     expect(repository.runs.get("ana")).toMatchObject({
       status: "READY",
       embedding: "gemini",
@@ -304,7 +303,7 @@ describe("sugestões para o usuário", () => {
     });
     expect((await view()).refresh).toBe(true);
     await refresh();
-    expect(repository.runs.get("ana")?.insight).toContain("acertou 95%");
+    expect(repository.runs.get("ana")?.insight).toContain('"accuracyPercent":95');
     expect((await view()).refresh).toBe(false);
 
     clock.advanceDays(MAX_AGE_DAYS + 1);

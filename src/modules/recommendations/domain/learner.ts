@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { CEFR_LEVELS, levelIndex, type CefrLevel, type LevelFit } from "@/shared/levels";
 
 export type StudiedWork = {
@@ -27,7 +28,7 @@ export type LearnerAssessment = {
   accuracy: number | null;
   againRate: number | null;
   marksPerHundred: number | null;
-  insight: string;
+  insight: LearnerInsight;
 };
 
 export const MIN_ANSWERS = 20;
@@ -45,8 +46,6 @@ const FIT_LOSS_PER_LEVEL = 0.35;
 
 const ratio = (part: number, whole: number, minimum: number): number | null =>
   whole >= minimum ? part / whole : null;
-
-const percent = (value: number): string => `${Math.round(value * PERCENT)}%`;
 
 function decideChallenge(
   accuracy: number | null,
@@ -66,24 +65,36 @@ function decideChallenge(
   return evidence.length > 0 && evidence.every(Boolean) ? "harder" : "steady";
 }
 
+export const learnerInsightSchema = z.object({
+  challenge: z.enum(["easier", "steady", "harder"]),
+  accuracyPercent: z.number().nullable(),
+  againPercent: z.number().nullable(),
+  marksPerHundred: z.number().nullable(),
+});
+export type LearnerInsight = z.infer<typeof learnerInsightSchema>;
+
+export function parseLearnerInsight(text: string | null): LearnerInsight | null {
+  if (!text) return null;
+  try {
+    const parsed = learnerInsightSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
 function describe(
   challenge: Challenge,
   accuracy: number | null,
   againRate: number | null,
   marksPerHundred: number | null,
-): string {
-  const facts = [
-    accuracy === null ? null : `acertou ${percent(accuracy)} dos exercícios`,
-    againRate === null ? null : `esqueceu ${percent(againRate)} dos cards revisados`,
-    marksPerHundred === null ? null : `marcou ${Math.round(marksPerHundred)} trechos a cada 100 falas lidas`,
-  ].filter((fact): fact is string => fact !== null);
-  if (facts.length === 0) {
-    return "Ainda há pouco estudo registrado: as sugestões partem do seu nível e melhoram conforme você estuda.";
-  }
-  const summary = `Nos últimos 30 dias você ${facts.join(", ")}.`;
-  if (challenge === "harder") return `${summary} Dá para subir o desafio.`;
-  if (challenge === "easier") return `${summary} Vale consolidar com algo mais tranquilo.`;
-  return `${summary} O ritmo está bom para o seu nível.`;
+): LearnerInsight {
+  return {
+    challenge,
+    accuracyPercent: accuracy === null ? null : Math.round(accuracy * PERCENT),
+    againPercent: againRate === null ? null : Math.round(againRate * PERCENT),
+    marksPerHundred: marksPerHundred === null ? null : Math.round(marksPerHundred),
+  };
 }
 
 export function assessLearner(signals: LearnerSignals): LearnerAssessment {

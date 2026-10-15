@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { importPackageAction } from "@/app/actions/transfer";
 import type { ImportReport, PackagePreview } from "@/modules/packages";
 import { CheckIcon } from "../icons";
 import { useToast } from "../shell/toast";
+import { useErrorText } from "../shell/use-error-text";
 
 export type TransferWork = {
   id: string;
@@ -23,12 +25,7 @@ type ExportScope = "me" | "work" | "season" | "episode";
 type ImportStage =
   { step: "pick" } | { step: "preview"; preview: PackagePreview } | { step: "done"; report: ImportReport };
 
-const SCOPES: { key: ExportScope; label: string }[] = [
-  { key: "me", label: "Meus dados" },
-  { key: "work", label: "Obra" },
-  { key: "season", label: "Temporada" },
-  { key: "episode", label: "Episódio" },
-];
+const SCOPES: ExportScope[] = ["me", "work", "season", "episode"];
 
 function Pick({
   on,
@@ -59,6 +56,7 @@ function Pick({
 }
 
 function ExportCard({ view }: { view: TransferView }) {
+  const t = useTranslations("transfer");
   const [scope, setScope] = useState<ExportScope>(view.selectedMediaId ? "work" : "me");
   const [includeKeys, setIncludeKeys] = useState(false);
   const [mediaId, setMediaId] = useState(view.selectedMediaId ?? view.works[0]?.id ?? "");
@@ -78,25 +76,22 @@ function ExportCard({ view }: { view: TransferView }) {
 
   const personal = (
     <form className="col" style={{ gap: 14 }} method="post" action="/api/transfer/export-personal">
-      <p className="small muted">
-        Preferências, progresso, marcações, seus cards com o estado de revisão, histórico e XP. Entram na
-        conta que importar.
-      </p>
+      <p className="small muted">{t("personalIntro")}</p>
       <div className="field">
-        <label>Chaves de API</label>
-        <div className="seg" role="radiogroup" aria-label="Chaves de API">
+        <label>{t("apiKeys")}</label>
+        <div className="seg" role="radiogroup" aria-label={t("apiKeys")}>
           <button type="button" className={includeKeys ? "" : "on"} onClick={() => setIncludeKeys(false)}>
-            Sem as chaves
+            {t("withoutKeys")}
           </button>
           <button type="button" className={includeKeys ? "on" : ""} onClick={() => setIncludeKeys(true)}>
-            Com as chaves
+            {t("withKeys")}
           </button>
         </div>
-        <span className="small muted">Com as chaves, elas entram cifradas junto com os seus dados.</span>
+        <span className="small muted">{t("withKeysNote")}</span>
       </div>
       <input type="hidden" name="includeCredentials" value={includeKeys ? "true" : "false"} />
       <div className="field">
-        <label htmlFor="export-password">Sua senha</label>
+        <label htmlFor="export-password">{t("yourPassword")}</label>
         <input
           id="export-password"
           name="password"
@@ -104,43 +99,39 @@ function ExportCard({ view }: { view: TransferView }) {
           autoComplete="current-password"
           required
         />
-        <span className="small muted">
-          Os dados pessoais saem cifrados com o seu e-mail e a sua senha. Sem a senha, o arquivo não abre.
-        </span>
+        <span className="small muted">{t("passwordNote")}</span>
       </div>
-      {view.passwordError ? <p className="formerr">Senha incorreta. Tente de novo.</p> : null}
+      {view.passwordError ? <p className="formerr">{t("wrongPassword")}</p> : null}
       <button className="btn block" type="submit">
-        Exportar .deixa.zip
+        {t("exportZip")}
       </button>
     </form>
   );
 
   return (
     <section className="card col" style={{ gap: 14 }} id="exportar">
-      <h2 style={{ fontSize: 17 }}>Exportar</h2>
-      <div className="seg" role="radiogroup" aria-label="Alcance da exportação">
+      <h2 style={{ fontSize: 17 }}>{t("export")}</h2>
+      <div className="seg" role="radiogroup" aria-label={t("exportScope")}>
         {SCOPES.map((option) => (
           <button
-            key={option.key}
+            key={option}
             type="button"
-            className={scope === option.key ? "on" : ""}
-            onClick={() => setScope(option.key)}
-            disabled={
-              (option.key === "season" || option.key === "episode") && (!work || work.type === "movie")
-            }
+            className={scope === option ? "on" : ""}
+            onClick={() => setScope(option)}
+            disabled={(option === "season" || option === "episode") && (!work || work.type === "movie")}
           >
-            {option.label}
+            {t(`scopes.${option}`)}
           </button>
         ))}
       </div>
       {scope === "me" ? (
         personal
       ) : view.works.length === 0 ? (
-        <p className="small muted">O catálogo ainda está vazio. Adicione uma obra antes de exportar.</p>
+        <p className="small muted">{t("emptyCatalog")}</p>
       ) : (
         <>
           <div className="field">
-            <label htmlFor="export-work">Obra</label>
+            <label htmlFor="export-work">{t("work")}</label>
             <select
               id="export-work"
               value={mediaId}
@@ -161,7 +152,7 @@ function ExportCard({ view }: { view: TransferView }) {
           {scope !== "work" && work ? (
             <div className="row" style={{ alignItems: "flex-start" }}>
               <div className="field" style={{ flex: 1 }}>
-                <label htmlFor="export-season">Temporada</label>
+                <label htmlFor="export-season">{t("season")}</label>
                 <select
                   id="export-season"
                   value={season?.seasonNumber ?? 0}
@@ -181,7 +172,7 @@ function ExportCard({ view }: { view: TransferView }) {
               </div>
               {scope === "episode" && season ? (
                 <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor="export-episode">Episódio</label>
+                  <label htmlFor="export-episode">{t("episode")}</label>
                   <select
                     id="export-episode"
                     value={episodeId}
@@ -190,7 +181,7 @@ function ExportCard({ view }: { view: TransferView }) {
                     {season.episodes.map((episode) => (
                       <option key={episode.id} value={episode.id}>
                         {episode.episodeNumber}
-                        {episode.ready ? "" : " (sem legenda)"}
+                        {episode.ready ? "" : ` ${t("noSubtitle")}`}
                       </option>
                     ))}
                   </select>
@@ -199,35 +190,33 @@ function ExportCard({ view }: { view: TransferView }) {
             </div>
           ) : null}
           <div className="col" style={{ gap: 8 }}>
-            <span className="eyebrow">O que entra no pacote</span>
+            <span className="eyebrow">{t("contents")}</span>
             <Pick
               on={options.subtitles}
-              title="Legendas"
-              detail="Os arquivos .srt em inglês e português."
+              title={t("subtitles")}
+              detail={t("subtitlesDetail")}
               onToggle={() => toggle("subtitles")}
             />
             <Pick
               on={options.cards}
-              title="Cards do catálogo"
-              detail="Itens e explicações compartilhados. Cards privados não saem."
+              title={t("catalogCards")}
+              detail={t("catalogCardsDetail")}
               onToggle={() => toggle("cards")}
             />
             <Pick
               on={options.audio}
-              title="Áudios gerados"
-              detail="Pode passar de centenas de MB por temporada."
+              title={t("audio")}
+              detail={t("audioDetail")}
               onToggle={() => toggle("audio")}
             />
           </div>
-          <p className="note">
-            Legendas e áudio de obras reais têm direitos autorais. Use o pacote como cópia pessoal.
-          </p>
+          <p className="note">{t("rightsNote")}</p>
           <a
             className={`btn block ${ready ? "" : "disabled"}`}
             href={ready ? `/api/transfer/export?${params}` : undefined}
             download
           >
-            Exportar .deixa.zip
+            {t("exportZip")}
           </a>
         </>
       )}
@@ -236,6 +225,9 @@ function ExportCard({ view }: { view: TransferView }) {
 }
 
 function ImportCard() {
+  const t = useTranslations("transfer");
+  const errorText = useErrorText();
+  const format = useFormatter();
   const router = useRouter();
   const toast = useToast();
   const [stage, setStage] = useState<ImportStage>({ step: "pick" });
@@ -260,7 +252,7 @@ function ImportCard() {
       }
       setStage({ step: "preview", preview: body.data });
     } catch {
-      setError("Não foi possível enviar o arquivo. Tente de novo.");
+      setError(errorText(null));
     } finally {
       setBusy(false);
     }
@@ -280,21 +272,19 @@ function ImportCard() {
         return;
       }
       setStage({ step: "done", report: result.data });
-      toast("Importação concluída.");
+      toast(t("importDone"));
       router.refresh();
     });
 
   return (
     <section className="card col" style={{ gap: 14 }} id="importar">
-      <h2 style={{ fontSize: 17 }}>Importar</h2>
+      <h2 style={{ fontSize: 17 }}>{t("import")}</h2>
       {stage.step === "pick" ? (
         <label className="slot">
           <span className="ic">ZIP</span>
           <span className="col" style={{ gap: 2 }}>
-            <b>{busy ? "Lendo o arquivo…" : "Escolher arquivo .deixa.zip"}</b>
-            <span className="small muted">
-              O arquivo já traz tudo o que é preciso. Nada é gravado antes de você conferir.
-            </span>
+            <b>{busy ? t("reading") : t("chooseZip")}</b>
+            <span className="small muted">{t("chooseNote")}</span>
           </span>
           <input
             type="file"
@@ -302,27 +292,28 @@ function ImportCard() {
             style={{ display: "none" }}
             disabled={busy}
             onChange={(event) => void inspect(event.target.files?.[0])}
-            aria-label="Arquivo do pacote"
+            aria-label={t("packageFile")}
           />
         </label>
       ) : null}
       {stage.step === "preview" ? (
         <>
           <dl className="kv">
-            <dt>Origem</dt>
+            <dt>{t("origin")}</dt>
             <dd>
-              {stage.preview.app} · {new Date(stage.preview.generatedAt).toLocaleDateString("pt-BR")}
+              {stage.preview.app} ·{" "}
+              {format.dateTime(new Date(stage.preview.generatedAt), { dateStyle: "short" })}
             </dd>
           </dl>
           <div>
-            <span className="eyebrow">O que vai entrar</span>
+            <span className="eyebrow">{t("willEnter")}</span>
             {stage.preview.works.map((work) => (
               <div key={work.title}>
                 <div className="dueitem">
                   <span className="col" style={{ gap: 2 }}>
                     <b>{work.title}</b>
                     <span className="small muted">
-                      {work.status === "new" ? "Obra nova no catálogo" : "Já está no catálogo"}
+                      {work.status === "new" ? t("newWork") : t("existingWork")}
                     </span>
                   </span>
                 </div>
@@ -333,15 +324,17 @@ function ImportCard() {
                         {episode.label} · {episode.title}
                       </span>
                       <span className="small muted">
-                        {episode.subtitles > 0 ? `${episode.subtitles} legenda(s)` : "sem legenda"}
-                        {episode.cards > 0 ? ` · ${episode.cards} cards` : ""}
+                        {episode.subtitles > 0
+                          ? t("subtitleCount", { count: episode.subtitles })
+                          : t("noSubtitleLower")}
+                        {episode.cards > 0 ? ` · ${t("cardCount", { count: episode.cards })}` : ""}
                       </span>
                     </span>
                     <span
                       className={`chip ${episode.status === "new" ? "good" : ""}`}
                       style={{ alignSelf: "start" }}
                     >
-                      {episode.status === "new" ? "Novo" : "Já existe"}
+                      {episode.status === "new" ? t("new") : t("exists")}
                     </span>
                   </div>
                 ))}
@@ -349,28 +342,31 @@ function ImportCard() {
             ))}
             {stage.preview.audio > 0 ? (
               <div className="dueitem">
-                <span>Áudios</span>
+                <span>{t("audio")}</span>
                 <b>{stage.preview.audio}</b>
               </div>
             ) : null}
             {stage.preview.personal ? (
               <div className="dueitem">
                 <span className="col" style={{ gap: 2 }}>
-                  <b>Dados pessoais</b>
+                  <b>{t("personalData")}</b>
                   <span className="small muted">
-                    De {stage.preview.personal.email}, cifrados. Entram na conta conectada
-                    {stage.preview.personal.includesCredentials ? ", com as chaves de API" : ""}.
+                    {t(stage.preview.personal.includesCredentials ? "personalFromWithKeys" : "personalFrom", {
+                      email: stage.preview.personal.email,
+                    })}
                   </span>
                 </span>
                 <span className="chip warn" style={{ alignSelf: "start" }}>
-                  Pede senha
+                  {t("needsPassword")}
                 </span>
               </div>
             ) : null}
           </div>
           {stage.preview.personal ? (
             <div className="field">
-              <label htmlFor="import-password">Senha de {stage.preview.personal.email}</label>
+              <label htmlFor="import-password">
+                {t("passwordOf", { email: stage.preview.personal.email })}
+              </label>
               <input
                 id="import-password"
                 type="password"
@@ -378,9 +374,7 @@ function ImportCard() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
-              <span className="small muted">
-                Sem a senha, os dados pessoais ficam de fora e o resto entra normalmente.
-              </span>
+              <span className="small muted">{t("withoutPasswordNote")}</span>
             </div>
           ) : null}
           <div className="row">
@@ -390,7 +384,7 @@ function ImportCard() {
               onClick={() => setStage({ step: "pick" })}
               disabled={busy}
             >
-              Cancelar
+              {t("cancel")}
             </button>
             <button
               className="btn"
@@ -398,7 +392,7 @@ function ImportCard() {
               onClick={() => confirm(stage.preview)}
               disabled={busy}
             >
-              {busy ? "Importando…" : "Importar"}
+              {busy ? t("importing") : t("import")}
             </button>
           </div>
         </>
@@ -409,42 +403,45 @@ function ImportCard() {
             <span style={{ width: 28, height: 28, color: "var(--good)", flex: "none" }}>
               <CheckIcon />
             </span>
-            <b>Importação concluída</b>
+            <b>{t("importDone")}</b>
           </div>
           <div>
             <div className="dueitem">
-              <span>Obras novas</span>
+              <span>{t("newWorks")}</span>
               <b>{stage.report.worksCreated}</b>
             </div>
             <div className="dueitem">
-              <span>Episódios com legenda nova</span>
+              <span>{t("episodesImported")}</span>
               <b>{stage.report.episodesImported}</b>
             </div>
             <div className="dueitem">
-              <span>Cards sugeridos no catálogo</span>
+              <span>{t("cardsSuggested")}</span>
               <b>{stage.report.cards}</b>
             </div>
             <div className="dueitem">
-              <span>Áudios</span>
+              <span>{t("audio")}</span>
               <b>{stage.report.audio}</b>
             </div>
             <div className="dueitem">
-              <span className="muted">Episódios que já existiam</span>
+              <span className="muted">{t("episodesSkipped")}</span>
               <b className="muted">{stage.report.episodesSkipped}</b>
             </div>
             {stage.report.personal ? (
               <div className="dueitem">
                 <span className="col" style={{ gap: 2 }}>
-                  <span>Dados pessoais</span>
+                  <span>{t("personalData")}</span>
                   <span className="small muted">
-                    {stage.report.personal.cards} cards, {stage.report.personal.highlights} marcações,{" "}
-                    {stage.report.personal.progress} episódios em andamento, {stage.report.personal.xp}{" "}
-                    eventos de XP
+                    {t("personalSummary", {
+                      cards: stage.report.personal.cards,
+                      highlights: stage.report.personal.highlights,
+                      progress: stage.report.personal.progress,
+                      xp: stage.report.personal.xp,
+                    })}
                     {stage.report.personal.credentials > 0
-                      ? `, ${stage.report.personal.credentials} chaves`
+                      ? `, ${t("keyCount", { count: stage.report.personal.credentials })}`
                       : ""}
                     {stage.report.personal.skipped > 0
-                      ? `; ${stage.report.personal.skipped} itens sem episódio aqui`
+                      ? `; ${t("skippedItems", { count: stage.report.personal.skipped })}`
                       : ""}
                   </span>
                 </span>
@@ -454,7 +451,9 @@ function ImportCard() {
           {stage.report.warnings.length > 0 ? (
             <ul className="small muted" style={{ paddingLeft: 18 }}>
               {stage.report.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
+                <li key={`${warning.key}:${warning.label}`}>
+                  {t(`warnings.${warning.key}`, { label: warning.label })}
+                </li>
               ))}
             </ul>
           ) : null}
@@ -463,25 +462,22 @@ function ImportCard() {
             style={{ padding: 10, fontSize: 13 }}
             onClick={() => setStage({ step: "pick" })}
           >
-            Importar outro arquivo
+            {t("importAnother")}
           </button>
         </>
       ) : null}
       {error ? <p className="formerr">{error}</p> : null}
-      <p className="small muted">
-        O que já existe não é sobrescrito. Importar o mesmo arquivo duas vezes não duplica nada.
-      </p>
+      <p className="small muted">{t("idempotentNote")}</p>
     </section>
   );
 }
 
 export function TransferScreen({ view }: { view: TransferView }) {
+  const t = useTranslations("transfer");
   return (
     <>
-      <h1 style={{ fontSize: 28, paddingTop: 4 }}>Importar e exportar</h1>
-      <p className="muted">
-        Leve conteúdo de uma instalação para outra ou guarde uma cópia de segurança do catálogo.
-      </p>
+      <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
+      <p className="muted">{t("intro")}</p>
       <div className="col" style={{ gap: 18, maxWidth: 640, width: "100%" }}>
         <ImportCard />
         <ExportCard view={view} />

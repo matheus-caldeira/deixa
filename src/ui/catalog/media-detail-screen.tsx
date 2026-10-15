@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
 import type { EpisodeStatus } from "@/modules/catalog";
@@ -11,7 +12,7 @@ import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, PlusIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
-import { FIT_CHIP } from "./catalog-screen";
+import { FIT_CLASS } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
 
 export type EpisodeRow = {
@@ -48,23 +49,26 @@ const episodeTag = (isMovie: boolean, episodeNumber: number): string =>
   isMovie ? "▶" : `E${String(episodeNumber).padStart(2, "0")}`;
 
 function StatusChips({ episode }: { episode: EpisodeRow }) {
+  const t = useTranslations("media.status");
   if (episode.status === "READY") {
     return (
       <>
-        <span className="chip good">Pronto · {episode.cueCount} falas</span>
-        <span className="chip mono">{episode.hasPortuguese ? "EN + PT" : "só EN"}</span>
+        <span className="chip good">{t("ready", { count: episode.cueCount })}</span>
+        <span className="chip mono">{episode.hasPortuguese ? t("bothLanguages") : t("onlyTarget")}</span>
       </>
     );
   }
   if (episode.status === "PROCESSING" || episode.status === "UPLOADED") {
-    return <span className="chip brand">Processando</span>;
+    return <span className="chip brand">{t("processing")}</span>;
   }
-  if (episode.status === "NEEDS_REVIEW") return <span className="chip warn">Em revisão</span>;
-  if (episode.status === "FAILED") return <span className="chip bad">Falhou · envie de novo</span>;
-  return <span className="chip">Sem legenda</span>;
+  if (episode.status === "NEEDS_REVIEW") return <span className="chip warn">{t("needsReview")}</span>;
+  if (episode.status === "FAILED") return <span className="chip bad">{t("failed")}</span>;
+  return <span className="chip">{t("none")}</span>;
 }
 
 export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
+  const t = useTranslations("media");
+  const fits = useTranslations("fit");
   const router = useRouter();
   const toast = useToast();
   const { openCatalogOptions } = useShell();
@@ -82,7 +86,12 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
         return;
       }
       toast(
-        `Agora estudando: ${media.poster.title} · ${isMovie ? "Filme" : `T${seasonNumber} · E${episode.episodeNumber}`}`,
+        t("nowStudying", {
+          title: media.poster.title,
+          label: isMovie
+            ? t("movie")
+            : t("seasonEpisode", { season: seasonNumber ?? 0, episode: episode.episodeNumber }),
+        }),
       );
       router.push("/");
       router.refresh();
@@ -91,7 +100,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
   const refresh = () =>
     startTransition(async () => {
       const result = await refreshWorkAction(media.id);
-      toast(result.ok ? "Dados da obra atualizados." : result.message);
+      toast(result.ok ? t("refreshed") : result.message);
       router.refresh();
     });
 
@@ -99,12 +108,12 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
     <>
       <div className="sec-h" style={{ paddingTop: 4, alignItems: "center" }}>
         <Link className="back" href="/catalog">
-          <BackIcon /> Explorar
+          <BackIcon /> {t("explore")}
         </Link>
         <button
           className="playbtn"
           onClick={() => openCatalogOptions(media.poster.title, media.id)}
-          aria-label="Adicionar, importar ou exportar"
+          aria-label={t("options")}
           aria-haspopup="dialog"
         >
           <PlusIcon />
@@ -127,45 +136,42 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
         <div className="col" style={{ gap: 8, minWidth: 0 }}>
           <h1 style={{ fontSize: 24, lineHeight: 1.1 }}>{media.poster.title}</h1>
           <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-            <span className={`chip ${FIT_CHIP[media.fit].className}`}>{FIT_CHIP[media.fit].label}</span>
+            <span className={`chip ${FIT_CLASS[media.fit]}`}>{fits(media.fit)}</span>
             <span className="chip mono">{media.levelRange}</span>
-            {media.accent ? <span className="chip">Sotaque: {media.accent}</span> : null}
+            {media.accent ? <span className="chip">{t("accent", { accent: media.accent })}</span> : null}
           </div>
         </div>
       </div>
       {media.overview ? <p className="muted">{media.overview}</p> : null}
       <p className="note">
-        {media.uploaderName ? `Cadastrada por ${media.uploaderName} e compartilhada` : "Compartilhada"} no
-        catálogo. Seu progresso neste título é só seu.
+        {media.uploaderName ? t("sharedBy", { name: media.uploaderName }) : t("shared")}
         {media.canRefresh ? (
           <>
             {" "}
             <button className="link small" onClick={refresh} disabled={pending}>
-              Atualizar dados do TMDB
+              {t("refreshTmdb")}
             </button>
           </>
         ) : null}
       </p>
       {!isMovie && media.seasons.length > 0 ? (
-        <button
-          className="seasonpick"
-          onClick={() => setPickingSeason(true)}
-          aria-label="Trocar de temporada"
-        >
+        <button className="seasonpick" onClick={() => setPickingSeason(true)} aria-label={t("switchSeason")}>
           <span>
-            <b>{current?.title ?? `Temporada ${seasonNumber}`}</b>
+            <b>{current?.title ?? t("season", { number: seasonNumber ?? 0 })}</b>
             {current?.episodeCount ? (
-              <span className="muted"> · {current.episodeCount} episódios</span>
+              <span className="muted"> · {t("episodes", { count: current.episodeCount })}</span>
             ) : null}
           </span>
           <span className="link small">
-            {media.seasons.length > 1 ? `Trocar · ${media.seasons.length} temporadas` : "Temporada única"}
+            {media.seasons.length > 1
+              ? t("switchSeasons", { count: media.seasons.length })
+              : t("singleSeason")}
           </span>
         </button>
       ) : null}
       {pickingSeason ? (
-        <Sheet label="Temporadas" onClose={() => setPickingSeason(false)}>
-          <h2 style={{ fontSize: 22 }}>Temporadas</h2>
+        <Sheet label={t("seasons")} onClose={() => setPickingSeason(false)}>
+          <h2 style={{ fontSize: 22 }}>{t("seasons")}</h2>
           <div className="col">
             {media.seasons.map((option) => (
               <button
@@ -182,7 +188,9 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                 <span className="col" style={{ gap: 2, minWidth: 0 }}>
                   <b>{option.title}</b>
                   <span className="small muted">
-                    {option.episodeCount ? `${option.episodeCount} episódios` : "episódios a carregar"}
+                    {option.episodeCount
+                      ? t("episodes", { count: option.episodeCount })
+                      : t("episodesToLoad")}
                   </span>
                 </span>
               </button>
@@ -228,12 +236,12 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                         boxShadow: "0 3px 0 var(--cue-deep)",
                       }}
                       href={`/read/${episode.id}`}
-                      aria-label={`Ler e marcar a legenda: ${episode.title}`}
+                      aria-label={t("readAndMarkTitle", { title: episode.title })}
                     >
                       <MarkerIcon />
                     </Link>
                   ) : (
-                    <button className="playbtn" disabled aria-label="Ler e marcar a legenda">
+                    <button className="playbtn" disabled aria-label={t("readAndMark")}>
                       <MarkerIcon />
                     </button>
                   )}
@@ -241,7 +249,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                     className="playbtn"
                     disabled={!ready || pending}
                     onClick={() => study(episode)}
-                    aria-label={`Estudar: ${episode.title}`}
+                    aria-label={t("studyTitle", { title: episode.title })}
                   >
                     {episode.progressPercent === COMPLETE ? <CheckIcon /> : <PlayIcon />}
                   </button>
@@ -251,14 +259,14 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
           })}
         </section>
       ) : (
-        <p className="muted">Nenhum episódio carregado ainda. Envie a primeira legenda abaixo.</p>
+        <p className="muted">{t("noEpisodes")}</p>
       )}
       <button
         className="fab"
         onClick={() => openCatalogOptions(media.poster.title, media.id)}
         aria-haspopup="dialog"
       >
-        <PlusIcon /> Adicionar, importar ou exportar
+        <PlusIcon /> {t("options")}
       </button>
     </>
   );

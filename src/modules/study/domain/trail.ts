@@ -17,7 +17,6 @@ export type TrailNode = {
 
 export const MAX_TRAIL_NODES = 8;
 const NODE_ICONS: readonly TrailIcon[] = ["quote", "ear", "pen"];
-const FINAL_TITLE = "Desafio final";
 
 function scenesOf(lines: readonly TrailLine[]): TrailLine[][] {
   const scenes: TrailLine[][] = [];
@@ -45,7 +44,7 @@ export function buildTrail(lines: readonly TrailLine[]): TrailNode[] {
     return {
       index,
       startMs: group[0]?.startMs ?? 0,
-      title: isFinal ? FINAL_TITLE : `Cena ${index + 1}`,
+      title: "",
       icon: isFinal ? "chest" : (NODE_ICONS[index % NODE_ICONS.length] ?? "quote"),
       lines: group,
     };

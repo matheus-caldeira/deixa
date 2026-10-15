@@ -212,7 +212,7 @@ function setup(
       }
       return {
         outcome: "PROCESSED" as const,
-        steps: [{ label: "Publicando no catálogo", detail: "READY" }],
+        steps: [{ key: "publish", detail: { key: "ready" } }],
         hasPortuguese: Boolean(input.portuguese),
       };
     },

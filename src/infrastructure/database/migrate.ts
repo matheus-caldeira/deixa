@@ -11,7 +11,7 @@ const CONNECT_TIMEOUT_SECONDS = 5;
 export async function ensureDatabaseExists(url: string): Promise<void> {
   const target = new URL(url);
   const databaseName = decodeURIComponent(target.pathname.slice(1));
-  if (!/^[a-z0-9_]+$/.test(databaseName)) throw new Error("nome de banco inválido");
+  if (!/^[a-z0-9_]+$/.test(databaseName)) throw new Error("invalid database name");
   const admin = new URL(url);
   admin.pathname = "/postgres";
   const client = postgres(admin.toString(), {

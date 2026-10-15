@@ -209,7 +209,7 @@ describe("plano de estudo gerado por IA", () => {
       ["Planos para a noite", 0, 3, false],
       ["O encontro que deu errado", 4, 7, false],
       ["Depois de tantos anos", 8, 10, false],
-      ["Desafio final", 0, 10, true],
+      ["", 0, 10, true],
     ]);
     const final = plan.blocks[3];
     expect(final?.exercises.length).toBeGreaterThanOrEqual(6);
@@ -299,7 +299,7 @@ describe("plano de estudo gerado por IA", () => {
       finalExercises: [],
     };
     const built = assemblePlan({ raw: hostile, lines: LINES, level: "A1", seed: "x", provider: "gemini" });
-    expect(built?.blocks[0]?.title).toBe("Bloco 1");
+    expect(built?.blocks[0]?.title).toBe("");
     expect(JSON.stringify(built)).not.toContain("exemplo.test");
   });
 
@@ -325,7 +325,7 @@ describe("correção e XP", () => {
       startMs: 0,
       translation: null,
       kind: "type",
-      prompt: "",
+      prompt: "blank",
       hint: null,
       best: "I can't take it anymore.",
     };
@@ -355,7 +355,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   const paidKeys = new Set<string>();
   const progress = new Map<string, number>();
   const queued: { userId: string; items: { cueId: string; translation: string | null }[] }[] = [];
-  const sent: { userId: string; kind: string; title: string }[] = [];
+  const sent: { userId: string; kind: string; params: Record<string, string | number> }[] = [];
   const clock = new FixedClock("2026-10-10T15:00:00Z");
   const key = (episodeId: string, level: CefrLevel) => `${episodeId}:${level}`;
   const study: StudyRepository = {
@@ -407,8 +407,12 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
       if (outOfBudget) throw new AppError("AI_LIMIT_REACHED", "limite diário");
       return activePlanner;
     },
-    notify: async (notification: { userId: string; kind: string; title: string }) => {
-      sent.push({ userId: notification.userId, kind: notification.kind, title: notification.title });
+    notify: async (notification: {
+      userId: string;
+      kind: string;
+      params: Record<string, string | number>;
+    }) => {
+      sent.push({ userId: notification.userId, kind: notification.kind, params: notification.params });
     },
     awardXp: async (input: { userId: string; source: string; sourceId: string; amount: number }) => {
       const paidKey = `${input.userId}:${input.source}:${input.sourceId}`;
@@ -468,14 +472,20 @@ describe("geração da trilha em segundo plano", () => {
 
     await app.generate(job);
     expect(await app.ensure(job)).toEqual({ status: "READY" });
-    expect(app.sent).toEqual([{ userId: "ana", kind: "trail_ready", title: "Sua trilha está pronta" }]);
+    expect(app.sent).toEqual([
+      {
+        userId: "ana",
+        kind: "trail_ready",
+        params: expect.objectContaining({ level: "B1", episode: "Friends · T1 · E1" }),
+      },
+    ]);
     const trail = await app.trail("ana", "ep-1", "B1");
     expect(trail.generatedByAi).toBe(true);
     expect(trail.nodes.map((node) => [node.title, node.state, node.icon])).toEqual([
       ["Planos para a noite", "current", "quote"],
       ["O encontro que deu errado", "locked", "ear"],
       ["Depois de tantos anos", "locked", "pen"],
-      ["Desafio final", "locked", "chest"],
+      ["", "locked", "chest"],
     ]);
   });
 
@@ -626,7 +636,7 @@ describe("sessão de estudo", () => {
       await app.complete({ ...base, nodeIndex, answers: lesson.exercises.map(rightAnswer), seconds: 60 });
     }
     const final = await app.start({ ...base, nodeIndex: 3 });
-    expect(final).toMatchObject({ title: "Desafio final", isFinal: true });
+    expect(final).toMatchObject({ title: "", isFinal: true });
     const failed = await app.complete({
       ...base,
       nodeIndex: 3,

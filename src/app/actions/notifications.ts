@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import type { MessageParams } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -9,8 +10,7 @@ export type InboxView = {
   items: {
     id: string;
     kind: string;
-    title: string;
-    body: string;
+    params: MessageParams;
     href: string;
     read: boolean;
     createdAt: string;

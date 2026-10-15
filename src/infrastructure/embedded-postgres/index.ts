@@ -29,7 +29,7 @@ export async function ensureEmbeddedPostgres(): Promise<void> {
     await server.start();
   } catch (error) {
     logger.error("embedded_postgres.start_failed", {
-      reason: error instanceof Error ? error.message : "desconhecido",
+      reason: error instanceof Error ? error.message : "unknown",
     });
   }
 }

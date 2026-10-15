@@ -8,7 +8,6 @@ export {
   makeCountDueCards,
   makeGradeCard,
   makeListDueCards,
-  sourceLabelOf,
   type DueCard,
   type ReviewQueue,
 } from "./application/review-use-cases";

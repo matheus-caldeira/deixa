@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { reviewConversationAction, sendMessageAction, type TurnView } from "@/app/actions/tutor";
 import type { ConversationReview } from "@/modules/conversations";
 import { BackIcon, MicIcon, SendIcon, SoundIcon, TargetIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
+import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
 
 export type ChatView = {
   sessionId: string;
+  themeId: string;
   title: string;
   level: string;
-  accentLabel: string;
+  accent: "US" | "UK";
   audioSpeed: number;
   simulated: boolean;
   turnsLeft: number;
@@ -34,6 +37,9 @@ function toBase64(blob: Blob): Promise<string> {
 }
 
 export function ChatScreen({ view }: { view: ChatView }) {
+  const t = useTranslations("chat");
+  const themes = useTranslations("talk");
+  const errorText = useErrorText();
   const router = useRouter();
   const toast = useToast();
   const [turns, setTurns] = useState(view.turns);
@@ -58,7 +64,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
     const result = await sendMessageAction({ sessionId: view.sessionId, ...payload }).catch(() => null);
     setSending(false);
     if (!result) {
-      toast("Não deu para falar com o servidor. Tente de novo.");
+      toast(errorText(null));
       return false;
     }
     if (!result.ok) {
@@ -66,8 +72,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
       return false;
     }
     setTurns((current) => [...current, result.data.userTurn, result.data.tutorTurn]);
-    if (result.data.queuedForReview > 0)
-      toast(`${result.data.queuedForReview} correção(ões) na sua revisão.`);
+    if (result.data.queuedForReview > 0) toast(t("queued", { count: result.data.queuedForReview }));
     return true;
   };
 
@@ -89,7 +94,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
       !navigator.mediaDevices?.getUserMedia ||
       typeof MediaRecorder === "undefined"
     ) {
-      toast("O microfone só funciona em conexão segura (HTTPS). Por enquanto, escreva sua resposta.");
+      toast(t("micInsecure"));
       return;
     }
     try {
@@ -109,7 +114,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
       setRecording(true);
       stopTimer.current = setTimeout(() => instance.stop(), MAX_RECORDING_MS);
     } catch {
-      toast("Não foi possível usar o microfone.");
+      toast(t("micFailed"));
     }
   };
 
@@ -120,34 +125,36 @@ export function ChatScreen({ view }: { view: ChatView }) {
     const result = await reviewConversationAction(view.sessionId).catch(() => null);
     setReviewing(false);
     if (!result?.ok) {
-      toast(result?.message ?? "Não deu para falar com o servidor.");
+      toast(result?.message ?? errorText(null));
       if (!review) setShowReview(false);
       return;
     }
     setReview(result.data.review);
-    if (result.data.xpAwarded > 0) toast(`Conversa revisada · +${result.data.xpAwarded} XP`);
+    if (result.data.xpAwarded > 0) toast(t("reviewedXp", { xp: result.data.xpAwarded }));
     router.refresh();
   };
 
   return (
     <div className="chat">
       <div className="lhead" style={{ borderBottom: "1px solid var(--line)" }}>
-        <Link className="iconbtn" href="/tutor" aria-label="Voltar">
+        <Link className="iconbtn" href="/tutor" aria-label={t("back")}>
           <BackIcon />
         </Link>
         <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
-          <b>{view.title}</b>
+          <b>
+            {themes.has(`themes.${view.themeId}.title`) ? themes(`themes.${view.themeId}.title`) : view.title}
+          </b>
           <span className="small muted">
-            Tutor · {view.accentLabel} · nível {view.level}
-            {view.simulated ? " · simulado" : ""}
+            {t("header", { accent: t(`accents.${view.accent}`), level: view.level })}
+            {view.simulated ? ` · ${t("simulatedTag")}` : ""}
           </span>
         </div>
         <button
           className="playbtn"
           onClick={runReview}
           disabled={userTurns === 0}
-          aria-label="Revisar a conversa inteira"
-          title="Revisar a conversa inteira"
+          aria-label={t("reviewAll")}
+          title={t("reviewAll")}
         >
           <TargetIcon />
         </button>
@@ -168,7 +175,8 @@ export function ChatScreen({ view }: { view: ChatView }) {
                 {turn.text}
                 {turn.translation ? <span className="pt">{turn.translation}</span> : null}
                 <span className="pt" style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <SoundIcon width={14} height={14} /> {speech.loadingId === turn.id ? "gerando…" : "tocar"}
+                  <SoundIcon width={14} height={14} />{" "}
+                  {speech.loadingId === turn.id ? t("generating") : t("play")}
                 </span>
               </div>
             ) : (
@@ -176,7 +184,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
             )}
             {turn.corrections.map((correction, index) => (
               <div className="fix" key={`${turn.id}-${index}`}>
-                <span className="eyebrow">Correção</span>
+                <span className="eyebrow">{t("correction")}</span>
                 <span>
                   <s>{correction.wrong}</s> → <ins>{correction.right}</ins>
                 </span>
@@ -189,7 +197,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
       </div>
       {userTurns >= initialUserTurns + view.turnsLeft ? (
         <p className="small muted" style={{ padding: "0 16px 16px" }}>
-          Esta conversa chegou ao limite. Toque no alvo para revisar e comece outra.
+          {t("limitReached")}
         </p>
       ) : (
         <form className="composer" onSubmit={sendText}>
@@ -203,36 +211,36 @@ export function ChatScreen({ view }: { view: ChatView }) {
                 ? { background: "var(--bad)", boxShadow: "0 3px 0 var(--line)" }
                 : { background: "var(--surface)", color: "var(--brand)", boxShadow: "0 3px 0 var(--line)" }
             }
-            aria-label={recording ? "Parar e enviar o áudio" : "Responder por áudio"}
+            aria-label={recording ? t("stopRecording") : t("recordAnswer")}
           >
             <MicIcon />
           </button>
           <input
             value={text}
             onChange={(event) => setText(event.target.value)}
-            placeholder={recording ? "Gravando… toque no microfone para enviar" : "Responda em inglês…"}
+            placeholder={recording ? t("recording") : t("answerPlaceholder")}
             autoComplete="off"
             maxLength={500}
             disabled={recording}
-            aria-label="Sua mensagem"
+            aria-label={t("yourMessage")}
           />
           <button
             className="playbtn"
             type="submit"
             disabled={sending || text.trim() === ""}
-            aria-label="Enviar"
+            aria-label={t("send")}
           >
             <SendIcon />
           </button>
         </form>
       )}
       {showReview ? (
-        <Sheet label="Revisão da conversa" onClose={() => setShowReview(false)}>
-          <h2 style={{ fontSize: 22 }}>Revisão da conversa</h2>
+        <Sheet label={t("reviewTitle")} onClose={() => setShowReview(false)}>
+          <h2 style={{ fontSize: 22 }}>{t("reviewTitle")}</h2>
           {reviewing && !review ? (
             <div className="pstep run">
               <span className="s" />
-              <span>Avaliando a conversa inteira…</span>
+              <span>{t("evaluating")}</span>
               <span />
             </div>
           ) : null}
@@ -244,7 +252,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
               </div>
               {review.strengths.length > 0 ? (
                 <div className="col">
-                  <span className="eyebrow">O que foi bem</span>
+                  <span className="eyebrow">{t("strengths")}</span>
                   {review.strengths.map((item) => (
                     <span key={item} className="chip good" style={{ whiteSpace: "normal", borderRadius: 12 }}>
                       {item}
@@ -254,7 +262,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
               ) : null}
               {review.improvements.length > 0 ? (
                 <div className="col">
-                  <span className="eyebrow">Para melhorar</span>
+                  <span className="eyebrow">{t("improvements")}</span>
                   {review.improvements.map((item) => (
                     <span key={item} className="chip warn" style={{ whiteSpace: "normal", borderRadius: 12 }}>
                       {item}
@@ -264,7 +272,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
               ) : null}
               {review.phrases.length > 0 ? (
                 <div className="col">
-                  <span className="eyebrow">Frases que foram para a sua revisão</span>
+                  <span className="eyebrow">{t("phrasesQueued")}</span>
                   {review.phrases.map((phrase, index) => (
                     <div className="fix" key={index} style={{ maxWidth: "100%" }}>
                       <span>
@@ -276,7 +284,7 @@ export function ChatScreen({ view }: { view: ChatView }) {
                 </div>
               ) : null}
               <button className="btn ghost wide" onClick={runReview} disabled={reviewing}>
-                {reviewing ? "Avaliando…" : "Avaliar de novo"}
+                {reviewing ? t("evaluatingShort") : t("evaluateAgain")}
               </button>
             </>
           ) : null}

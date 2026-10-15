@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { signOutAction } from "@/app/actions/auth";
 import { updatePreferencesAction } from "@/app/actions/profile";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "@/modules/identity";
-import { APP_AUTHOR, APP_NAME, APP_TAGLINE, APP_VERSION } from "@/shared/app";
+import { APP_AUTHOR, APP_NAME, APP_VERSION } from "@/shared/app";
 import type { CefrLevel } from "@/shared/levels";
-import { LEVEL_NAMES } from "@/shared/levels";
+import { LOCALES, type Locale } from "@/shared/locales";
 import { SlidersIcon } from "../icons";
 import { Sheet } from "./sheet";
 import { useToast } from "./toast";
@@ -23,20 +24,28 @@ export type ProfileSheetData = {
   metadataProvider: string;
 };
 
-const ACCENTS: { value: Accent; label: string }[] = [
-  { value: "US", label: "Americano" },
-  { value: "UK", label: "Britânico" },
-];
+const ACCENTS: Accent[] = ["US", "UK"];
 
 export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClose: () => void }) {
+  const t = useTranslations("profile");
+  const tApp = useTranslations("app");
+  const levels = useTranslations("levels");
+  const localeNames = useTranslations("locales");
+  const currentLocale = useLocale();
   const router = useRouter();
   const toast = useToast();
   const [, startTransition] = useTransition();
   const [goal, setGoal] = useState(data.dailyGoal);
   const [accent, setAccent] = useState(data.accent);
   const [speed, setSpeed] = useState(data.audioSpeed);
+  const [locale, setLocale] = useState(currentLocale);
 
-  const save = (patch: { dailyGoal?: number; preferredAccent?: Accent; audioSpeed?: number }) =>
+  const save = (patch: {
+    dailyGoal?: number;
+    preferredAccent?: Accent;
+    audioSpeed?: number;
+    locale?: Locale;
+  }) =>
     startTransition(async () => {
       const result = await updatePreferencesAction(patch);
       if (!result.ok) toast(result.message);
@@ -44,7 +53,7 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
     });
 
   return (
-    <Sheet label="Perfil e configurações" onClose={onClose}>
+    <Sheet label={t("sheet")} onClose={onClose}>
       <div className="row">
         <span
           className="avatar"
@@ -55,13 +64,13 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
         <div className="col" style={{ gap: 2 }}>
           <h2 style={{ fontSize: 22 }}>{data.name}</h2>
           <span className="small muted">
-            {data.level} · {LEVEL_NAMES[data.level]}
+            {data.level} · {levels(data.level)}
           </span>
         </div>
       </div>
 
       <div className="field">
-        <label>Meta diária</label>
+        <label>{t("dailyGoal")}</label>
         <div className="seg">
           {DAILY_GOALS.map((option) => (
             <button
@@ -72,7 +81,7 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
                 save({ dailyGoal: option.xp });
               }}
             >
-              {option.label}
+              {t(`goals.${option.key}`)}
               <br />
               <span className="mono small">{option.xp} XP</span>
             </button>
@@ -81,25 +90,25 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
       </div>
 
       <div className="field">
-        <label>Sotaque preferido do áudio</label>
+        <label>{t("accent")}</label>
         <div className="seg">
           {ACCENTS.map((option) => (
             <button
-              key={option.value}
-              className={accent === option.value ? "on" : ""}
+              key={option}
+              className={accent === option ? "on" : ""}
               onClick={() => {
-                setAccent(option.value);
-                save({ preferredAccent: option.value });
+                setAccent(option);
+                save({ preferredAccent: option });
               }}
             >
-              {option.label}
+              {t(`accents.${option}`)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="field">
-        <label>Velocidade do áudio</label>
+        <label>{t("speed")}</label>
         <div className="seg">
           {AUDIO_SPEEDS.map((option) => (
             <button
@@ -110,29 +119,47 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
                 save({ audioSpeed: option });
               }}
             >
-              {String(option).replace(".", ",")}×
+              {option.toLocaleString(currentLocale)}×
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="field">
+        <label>{t("language")}</label>
+        <div className="seg">
+          {LOCALES.map((option) => (
+            <button
+              key={option}
+              className={locale === option ? "on" : ""}
+              onClick={() => {
+                setLocale(option);
+                save({ locale: option });
+              }}
+            >
+              {localeNames(option)}
             </button>
           ))}
         </div>
       </div>
 
       <Link className="btn ghost wide" href="/settings" onClick={onClose}>
-        <SlidersIcon width={18} height={18} /> Configurações
+        <SlidersIcon width={18} height={18} /> {t("settings")}
       </Link>
 
       <form action={signOutAction}>
         <button className="btn ghost wide" type="submit">
-          Trocar de perfil
+          {t("switchProfile")}
         </button>
       </form>
 
       <div className="about">
-        <span className="eyebrow">Sobre</span>
+        <span className="eyebrow">{t("about")}</span>
         <span>
-          <b>{APP_NAME}</b> {APP_VERSION} · {APP_TAGLINE}
+          <b>{APP_NAME}</b> {APP_VERSION} · {tApp("tagline")}
         </span>
         <span>
-          Criado por <b>{APP_AUTHOR.name}</b>. Contato:{" "}
+          {t.rich("createdBy", { name: APP_AUTHOR.name, b: (chunks) => <b>{chunks}</b> })}{" "}
           <a className="link" href={`mailto:${APP_AUTHOR.email}`}>
             {APP_AUTHOR.email}
           </a>{" "}
@@ -142,14 +169,11 @@ export function ProfileSheet({ data, onClose }: { data: ProfileSheetData; onClos
           </a>
         </span>
         <span>
-          Metadados de séries e filmes: <b>TMDB</b>
-          {data.metadataProvider === "tmdb" ? "" : " (dados de demonstração neste ambiente)"}
+          {t("metadata")} <b>TMDB</b>
+          {data.metadataProvider === "tmdb" ? "" : t("demoMetadata")}
         </span>
         <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
-        <span>
-          Legendas buscadas a pedido: <b>OpenSubtitles</b> (opensubtitles.com). Cada legenda mostra o release
-          e quem enviou.
-        </span>
+        <span>{t.rich("subtitles", { b: (chunks) => <b>{chunks}</b> })}</span>
       </div>
     </Sheet>
   );

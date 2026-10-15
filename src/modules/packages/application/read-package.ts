@@ -37,74 +37,70 @@ export type ReadPackage = {
 };
 
 const INVALID = (detail: string) =>
-  new AppError("INVALID_INPUT", `Este arquivo não é um pacote válido do Deixa: ${detail}.`);
+  new AppError("INVALID_INPUT", { key: "invalidPackage", params: { detail } });
 
 function parseJson<T>(
   bytes: Uint8Array,
   parse: (value: unknown) => { success: true; data: T } | { success: false },
   what: string,
 ): T {
-  if (bytes.length > MAX_JSON_BYTES) throw INVALID(`${what} grande demais`);
+  if (bytes.length > MAX_JSON_BYTES) throw INVALID(`${what} too large`);
   let value: unknown;
   try {
     value = JSON.parse(new TextDecoder().decode(bytes));
   } catch {
-    throw INVALID(`${what} ilegível`);
+    throw INVALID(`${what} unreadable`);
   }
   const parsed = parse(value);
-  if (!parsed.success) throw INVALID(`${what} fora do formato`);
+  if (!parsed.success) throw INVALID(`${what} malformed`);
   return parsed.data;
 }
 
 export async function readPackage(archive: PackageArchive, bytes: Uint8Array): Promise<ReadPackage> {
-  if (bytes.length > MAX_PACKAGE_BYTES) throw INVALID("arquivo grande demais");
+  if (bytes.length > MAX_PACKAGE_BYTES) throw INVALID("file too large");
   let entries: PackageFile[];
   try {
     entries = await archive.unpack(bytes);
   } catch {
-    throw INVALID("não é um ZIP");
+    throw INVALID("not a ZIP");
   }
-  if (entries.length > MAX_PACKAGE_FILES) throw INVALID("arquivos demais");
+  if (entries.length > MAX_PACKAGE_FILES) throw INVALID("too many files");
   const files = new Map(entries.map((entry) => [entry.path, entry.bytes]));
   const manifestBytes = files.get(MANIFEST_PATH);
-  if (!manifestBytes) throw INVALID("sem manifesto");
-  const manifest = parseJson(manifestBytes, (value) => manifestSchema.safeParse(value), "manifesto");
+  if (!manifestBytes) throw INVALID("missing manifest");
+  const manifest = parseJson(manifestBytes, (value) => manifestSchema.safeParse(value), "manifest");
   if (manifest.version > PACKAGE_FORMAT_VERSION) {
-    throw new AppError(
-      "INVALID_INPUT",
-      "Este pacote foi gerado por uma versão mais nova do Deixa. Atualize o app.",
-    );
+    throw new AppError("INVALID_INPUT", "packageTooNew");
   }
   const trusted = new Map<string, Uint8Array>();
   for (const entry of manifest.entries) {
     const content = files.get(entry.path);
-    if (!content) throw INVALID(`falta ${entry.path}`);
+    if (!content) throw INVALID(`missing ${entry.path}`);
     if (content.length !== entry.bytes || sha256Hex(content) !== entry.sha256) {
-      throw INVALID(`${entry.path} foi alterado`);
+      throw INVALID(`${entry.path} was changed`);
     }
     trusted.set(entry.path, content);
   }
   const catalogBytes = trusted.get(CATALOG_PATH);
-  if (!catalogBytes) throw INVALID("sem catálogo");
-  const catalog = parseJson(catalogBytes, (value) => packagedCatalogSchema.safeParse(value), "catálogo");
+  if (!catalogBytes) throw INVALID("missing catalog");
+  const catalog = parseJson(catalogBytes, (value) => packagedCatalogSchema.safeParse(value), "catalog");
   for (const work of catalog.works) {
     for (const episode of work.episodes) {
       for (const subtitle of episode.subtitles) {
         const content = trusted.get(subtitle.path);
-        if (!content) throw INVALID(`falta a legenda ${subtitle.path}`);
-        if (content.length > MAX_SUBTITLE_BYTES) throw INVALID("legenda grande demais");
-        if (sha256Hex(content) !== subtitle.sha256) throw INVALID(`legenda ${subtitle.path} alterada`);
+        if (!content) throw INVALID(`missing subtitle ${subtitle.path}`);
+        if (content.length > MAX_SUBTITLE_BYTES) throw INVALID("subtitle too large");
+        if (sha256Hex(content) !== subtitle.sha256) throw INVALID(`subtitle ${subtitle.path} was changed`);
       }
       if (episode.cardsPath && !trusted.has(episode.cardsPath))
-        throw INVALID(`faltam os cards ${episode.cardsPath}`);
+        throw INVALID(`missing cards ${episode.cardsPath}`);
     }
   }
   const audioIndexBytes = trusted.get(AUDIO_INDEX_PATH);
   const audio = audioIndexBytes
-    ? parseJson(audioIndexBytes, (value) => packagedAudioIndexSchema.safeParse(value), "índice de áudio")
-        .assets
+    ? parseJson(audioIndexBytes, (value) => packagedAudioIndexSchema.safeParse(value), "audio index").assets
     : [];
-  for (const asset of audio) if (!trusted.has(asset.path)) throw INVALID(`falta o áudio ${asset.path}`);
+  for (const asset of audio) if (!trusted.has(asset.path)) throw INVALID(`missing audio ${asset.path}`);
   const metaBytes = trusted.get(PERSONAL_META_PATH);
   const sealed = trusted.get(PERSONAL_PATH);
   let personal: ReadPackage["personal"] = null;

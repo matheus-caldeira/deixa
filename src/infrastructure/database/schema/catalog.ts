@@ -169,7 +169,9 @@ export const processingJobs = pgTable(
     kind: text("kind").notNull(),
     status: text("status").notNull(),
     attempts: integer("attempts").notNull(),
-    steps: jsonb("steps").$type<{ label: string; detail: string }[]>().notNull(),
+    steps: jsonb("steps")
+      .$type<{ key: string; detail: { key: string; params?: Record<string, string | number> } }[]>()
+      .notNull(),
     failureReason: text("failure_reason"),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

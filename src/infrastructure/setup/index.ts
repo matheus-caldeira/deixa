@@ -15,6 +15,7 @@ import {
   connectAndPrepare,
   detectLocalServers,
   type DetectedServer,
+  type ConnectionFailure,
 } from "./database-probe";
 import { forgetDatabaseStatus, getDatabaseStatus, type DatabaseStatus } from "./database-status";
 import {
@@ -80,12 +81,12 @@ export function startEmbeddedDatabaseInstall(): void {
     .install()
     .then(async (url) => {
       const result = await configureDatabase(url, { keepSetupCode: true });
-      if (!result.ok) throw new Error(result.message);
+      if (!result.ok) throw new Error(result.failure);
       logger.info("embedded_postgres.ready", { port: new URL(url).port });
     })
     .catch((error: unknown) => {
       logger.error("embedded_postgres.install_failed", {
-        reason: error instanceof Error ? error.message : "desconhecido",
+        reason: error instanceof Error ? error.message : "unknown",
       });
     })
     .finally(() => {
@@ -100,13 +101,8 @@ export function finishSetup(): void {
 export async function configureDatabase(
   url: string,
   options: { keepSetupCode?: boolean } = {},
-): Promise<{ ok: true; majorVersion: number | null } | { ok: false; message: string }> {
-  if (databaseComesFromEnvironment()) {
-    return {
-      ok: false,
-      message: "A conexão vem da variável DATABASE_URL deste servidor. Ajuste o valor lá e reinicie.",
-    };
-  }
+): Promise<{ ok: true; majorVersion: number | null } | { ok: false; failure: ConnectionFailure }> {
+  if (databaseComesFromEnvironment()) return { ok: false, failure: "fromEnvironment" };
   const result = await connectAndPrepare(url);
   if (!result.ok) return result;
   saveDatabaseUrl(configDirectory(), result.url);

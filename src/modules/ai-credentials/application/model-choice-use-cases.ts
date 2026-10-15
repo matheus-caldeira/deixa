@@ -22,7 +22,7 @@ export function makeSetAiModels(deps: Deps) {
     if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira o provedor e o nome do modelo.");
     const embedding = parsed.data.embedding;
     if (embedding && embedding !== "local" && !PROVIDERS_WITH_EMBEDDINGS.has(embedding.provider)) {
-      throw new AppError("INVALID_INPUT", "Esse provedor não oferece embeddings.");
+      throw new AppError("INVALID_INPUT", "noEmbeddings");
     }
     await deps.choices.save(input.userId, parsed.data, deps.clock.now());
     return parsed.data;

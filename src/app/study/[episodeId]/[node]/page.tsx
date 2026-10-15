@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import { isAppError } from "@/shared/errors";
@@ -19,6 +20,7 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
       if (isAppError(error)) redirect("/");
       throw error;
     });
+  const t = await getTranslations("home");
   return (
     <ToastProvider>
       <LessonScreen
@@ -26,7 +28,9 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
         view={{
           episodeId,
           nodeIndex: lesson.nodeIndex,
-          title: lesson.title,
+          title:
+            lesson.title ||
+            t(lesson.isFinal ? "finalChallenge" : "sceneTitle", { number: lesson.nodeIndex + 1 }),
           level: user.preferences.level,
           replay: lesson.replay,
           audioSpeed: user.preferences.audioSpeed,

@@ -8,14 +8,6 @@ export type TranslationSource = "subtitle_pt" | "llm";
 export type MarkKind = "word" | "phrase" | "line";
 export type CardScope = "private" | "catalog";
 
-export const ITEM_TYPE_LABELS: Record<ItemType, string> = {
-  word: "Palavra",
-  expression: "Expressão",
-  phrasal_verb: "Phrasal verb",
-  slang: "Gíria",
-  sentence: "Frase",
-};
-
 export const HIGHLIGHT_CARDS_XP = 10;
 export const MAX_HIGHLIGHTS_PER_BATCH = 60;
 
@@ -57,7 +49,7 @@ const plainText = (maxLength: number) =>
   z
     .string()
     .transform((value) => value.replace(CONTROL_CHARACTERS, " ").replace(/\s+/g, " ").trim())
-    .pipe(z.string().min(1).max(maxLength).refine(isPlainExplanationText, "texto com link ou marcação"));
+    .pipe(z.string().min(1).max(maxLength).refine(isPlainExplanationText, "text with link or markup"));
 
 export const explainedTermSchema = z.object({
   id: z.string().min(1),

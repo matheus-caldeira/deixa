@@ -9,7 +9,7 @@ export async function register(): Promise<void> {
   if (!resolveDatabaseUrl()) {
     const { prepareSetupCode, SETUP_CODE_FILE } = await import("@/infrastructure/setup");
     prepareSetupCode();
-    logger.warn("setup.required", { reason: "banco de dados não configurado", codeFile: SETUP_CODE_FILE });
+    logger.warn("setup.required", { reason: "database not configured", codeFile: SETUP_CODE_FILE });
     return;
   }
   try {

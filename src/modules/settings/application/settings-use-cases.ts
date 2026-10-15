@@ -21,14 +21,11 @@ export function makeUpdateSettings(deps: Deps) {
     values: unknown;
   }): Promise<AppSettings> {
     if (!input.actor.isAdmin) {
-      throw new AppError("FORBIDDEN", "Só o administrador altera as configurações do servidor.");
+      throw new AppError("FORBIDDEN", "adminOnlySettings");
     }
     const parsed = appSettingsSchema.safeParse(input.values);
     if (!parsed.success) {
-      throw new AppError(
-        "INVALID_INPUT",
-        "Confira os valores: nome do modelo em minúsculas, downloads entre 0 e 1000 e endereço do Kokoro começando com http.",
-      );
+      throw new AppError("INVALID_INPUT", "settingsInvalid");
     }
     await deps.settings.save(parsed.data, input.actor.userId, deps.clock.now());
     return parsed.data;

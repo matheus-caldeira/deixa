@@ -79,6 +79,7 @@ import {
   makeStartOwnerSession,
   makeUpdatePreferences,
 } from "@/modules/identity";
+import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
 import { AttemptThrottle } from "@/modules/identity/infrastructure/attempt-throttle";
 import { randomSessionTokens, scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { DrizzleIdentityRepository } from "@/modules/identity/infrastructure/drizzle-identity-repository";
@@ -378,13 +379,19 @@ export function buildContainer(options: ContainerOptions) {
     return meterFor(recordAiUsage, ensureAiAllowed, userId, access.shared ? "global" : "user");
   }
 
+  const localeOf = async (userId: string): Promise<Locale> =>
+    (await identity.get(userId))?.locale ?? DEFAULT_LOCALE;
+
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
     options.llmForUser ??
     (async (userId: string): Promise<LlmProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeLlm;
-      return new AiLlmProvider(access, access.model, { meter: aiMeterFor(userId, access) });
+      return new AiLlmProvider(access, access.model, {
+        meter: aiMeterFor(userId, access),
+        locale: await localeOf(userId),
+      });
     });
   const resolvePlanner =
     options.plannerForUser ??
@@ -393,7 +400,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return null;
       const meter = aiMeterFor(userId, access);
       await meter.ensureAllowed();
-      return new AiLessonPlanner(access, access.model, { meter });
+      return new AiLessonPlanner(access, access.model, { meter, locale: await localeOf(userId) });
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -402,7 +409,10 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<TutorProvider> => {
       const access = await aiAccessFor(userId);
       if (!access) return fakeTutor;
-      return new AiTutorProvider(access, access.model, { meter: aiMeterFor(userId, access) });
+      return new AiTutorProvider(access, access.model, {
+        meter: aiMeterFor(userId, access),
+        locale: await localeOf(userId),
+      });
     });
   const conversations = new DrizzleConversationRepository(db);
 
@@ -419,7 +429,10 @@ export function buildContainer(options: ContainerOptions) {
     (async (userId: string): Promise<SuggestionWriter | null> => {
       const access = await aiAccessFor(userId);
       if (!access) return null;
-      return new AiSuggestionWriter(access, access.model, { meter: aiMeterFor(userId, access) });
+      return new AiSuggestionWriter(access, access.model, {
+        meter: aiMeterFor(userId, access),
+        locale: await localeOf(userId),
+      });
     });
   const recommendationDeps = {
     repository: new DrizzleRecommendationRepository(db),
@@ -571,7 +584,7 @@ export function buildContainer(options: ContainerOptions) {
           ownerUserId: userId,
           term: correction.right,
           meaning: correction.why,
-          context: `Você disse: ${correction.wrong}`,
+          context: correction.wrong,
           origin: "tutor_correction",
           createdAt: clock.now(),
         }),
@@ -897,14 +910,14 @@ let containerUrl: string | undefined;
 
 export class DatabaseNotConfigured extends Error {
   constructor() {
-    super("banco de dados não configurado");
+    super("database not configured");
     this.name = "DatabaseNotConfigured";
   }
 }
 
 export class SettingsNotLoaded extends Error {
   constructor() {
-    super("configurações do servidor ainda não carregadas");
+    super("server settings not loaded yet");
     this.name = "SettingsNotLoaded";
   }
 }

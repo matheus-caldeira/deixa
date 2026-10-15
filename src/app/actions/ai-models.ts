@@ -27,7 +27,7 @@ export async function updateAiDefaultsAction(input: unknown): Promise<ActionResu
   const user = await requireUser();
   return runAction("updateAiDefaults", async () => {
     const parsed = defaultsSchema.safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira o provedor e o nome do modelo.");
+    if (!parsed.success) throw new AppError("INVALID_INPUT", "modelInvalid");
     const current = await app().getSettings();
     const saved = await app().updateSettings({
       actor: { userId: user.id, isAdmin: user.isAdmin },

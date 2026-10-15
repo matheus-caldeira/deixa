@@ -1,7 +1,8 @@
 import { after } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { posterUrl, type MediaItem } from "@/modules/catalog";
-import { fitLabel } from "@/modules/recommendations";
+import { fitLabel, parseLearnerInsight, parseLocalReason } from "@/modules/recommendations";
 import { posterColorsFor } from "@/modules/catalog";
 import { fitFor, levelIndex } from "@/shared/levels";
 import { CatalogScreen } from "@/ui/catalog/catalog-screen";
@@ -32,6 +33,28 @@ export default async function CatalogPage() {
   if (recommendations.refresh) {
     after(() => container.refreshRecommendations({ userId: user.id, level }).catch(() => undefined));
   }
+  const t = await getTranslations("suggestions");
+  const insight = parseLearnerInsight(recommendations.insight);
+  const insightText = insight
+    ? (() => {
+        const facts = [
+          insight.accuracyPercent === null ? null : t("facts.accuracy", { percent: insight.accuracyPercent }),
+          insight.againPercent === null ? null : t("facts.again", { percent: insight.againPercent }),
+          insight.marksPerHundred === null ? null : t("facts.marks", { count: insight.marksPerHundred }),
+        ].filter((fact): fact is string => fact !== null);
+        if (facts.length === 0) return t("insight.littleData");
+        return `${t("insight.summary", { facts: facts.join(", ") })} ${t(`insight.${insight.challenge}`)}`;
+      })()
+    : recommendations.insight;
+  const reasonText = (reason: string): string => {
+    if (recommendations.writtenByAi) return reason;
+    const local = parseLocalReason(reason);
+    if (!local) return reason;
+    const opening = local.relatedTitle
+      ? t("reason.related", { title: local.relatedTitle })
+      : t("reason.trending");
+    return `${opening}, ${t(`reason.${local.fit}`)}`;
+  };
   return (
     <CatalogScreen
       tiles={overview.entries.map(({ media }) => ({
@@ -42,7 +65,7 @@ export default async function CatalogPage() {
       }))}
       suggestions={{
         status: recommendations.status,
-        insight: recommendations.insight,
+        insight: insightText,
         writtenByAi: recommendations.writtenByAi,
         updating: recommendations.updating,
         items: recommendations.items.map((item) => ({
@@ -56,7 +79,7 @@ export default async function CatalogPage() {
           },
           overview: item.overview,
           genres: item.genres,
-          reason: item.reason,
+          reason: reasonText(item.reason),
           levelRange: `${item.levelMin}–${item.levelMax}`,
           fit: fitLabel(levelIndex(level), item.levelMin, item.levelMax),
         })),

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AI_SERVICES, SECRET_KINDS, type AiModels, type ServiceOverview } from "@/modules/ai-credentials";
 import type { UsageOverview, UsageSummary } from "@/modules/ai-usage";
 import type { AppSettings } from "@/modules/settings";
@@ -27,11 +28,11 @@ export type SettingsView = {
   customEndpointsAllowed: boolean;
 };
 
-const TABS: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
-  { key: "ai", label: "IA" },
-  { key: "usage", label: "Uso da IA" },
-  { key: "catalog", label: "Catálogo" },
-  { key: "server", label: "Servidor", adminOnly: true },
+const TABS: { key: SettingsTab; adminOnly?: boolean }[] = [
+  { key: "ai" },
+  { key: "usage" },
+  { key: "catalog" },
+  { key: "server", adminOnly: true },
 ];
 
 const AI_SERVICE_SET = new Set<string>(AI_SERVICES);
@@ -41,9 +42,10 @@ function href(tab: SettingsTab, scope: SettingsScope): string {
 }
 
 function ScopeSwitch({ view, mine, server }: { view: SettingsView; mine: string; server: string }) {
+  const t = useTranslations("settings");
   if (!view.isAdmin) return null;
   return (
-    <div className="seg" aria-label="Alcance">
+    <div className="seg" aria-label={t("scope")}>
       <Link
         className={view.scope === "user" ? "on" : ""}
         href={href(view.tab, "user")}
@@ -71,16 +73,12 @@ function KeysTab({
   services: ServiceOverview[];
   intro: string;
 }) {
+  const t = useTranslations("settings");
   return (
     <>
       <p className="small muted">{intro}</p>
-      <ScopeSwitch view={view} mine="Minhas chaves" server="Globais do servidor" />
-      {view.scope === "global" ? (
-        <p className="small muted">
-          Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode
-          alterá-las.
-        </p>
-      ) : null}
+      <ScopeSwitch view={view} mine={t("myKeys")} server={t("serverKeys")} />
+      {view.scope === "global" ? <p className="small muted">{t("globalKeysNote")}</p> : null}
       {services.map((entry) => (
         <CredentialCard key={entry.service} entry={entry} scope={view.scope} />
       ))}
@@ -89,6 +87,7 @@ function KeysTab({
 }
 
 export function SettingsScreen({ view }: { view: SettingsView }) {
+  const t = useTranslations("settings");
   const aiServices = view.credentials.filter(
     (entry) =>
       AI_SERVICE_SET.has(entry.service) &&
@@ -97,8 +96,8 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
   const catalogServices = view.credentials.filter((entry) => !AI_SERVICE_SET.has(entry.service));
   return (
     <>
-      <h1 style={{ fontSize: 28, paddingTop: 4 }}>Configurações</h1>
-      <div className="chips" role="tablist" aria-label="Seções">
+      <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
+      <div className="chips" role="tablist" aria-label={t("sections")}>
         {TABS.filter((tab) => !tab.adminOnly || view.isAdmin).map((tab) => (
           <Link
             key={tab.key}
@@ -107,19 +106,15 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
             role="tab"
             aria-selected={view.tab === tab.key}
           >
-            {tab.label}
+            {t(`tabs.${tab.key}`)}
           </Link>
         ))}
       </div>
       <div className="col" style={{ gap: 18, maxWidth: 640, width: "100%" }}>
         {view.tab === "ai" ? (
           <>
-            <p className="small muted">
-              A IA explica o que você marca, monta trilhas, sugere obras e conversa com você. Sem a sua chave,
-              vale a chave global deste servidor, se houver. As chaves ficam criptografadas e nunca voltam
-              para o navegador.
-            </p>
-            <ScopeSwitch view={view} mine="Minhas chaves" server="Globais do servidor" />
+            <p className="small muted">{t("aiIntro")}</p>
+            <ScopeSwitch view={view} mine={t("myKeys")} server={t("serverKeys")} />
             <ModelChoiceCard
               view={{
                 scope: view.scope,
@@ -129,13 +124,8 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
                 customEndpointsAllowed: view.customEndpointsAllowed,
               }}
             />
-            <span className="eyebrow">Provedores</span>
-            {view.scope === "global" ? (
-              <p className="small muted">
-                Valem para qualquer conta que não tenha a própria chave. Só você, como administrador, pode
-                alterá-las.
-              </p>
-            ) : null}
+            <span className="eyebrow">{t("providers")}</span>
+            {view.scope === "global" ? <p className="small muted">{t("globalKeysNote")}</p> : null}
             {aiServices.map((entry) => (
               <CredentialCard key={entry.service} entry={entry} scope={view.scope} />
             ))}
@@ -143,7 +133,7 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
         ) : null}
         {view.tab === "usage" ? (
           <>
-            <ScopeSwitch view={view} mine="Meu uso" server="Servidor" />
+            <ScopeSwitch view={view} mine={t("myUsage")} server={t("server")} />
             {view.scope === "global" && view.overview ? (
               <ServerUsageSection overview={view.overview} />
             ) : (
@@ -152,15 +142,11 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
           </>
         ) : null}
         {view.tab === "catalog" ? (
-          <KeysTab
-            view={view}
-            services={catalogServices}
-            intro="O TMDB identifica as obras e o OpenSubtitles busca legendas quando você pede. Sem a sua chave, valem as globais deste servidor, se houver."
-          />
+          <KeysTab view={view} services={catalogServices} intro={t("catalogIntro")} />
         ) : null}
         {view.tab === "server" && view.settings ? (
           <>
-            <p className="small muted">Valem para a instalação inteira. Só o administrador vê esta aba.</p>
+            <p className="small muted">{t("serverIntro")}</p>
             <ServerSettingsCard initial={view.settings} />
           </>
         ) : null}

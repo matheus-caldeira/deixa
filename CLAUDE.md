@@ -5,7 +5,8 @@ assiste. O usuário importa a legenda do episódio (EN e, de preferência, PT), 
 não entendeu e transforma as marcações em cards de revisão. Especificação: @PROJETO.md. Protótipo aprovado da
 interface: `deixa.html`.
 
-Idioma: português do Brasil com acentuação correta; identificadores de código em inglês.
+Idioma: português do Brasil com acentuação correta; identificadores de código em inglês. Texto de interface
+nunca fica no código: vai para `locales/pt-BR.json` e `locales/en.json`, com a mesma chave nos dois.
 
 ## Onde está cada coisa
 
@@ -41,7 +42,9 @@ src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastr
                       ai-credentials, audio, gamification, study, notifications, conversations,
                       subtitle-sources, recommendations, settings, ai-usage, packages
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
-src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
+src/shared/           app.ts (APP_NAME), errors, levels, locales, clock, ids
+src/i18n/             request.ts (idioma por pedido), messages.ts (carrega locales/<idioma>.json)
+locales/              pt-BR.json e en.json: todo texto da interface, por tela (ADR 0018)
 src/seed/             seed de demonstração
 tests/                e2e (Playwright), bundle
 fixtures/             SRT fictícios EN e PT

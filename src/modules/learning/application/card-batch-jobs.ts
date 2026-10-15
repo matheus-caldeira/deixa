@@ -1,4 +1,4 @@
-import { AppError, isAppError } from "@/shared/errors";
+import { AppError, isAppError, type MessageParams } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
@@ -7,12 +7,12 @@ import type { GeneratedDrafts } from "./generate-card-drafts";
 import type { LearningRepository } from "./ports";
 
 export const CARD_BATCH_TIMEOUT_MS = 4 * 60 * 1000;
-const GENERIC_FAILURE = "Não foi possível gerar os cards. Tente de novo.";
-const TIMEOUT_FAILURE = "A geração demorou demais e foi interrompida. Tente de novo.";
+const GENERIC_FAILURE = "CARDS_FAILED";
+const TIMEOUT_FAILURE = "CARDS_TIMEOUT";
 
 export type CardBatchState =
   | { status: "PENDING"; batchId: string; episodeId: string }
-  | { status: "FAILED"; batchId: string; episodeId: string; message: string }
+  | { status: "FAILED"; batchId: string; episodeId: string; reason: string }
   | {
       status: "DRAFT";
       batchId: string;
@@ -26,8 +26,7 @@ export type CardBatchState =
 type Notify = (input: {
   userId: string;
   kind: "cards_ready" | "cards_failed";
-  title: string;
-  body: string;
+  params: MessageParams;
   href: string;
 }) => Promise<void>;
 
@@ -76,18 +75,16 @@ export function makeProcessCardBatch(deps: {
       await deps.notify({
         userId: input.userId,
         kind: "cards_ready",
-        title: "Seus cards estão prontos",
-        body: `${generated.drafts.length} cards de ${input.episodeLabel}. Revise e escolha quais vão para a revisão.`,
+        params: { episode: input.episodeLabel, count: generated.drafts.length },
         href,
       });
     } catch (error) {
-      const message = isAppError(error) && error.message !== error.code ? error.message : GENERIC_FAILURE;
-      await deps.learning.failBatch(input.batchId, message);
+      const reason = isAppError(error) ? error.code : GENERIC_FAILURE;
+      await deps.learning.failBatch(input.batchId, reason);
       await deps.notify({
         userId: input.userId,
         kind: "cards_failed",
-        title: "Não deu para gerar seus cards",
-        body: `${input.episodeLabel}: ${message}`,
+        params: { episode: input.episodeLabel, reason },
         href: `/read/${input.episodeId}`,
       });
     }
@@ -100,11 +97,11 @@ export function makeGetCardBatch(deps: { learning: LearningRepository; clock: Cl
     if (!batch) throw new AppError("BATCH_NOT_FOUND");
     const base = { batchId: batch.id, episodeId: batch.episodeId };
     if (batch.status === "FAILED")
-      return { ...base, status: "FAILED", message: batch.failureReason ?? GENERIC_FAILURE };
+      return { ...base, status: "FAILED", reason: batch.failureReason ?? GENERIC_FAILURE };
     if (batch.status === "SAVED") return { ...base, status: "SAVED" };
     if (batch.status === "PENDING") {
       const stale = deps.clock.now().getTime() - batch.createdAt.getTime() > CARD_BATCH_TIMEOUT_MS;
-      return stale ? { ...base, status: "FAILED", message: TIMEOUT_FAILURE } : { ...base, status: "PENDING" };
+      return stale ? { ...base, status: "FAILED", reason: TIMEOUT_FAILURE } : { ...base, status: "PENDING" };
     }
     return {
       ...base,

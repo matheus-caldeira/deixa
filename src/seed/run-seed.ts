@@ -311,6 +311,7 @@ export async function runSeed(input: {
         episodeId: currentEpisodeId,
         level: profile.level,
         episodeLabel: "",
+        retry: true,
       });
       const trail = await container.getTrail(userId, currentEpisodeId, profile.level);
       const alreadyStudied = trail.nodes.some((node) => node.state === "done");

@@ -1,4 +1,5 @@
 import type { Clock } from "@/shared/clock";
+import type { MessageParams } from "@/shared/errors";
 import type { IdGenerator } from "@/shared/ids";
 
 export type NotificationKind = "cards_ready" | "cards_failed" | "trail_ready" | "trail_failed";
@@ -6,8 +7,7 @@ export type NotificationKind = "cards_ready" | "cards_failed" | "trail_ready" | 
 export type Notification = {
   id: string;
   kind: NotificationKind;
-  title: string;
-  body: string;
+  params: MessageParams;
   href: string;
   read: boolean;
   createdAt: Date;
@@ -17,8 +17,7 @@ export type NewNotification = {
   id: string;
   userId: string;
   kind: NotificationKind;
-  title: string;
-  body: string;
+  params: MessageParams;
   href: string;
   createdAt: Date;
 };
@@ -33,8 +32,6 @@ export interface NotificationRepository {
 }
 
 const INBOX_LIMIT = 30;
-const MAX_TITLE = 120;
-const MAX_BODY = 300;
 
 type Deps = { notifications: NotificationRepository; clock: Clock; ids: IdGenerator };
 
@@ -42,16 +39,14 @@ export function makeNotify(deps: Deps) {
   return async function notify(input: {
     userId: string;
     kind: NotificationKind;
-    title: string;
-    body: string;
+    params: MessageParams;
     href: string;
   }): Promise<void> {
     await deps.notifications.insert({
       id: deps.ids.next(),
       userId: input.userId,
       kind: input.kind,
-      title: input.title.slice(0, MAX_TITLE),
-      body: input.body.slice(0, MAX_BODY),
+      params: input.params,
       href: input.href,
       createdAt: deps.clock.now(),
     });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { setAiModelsAction, updateAiDefaultsAction } from "@/app/actions/ai-models";
 import {
@@ -26,12 +27,6 @@ export type ModelChoiceView = {
   customEndpointsAllowed: boolean;
 };
 
-const HELP: Record<Purpose, string> = {
-  generation: "Cards, traduções, tutor, plano de aula e motivo das sugestões.",
-  embedding:
-    "Usados nas sugestões de obras. Trocar de modelo recalcula só os vetores que faltam; os antigos ficam guardados.",
-};
-const LABELS: Record<Purpose, string> = { generation: "Geração de texto", embedding: "Embeddings" };
 const ENDPOINT_SERVICES = new Set<AiService>(["ollama", "openai_compatible"]);
 
 function selectionKey(selection: Selection): string {
@@ -39,12 +34,12 @@ function selectionKey(selection: Selection): string {
   return selection === "local" ? "local" : selection.provider;
 }
 
-function describeDefault(choice: ModelChoice | null): string {
-  if (!choice) return "Padrão do servidor: cálculo local, sem IA";
-  return `Padrão do servidor: ${SERVICE_LABELS[choice.provider]} · ${choice.model}`;
-}
-
 export function ModelChoiceCard({ view }: { view: ModelChoiceView }) {
+  const t = useTranslations("models");
+  const describeDefault = (choice: ModelChoice | null): string =>
+    choice
+      ? t("serverDefault", { value: `${SERVICE_LABELS[choice.provider]} · ${choice.model}` })
+      : t("serverDefault", { value: t("local") });
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -95,7 +90,7 @@ export function ModelChoiceCard({ view }: { view: ModelChoiceView }) {
         setError(result.message);
         return;
       }
-      toast(global ? "Modelos padrão salvos." : "Modelos salvos.");
+      toast(global ? t("defaultsSaved") : t("saved"));
       router.refresh();
     });
   };
@@ -108,7 +103,7 @@ export function ModelChoiceCard({ view }: { view: ModelChoiceView }) {
     const id = `model-${purpose}`;
     return (
       <div className="field">
-        <label htmlFor={id}>{LABELS[purpose]}</label>
+        <label htmlFor={id}>{t(`purpose.${purpose}`)}</label>
         <select
           id={id}
           value={selectionKey(selection)}
@@ -124,35 +119,35 @@ export function ModelChoiceCard({ view }: { view: ModelChoiceView }) {
           {options.map((service) => (
             <option key={service} value={service} disabled={!available(service)}>
               {SERVICE_LABELS[service]}
-              {available(service) ? "" : " (sem chave)"}
+              {available(service) ? "" : ` ${t("noKey")}`}
             </option>
           ))}
-          {purpose === "embedding" ? <option value="local">Cálculo local, sem IA</option> : null}
+          {purpose === "embedding" ? <option value="local">{t("local")}</option> : null}
         </select>
         {selection && selection !== "local" ? (
           <input
             className="mono"
             value={selection.model}
             onChange={(event) => rename(purpose, event.target.value)}
-            placeholder="Nome do modelo"
-            aria-label={`Modelo de ${LABELS[purpose].toLowerCase()}`}
+            placeholder={t("modelName")}
+            aria-label={t("modelFor", { purpose: t(`purpose.${purpose}`) })}
             autoComplete="off"
             spellCheck={false}
           />
         ) : null}
-        <span className="small muted">{HELP[purpose]}</span>
+        <span className="small muted">{t(`help.${purpose}`)}</span>
       </div>
     );
   };
 
   return (
     <form className="card col" style={{ gap: 14 }} onSubmit={save}>
-      <h2 style={{ fontSize: 17 }}>{global ? "Modelos padrão do servidor" : "Modelos em uso"}</h2>
+      <h2 style={{ fontSize: 17 }}>{global ? t("serverTitle") : t("title")}</h2>
       {field("generation")}
       {field("embedding")}
       {error ? <p className="formerr">{error}</p> : null}
       <button className="btn" style={{ padding: 12, fontSize: 13 }} type="submit" disabled={pending}>
-        {pending ? "Salvando…" : "Salvar modelos"}
+        {pending ? t("saving") : t("save")}
       </button>
     </form>
   );

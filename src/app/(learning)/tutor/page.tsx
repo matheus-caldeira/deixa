@@ -13,14 +13,10 @@ export default async function TutorPage() {
   return (
     <TalkScreen
       simulated={simulated}
-      themes={THEMES.map((theme) => ({
-        id: theme.id,
-        icon: theme.icon,
-        title: theme.title,
-        detail: theme.detail,
-      }))}
+      themes={THEMES.map((theme) => ({ id: theme.id, icon: theme.icon }))}
       recent={recent.map((session) => ({
         id: session.id,
+        themeId: session.themeId,
         title: session.themeTitle,
         turnCount: session.turnCount,
         reviewed: session.review !== null,

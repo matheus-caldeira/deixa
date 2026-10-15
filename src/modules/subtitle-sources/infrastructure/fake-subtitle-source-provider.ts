@@ -68,7 +68,7 @@ export class FakeSubtitleSourceProvider implements SubtitleSourceProvider {
     fileId: string,
   ): Promise<{ bytes: Uint8Array; fileName: string; quota: SourceQuota | null }> {
     const fileName = FIXTURES[fileId];
-    if (!fileName) throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "Legenda não encontrada na fonte.");
+    if (!fileName) throw new AppError("SUBTITLE_SOURCE_UNAVAILABLE", "sourceFileMissing");
     if (this.remaining <= 0) {
       throw new SourceQuotaExceeded({ remaining: 0, resetAt: null });
     }

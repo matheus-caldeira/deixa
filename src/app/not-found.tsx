@@ -1,14 +1,16 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations("notFound");
   return (
     <div className="picker">
       <div className="col" style={{ gap: 10 }}>
-        <h1 style={{ fontSize: 28 }}>Não encontramos essa página</h1>
-        <p className="muted">O episódio pode ainda não ter legenda pronta, ou o endereço mudou.</p>
+        <h1 style={{ fontSize: 28 }}>{t("title")}</h1>
+        <p className="muted">{t("body")}</p>
       </div>
       <Link className="btn" href="/">
-        Voltar para o início
+        {t("home")}
       </Link>
     </div>
   );

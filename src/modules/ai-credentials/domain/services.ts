@@ -30,20 +30,9 @@ export const SERVICE_LABELS: Record<CredentialService, string> = {
   anthropic: "Anthropic",
   openrouter: "OpenRouter",
   ollama: "Ollama",
-  openai_compatible: "Compatível com OpenAI",
+  openai_compatible: "OpenAI-compatible",
   tmdb: "TMDB",
   opensubtitles: "OpenSubtitles",
-};
-
-const SHAPE_HINTS: Record<CredentialService, string> = {
-  gemini: 'Chaves do Google AI Studio começam com "AIza" e têm 39 caracteres.',
-  openai: 'Chaves da OpenAI começam com "sk-".',
-  anthropic: 'Chaves da Anthropic começam com "sk-ant-".',
-  openrouter: 'Chaves do OpenRouter começam com "sk-or-".',
-  ollama: "Informe o endereço do Ollama, como http://localhost:11434.",
-  openai_compatible: "Informe o endereço do servidor, terminando em /v1, e a chave se ele pedir.",
-  tmdb: 'Use o token de leitura da API (começa com "eyJ") ou a chave de API de 32 caracteres.',
-  opensubtitles: "A chave de API do OpenSubtitles tem só letras e números, sem espaços.",
 };
 
 export const SECRET_KINDS: Record<CredentialService, SecretKind> = {
@@ -120,8 +109,4 @@ export function looksLikeSecret(service: CredentialService, secret: string): boo
     case "opensubtitles":
       return OPENSUBTITLES_KEY.test(secret);
   }
-}
-
-export function shapeHint(service: CredentialService): string {
-  return SHAPE_HINTS[service];
 }

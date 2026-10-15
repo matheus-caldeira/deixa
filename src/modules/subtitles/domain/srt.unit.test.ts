@@ -59,7 +59,7 @@ describe("limites contra arquivo malicioso", () => {
     const tooMany = Array.from({ length: MAX_CUES_PER_SUBTITLE + 1 }, (_, index) => block(index + 1)).join(
       "\n",
     );
-    expect(() => parseSrt(tooMany)).toThrow(/falas demais/);
+    expect(() => parseSrt(tooMany)).toThrow(/tooManyCues/);
   });
 });
 
@@ -71,11 +71,13 @@ describe("decodificação e validação do arquivo", () => {
 
   it("recusa extensão errada, arquivo vazio e arquivo grande demais", () => {
     const bytes = new TextEncoder().encode("x");
-    expect(() => validateSubtitleFile({ filename: "legenda.txt", bytes })).toThrow(/\.srt/);
-    expect(() => validateSubtitleFile({ filename: "legenda.srt", bytes: new Uint8Array() })).toThrow(/vazio/);
+    expect(() => validateSubtitleFile({ filename: "legenda.txt", bytes })).toThrow(/onlySrt/);
+    expect(() => validateSubtitleFile({ filename: "legenda.srt", bytes: new Uint8Array() })).toThrow(
+      /emptyFile/,
+    );
     expect(() =>
       validateSubtitleFile({ filename: "a.SRT", bytes: new Uint8Array(MAX_SUBTITLE_BYTES + 1) }),
-    ).toThrow(/5 MB/);
+    ).toThrow(/tooLarge/);
     expect(() => validateSubtitleFile({ filename: "a.SRT", bytes })).not.toThrow();
   });
 });

@@ -204,7 +204,7 @@ export class EmbeddedPostgres {
       }
       await sleep(READY_INTERVAL_MS);
     }
-    throw new Error("o Postgres embutido não ficou pronto a tempo");
+    throw new Error("embedded Postgres did not become ready in time");
   }
 
   private async ensureDatabase(config: EmbeddedConfig): Promise<void> {
@@ -234,7 +234,7 @@ export class EmbeddedPostgres {
       report({ phase: "ready" });
       return url;
     } catch (error) {
-      report({ phase: "failed", message: error instanceof Error ? error.message : "falha desconhecida" });
+      report({ phase: "failed", reason: "EMBEDDED_DATABASE_FAILED" });
       throw error;
     }
   }
@@ -243,7 +243,7 @@ export class EmbeddedPostgres {
     if (this.starting) return this.starting;
     this.starting = (async () => {
       const config = this.readConfig();
-      if (!config) throw new Error("o Postgres embutido não está configurado");
+      if (!config) throw new Error("embedded Postgres is not configured");
       if (!(await this.alreadyRunning(config))) {
         this.spawnServer(config);
         await this.waitUntilReady(config);

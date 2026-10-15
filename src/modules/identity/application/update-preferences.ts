@@ -1,4 +1,5 @@
 import { AppError } from "@/shared/errors";
+import type { Locale } from "@/shared/locales";
 import { AUDIO_SPEEDS, DAILY_GOALS, type Accent } from "../domain/user";
 import type { PreferencesRepository } from "./ports";
 
@@ -6,6 +7,7 @@ export type PreferencesPatch = {
   dailyGoal?: number;
   preferredAccent?: Accent;
   audioSpeed?: number;
+  locale?: Locale;
   currentEpisodeId?: string;
 };
 

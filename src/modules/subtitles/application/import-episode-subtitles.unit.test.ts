@@ -55,17 +55,20 @@ describe("importação de legendas", () => {
     expect(result).toMatchObject({ outcome: "PROCESSED", hasPortuguese: true, cueCount: 23 });
     expect(result.alignment?.pairs).toBe(22);
     expect(Math.round((result.alignment?.rate ?? 0) * 100)).toBe(96);
-    expect(result.steps.map((step) => step.label)).toEqual([
-      "Validando arquivos",
-      "Calculando SHA-256",
-      "Verificando duplicidade",
-      "Lendo o SRT em inglês",
-      "Lendo o SRT em português",
-      "Alinhando EN ↔ PT pelo tempo",
-      "Publicando no catálogo",
-      "Áudio das falas (Kokoro)",
+    expect(result.steps.map((step) => step.key)).toEqual([
+      "validate",
+      "hash",
+      "duplicates",
+      "readTarget",
+      "readNative",
+      "align",
+      "publish",
+      "audio",
     ]);
-    expect(result.steps.find((step) => step.label.startsWith("Alinhando"))?.detail).toBe("22 pares · 96%");
+    expect(result.steps.find((step) => step.key === "align")?.detail).toEqual({
+      key: "pairs",
+      params: { count: 22, percent: "96%" },
+    });
     expect(app.subtitles.episodeStatus.get("ep-1")).toMatchObject({ status: "READY", cueCount: 23 });
     expect([...app.storage.files.keys()].sort()).toEqual([
       "catalog/series/media-1/seasons/1/episodes/ep-1/alignment.json",
@@ -88,10 +91,7 @@ describe("importação de legendas", () => {
 
     const again = await app.importSubtitles({ ...upload, userId: "u2" });
     expect(again.outcome).toBe("DUPLICATE");
-    expect(again.steps.at(-1)).toEqual({
-      label: "Verificando duplicidade",
-      detail: "legenda idêntica encontrada",
-    });
+    expect(again.steps.at(-1)).toEqual({ key: "duplicates", detail: { key: "identicalFound" } });
     expect(again).toMatchObject({ cueCount: 23, hasPortuguese: true, alignment: { pairs: 22 } });
     expect(app.subtitles.files.size).toBe(filesBefore);
     expect([...app.subtitles.cues.values()].flat().length).toBe(cuesBefore);

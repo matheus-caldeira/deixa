@@ -39,11 +39,11 @@ export type SeedProfile = {
   snapshot: ProfileSnapshot;
 };
 
-const skills = (listening: number, vocabulary: number, grammar: number, speaking: number) => [
-  { name: "Escuta", percent: listening },
-  { name: "Vocabulário", percent: vocabulary },
-  { name: "Gramática", percent: grammar },
-  { name: "Conversação", percent: speaking },
+const skills = (listening: number, vocabulary: number, grammar: number, conversation: number) => [
+  { key: "listening" as const, percent: listening },
+  { key: "vocabulary" as const, percent: vocabulary },
+  { key: "grammar" as const, percent: grammar },
+  { key: "conversation" as const, percent: conversation },
 ];
 
 export const SEED_PROFILES: readonly SeedProfile[] = [
@@ -76,17 +76,11 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     ],
     history: { streak: 3, xpToday: 30, totalXp: 420 },
     snapshot: {
-      tagline: "Começando do zero, com legenda em português ao lado",
       levelPct: 64,
       learnedBase: 38,
       accuracy: 81,
       skills: skills(42, 58, 35, 20),
       achievements: ["first", "streak3"],
-      recurringErrors: [
-        { label: '"tired" × "tiring"', count: "3 erros" },
-        { label: 'ordem de perguntas com "are you"', count: "2 erros" },
-      ],
-      nextStep: "Próximo passo: entender frases curtas sem legenda em português.",
     },
   },
   {
@@ -125,17 +119,11 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     ],
     history: { streak: 7, xpToday: 120, totalXp: 6840 },
     snapshot: {
-      tagline: "Entende quase tudo com legenda; quer largar a legenda",
       levelPct: 38,
       learnedBase: 412,
       accuracy: 88,
       skills: skills(66, 72, 61, 48),
       achievements: ["first", "streak3", "streak7", "phrasal25", "ep10"],
-      recurringErrors: [
-        { label: '"hang out" × "hang up"', count: "4 erros" },
-        { label: 'falso cognato "support"', count: "2 erros" },
-      ],
-      nextStep: "Próximo passo: acompanhar conversas rápidas com legenda só em inglês.",
     },
   },
   {
@@ -172,17 +160,11 @@ export const SEED_PROFILES: readonly SeedProfile[] = [
     ],
     history: { streak: 41, xpToday: 260, totalXp: 24310 },
     snapshot: {
-      tagline: "Assiste sem legenda; foca em sotaque, ironia e registro",
       levelPct: 22,
       learnedBase: 1890,
       accuracy: 93,
       skills: skills(88, 91, 84, 79),
       achievements: ["first", "streak3", "streak7", "streak30", "phrasal25", "ep10", "nosub", "tutor10"],
-      recurringErrors: [
-        { label: '"I reckon" em contexto formal', count: "2 erros" },
-        { label: "ironia britânica", count: "1 erro" },
-      ],
-      nextStep: "Próximo passo: entender subtexto e sotaques variados sem legenda.",
     },
   },
 ];

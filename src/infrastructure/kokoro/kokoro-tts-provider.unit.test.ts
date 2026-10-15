@@ -37,9 +37,7 @@ describe("provider do Kokoro", () => {
     const html = await listen((_request, response) => {
       response.writeHead(200, { "content-type": "text/html" }).end("<html></html>");
     });
-    await expect(new KokoroTtsProvider(html).synthesize({ text: "Hi", voice })).rejects.toThrow(
-      /não é áudio/,
-    );
+    await expect(new KokoroTtsProvider(html).synthesize({ text: "Hi", voice })).rejects.toThrow(/non-audio/);
     const redirect = await listen((_request, response) => {
       response.writeHead(302, { location: "http://example.com/" }).end();
     });
@@ -80,6 +78,6 @@ describe("provider do Kokoro", () => {
         text: "Hi",
         voice: { voiceId: "x" } as never,
       }),
-    ).rejects.toThrow(/rede privada/);
+    ).rejects.toThrow(/private network/);
   });
 });

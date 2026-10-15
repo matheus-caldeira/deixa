@@ -4,6 +4,7 @@ export type ParsedCue = { sequence: number; startMs: number; endMs: number; text
 export type SubtitleLanguage = "en" | "pt-BR";
 
 export const MAX_SUBTITLE_BYTES = 5_000_000;
+const MAX_SUBTITLE_MB = 5;
 export const SCENE_GAP_MS = 15_000;
 export const SUBTITLE_PROCESSING_VERSION = 1;
 export const MAX_CUES_PER_SUBTITLE = 10_000;
@@ -49,7 +50,7 @@ export function parseSrt(content: string): { cues: ParsedCue[]; skippedBlocks: n
       continue;
     }
     if (cues.length >= MAX_CUES_PER_SUBTITLE) {
-      throw new AppError("SUBTITLE_INVALID", "Legenda com falas demais para um episódio. Confira o arquivo.");
+      throw new AppError("SUBTITLE_INVALID", "tooManyCues");
     }
     cues.push({ sequence: cues.length + 1, startMs, endMs, text });
   }
@@ -66,11 +67,11 @@ export function decodeSubtitle(bytes: Uint8Array): string {
 
 export function validateSubtitleFile(file: { filename: string; bytes: Uint8Array }): void {
   if (!/\.srt$/i.test(file.filename)) {
-    throw new AppError("SUBTITLE_INVALID", "Envie um arquivo .srt. Outros formatos ainda não são aceitos.");
+    throw new AppError("SUBTITLE_INVALID", "onlySrt");
   }
-  if (file.bytes.byteLength === 0) throw new AppError("SUBTITLE_INVALID", "O arquivo está vazio.");
+  if (file.bytes.byteLength === 0) throw new AppError("SUBTITLE_INVALID", "emptyFile");
   if (file.bytes.byteLength > MAX_SUBTITLE_BYTES) {
-    throw new AppError("SUBTITLE_INVALID", "Arquivo maior que 5 MB. Confira se é o arquivo certo.");
+    throw new AppError("SUBTITLE_INVALID", { key: "tooLarge", params: { mb: MAX_SUBTITLE_MB } });
   }
 }
 

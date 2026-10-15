@@ -3,21 +3,12 @@ import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import { startOfLocalDay } from "@/shared/time";
 import { ANTICIPATION_BATCH, anticipationStatus, type AnticipationStatus } from "../domain/anticipation";
-import { REVIEW_XP, previewIntervals, review, type Rating } from "../domain/schedule";
+import { REVIEW_XP, previewIntervals, review, type Interval, type Rating } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "./ports";
 
 const SESSION_LIMIT = 20;
-const SOURCE_SUFFIX: Record<string, string> = {
-  highlight_private: "suas marcações",
-  highlight_catalog: "catálogo",
-  lesson_error: "erros da lição",
-  tutor: "conversa com o tutor",
-};
 
-export type DueCard = Omit<DueCardRecord, "state"> & {
-  sourceLabel: string;
-  intervals: Record<Rating, string>;
-};
+export type DueCard = Omit<DueCardRecord, "state"> & { intervals: Record<Rating, Interval> };
 
 export type ReviewQueue = { cards: DueCard[]; dueCount: number };
 
@@ -27,17 +18,6 @@ type Deps = {
   ids: IdGenerator;
   awardXp: (input: { userId: string; source: string; sourceId: string; amount: number }) => Promise<void>;
 };
-
-export function sourceLabelOf(card: DueCardRecord): string {
-  const episode =
-    card.mediaType === "movie"
-      ? "filme"
-      : card.seasonNumber !== null && card.episodeNumber !== null
-        ? `T${card.seasonNumber} · E${card.episodeNumber}`
-        : null;
-  const suffix = SOURCE_SUFFIX[card.sourceKind];
-  return [card.mediaTitle, episode, suffix].filter((part) => part).join(" · ") || "Revisão";
-}
 
 export function makeAddCards(deps: Pick<Deps, "cards" | "clock" | "ids">) {
   return async function addCards(
@@ -64,7 +44,6 @@ export function makeListDueCards(deps: Pick<Deps, "cards" | "clock">) {
       dueCount,
       cards: records.map(({ state, ...card }) => ({
         ...card,
-        sourceLabel: sourceLabelOf({ ...card, state }),
         intervals: previewIntervals(state),
       })),
     };
@@ -116,7 +95,7 @@ export function makeAnticipateReview(deps: Pick<Deps, "cards" | "clock" | "ids">
   return async function anticipateReview(userId: string): Promise<{ moved: number }> {
     const now = deps.clock.now();
     const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH);
-    if (moved === 0) throw new AppError("INVALID_INPUT", "Não há cartões futuros para antecipar.");
+    if (moved === 0) throw new AppError("INVALID_INPUT", "nothingToAnticipate");
     await deps.cards.recordAnticipation({ id: deps.ids.next(), userId, cardsMoved: moved, createdAt: now });
     return { moved };
   };

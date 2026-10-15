@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import {
   connectDatabaseAction,
@@ -10,6 +11,7 @@ import {
 } from "@/app/actions/setup";
 import type { EmbeddedDatabasePhase as EmbeddedPhase } from "@/shared/embedded-database";
 import { Logo } from "../shell/logo";
+import { useErrorText } from "../shell/use-error-text";
 
 export type SetupView = {
   unlocked: boolean;
@@ -24,26 +26,21 @@ export type SetupView = {
 type Choice = "embedded" | "existing" | null;
 const PROGRESS_INTERVAL_MS = 1000;
 
-function phaseText(phase: EmbeddedPhase): string {
-  switch (phase.phase) {
-    case "downloading":
-      return phase.percent === null ? "Baixando o Postgres…" : `Baixando o Postgres… ${phase.percent}%`;
-    case "extracting":
-      return "Descompactando…";
-    case "initializing":
-      return "Criando o banco…";
-    case "starting":
-      return "Iniciando o Postgres e preparando as tabelas…";
-    case "ready":
-      return "Pronto.";
-    case "failed":
-      return phase.message;
-    default:
-      return "Preparando…";
-  }
-}
-
 function EmbeddedInstall({ onBack }: { onBack: () => void }) {
+  const t = useTranslations("setup");
+  const errorText = useErrorText();
+  const phaseText = (phase: EmbeddedPhase): string => {
+    switch (phase.phase) {
+      case "downloading":
+        return phase.percent === null
+          ? t("phase.downloading")
+          : t("phase.downloadingPercent", { percent: phase.percent });
+      case "failed":
+        return errorText(phase.reason);
+      default:
+        return t(`phase.${phase.phase}`);
+    }
+  };
   const router = useRouter();
   const [phase, setPhase] = useState<EmbeddedPhase>({ phase: "idle" });
   const [error, setError] = useState("");
@@ -91,8 +88,7 @@ function EmbeddedInstall({ onBack }: { onBack: () => void }) {
     <div className="col" style={{ gap: 12 }}>
       <p className="hint">
         <span>
-          <b>Instalando um Postgres só para o Deixa.</b> Ele fica na pasta de dados do app e sobe junto com
-          ele. Cerca de 30 MB de download; só na primeira vez.
+          <b>{t("installing")}</b> {t("installingBody")}
         </span>
       </p>
       <div className="bar">
@@ -103,37 +99,27 @@ function EmbeddedInstall({ onBack }: { onBack: () => void }) {
       </p>
       {failed ? (
         <button type="button" className="btn ghost wide" onClick={onBack}>
-          Voltar
+          {t("back")}
         </button>
       ) : null}
     </div>
   );
 }
 
-const INSTALL_GUIDE: Record<SetupView["platform"], { name: string; steps: string }> = {
-  macos: {
-    name: "Postgres.app (postgresapp.com)",
-    steps:
-      "Baixe, arraste para Aplicativos, abra e clique em Initialize. O usuário é o seu nome de usuário do Mac, sem senha.",
-  },
-  windows: {
-    name: "instalador oficial (postgresql.org/download/windows)",
-    steps: "Durante a instalação, anote a senha que você definir para o usuário postgres.",
-  },
-  linux: {
-    name: "pacote da sua distribuição (por exemplo, sudo apt install postgresql)",
-    steps: "Depois crie um usuário com senha: sudo -u postgres createuser --pwprompt --createdb deixa.",
-  },
-};
 const DEFAULT_PORT = 5432;
 const DEFAULT_DATABASE = "deixa";
 
 export function SetupScreen({ view }: { view: SetupView }) {
+  const t = useTranslations("setup");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState<{ text: string; next: string } | null>(null);
+  const [notice, setNotice] = useState<{
+    key: string;
+    params: Record<string, string | number>;
+    next: string;
+  } | null>(null);
   const [mode, setMode] = useState<"fields" | "url">("fields");
   const first = view.detected[0];
   const [host, setHost] = useState(first?.host ?? "localhost");
@@ -143,7 +129,6 @@ export function SetupScreen({ view }: { view: SetupView }) {
   const [database, setDatabase] = useState(DEFAULT_DATABASE);
   const [url, setUrl] = useState("");
   const [choice, setChoice] = useState<Choice>(view.embedded === "configured" ? "embedded" : null);
-  const guide = INSTALL_GUIDE[view.platform];
 
   const unlock = (event: React.FormEvent) => {
     event.preventDefault();
@@ -166,7 +151,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
         setError(result.message);
         return;
       }
-      if (result.data.notice) setNotice({ text: result.data.notice, next: result.data.next });
+      if (result.data.notice) setNotice({ ...result.data.notice, next: result.data.next });
       else router.push(result.data.next);
     });
   };
@@ -175,45 +160,39 @@ export function SetupScreen({ view }: { view: SetupView }) {
     <div className="picker">
       <div className="col" style={{ gap: 10 }}>
         <Logo />
-        <h1 style={{ fontSize: 24 }}>Configurar o banco de dados</h1>
-        <p className="muted">
-          O Deixa guarda catálogo, legendas e progresso num banco PostgreSQL que fica no seu computador ou em
-          outro servidor seu.
-        </p>
+        <h1 style={{ fontSize: 24 }}>{t("title")}</h1>
+        <p className="muted">{t("intro")}</p>
       </div>
 
       {view.problem ? (
         <div className="alertbar" role="status">
           <span>
-            <b>O banco configurado não respondeu.</b> {view.problem}
+            <b>{t("dbUnreachable")}</b> {t(`reasons.${view.problem}`)}
           </span>
           <button className="link small" onClick={() => router.refresh()}>
-            Tentar de novo
+            {t("retry")}
           </button>
         </div>
       ) : null}
 
       {view.fromEnvironment ? (
-        <p className="note">
-          A conexão deste servidor vem da variável DATABASE_URL. Corrija o valor lá e reinicie o Deixa.
-        </p>
+        <p className="note">{t("fromEnvironment")}</p>
       ) : notice ? (
         <div className="col" style={{ gap: 12 }}>
           <p className="hint">
-            <span>{notice.text}</span>
+            <span>{t(`notices.${notice.key}`, notice.params)}</span>
           </p>
           <button className="btn wide" onClick={() => router.push(notice.next)}>
-            Continuar
+            {t("continue")}
           </button>
         </div>
       ) : !view.unlocked ? (
         <form className="col" style={{ gap: 12 }} onSubmit={unlock}>
           <p className="note">
-            Para garantir que é você, abra o arquivo <b>{view.codeFile}</b> na pasta onde o Deixa está
-            instalado e digite o código de 12 caracteres que está nele.
+            {t.rich("codeNote", { file: view.codeFile, b: (chunks) => <b>{chunks}</b> })}
           </p>
           <div className="field">
-            <label htmlFor="setup-code">Código de configuração</label>
+            <label htmlFor="setup-code">{t("setupCode")}</label>
             <input
               id="setup-code"
               value={code}
@@ -226,12 +205,12 @@ export function SetupScreen({ view }: { view: SetupView }) {
           </div>
           {error ? <p className="formerr">{error}</p> : null}
           <button className="btn wide" type="submit" disabled={pending}>
-            {pending ? "Conferindo…" : "Continuar"}
+            {pending ? t("checking") : t("continue")}
           </button>
         </form>
       ) : view.embedded !== "unsupported" && choice === null ? (
         <div className="col" style={{ gap: 12 }}>
-          <span className="eyebrow">Como guardar os dados?</span>
+          <span className="eyebrow">{t("howToStore")}</span>
           <button
             type="button"
             className="result on"
@@ -239,11 +218,8 @@ export function SetupScreen({ view }: { view: SetupView }) {
             onClick={() => setChoice("embedded")}
           >
             <span className="col" style={{ gap: 2 }}>
-              <b>Instalar um Postgres só para o Deixa</b>
-              <span className="small muted">
-                Recomendado. O app baixa o Postgres uma vez (cerca de 30 MB), guarda tudo na própria pasta e
-                sobe junto com ele. Nada a configurar.
-              </span>
+              <b>{t("embeddedOption")}</b>
+              <span className="small muted">{t("embeddedOptionBody")}</span>
             </span>
           </button>
           <button
@@ -253,10 +229,8 @@ export function SetupScreen({ view }: { view: SetupView }) {
             onClick={() => setChoice("existing")}
           >
             <span className="col" style={{ gap: 2 }}>
-              <b>Usar um Postgres que já existe</b>
-              <span className="small muted">
-                Neste computador, na rede da casa ou na nuvem. Você informa endereço, usuário e senha.
-              </span>
+              <b>{t("existingOption")}</b>
+              <span className="small muted">{t("existingOptionBody")}</span>
             </span>
           </button>
         </div>
@@ -271,12 +245,12 @@ export function SetupScreen({ view }: { view: SetupView }) {
               style={{ alignSelf: "flex-start" }}
               onClick={() => setChoice(null)}
             >
-              ← Voltar para a escolha
+              {t("backToChoice")}
             </button>
           ) : null}
           {view.detected.length > 0 ? (
             <div className="col" style={{ gap: 8 }}>
-              <span className="eyebrow">Postgres encontrado neste computador</span>
+              <span className="eyebrow">{t("found")}</span>
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                 {view.detected.map((server) => (
                   <button
@@ -298,33 +272,32 @@ export function SetupScreen({ view }: { view: SetupView }) {
             <div className="col" style={{ gap: 8 }}>
               <p className="hint">
                 <span>
-                  <b>Nenhum Postgres encontrado neste computador.</b> Recomendamos instalar o {guide.name}.{" "}
-                  {guide.steps}
+                  <b>{t("notFound")}</b> {t(`guide.${view.platform}`)}
                 </span>
               </p>
               <button type="button" className="btn ghost wide" onClick={() => router.refresh()}>
-                Já instalei: procurar de novo
+                {t("searchAgain")}
               </button>
             </div>
           )}
 
           <div className="seg">
             <button type="button" className={mode === "fields" ? "on" : ""} onClick={() => setMode("fields")}>
-              Preencher os dados
+              {t("fillFields")}
             </button>
             <button type="button" className={mode === "url" ? "on" : ""} onClick={() => setMode("url")}>
-              Colar o endereço
+              {t("pasteUrl")}
             </button>
           </div>
 
           {mode === "url" ? (
             <div className="field">
-              <label htmlFor="setup-url">Endereço de conexão</label>
+              <label htmlFor="setup-url">{t("connectionUrl")}</label>
               <input
                 id="setup-url"
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
-                placeholder="postgres://usuario:senha@servidor:5432/deixa"
+                placeholder={t("urlPlaceholder")}
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -335,7 +308,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
             <>
               <div className="row" style={{ gap: 8, alignItems: "flex-start" }}>
                 <div className="field" style={{ flex: 2 }}>
-                  <label htmlFor="setup-host">Servidor</label>
+                  <label htmlFor="setup-host">{t("host")}</label>
                   <input
                     id="setup-host"
                     value={host}
@@ -346,7 +319,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
                   />
                 </div>
                 <div className="field" style={{ flex: 1 }}>
-                  <label htmlFor="setup-port">Porta</label>
+                  <label htmlFor="setup-port">{t("port")}</label>
                   <input
                     id="setup-port"
                     value={port}
@@ -357,7 +330,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
                 </div>
               </div>
               <div className="field">
-                <label htmlFor="setup-user">Usuário do Postgres</label>
+                <label htmlFor="setup-user">{t("user")}</label>
                 <input
                   id="setup-user"
                   value={user}
@@ -369,7 +342,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
                 />
               </div>
               <div className="field">
-                <label htmlFor="setup-password">Senha do Postgres</label>
+                <label htmlFor="setup-password">{t("password")}</label>
                 <input
                   id="setup-password"
                   type="password"
@@ -379,7 +352,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
                 />
               </div>
               <div className="field">
-                <label htmlFor="setup-database">Nome do banco</label>
+                <label htmlFor="setup-database">{t("database")}</label>
                 <input
                   id="setup-database"
                   value={database}
@@ -393,12 +366,9 @@ export function SetupScreen({ view }: { view: SetupView }) {
           )}
           {error ? <p className="formerr">{error}</p> : null}
           <button className="btn wide" type="submit" disabled={pending}>
-            {pending ? "Conectando e preparando as tabelas…" : "Testar e conectar"}
+            {pending ? t("connecting") : t("testAndConnect")}
           </button>
-          <p className="note">
-            Se o banco ainda não existir, o Deixa cria. O endereço fica guardado só neste computador, num
-            arquivo que apenas o seu usuário lê.
-          </p>
+          <p className="note">{t("storedLocallyNote")}</p>
         </form>
       )}
     </div>

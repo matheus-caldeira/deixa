@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { signUpAction } from "@/app/actions/auth";
-import { CEFR_LEVELS, LEVEL_NAMES, type CefrLevel } from "@/shared/levels";
+import { MIN_PASSWORD_LENGTH } from "@/modules/identity";
+import { CEFR_LEVELS, type CefrLevel } from "@/shared/levels";
 import { Logo } from "../shell/logo";
 
 export function SignupScreen() {
+  const t = useTranslations("auth");
+  const levels = useTranslations("levels");
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,11 +31,11 @@ export function SignupScreen() {
     <div className="picker">
       <div className="col" style={{ gap: 10 }}>
         <Logo />
-        <p className="muted">Crie sua conta. Seu progresso, suas marcações e suas revisões são só seus.</p>
+        <p className="muted">{t("signupIntro")}</p>
       </div>
       <form className="col" style={{ gap: 12 }} onSubmit={submit}>
         <div className="field">
-          <label htmlFor="signup-name">Nome</label>
+          <label htmlFor="signup-name">{t("name")}</label>
           <input
             id="signup-name"
             value={name}
@@ -41,7 +45,7 @@ export function SignupScreen() {
           />
         </div>
         <div className="field">
-          <label htmlFor="signup-email">E-mail</label>
+          <label htmlFor="signup-email">{t("email")}</label>
           <input
             id="signup-email"
             type="email"
@@ -52,19 +56,19 @@ export function SignupScreen() {
           />
         </div>
         <div className="field">
-          <label htmlFor="signup-password">Senha (mínimo de 8 caracteres)</label>
+          <label htmlFor="signup-password">{t("passwordMin", { min: MIN_PASSWORD_LENGTH })}</label>
           <input
             id="signup-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             required
           />
         </div>
         <div className="field">
-          <label htmlFor="signup-level">Seu nível de inglês hoje</label>
+          <label htmlFor="signup-level">{t("levelToday")}</label>
           <select
             id="signup-level"
             value={level}
@@ -72,17 +76,17 @@ export function SignupScreen() {
           >
             {CEFR_LEVELS.map((option) => (
               <option key={option} value={option}>
-                {option} · {LEVEL_NAMES[option]}
+                {option} · {levels(option)}
               </option>
             ))}
           </select>
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button className="btn wide" type="submit" disabled={pending}>
-          {pending ? "Criando…" : "Criar conta"}
+          {pending ? t("creating") : t("createAccount")}
         </button>
         <Link className="link" style={{ alignSelf: "center" }} href="/login">
-          Já tenho conta
+          {t("haveAccount")}
         </Link>
       </form>
     </div>

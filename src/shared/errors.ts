@@ -29,13 +29,20 @@ export type AppErrorCode =
   | "AUDIO_BUSY"
   | "AUDIO_UNAVAILABLE";
 
+export type MessageParams = Record<string, string | number>;
+
+export type AppErrorDetail = { key: string; params?: MessageParams };
+
 export class AppError extends Error {
   readonly code: AppErrorCode;
+  readonly detail: AppErrorDetail | null;
 
-  constructor(code: AppErrorCode, message?: string) {
-    super(message ?? code);
+  constructor(code: AppErrorCode, detail?: string | AppErrorDetail) {
+    const normalized = typeof detail === "string" ? { key: detail } : (detail ?? null);
+    super(normalized ? `${code}:${normalized.key}` : code);
     this.name = "AppError";
     this.code = code;
+    this.detail = normalized;
   }
 }
 

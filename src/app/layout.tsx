@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { APP_NAME, APP_TAGLINE } from "@/shared/app";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
+import { APP_NAME } from "@/shared/app";
 import { ServiceWorkerRegistration } from "@/ui/shell/service-worker";
 import "./globals.css";
 
@@ -25,13 +27,16 @@ const jetbrains = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: APP_NAME,
-  description: APP_TAGLINE,
-  applicationName: APP_NAME,
-  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "black-translucent" },
-  icons: { icon: "/pwa-icon/192", apple: "/pwa-icon/180" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app");
+  return {
+    title: APP_NAME,
+    description: t("tagline"),
+    applicationName: APP_NAME,
+    appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "black-translucent" },
+    icons: { icon: "/pwa-icon/192", apple: "/pwa-icon/180" },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -43,11 +48,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="pt-BR" className={`${bricolage.variable} ${figtree.variable} ${jetbrains.variable}`}>
+    <html lang={locale} className={`${bricolage.variable} ${figtree.variable} ${jetbrains.variable}`}>
       <body>
-        <div className="app">{children}</div>
+        <NextIntlClientProvider>
+          <div className="app">{children}</div>
+        </NextIntlClientProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

@@ -6,7 +6,8 @@ source: PROJETO.md §1 a §13
 
 # Glossário
 
-Vocabulário único. Na interface, o termo em português; no código, o identificador em inglês.
+Vocabulário único. Na interface, o termo em português (referência em `locales/pt-BR.json`, traduzido em
+`locales/en.json`); no código, o identificador em inglês.
 
 | Termo (interface)    | Código                      | Significado                                                                  |
 | -------------------- | --------------------------- | ---------------------------------------------------------------------------- |

@@ -154,7 +154,7 @@ export function mapSeasonEpisodes(
     const fallback = englishByNumber.get(episode.episode_number);
     return {
       episodeNumber: episode.episode_number,
-      title: firstFilled(episode.name, fallback?.name, `Episódio ${episode.episode_number}`),
+      title: firstFilled(episode.name, fallback?.name, `Episode ${episode.episode_number}`),
       overview: firstFilled(episode.overview, fallback?.overview),
       runtimeMinutes: episode.runtime ?? fallback?.runtime ?? null,
       stillPath: firstFilled(episode.still_path, fallback?.still_path) || null,

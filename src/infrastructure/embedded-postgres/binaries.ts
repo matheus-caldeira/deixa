@@ -98,13 +98,13 @@ function run(command: string, args: string[], cwd: string): Promise<void> {
 export async function installBinaries(home: string, onProgress: DownloadProgress): Promise<void> {
   if (binariesInstalled(home)) return;
   const artifact = artifactFor();
-  if (!artifact) throw new Error(`sem binários do Postgres para ${process.platform}-${process.arch}`);
+  if (!artifact) throw new Error(`no Postgres binaries for ${process.platform}-${process.arch}`);
   const jar = await download(artifactUrl(artifact), onProgress);
   const digest = createHash("sha256").update(jar).digest("hex");
-  if (digest !== artifact.sha256) throw new Error("o download do Postgres não bate com o hash esperado");
+  if (digest !== artifact.sha256) throw new Error("Postgres download does not match the expected hash");
   const entries = unzipSync(new Uint8Array(jar), { filter: (file) => file.name.endsWith(".txz") });
   const archive = Object.values(entries)[0];
-  if (!archive) throw new Error("o pacote do Postgres não tem o arquivo esperado");
+  if (!archive) throw new Error("Postgres package is missing the expected archive");
   const directory = binariesDirectory(home);
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
@@ -112,7 +112,7 @@ export async function installBinaries(home: string, onProgress: DownloadProgress
   writeFileSync(archivePath, archive);
   await run("tar", ["-xf", archivePath, "-C", directory], directory);
   rmSync(archivePath, { force: true });
-  if (!existsSync(binaryPath(home, "postgres"))) throw new Error("o pacote do Postgres veio sem o binário");
+  if (!existsSync(binaryPath(home, "postgres"))) throw new Error("Postgres package is missing the binary");
   writeFileSync(
     join(directory, INSTALLED_MARK),
     JSON.stringify({

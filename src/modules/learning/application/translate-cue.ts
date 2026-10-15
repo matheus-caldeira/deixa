@@ -29,7 +29,7 @@ export function makeTranslateCue(deps: {
       raw = await provider.translateLines([{ id: line.cueId, text: line.text }]);
     } catch (error) {
       if (isAppError(error)) throw error;
-      throw new AppError("LLM_FAILED", "A IA não respondeu. Tente de novo em instantes.");
+      throw new AppError("LLM_FAILED");
     }
     const parsed = translatedLinesSchema.safeParse(raw);
     const translated = parsed.success ? parsed.data.find((entry) => entry.id === line.cueId) : undefined;

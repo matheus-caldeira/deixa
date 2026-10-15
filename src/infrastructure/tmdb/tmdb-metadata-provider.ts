@@ -107,7 +107,7 @@ export class TmdbMetadataProvider implements MetadataProvider {
 
   async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
     const id = tmdbNumericId(type, externalId);
-    if (!id) throw new AppError("METADATA_NOT_FOUND", "identificador de obra inválido");
+    if (!id) throw new AppError("METADATA_NOT_FOUND");
     if (type === "movie") {
       const path = `movie/${id}`;
       const localized = await this.client.get(path, { language: PORTUGUESE }, movieDetailsSchema);
@@ -128,7 +128,7 @@ export class TmdbMetadataProvider implements MetadataProvider {
   async getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]> {
     const id = tmdbNumericId("series", externalId);
     if (!id || !Number.isInteger(seasonNumber) || seasonNumber < 0) {
-      throw new AppError("METADATA_NOT_FOUND", "identificador de temporada inválido");
+      throw new AppError("METADATA_NOT_FOUND");
     }
     const path = `tv/${id}/season/${seasonNumber}`;
     const localized = await this.client.get(path, { language: PORTUGUESE }, seasonDetailsSchema);

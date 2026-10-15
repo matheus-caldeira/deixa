@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { startConversationAction } from "@/app/actions/tutor";
 import { CUSTOM_THEME_ID, MAX_TOPIC_LENGTH } from "@/modules/conversations";
 import { BackIcon, Icon, SparkIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
 
-export type ThemeView = { id: string; icon: IconName; title: string; detail: string };
+export type ThemeView = { id: string; icon: IconName };
 export type RecentConversation = {
   id: string;
+  themeId: string;
   title: string;
   turnCount: number;
   reviewed: boolean;
@@ -17,9 +19,12 @@ export type RecentConversation = {
 };
 
 export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversation[]; simulated: boolean }) {
+  const t = useTranslations("talk");
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [topic, setTopic] = useState("");
+  const themeTitle = (themeId: string, fallback: string) =>
+    t.has(`themes.${themeId}.title`) ? t(`themes.${themeId}.title`) : fallback;
 
   const start = (themeId: string, customTopic: string | null) =>
     startTransition(async () => {
@@ -29,16 +34,12 @@ export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversat
 
   return (
     <>
-      <h1 style={{ fontSize: 28, paddingTop: 4 }}>Conversar</h1>
-      <p className="muted">
-        Escolha um tema e converse livremente com o tutor, por texto ou por áudio. Ele corrige na hora e,
-        quando você quiser, avalia a conversa inteira.
-      </p>
+      <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
+      <p className="muted">{t("intro")}</p>
       {props.simulated ? (
         <div className="hint">
           <span>
-            <b>Tutor simulado.</b> Sem chave do Google AI, as respostas são genéricas. Adicione a sua no
-            perfil.
+            <b>{t("simulated")}</b> {t("simulatedBody")}
           </span>
         </div>
       ) : null}
@@ -50,8 +51,8 @@ export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversat
                 <Icon name={theme.icon} />
               </span>
               <span className="col" style={{ gap: 3, minWidth: 0 }}>
-                <b>{theme.title}</b>
-                <span className="small muted">{theme.detail}</span>
+                <b>{t(`themes.${theme.id}.title`)}</b>
+                <span className="small muted">{t(`themes.${theme.id}.detail`)}</span>
               </span>
               <span style={{ color: "var(--muted)", width: 20, transform: "rotate(180deg)" }}>
                 <BackIcon />
@@ -70,25 +71,25 @@ export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversat
       >
         <div className="row">
           <SparkIcon className="inline-icon" style={{ color: "var(--brand)" }} />
-          <b>Outro assunto</b>
+          <b>{t("otherTopic")}</b>
         </div>
         <div className="field">
           <input
             value={topic}
             onChange={(event) => setTopic(event.target.value)}
             maxLength={MAX_TOPIC_LENGTH}
-            placeholder="Ex.: futebol, meu cachorro, entrevista de emprego"
-            aria-label="Assunto da conversa"
+            placeholder={t("topicPlaceholder")}
+            aria-label={t("topicLabel")}
           />
         </div>
         <button className="btn" type="submit" disabled={pending || topic.trim().length < 2}>
-          Conversar sobre isso
+          {t("talkAbout")}
         </button>
       </form>
       {props.recent.length > 0 ? (
         <section className="col" style={{ gap: 10 }}>
           <div className="sec-h">
-            <h2 style={{ fontSize: 18 }}>Conversas recentes</h2>
+            <h2 style={{ fontSize: 18 }}>{t("recent")}</h2>
           </div>
           <div className="card" style={{ padding: "4px 16px" }}>
             {props.recent.map((conversation) => (
@@ -99,13 +100,13 @@ export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversat
                 href={`/tutor/${conversation.id}`}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div className="t">{conversation.title}</div>
-                  <span className="small muted">{conversation.turnCount} mensagens</span>
+                  <div className="t">{themeTitle(conversation.themeId, conversation.title)}</div>
+                  <span className="small muted">{t("messages", { count: conversation.turnCount })}</span>
                 </div>
                 {conversation.reviewed ? (
-                  <span className="chip good">Revisada · {conversation.score}</span>
+                  <span className="chip good">{t("reviewed", { score: conversation.score ?? 0 })}</span>
                 ) : (
-                  <span className="chip">Em aberto</span>
+                  <span className="chip">{t("open")}</span>
                 )}
               </Link>
             ))}

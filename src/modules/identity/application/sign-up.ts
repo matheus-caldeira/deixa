@@ -2,6 +2,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
+import type { Locale } from "@/shared/locales";
 import { MIN_PASSWORD_LENGTH, defaultPreferences, normalizeEmail, pickAvatarColor } from "../domain/user";
 import type { PasswordHasher, UserRepository } from "./ports";
 
@@ -18,6 +19,7 @@ export function makeSignUp(deps: {
     email: string;
     password: string;
     level: CefrLevel;
+    locale?: Locale;
   }): Promise<{ userId: string }> {
     const name = input.name.trim();
     const email = normalizeEmail(input.email);
@@ -34,7 +36,7 @@ export function makeSignUp(deps: {
         avatarColor: pickAvatarColor(email),
         passwordHash: await deps.passwords.hash(input.password),
       },
-      defaultPreferences(input.level),
+      defaultPreferences(input.level, input.locale),
       deps.clock.now(),
     );
     return { userId: id };

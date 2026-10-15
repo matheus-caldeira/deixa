@@ -6,12 +6,17 @@ import {
   buildLesson,
   createRandom,
   isGradable,
+  PROMPTS,
   type Exercise,
   type ExerciseKind,
 } from "./exercises";
+
+const promptKeySchema = z
+  .enum(Object.values(PROMPTS) as [string, ...string[]])
+  .pipe(z.custom<(typeof PROMPTS)[keyof typeof PROMPTS]>());
 import { buildTrail, type TrailLine } from "./trail";
 
-export const PLAN_VERSION = 1;
+export const PLAN_VERSION = 2;
 export const MAX_BLOCK_EXERCISES = 8;
 export const FINAL_EXERCISES = 10;
 const MIN_BLOCK_EXERCISES = 3;
@@ -20,7 +25,6 @@ const MAX_BLOCKS = 12;
 const MAX_TITLE = 48;
 const MAX_SENTENCE = 200;
 const MAX_WORD = 30;
-const FINAL_TITLE = "Desafio final";
 
 export type PlanProvider = string;
 
@@ -107,12 +111,11 @@ type Boundary = { title: string; startLine: number; endLine: number };
 
 function fallbackBoundaries(lines: readonly TrailLine[]): Boundary[] {
   const nodes = buildTrail(lines);
-  const regular = nodes.length > 1 ? nodes : nodes;
   let cursor = 0;
-  return regular.map((node, index) => {
+  return nodes.map((node) => {
     const startLine = cursor;
     cursor += node.lines.length;
-    return { title: `Cena ${index + 1}`, startLine, endLine: cursor - 1 };
+    return { title: "", startLine, endLine: cursor - 1 };
   });
 }
 
@@ -120,11 +123,11 @@ function validBoundaries(raw: z.infer<typeof rawPlanSchema>, lineCount: number):
   const sorted = [...raw.blocks].sort((a, b) => a.startLine - b.startLine);
   let expected = 0;
   const boundaries: Boundary[] = [];
-  for (const [index, block] of sorted.entries()) {
+  for (const block of sorted) {
     if (block.startLine !== expected || block.endLine < block.startLine || block.endLine >= lineCount)
       return null;
     boundaries.push({
-      title: cleanLlmText(block.title, MAX_TITLE) ?? `Bloco ${index + 1}`,
+      title: cleanLlmText(block.title, MAX_TITLE) ?? "",
       startLine: block.startLine,
       endLine: block.endLine,
     });
@@ -223,7 +226,7 @@ export function assemblePlan(input: {
   });
   blocks.push({
     index: blocks.length,
-    title: FINAL_TITLE,
+    title: "",
     startLine: 0,
     endLine: lines.length - 1,
     startMs: lines[lines.length - 1]?.startMs ?? 0,
@@ -275,7 +278,7 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
   z.object({
     ...exerciseBase,
     kind: z.literal("choice"),
-    prompt: z.string(),
+    prompt: promptKeySchema,
     english: z.string(),
     options: z.array(z.string()),
     answer: z.number(),
@@ -283,7 +286,7 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
   z.object({
     ...exerciseBase,
     kind: z.literal("listen"),
-    prompt: z.string(),
+    prompt: promptKeySchema,
     english: z.string(),
     options: z.array(z.string()),
     answer: z.number(),
@@ -291,7 +294,7 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
   z.object({
     ...exerciseBase,
     kind: z.literal("order"),
-    prompt: z.string(),
+    prompt: promptKeySchema,
     hint: z.string().nullable(),
     bank: z.array(z.string()),
     solution: z.array(z.string()),
@@ -299,7 +302,7 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
   z.object({
     ...exerciseBase,
     kind: z.literal("blank"),
-    prompt: z.string(),
+    prompt: promptKeySchema,
     before: z.string(),
     after: z.string(),
     hint: z.string().nullable(),
@@ -309,14 +312,14 @@ const storedExerciseSchema = z.discriminatedUnion("kind", [
   z.object({
     ...exerciseBase,
     kind: z.literal("type"),
-    prompt: z.string(),
+    prompt: promptKeySchema,
     hint: z.string().nullable(),
     best: z.string(),
   }),
 ]);
 
 export const lessonPlanSchema = z.object({
-  version: z.number(),
+  version: z.literal(PLAN_VERSION),
   level: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
   provider: z.string().min(1),
   blocks: z.array(

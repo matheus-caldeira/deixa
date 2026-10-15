@@ -280,6 +280,6 @@ describe("pacotes", () => {
     to.catalog.conflicts.add(work.episodeIds.get("s1e1")!);
     const report = await to.import({ userId: "ana", uploadId: preview.uploadId });
     expect(report.episodesSkipped).toBe(1);
-    expect(report.warnings[0]).toMatch(/já tem outra legenda/);
+    expect(report.warnings[0]).toMatchObject({ key: "subtitleKept" });
   });
 });

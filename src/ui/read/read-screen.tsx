@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   confirmCardsAction,
@@ -12,11 +13,12 @@ import {
   type SavedHighlightView,
 } from "@/app/actions/reading";
 import { tokenRuns } from "@/modules/highlights";
-import { ITEM_TYPE_LABELS, type CardDraft } from "@/modules/learning";
+import type { CardDraft } from "@/modules/learning";
 import type { DisplayMode } from "@/shared/levels";
 import { formatTimecode } from "@/shared/time";
 import { BackIcon, CheckIcon, MarkerIcon, SearchIcon, SoundIcon, SparkIcon, XIcon } from "../icons";
 import { useToast } from "../shell/toast";
+import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
 
 export type ReadLine = {
@@ -54,18 +56,8 @@ type GeneratedCards = {
   simulated: boolean;
 };
 
-const MODES: { key: DisplayMode; label: string }[] = [
-  { key: "both", label: "EN + PT" },
-  { key: "tap", label: "PT ao tocar" },
-  { key: "en", label: "Só inglês" },
-];
-const GENERATION_STEPS = [
-  "Agrupando marcações vizinhas em expressões",
-  "Pegando a tradução das falas na legenda PT",
-  "Explicando cada termo no contexto da cena",
-  "Validando a saída",
-  "Montando os cards",
-];
+const MODES: DisplayMode[] = ["both", "tap", "en"];
+const GENERATION_STEPS = ["group", "translate", "explain", "validate", "assemble"];
 const SYNC_DELAY_MS = 700;
 const STEP_MS = 450;
 const POLL_MS = 1500;
@@ -90,6 +82,8 @@ const cardedKeys = (highlights: SavedHighlightView[]) =>
   new Set(highlights.filter((h) => h.carded).map((h) => keyOf(h.cueId, h.startToken, h.endToken, h.kind)));
 
 export function ReadScreen({ view }: { view: ReadView }) {
+  const t = useTranslations("read");
+  const errorText = useErrorText();
   const router = useRouter();
   const toast = useToast();
   const [, startTransition] = useTransition();
@@ -217,7 +211,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
         setStage("read");
       })
       .catch(() => {
-        toast("Não deu para falar com o servidor. Suas marcações estão salvas; tente de novo.");
+        toast(t("offlineSaved"));
         setStage("read");
       });
   };
@@ -239,7 +233,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
         return;
       }
       if (result?.ok && result.data.status === "FAILED") {
-        toast(result.data.message);
+        toast(errorText(result.data.reason));
         setStage("read");
         return;
       }
@@ -260,7 +254,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [batchId, generated, router, stage, toast, view.episodeId]);
+  }, [batchId, errorText, generated, router, stage, toast, view.episodeId]);
 
   useEffect(() => {
     if (stage !== "generating") return;
@@ -288,52 +282,51 @@ export function ReadScreen({ view }: { view: ReadView }) {
           return;
         }
         toast(
-          `${result.data.cardsKept} cards na sua revisão${scope === "catalog" ? " e sugeridos no catálogo" : ""} · +${result.data.xpAwarded} XP`,
+          t(scope === "catalog" ? "savedCatalog" : "savedPrivate", {
+            count: result.data.cardsKept,
+            xp: result.data.xpAwarded,
+          }),
         );
         router.push("/review");
         router.refresh();
       })
       .catch(() => {
         setSaving(false);
-        toast("Não deu para falar com o servidor. Tente de novo.");
+        toast(errorText(null));
       });
   };
 
   const generationFinished = stage === "generating" && generated !== null && step >= GENERATION_STEPS.length;
 
   if (stage === "generating" && !generationFinished) {
-    const steps = GENERATION_STEPS.map((label) => ({ label, detail: "" }));
     return (
       <div className="tx">
         <div className="done" style={{ justifyContent: "flex-start", paddingTop: 48 }}>
           <div style={{ width: 64, height: 64, color: "var(--brand)" }}>
             <SparkIcon />
           </div>
-          <h1 style={{ fontSize: 26 }}>Criando seus cards</h1>
+          <h1 style={{ fontSize: 26 }}>{t("creatingCards")}</h1>
           <div className="col" style={{ gap: 14, width: "100%", textAlign: "left" }}>
-            {steps.map((entry, index) => {
+            {GENERATION_STEPS.map((entry, index) => {
               const state = index < step ? "done" : index === step ? "run" : "wait";
               return (
-                <div key={entry.label} className={`pstep ${state}`}>
+                <div key={entry} className={`pstep ${state}`}>
                   <span className="s">{state === "done" ? <CheckIcon /> : null}</span>
-                  <span>{entry.label}</span>
-                  <span className="small muted mono">{state === "done" ? entry.detail : ""}</span>
+                  <span>{t(`generation.${entry}`)}</span>
+                  <span className="small muted mono" />
                 </div>
               );
             })}
           </div>
-          <p className="small muted">
-            Pode demorar um pouco quando há muitas marcações. Você não precisa esperar aqui: avisamos no sino
-            quando os cards estiverem prontos.
-          </p>
+          <p className="small muted">{t("generationBody")}</p>
           <button
             className="btn ghost"
             onClick={() => {
               setStage("read");
-              toast("Tudo certo. Avisamos no sino quando seus cards estiverem prontos.");
+              toast(t("willNotify"));
             }}
           >
-            Continuar lendo e me avisar
+            {t("keepReading")}
           </button>
         </div>
       </div>
@@ -347,49 +340,43 @@ export function ReadScreen({ view }: { view: ReadView }) {
       <div className="tx">
         <div className="txhead">
           <div className="row">
-            <button className="iconbtn" onClick={() => setStage("read")} aria-label="Voltar para a legenda">
+            <button className="iconbtn" onClick={() => setStage("read")} aria-label={t("backToSubtitle")}>
               <BackIcon />
             </button>
             <div className="col" style={{ gap: 0, flex: 1 }}>
-              <b>Cards do episódio</b>
+              <b>{t("episodeCards")}</b>
               <span className="small muted">
                 {view.mediaTitle} · {view.label}
               </span>
             </div>
-            <span className="chip mono">{keptDrafts.length} cards</span>
+            <span className="chip mono">{t("cardsCount", { count: keptDrafts.length })}</span>
           </div>
           <div className="seg">
             <button className={scope === "private" ? "on" : ""} onClick={() => setScope("private")}>
-              Só para mim
+              {t("scopePrivate")}
             </button>
             <button className={scope === "catalog" ? "on" : ""} onClick={() => setScope("catalog")}>
-              Para o catálogo
+              {t("scopeCatalog")}
             </button>
           </div>
-          <p className="small muted">
-            {scope === "private"
-              ? "Os cards vão só para a sua revisão. Ninguém vê o que você marcou."
-              : 'Os cards também viram sugestões para quem estudar este episódio. Suas marcações entram numa contagem anônima ("marcada por N alunos").'}
-          </p>
+          <p className="small muted">{scope === "private" ? t("scopePrivateBody") : t("scopeCatalogBody")}</p>
         </div>
         <div className="txlines" style={{ gap: 12, paddingTop: 14 }}>
           {allFromSubtitle ? (
             <div className="hint" style={{ background: "var(--good-soft)" }}>
               <span>
-                <b style={{ color: "var(--good)" }}>Tradução das falas veio da legenda PT</b>, sem custo de
-                IA. A IA só explicou o significado de cada termo.
+                {t.rich("fromSubtitle", { b: (chunks) => <b style={{ color: "var(--good)" }}>{chunks}</b> })}
               </span>
             </div>
           ) : null}
           {generated.simulated ? (
             <div className="hint">
               <span>
-                <b>Explicações simuladas.</b> Adicione sua chave do Google AI no perfil para explicações de
-                verdade.
+                <b>{t("simulated")}</b> {t("simulatedBody")}
               </span>
             </div>
           ) : null}
-          {keptDrafts.length === 0 ? <p className="muted">Você removeu todos os cards.</p> : null}
+          {keptDrafts.length === 0 ? <p className="muted">{t("allRemoved")}</p> : null}
           {keptDrafts.map((draft) => {
             const lineTokens = draft.lineText.split(/\s+/);
             const fromSubtitle = draft.lineTranslationSource === "subtitle_pt";
@@ -397,7 +384,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
               <div className="gcard" key={draft.key}>
                 <div className="col" style={{ gap: 6, minWidth: 0 }}>
                   <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                    <span className="chip">{ITEM_TYPE_LABELS[draft.itemType]}</span>
+                    <span className="chip">{t(`itemType.${draft.itemType}`)}</span>
                     <span className="small muted mono">{formatTimecode(draft.startMs)}</span>
                   </div>
                   <div className="term">{draft.term}</div>
@@ -406,7 +393,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}
                   >
                     <span className={`srcb ${draft.meaningSource === "subtitle_pt" ? "pt" : "ai"}`}>
-                      {draft.meaningSource === "subtitle_pt" ? "legenda PT" : "IA"}
+                      {draft.meaningSource === "subtitle_pt" ? t("fromNativeSubtitle") : t("ai")}
                     </span>
                     <span>{draft.meaning}</span>
                   </div>
@@ -414,7 +401,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                 <button
                   className="iconbtn"
                   onClick={() => setRemoved((current) => new Set(current).add(draft.key))}
-                  aria-label={`Remover card ${draft.term}`}
+                  aria-label={t("removeCard", { term: draft.term })}
                 >
                   <XIcon />
                 </button>
@@ -434,7 +421,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     {draft.lineTranslation ? (
                       <span className="muted">
                         <span className={`srcb ${fromSubtitle ? "pt" : "ai"}`} style={{ marginRight: 6 }}>
-                          {fromSubtitle ? "PT" : "IA"}
+                          {fromSubtitle ? t("nativeTag") : t("ai")}
                         </span>
                         {draft.lineTranslation}
                       </span>
@@ -447,7 +434,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
         </div>
         <div className="txfoot">
           <button className="btn wide" onClick={save} disabled={keptDrafts.length === 0 || saving}>
-            {saving ? "Salvando…" : `Adicionar ${keptDrafts.length} cards à revisão`}
+            {saving ? t("saving") : t("addToReview", { count: keptDrafts.length })}
           </button>
         </div>
       </div>
@@ -465,7 +452,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
     <div className="tx">
       <div className="txhead">
         <div className="row">
-          <Link className="iconbtn" href={view.backHref} aria-label="Voltar">
+          <Link className="iconbtn" href={view.backHref} aria-label={t("back")}>
             <BackIcon />
           </Link>
           <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
@@ -476,7 +463,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
               className="small muted"
               style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
             >
-              {view.episodeTitle} · legenda {view.hasPortuguese ? "EN + PT alinhada" : "EN, tradução por IA"}
+              {view.episodeTitle} · {view.hasPortuguese ? t("subtitleAligned") : t("subtitleAiOnly")}
             </span>
             {view.subtitleCredits.map((credit) => (
               <span
@@ -492,14 +479,14 @@ export function ReadScreen({ view }: { view: ReadView }) {
         <div className="seg">
           {MODES.map((option) => (
             <button
-              key={option.key}
-              className={mode === option.key ? "on" : ""}
+              key={option}
+              className={mode === option ? "on" : ""}
               onClick={() => {
-                setMode(option.key);
+                setMode(option);
                 setRevealed(new Set());
               }}
             >
-              {option.label}
+              {t(`modes.${option}`)}
             </button>
           ))}
         </div>
@@ -508,23 +495,20 @@ export function ReadScreen({ view }: { view: ReadView }) {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Procurar uma fala que você ouviu"
+            placeholder={t("searchLine")}
             autoComplete="off"
-            aria-label="Procurar uma fala"
+            aria-label={t("searchLineLabel")}
           />
         </label>
       </div>
       <div className="txlines">
         <div className="hint" style={{ marginTop: 12 }}>
           <MarkerIcon width={20} height={20} style={{ flex: "none", color: "var(--cue-deep)" }} />
-          <span>
-            Toque nas <b>palavras</b> que você não conhece. Palavras vizinhas viram uma expressão. Use o
-            marcador ao lado para salvar a <b>fala inteira</b>.
-          </span>
+          <span>{t.rich("hint", { b: (chunks) => <b>{chunks}</b> })}</span>
         </div>
         {visibleLines.length === 0 ? (
           <p className="muted" style={{ padding: "24px 0" }}>
-            Nenhuma fala com &quot;{query}&quot;.
+            {t("noLineWith", { query })}
           </p>
         ) : null}
         {visibleLines.map((line) => {
@@ -550,7 +534,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
             <div key={line.cueId}>
               {line.startsScene && !needle ? (
                 <div className="scene">
-                  CENA {line.sceneIndex + 1} · {formatTimecode(line.startMs)}
+                  {t("scene", { number: line.sceneIndex + 1 })} · {formatTimecode(line.startMs)}
                 </div>
               ) : null}
               <div className={`tline ${wholeLine ? "mk" : ""}`} data-testid="line">
@@ -559,23 +543,23 @@ export function ReadScreen({ view }: { view: ReadView }) {
                   <button
                     className="abtn"
                     onClick={() => speech.play("cue", line.cueId)}
-                    aria-label="Ouvir a fala"
+                    aria-label={t("listenLine")}
                   >
                     {isLoadingAudio ? (
                       <>
                         <span className="spin" />
-                        gerando…
+                        {t("generating")}
                       </>
                     ) : (
                       <>
                         <SoundIcon width={14} height={14} />
-                        {hasAudio ? "" : "ouvir"}
+                        {hasAudio ? "" : t("listen")}
                       </>
                     )}
                   </button>
                   {line.markedByCount ? (
                     <span className="chip warn" style={{ padding: "1px 7px", fontSize: 11 }}>
-                      marcada por {line.markedByCount} alunos
+                      {t("markedBy", { count: line.markedByCount })}
                     </span>
                   ) : null}
                 </div>
@@ -603,14 +587,16 @@ export function ReadScreen({ view }: { view: ReadView }) {
                 <button
                   className={`mkbtn ${wholeLine ? "on" : ""}`}
                   onClick={() => toggleLine(line.cueId)}
-                  aria-label="Marcar a fala inteira"
+                  aria-label={t("markLine")}
                   aria-pressed={wholeLine}
                 >
                   <MarkerIcon />
                 </button>
                 {mode === "en" ? null : showTranslation && translation ? (
                   <div className="pt">
-                    <span className="src">{translation.source === "subtitle_pt" ? "PT" : "IA"}</span>
+                    <span className="src">
+                      {translation.source === "subtitle_pt" ? t("nativeTag") : t("ai")}
+                    </span>
                     {translation.text}
                   </div>
                 ) : translation ? (
@@ -618,7 +604,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     className="reveal"
                     onClick={() => setRevealed((current) => new Set(current).add(line.cueId))}
                   >
-                    ver tradução
+                    {t("showTranslation")}
                   </button>
                 ) : (
                   <button
@@ -626,7 +612,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     onClick={() => translate(line.cueId)}
                     disabled={translatingId !== null}
                   >
-                    {translatingId === line.cueId ? "traduzindo…" : "traduzir com IA"}
+                    {translatingId === line.cueId ? t("translating") : t("translateAi")}
                   </button>
                 )}
                 {lineSuggestions.length > 0 ? (
@@ -638,7 +624,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                         onClick={() =>
                           applySuggestion(line.cueId, suggestion.startToken, suggestion.endToken)
                         }
-                        title="Sugestão de quem já estudou este episódio"
+                        title={t("suggestionTitle")}
                       >
                         <SparkIcon />
                         {suggestion.term}
@@ -651,8 +637,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
           );
         })}
         <p className="small muted" style={{ marginTop: 16 }}>
-          {view.lines.length} falas. O áudio de cada fala só é gerado na primeira vez que alguém toca em
-          &quot;ouvir&quot; e depois fica salvo para todos.
+          {t("audioNote", { count: view.lines.length })}
         </p>
       </div>
       <div className="txfoot">
@@ -660,11 +645,11 @@ export function ReadScreen({ view }: { view: ReadView }) {
           <span className="count" data-testid="mark-count">
             {pendingCount}
           </span>
-          <span className="small muted">marcações</span>
+          <span className="small muted">{t("marks")}</span>
         </div>
         <span className="spacer" />
         <button className="btn" onClick={generate} disabled={pendingCount === 0}>
-          <SparkIcon width={18} height={18} /> Gerar cards
+          <SparkIcon width={18} height={18} /> {t("generateCards")}
         </button>
       </div>
     </div>

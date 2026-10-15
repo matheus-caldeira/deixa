@@ -1,15 +1,6 @@
 export const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 export type CefrLevel = (typeof CEFR_LEVELS)[number];
 
-export const LEVEL_NAMES: Record<CefrLevel, string> = {
-  A1: "Iniciante",
-  A2: "Básico",
-  B1: "Intermediário",
-  B2: "Interm. superior",
-  C1: "Avançado",
-  C2: "Fluente",
-};
-
 export type LevelFit = "fit" | "challenging" | "easy";
 export type DisplayMode = "both" | "tap" | "en";
 

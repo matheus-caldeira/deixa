@@ -1,18 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { markNotificationReadAction, type InboxView } from "@/app/actions/notifications";
 import { CheckIcon, SparkIcon, XIcon } from "../icons";
 import { Sheet } from "./sheet";
-
-const timeFormat = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+import { useErrorText } from "./use-error-text";
 
 export function NotificationsSheet(props: { inbox: InboxView; onChange: () => void; onClose: () => void }) {
+  const t = useTranslations("inbox");
+  const format = useFormatter();
+  const errorText = useErrorText();
   const router = useRouter();
 
   const open = async (item: InboxView["items"][number]) => {
@@ -27,24 +25,32 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
     props.onChange();
   };
 
+  const describe = (item: InboxView["items"][number]) => {
+    const params = { ...item.params };
+    if (typeof params.reason === "string") params.reason = errorText(params.reason);
+    return {
+      title: t.has(`${item.kind}.title`) ? t(`${item.kind}.title`, params) : item.kind,
+      body: t.has(`${item.kind}.body`) ? t(`${item.kind}.body`, params) : "",
+    };
+  };
+
   return (
-    <Sheet label="Notificações" onClose={props.onClose}>
+    <Sheet label={t("title")} onClose={props.onClose}>
       <div className="sec-h">
-        <h2 style={{ fontSize: 22 }}>Notificações</h2>
+        <h2 style={{ fontSize: 22 }}>{t("title")}</h2>
         {props.inbox.unread > 0 ? (
           <button className="link" onClick={readAll}>
-            Marcar todas como lidas
+            {t("readAll")}
           </button>
         ) : null}
       </div>
       {props.inbox.items.length === 0 ? (
-        <p className="muted">
-          Nada por aqui. Quando seus cards ou uma trilha ficarem prontos, avisamos neste sino.
-        </p>
+        <p className="muted">{t("empty")}</p>
       ) : (
         <div className="col">
           {props.inbox.items.map((item) => {
             const failed = item.kind.endsWith("_failed");
+            const text = describe(item);
             return (
               <button key={item.id} className={`result ${item.read ? "" : "on"}`} onClick={() => open(item)}>
                 <span
@@ -61,9 +67,16 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
                   </span>
                 </span>
                 <span className="col" style={{ gap: 2, minWidth: 0 }}>
-                  <b>{item.title}</b>
-                  {item.body ? <span className="small muted">{item.body}</span> : null}
-                  <span className="small muted mono">{timeFormat.format(new Date(item.createdAt))}</span>
+                  <b>{text.title}</b>
+                  {text.body ? <span className="small muted">{text.body}</span> : null}
+                  <span className="small muted mono">
+                    {format.dateTime(new Date(item.createdAt), {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
                 </span>
               </button>
             );

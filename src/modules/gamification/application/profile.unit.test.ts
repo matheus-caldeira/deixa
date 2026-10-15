@@ -65,7 +65,7 @@ const prefs = { dailyGoal: 50, timezone: "America/Sao_Paulo" };
 describe("perfil calculado dos eventos", () => {
   it("calcula XP de hoje, total e sequência por usuário, sem misturar contas", async () => {
     const app = setup();
-    await app.save("ana", { ...EMPTY_SNAPSHOT, tagline: "Começando", learnedBase: 30 });
+    await app.save("ana", { ...EMPTY_SNAPSHOT, accuracy: 77, learnedBase: 30 });
     app.activity.cards = 8;
     await app.award({
       userId: "ana",
@@ -84,7 +84,7 @@ describe("perfil calculado dos eventos", () => {
       streak: 1,
       goalMet: false,
       learned: 38,
-      tagline: "Começando",
+      accuracy: 77,
     });
     expect(ana.weekly.slice(-2)).toEqual([60, 10]);
     const lucas = await app.summary({ userId: "lucas", ...prefs });

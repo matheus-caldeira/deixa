@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import {
   acceptRecommendationAction,
@@ -11,6 +12,7 @@ import type { LevelFit } from "@/shared/levels";
 import { SparkIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
+import { FIT_CLASS } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
 
 export type SuggestionTile = {
@@ -31,16 +33,13 @@ export type SuggestionsView = {
   items: SuggestionTile[];
 };
 
-const FIT: Record<LevelFit, { label: string; className: string }> = {
-  fit: { label: "No seu nível", className: "good" },
-  challenging: { label: "Desafiador", className: "warn" },
-  easy: { label: "Tranquilo", className: "" },
-};
 const POLL_MS = 4000;
 const MAX_POLLS = 30;
 const POLLS_AFTER_REQUEST = 2;
 
 export function SuggestionsSection({ view }: { view: SuggestionsView }) {
+  const t = useTranslations("suggestions");
+  const fits = useTranslations("fit");
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -62,7 +61,7 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
   const refresh = () =>
     startTransition(async () => {
       const result = await refreshRecommendationsAction();
-      toast(result.ok ? "Atualizando suas sugestões…" : result.message);
+      toast(result.ok ? t("refreshing") : result.message);
       setPolls(0);
       setForcedPolls(POLLS_AFTER_REQUEST);
     });
@@ -75,7 +74,7 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
         return;
       }
       setOpenKey(null);
-      toast(`${item.poster.title} entrou no catálogo. Escolha um episódio e busque a legenda.`);
+      toast(t("added", { title: item.poster.title }));
       router.push(`/catalog/${result.data.mediaId}`);
     });
 
@@ -83,16 +82,16 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
     startTransition(async () => {
       const result = await dismissRecommendationAction(item.workKey);
       setOpenKey(null);
-      toast(result.ok ? "Certo, não sugerimos mais esse título." : result.message);
+      toast(result.ok ? t("dismissed") : result.message);
       router.refresh();
     });
 
   return (
-    <section className="col" style={{ gap: 10 }} aria-label="Sugestões para você">
+    <section className="col" style={{ gap: 10 }} aria-label={t("label")}>
       <div className="sec-h">
-        <h2 style={{ fontSize: 18 }}>Para você</h2>
+        <h2 style={{ fontSize: 18 }}>{t("title")}</h2>
         <button className="link small" onClick={refresh} disabled={pending || waiting}>
-          {waiting && view.items.length > 0 ? "Atualizando…" : "Atualizar"}
+          {waiting && view.items.length > 0 ? t("updating") : t("update")}
         </button>
       </div>
       {view.insight ? <p className="note">{view.insight}</p> : null}
@@ -104,13 +103,13 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
               className="cont card sug"
               style={{ padding: 10 }}
               onClick={() => setOpenKey(item.workKey)}
-              aria-label={`Sugestão: ${item.poster.title}`}
+              aria-label={t("suggestion", { title: item.poster.title })}
             >
               <Poster media={item.poster} sizes="64px" />
               <span className="col" style={{ gap: 4, minWidth: 0 }}>
                 <b className="small">{item.poster.title}</b>
                 <span className="row" style={{ gap: 4, flexWrap: "wrap" }}>
-                  <span className={`chip ${FIT[item.fit].className}`}>{FIT[item.fit].label}</span>
+                  <span className={`chip ${FIT_CLASS[item.fit]}`}>{fits(item.fit)}</span>
                   <span className="chip mono">{item.levelRange}</span>
                 </span>
                 <span className="small muted why">{item.reason}</span>
@@ -120,29 +119,21 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
         </div>
       ) : (
         <p className="muted small">
-          {view.status === "pending"
-            ? "Montando suas sugestões a partir do que você estudou…"
-            : view.status === "failed"
-              ? "Não deu para montar as sugestões agora. Toque em Atualizar para tentar de novo."
-              : "Sem sugestões novas por enquanto. Elas mudam conforme você estuda."}
+          {view.status === "pending" ? t("pending") : view.status === "failed" ? t("failed") : t("empty")}
         </p>
       )}
       {view.items.length > 0 ? (
-        <p className="small muted">
-          {view.writtenByAi
-            ? "Escolhidas por semelhança com o que você estudou e explicadas pela IA. O nível é uma estimativa."
-            : "Escolhidas por semelhança com o que você estudou. Quando a IA está disponível, cada sugestão vem explicada. O nível é uma estimativa."}
-        </p>
+        <p className="small muted">{view.writtenByAi ? t("explainedByAi") : t("notExplained")}</p>
       ) : null}
       {open ? (
-        <Sheet label="Sugestão para você" onClose={() => setOpenKey(null)}>
+        <Sheet label={t("sheet")} onClose={() => setOpenKey(null)}>
           <div className="dhead">
             <Poster media={open.poster} sizes="110px" />
             <div className="col" style={{ gap: 8, minWidth: 0 }}>
               <h2 style={{ fontSize: 22, lineHeight: 1.1 }}>{open.poster.title}</h2>
               <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
-                <span className={`chip ${FIT[open.fit].className}`}>{FIT[open.fit].label}</span>
-                <span className="chip mono">{open.levelRange} estimado</span>
+                <span className={`chip ${FIT_CLASS[open.fit]}`}>{fits(open.fit)}</span>
+                <span className="chip mono">{t("estimated", { range: open.levelRange })}</span>
                 {open.genres.slice(0, 3).map((genre) => (
                   <span className="chip" key={genre}>
                     {genre}
@@ -154,19 +145,17 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
           <div className="hint">
             <SparkIcon />
             <span>
-              <b>Por que para você.</b> {open.reason}
+              <b>{t("why")}</b> {open.reason}
             </span>
           </div>
           <p className="muted">{open.overview}</p>
           <button className="btn cue wide" onClick={() => accept(open)} disabled={pending}>
-            Adicionar ao catálogo
+            {t("add")}
           </button>
           <button className="btn ghost wide" onClick={() => dismiss(open)} disabled={pending}>
-            Não tenho interesse
+            {t("notInterested")}
           </button>
-          <p className="small muted">
-            Adicionar só cadastra a obra. A legenda é buscada quando você escolher um episódio.
-          </p>
+          <p className="small muted">{t("addNote")}</p>
         </Sheet>
       ) : null}
     </section>

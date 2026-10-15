@@ -6,6 +6,8 @@ import { CREDENTIAL_SERVICES, type StoredState } from "@/modules/ai-credentials"
 import { refreshSettings } from "@/infrastructure/container";
 import type { AppSettings } from "@/modules/settings";
 import { AppError } from "@/shared/errors";
+import { localeSchema } from "@/shared/locales";
+import { rememberLocale } from "./locale";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
@@ -16,6 +18,7 @@ const preferencesSchema = z
     dailyGoal: z.number().int().optional(),
     preferredAccent: z.enum(["US", "UK"]).optional(),
     audioSpeed: z.number().optional(),
+    locale: localeSchema.optional(),
   })
   .strict();
 
@@ -25,6 +28,7 @@ export async function updatePreferencesAction(input: unknown): Promise<ActionRes
     const parsed = preferencesSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     await app().updatePreferences(user.id, parsed.data);
+    if (parsed.data.locale) await rememberLocale(parsed.data.locale);
     revalidatePath("/", "layout");
     return null;
   });
@@ -41,7 +45,7 @@ export async function saveCredentialAction(input: unknown): Promise<ActionResult
     const parsed = credentialTarget
       .extend({ secret: z.string().min(1).max(MAX_SECRET_CHARS) })
       .safeParse(input);
-    if (!parsed.success) throw new AppError("AI_KEY_INVALID", "Essa chave não parece válida.");
+    if (!parsed.success) throw new AppError("AI_KEY_INVALID");
     const state = await app().saveCredential({
       actor: { userId: user.id, isAdmin: user.isAdmin },
       ...parsed.data,

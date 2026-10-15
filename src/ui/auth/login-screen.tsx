@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { signInAction } from "@/app/actions/auth";
-import { APP_TAGLINE } from "@/shared/app";
 import { Logo } from "../shell/logo";
 
 export function LoginScreen() {
+  const t = useTranslations("auth");
+  const tApp = useTranslations("app");
   const [pending, startTransition] = useTransition();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,11 +27,11 @@ export function LoginScreen() {
     <div className="picker">
       <div className="col" style={{ gap: 10 }}>
         <Logo />
-        <p className="muted">{APP_TAGLINE}</p>
+        <p className="muted">{tApp("tagline")}</p>
       </div>
       <form className="col" style={{ gap: 12 }} onSubmit={submit}>
         <div className="field">
-          <label htmlFor="login-email">E-mail</label>
+          <label htmlFor="login-email">{t("email")}</label>
           <input
             id="login-email"
             type="email"
@@ -41,7 +43,7 @@ export function LoginScreen() {
           />
         </div>
         <div className="field">
-          <label htmlFor="login-password">Senha</label>
+          <label htmlFor="login-password">{t("password")}</label>
           <input
             id="login-password"
             type="password"
@@ -53,15 +55,13 @@ export function LoginScreen() {
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button className="btn wide" type="submit" disabled={pending}>
-          {pending ? "Entrando…" : "Entrar"}
+          {pending ? t("signingIn") : t("signIn")}
         </button>
         <Link className="btn ghost wide" href="/signup">
-          Criar conta
+          {t("createAccount")}
         </Link>
       </form>
-      <p className="note">
-        O catálogo é compartilhado entre as contas; sequência, XP, revisões e nível são individuais.
-      </p>
+      <p className="note">{t("sharedNote")}</p>
     </div>
   );
 }

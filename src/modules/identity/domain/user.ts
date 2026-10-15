@@ -1,12 +1,13 @@
 import type { CefrLevel } from "@/shared/levels";
+import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
 
 export type Accent = "US" | "UK";
 
 export const DAILY_GOALS = [
-  { xp: 50, label: "Leve" },
-  { xp: 100, label: "Regular" },
-  { xp: 150, label: "Firme" },
-  { xp: 250, label: "Intenso" },
+  { xp: 50, key: "light" },
+  { xp: 100, key: "regular" },
+  { xp: 150, key: "firm" },
+  { xp: 250, key: "intense" },
 ] as const;
 
 export const AUDIO_SPEEDS = [0.8, 1, 1.15] as const;
@@ -17,6 +18,7 @@ export const MIN_PASSWORD_LENGTH = 8;
 export type Preferences = {
   level: CefrLevel;
   nativeLanguage: string;
+  locale: Locale;
   dailyGoal: number;
   preferredAccent: Accent;
   audioSpeed: number;
@@ -34,10 +36,11 @@ export type User = {
 
 export type SessionUser = User & { preferences: Preferences };
 
-export function defaultPreferences(level: CefrLevel): Preferences {
+export function defaultPreferences(level: CefrLevel, locale: Locale = DEFAULT_LOCALE): Preferences {
   return {
     level,
     nativeLanguage: "pt-BR",
+    locale,
     dailyGoal: 100,
     preferredAccent: "US",
     audioSpeed: 1,

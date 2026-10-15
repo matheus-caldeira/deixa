@@ -65,10 +65,10 @@ describe("sondagem de Postgres local", () => {
   });
 
   it("traduz os erros de conexão sem expor detalhes do servidor", () => {
-    expect(describeConnectionError({ code: "ECONNREFUSED" })).toMatch(/Não há Postgres respondendo/);
-    expect(describeConnectionError({ code: "28P01" })).toMatch(/Usuário ou senha recusados/);
-    expect(describeConnectionError({ code: "42501" })).toMatch(/permissão/);
+    expect(describeConnectionError({ code: "ECONNREFUSED" })).toBe("connectionRefused");
+    expect(describeConnectionError({ code: "28P01" })).toBe("authFailed");
+    expect(describeConnectionError({ code: "42501" })).toBe("noPermission");
     const unknown = describeConnectionError(new Error("relation secreta em 10.0.0.7"));
-    expect(unknown).toBe("Não foi possível conectar. Confira os dados e tente de novo.");
+    expect(unknown).toBe("generic");
   });
 });

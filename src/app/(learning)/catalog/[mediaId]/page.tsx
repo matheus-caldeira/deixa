@@ -23,7 +23,7 @@ export default async function MediaDetailPage(props: {
   await container.refreshWork({ userId: user.id, mediaId, force: false }).catch((error: unknown) => {
     if (isAppError(error) && error.code === "MEDIA_NOT_FOUND") notFound();
     logger.warn("catalog.refresh_skipped", {
-      reason: error instanceof Error ? error.message : "desconhecido",
+      reason: error instanceof Error ? error.message : "unknown",
     });
   });
   const detail = await container.getMediaDetail(user.id, mediaId).catch((error: unknown) => {
@@ -43,7 +43,7 @@ export default async function MediaDetailPage(props: {
       .loadSeasonEpisodes({ userId: user.id, mediaId, seasonNumber })
       .catch((error: unknown) => {
         logger.warn("catalog.season_load_failed", {
-          reason: error instanceof Error ? error.message : "desconhecido",
+          reason: error instanceof Error ? error.message : "unknown",
         });
         return null;
       });

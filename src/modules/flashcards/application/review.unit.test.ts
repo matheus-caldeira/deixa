@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { SequentialIds } from "@/shared/ids";
-import { NEW_CARD_STATE, formatInterval, previewIntervals, review } from "../domain/schedule";
+import { NEW_CARD_STATE, intervalOf, previewIntervals, review } from "../domain/schedule";
 import {
   makeAddCards,
   makeAnticipateReview,
@@ -9,7 +9,6 @@ import {
   makeGetAnticipationStatus,
   makeGradeCard,
   makeListDueCards,
-  sourceLabelOf,
 } from "./review-use-cases";
 import { InMemoryCards } from "./testing/fakes";
 
@@ -18,10 +17,10 @@ const DAY = 24 * 60 * 60 * 1000;
 describe("agendamento da revisão", () => {
   it("mostra o próximo intervalo de cada nota para um card novo", () => {
     expect(previewIntervals(NEW_CARD_STATE)).toEqual({
-      again: "<10 min",
-      hard: "1 dia",
-      good: "3 dias",
-      easy: "7 dias",
+      again: { unit: "minutes", value: 10 },
+      hard: { unit: "days", value: 1 },
+      good: { unit: "days", value: 3 },
+      easy: { unit: "days", value: 7 },
     });
   });
 
@@ -52,11 +51,11 @@ describe("agendamento da revisão", () => {
   });
 
   it("formata intervalos em português", () => {
-    expect(formatInterval(5 * 60 * 1000)).toBe("<10 min");
-    expect(formatInterval(DAY)).toBe("1 dia");
-    expect(formatInterval(12 * DAY)).toBe("12 dias");
-    expect(formatInterval(31 * DAY)).toBe("1 mês");
-    expect(formatInterval(95 * DAY)).toBe("3 meses");
+    expect(intervalOf(5 * 60 * 1000)).toEqual({ unit: "minutes", value: 10 });
+    expect(intervalOf(DAY)).toEqual({ unit: "days", value: 1 });
+    expect(intervalOf(12 * DAY)).toEqual({ unit: "days", value: 12 });
+    expect(intervalOf(31 * DAY)).toEqual({ unit: "months", value: 1 });
+    expect(intervalOf(95 * DAY)).toEqual({ unit: "months", value: 3 });
   });
 });
 
@@ -105,12 +104,18 @@ describe("fila de revisão", () => {
     const queue = await app.listDue("ana");
     expect(queue.dueCount).toBe(1);
     expect(queue.cards[0]).toMatchObject({
-      sourceLabel: "How I Met Your Mother · T1 · E3 · suas marcações",
-      intervals: { again: "<10 min", hard: "1 dia", good: "3 dias", easy: "7 dias" },
+      mediaTitle: "How I Met Your Mother",
+      seasonNumber: 1,
+      episodeNumber: 3,
+      sourceKind: "highlight_private",
+      intervals: {
+        again: { unit: "minutes", value: 10 },
+        hard: { unit: "days", value: 1 },
+        good: { unit: "days", value: 3 },
+        easy: { unit: "days", value: 7 },
+      },
     });
-    expect((await app.listDue("lucas")).cards[0]?.sourceLabel).toBe(
-      "How I Met Your Mother · T1 · E3 · catálogo",
-    );
+    expect((await app.listDue("lucas")).cards[0]?.sourceKind).toBe("highlight_catalog");
   });
 
   it("agenda a próxima revisão, registra o histórico e rende XP", async () => {
@@ -145,32 +150,6 @@ describe("fila de revisão", () => {
     });
     expect(await app.countDue("ana")).toBe(1);
     expect(app.xp).toEqual([]);
-  });
-
-  it("monta a origem do card para filme e para item sem episódio", () => {
-    const base = (await0: Partial<Parameters<typeof sourceLabelOf>[0]>) =>
-      sourceLabelOf({
-        cardId: "c",
-        learningItemId: "i",
-        term: "t",
-        meaning: "m",
-        meaningSource: "llm",
-        itemType: "word",
-        contextText: null,
-        contextTranslation: null,
-        pronunciation: null,
-        mediaTitle: "The Devil Wears Prada",
-        mediaType: "movie",
-        seasonNumber: 0,
-        episodeNumber: 1,
-        sourceKind: "curated",
-        state: NEW_CARD_STATE,
-        ...await0,
-      });
-    expect(base({})).toBe("The Devil Wears Prada · filme");
-    expect(base({ mediaTitle: null, mediaType: null, seasonNumber: null, episodeNumber: null })).toBe(
-      "Revisão",
-    );
   });
 
   it("antecipa a próxima revisão quantas vezes quiser, sempre trazendo os cartões mais próximos", async () => {

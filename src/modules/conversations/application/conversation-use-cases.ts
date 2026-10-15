@@ -115,7 +115,7 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
 export function makeGetConversation(deps: Pick<Deps, "conversations" | "resolveTutor">) {
   return async function getConversation(userId: string, sessionId: string): Promise<ConversationView> {
     const session = await deps.conversations.findSession(userId, sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "Não encontramos essa conversa.");
+    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
     const [turns, tutor] = await Promise.all([
       deps.conversations.listTurns(sessionId),
       deps.resolveTutor(userId),
@@ -144,12 +144,12 @@ export function makeSendMessage(deps: Deps) {
     message: TutorMessage;
   }): Promise<{ userTurn: Turn; tutorTurn: Turn; queuedForReview: number }> {
     const session = await deps.conversations.findSession(input.userId, input.sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "Não encontramos essa conversa.");
+    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
     const isAudio = "audio" in input.message;
     if ("text" in input.message) {
       const text = input.message.text.trim();
       if (text.length === 0 || text.length > MAX_MESSAGE_LENGTH) {
-        throw new AppError("INVALID_INPUT", "Escreva uma mensagem de até 500 caracteres.");
+        throw new AppError("INVALID_INPUT", { key: "messageTooLong", params: { max: MAX_MESSAGE_LENGTH } });
       }
     } else {
       const { mimeType, base64 } = input.message.audio;
@@ -159,7 +159,7 @@ export function makeSendMessage(deps: Deps) {
         base64.length > MAX_AUDIO_BYTES * BASE64_OVERHEAD ||
         base64.length === 0
       ) {
-        throw new AppError("INVALID_INPUT", "Áudio inválido ou longo demais. Grave até um minuto.");
+        throw new AppError("INVALID_INPUT", "audioInvalid");
       }
     }
 
@@ -181,7 +181,7 @@ export function makeSendMessage(deps: Deps) {
     } catch (error) {
       await release();
       if (isAppError(error)) throw error;
-      throw new AppError("LLM_FAILED", "O tutor não respondeu. Tente de novo em instantes.");
+      throw new AppError("LLM_FAILED", "tutorSilent");
     }
     const parsed = tutorReplySchema.safeParse(raw);
     if (!parsed.success) {
@@ -191,7 +191,7 @@ export function makeSendMessage(deps: Deps) {
     const userText = "text" in input.message ? input.message.text.trim() : parsed.data.transcript;
     if (!userText) {
       await release();
-      throw new AppError("LLM_INVALID_OUTPUT", "Não deu para entender o áudio. Tente de novo.");
+      throw new AppError("LLM_INVALID_OUTPUT", "audioNotUnderstood");
     }
 
     const now = deps.clock.now();
@@ -225,11 +225,7 @@ export function makeSendMessage(deps: Deps) {
     });
     const queuedForReview =
       parsed.data.corrections.length > 0
-        ? await deps.queueCorrections(
-            input.userId,
-            parsed.data.corrections,
-            `Conversa · ${session.themeTitle}`,
-          )
+        ? await deps.queueCorrections(input.userId, parsed.data.corrections, session.themeTitle)
         : 0;
     return { userTurn, tutorTurn, queuedForReview };
   };
@@ -242,11 +238,11 @@ export function makeReviewConversation(deps: Deps) {
     level: CefrLevel;
   }): Promise<{ review: ConversationReview; xpAwarded: number; queuedForReview: number }> {
     const session = await deps.conversations.findSession(input.userId, input.sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "Não encontramos essa conversa.");
+    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
     const turns = await deps.conversations.listTurns(input.sessionId);
     const userTurns = turns.filter((turn) => turn.role === "user");
     if (userTurns.length === 0) {
-      throw new AppError("INVALID_INPUT", "Converse um pouco antes de pedir a revisão.");
+      throw new AppError("INVALID_INPUT", "talkBeforeReview");
     }
     const tutor = await deps.resolveTutor(input.userId);
     let raw: unknown;
@@ -258,11 +254,10 @@ export function makeReviewConversation(deps: Deps) {
       });
     } catch (error) {
       if (isAppError(error)) throw error;
-      throw new AppError("LLM_FAILED", "O tutor não respondeu. Tente de novo em instantes.");
+      throw new AppError("LLM_FAILED", "tutorSilent");
     }
     const parsed = conversationReviewSchema.safeParse(raw);
-    if (!parsed.success)
-      throw new AppError("LLM_INVALID_OUTPUT", "A revisão veio fora do formato. Tente de novo.");
+    if (!parsed.success) throw new AppError("LLM_INVALID_OUTPUT", "reviewMalformed");
     await deps.conversations.saveReview(input.userId, input.sessionId, parsed.data, deps.clock.now());
     const queuedForReview =
       parsed.data.phrases.length > 0

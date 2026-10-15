@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import {
   saveModelPriceAction,
@@ -9,37 +10,42 @@ import {
 } from "@/app/actions/ai-usage";
 import { hasAnyLimit, type UsageLimit, type UsageOverview } from "@/modules/ai-usage";
 import { useToast } from "../shell/toast";
-import { decimalText, formatDate, formatUsd, parseDecimal } from "./format";
+import { useUsageFormat, type UsageFormat } from "./format";
 import { LimitForm } from "./limit-form";
 
-function describeLimit(limit: UsageLimit): string {
-  if (!hasAnyLimit(limit)) return "livre";
-  if (limit.usdPerMonth) return `${formatUsd(limit.usdPerMonth)} por mês`;
-  if (limit.usdPerDay) return `${formatUsd(limit.usdPerDay)} por dia`;
-  if (limit.tokensPerMonth) return `${limit.tokensPerMonth.toLocaleString("pt-BR")} tokens por mês`;
-  return `${(limit.tokensPerDay ?? 0).toLocaleString("pt-BR")} tokens por dia`;
+type Translate = ReturnType<typeof useTranslations<"serverUsage">>;
+
+function describeLimit(limit: UsageLimit, t: Translate, fmt: UsageFormat): string {
+  if (!hasAnyLimit(limit)) return t("limitFree");
+  if (limit.usdPerMonth) return t("perMonthValue", { value: fmt.usd(limit.usdPerMonth) });
+  if (limit.usdPerDay) return t("perDayValue", { value: fmt.usd(limit.usdPerDay) });
+  if (limit.tokensPerMonth)
+    return t("perMonthValue", { value: t("tokens", { count: limit.tokensPerMonth }) });
+  return t("perDayValue", { value: t("tokens", { count: limit.tokensPerDay ?? 0 }) });
 }
 
 const asResult = (result: { ok: true } | { ok: false; message: string }) =>
   result.ok ? { ok: true as const } : { ok: false as const, message: result.message };
 
 function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
+  const t = useTranslations("serverUsage");
+  const fmt = useUsageFormat();
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const [input, setInput] = useState(decimalText(price.inputUsdPerMillion));
-  const [output, setOutput] = useState(decimalText(price.outputUsdPerMillion));
+  const [input, setInput] = useState(fmt.decimal(price.inputUsdPerMillion));
+  const [output, setOutput] = useState(fmt.decimal(price.outputUsdPerMillion));
   const save = () => {
-    const inputValue = parseDecimal(input);
-    const outputValue = parseDecimal(output);
+    const inputValue = fmt.parseDecimal(input);
+    const outputValue = fmt.parseDecimal(output);
     if (
       inputValue === null ||
       outputValue === null ||
       Number.isNaN(inputValue) ||
       Number.isNaN(outputValue)
     ) {
-      toast("Informe os dois preços, com vírgula para os centavos.");
+      toast(t("bothPrices", { separator: fmt.decimalSeparator }));
       return;
     }
     startTransition(async () => {
@@ -54,7 +60,7 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
         return;
       }
       setEditing(false);
-      toast("Preço salvo.");
+      toast(t("priceSaved"));
       router.refresh();
     });
   };
@@ -64,21 +70,21 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
         className="dueitem"
         style={{ gridTemplateColumns: "1fr 64px 64px", width: "100%", textAlign: "left" }}
         onClick={() => setEditing(true)}
-        aria-label={`Editar preço de ${price.model}`}
+        aria-label={t("editPrice", { model: price.model })}
       >
         <span className="col" style={{ gap: 2, minWidth: 0 }}>
           <span className="mono" style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis" }}>
             {price.model}
           </span>
           <span className="small muted">
-            {price.source === "stored" ? `editado em ${formatDate(price.updatedAt)}` : "padrão"}
+            {price.source === "stored" ? t("editedOn", { date: fmt.date(price.updatedAt) }) : t("default")}
           </span>
         </span>
         <span className="mono" style={{ textAlign: "right", fontSize: 13 }}>
-          {decimalText(price.inputUsdPerMillion)}
+          {fmt.decimal(price.inputUsdPerMillion)}
         </span>
         <span className="mono" style={{ textAlign: "right", fontSize: 13 }}>
-          {decimalText(price.outputUsdPerMillion)}
+          {fmt.decimal(price.outputUsdPerMillion)}
         </span>
       </button>
     );
@@ -90,7 +96,7 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
       </span>
       <div className="row" style={{ alignItems: "flex-end" }}>
         <div className="field" style={{ flex: 1 }}>
-          <label htmlFor={`price-in-${price.model}`}>Entrada</label>
+          <label htmlFor={`price-in-${price.model}`}>{t("input")}</label>
           <input
             id={`price-in-${price.model}`}
             className="mono"
@@ -100,7 +106,7 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
           />
         </div>
         <div className="field" style={{ flex: 1 }}>
-          <label htmlFor={`price-out-${price.model}`}>Saída</label>
+          <label htmlFor={`price-out-${price.model}`}>{t("output")}</label>
           <input
             id={`price-out-${price.model}`}
             className="mono"
@@ -115,7 +121,7 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
           onClick={save}
           disabled={pending}
         >
-          Salvar
+          {t("save")}
         </button>
       </div>
     </div>
@@ -123,22 +129,24 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
 }
 
 export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
+  const t = useTranslations("serverUsage");
+  const fmt = useUsageFormat();
   const [open, setOpen] = useState<string | null>(null);
   return (
     <>
       <section className="card col" style={{ gap: 4 }}>
         <div className="col" style={{ gap: 2 }}>
-          <span className="eyebrow">Todas as contas · este mês</span>
-          <h2 style={{ fontSize: 22 }}>{formatUsd(overview.totalMonthUsd)}</h2>
+          <span className="eyebrow">{t("allAccounts")}</span>
+          <h2 style={{ fontSize: 22 }}>{fmt.usd(overview.totalMonthUsd)}</h2>
         </div>
         {overview.people.map((entry) => {
           const isOpen = open === entry.person.id;
           const status =
             entry.keySource === null
-              ? "sem chave"
+              ? t("noKey")
               : entry.keySource === "user"
-                ? "chave própria"
-                : `chave global · limite ${describeLimit(entry.limit)}`;
+                ? t("ownKey")
+                : t("globalKeyLimit", { limit: describeLimit(entry.limit, t, fmt) });
           return (
             <div key={entry.person.id} className="dueitem" style={{ gridTemplateColumns: "1fr" }}>
               <button
@@ -163,15 +171,15 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
                   <b>{entry.person.name}</b>
                   <span className="small muted">{status}</span>
                 </span>
-                {entry.blocked ? <span className="chip bad">Pausada</span> : null}
-                <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatUsd(entry.monthUsd)}</b>
+                {entry.blocked ? <span className="chip bad">{t("paused")}</span> : null}
+                <b style={{ fontVariantNumeric: "tabular-nums" }}>{fmt.usd(entry.monthUsd)}</b>
               </button>
               {isOpen && entry.keySource === "global" ? (
                 <div className="col" style={{ gap: 12, padding: "8px 0 4px" }}>
                   <LimitForm
                     initial={entry.limit}
                     idPrefix={`shared-${entry.person.id}`}
-                    note={`Vale só para ${entry.person.name}, enquanto usar a chave global.`}
+                    note={t("personNote", { name: entry.person.name })}
                     save={async (limit) =>
                       asResult(
                         await setAiUsageLimitAction({
@@ -185,45 +193,45 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
               ) : isOpen ? (
                 <p className="small muted" style={{ padding: "4px 0" }}>
                   {entry.keySource === "user"
-                    ? `${entry.person.name} usa a própria chave e define o próprio limite.`
-                    : `${entry.person.name} ainda não usa IA.`}
+                    ? t("personOwnKey", { name: entry.person.name })
+                    : t("personNoAi", { name: entry.person.name })}
                 </p>
               ) : null}
             </div>
           );
         })}
         <p className="small muted" style={{ paddingTop: 8 }}>
-          Você vê só os totais. O que cada pessoa fez com a IA não aparece aqui.
+          {t("totalsOnly")}
         </p>
       </section>
       <section className="card col" style={{ gap: 12 }}>
-        <h2 style={{ fontSize: 17 }}>Limite padrão da chave global</h2>
+        <h2 style={{ fontSize: 17 }}>{t("sharedDefault")}</h2>
         <LimitForm
           initial={overview.sharedDefault}
           idPrefix="shared-default"
-          note="Vale para cada conta que usa a chave global e não tem limite próprio."
+          note={t("sharedDefaultNote")}
           save={async (limit) => asResult(await updateSharedAiLimitAction(limit))}
         />
       </section>
       <section className="card col" style={{ gap: 4 }}>
         <div className="col" style={{ gap: 2 }}>
-          <h2 style={{ fontSize: 17 }}>Preços por modelo</h2>
-          <span className="small muted">Em dólar, por 1 milhão de tokens. Toque numa linha para editar.</span>
+          <h2 style={{ fontSize: 17 }}>{t("prices")}</h2>
+          <span className="small muted">{t("pricesNote")}</span>
         </div>
         <div className="dueitem" style={{ gridTemplateColumns: "1fr 64px 64px" }}>
-          <span className="eyebrow">Modelo</span>
+          <span className="eyebrow">{t("model")}</span>
           <span className="eyebrow" style={{ textAlign: "right" }}>
-            Entrada
+            {t("input")}
           </span>
           <span className="eyebrow" style={{ textAlign: "right" }}>
-            Saída
+            {t("output")}
           </span>
         </div>
         {overview.prices.map((price) => (
           <PriceRow key={`${price.provider}/${price.model}`} price={price} />
         ))}
         <p className="small muted" style={{ paddingTop: 8 }}>
-          Modelo sem preço cadastrado tem os tokens contados e o valor aparece como desconhecido.
+          {t("unknownPriceNote")}
         </p>
       </section>
     </>

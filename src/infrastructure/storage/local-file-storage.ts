@@ -13,7 +13,7 @@ export class LocalFileStorage implements FileStorage {
   private resolveInsideRoot(relativePath: string): string {
     const cleaned = normalize(relativePath);
     if (isAbsolute(cleaned) || cleaned.split(sep).includes("..")) {
-      throw new Error("caminho de arquivo fora do diretório de dados");
+      throw new Error("file path outside the data directory");
     }
     return join(this.root, cleaned);
   }

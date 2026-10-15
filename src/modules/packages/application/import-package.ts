@@ -42,6 +42,11 @@ export type PackagePreview = {
   personal: { email: string; includesCredentials: boolean } | null;
 };
 
+export type ImportWarning = {
+  key: "episodeMissing" | "subtitleKept" | "episodeFailed" | "personalSkipped";
+  label: string;
+};
+
 export type ImportReport = {
   worksCreated: number;
   episodesImported: number;
@@ -50,7 +55,7 @@ export type ImportReport = {
   audio: number;
   personal: PersonalMergeReport | null;
   skippedAudio: number;
-  warnings: string[];
+  warnings: ImportWarning[];
 };
 
 const uploadPath = (userId: string, uploadId: string): string => `packages/${userId}/${uploadId}.zip`;
@@ -117,7 +122,7 @@ export function makeImportPackage(deps: Deps) {
   }): Promise<ImportReport> {
     if (!SAFE_SEGMENT.test(input.uploadId)) throw new AppError("INVALID_INPUT");
     const bytes = await deps.storage.read(uploadPath(input.userId, input.uploadId));
-    if (!bytes) throw new AppError("INVALID_INPUT", "O arquivo não está mais disponível. Escolha-o de novo.");
+    if (!bytes) throw new AppError("INVALID_INPUT", "uploadGone");
     const pkg = await readPackage(deps.archive, bytes);
     const now = deps.clock.now();
     const report: ImportReport = {
@@ -138,7 +143,7 @@ export function makeImportPackage(deps: Deps) {
         const episodeId = target.episodeIds.get(episodeKey(episode.seasonNumber, episode.episodeNumber));
         const label = `${work.title} · T${episode.seasonNumber} E${episode.episodeNumber}`;
         if (!episodeId) {
-          report.warnings.push(`${label}: episódio não encontrado no catálogo.`);
+          report.warnings.push({ key: "episodeMissing", label });
           continue;
         }
         importedEpisodeIds.push(episodeId);
@@ -165,9 +170,9 @@ export function makeImportPackage(deps: Deps) {
           } catch (error) {
             if (isAppError(error) && error.code === "SUBTITLE_VERSION_CONFLICT") {
               report.episodesSkipped += 1;
-              report.warnings.push(`${label}: já tem outra legenda; ficou como está.`);
+              report.warnings.push({ key: "subtitleKept", label });
             } else if (isAppError(error)) {
-              report.warnings.push(`${label}: ${error.message}`);
+              report.warnings.push({ key: "episodeFailed", label: `${label} (${error.code})` });
             } else {
               throw error;
             }
@@ -222,9 +227,7 @@ export function makeImportPackage(deps: Deps) {
     }
     if (pkg.personal) {
       if (!input.password) {
-        report.warnings.push(
-          "Dados pessoais ficaram de fora: informe a senha da conta de origem para importá-los.",
-        );
+        report.warnings.push({ key: "personalSkipped", label: pkg.personal.meta.email });
       } else {
         const opened = await deps.cipher.open(pkg.personal.sealed, pkg.personal.meta.email, input.password);
         const parsed = opened

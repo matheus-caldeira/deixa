@@ -1,8 +1,8 @@
 import { after } from "next/server";
+import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
 import { isAppError } from "@/shared/errors";
-import { LEVEL_NAMES } from "@/shared/levels";
 import { formatTimecode } from "@/shared/time";
 import { HomeScreen } from "@/ui/home/home-screen";
 import { requireUser } from "../session";
@@ -36,7 +36,7 @@ export default async function HomePage() {
             episodeLabel: `${context.media.title} · ${label}`,
           })
           .catch((error: unknown) => {
-            if (isAppError(error)) return { status: "FAILED" as const, message: error.message };
+            if (isAppError(error)) return { status: "FAILED" as const, reason: error.code };
             throw error;
           })
       : null;
@@ -49,12 +49,12 @@ export default async function HomePage() {
       ? await container.getTrail(user.id, context.episode.id, user.preferences.level)
       : null;
   const progress = overview.inProgress.find((entry) => entry.episodeId === currentId)?.progressPercent ?? 0;
+  const t = await getTranslations("home");
 
   return (
     <HomeScreen
       view={{
         level: user.preferences.level,
-        levelName: LEVEL_NAMES[user.preferences.level],
         current: context
           ? {
               episodeId: context.episode.id,
@@ -80,7 +80,7 @@ export default async function HomePage() {
         trail: (trail?.nodes ?? []).map((node) => ({
           index: node.index,
           tc: formatTimecode(node.startMs),
-          nm: node.title,
+          nm: node.title || t(node.isFinal ? "finalChallenge" : "sceneTitle", { number: node.index + 1 }),
           ic: node.icon,
           state: node.state,
         })),
@@ -91,7 +91,7 @@ export default async function HomePage() {
         trailStatus:
           planStatus?.status === "PENDING" ? "pending" : planStatus?.status === "FAILED" ? "failed" : "ready",
         trailByAi: trail?.generatedByAi ?? false,
-        trailMessage: planStatus?.status === "FAILED" ? planStatus.message : null,
+        trailFailure: planStatus?.status === "FAILED" ? planStatus.reason : null,
         missions: summary.missions,
       }}
     />

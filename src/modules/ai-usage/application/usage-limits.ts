@@ -20,11 +20,7 @@ export type LimitDeps = {
   clock: Clock;
 };
 
-const BLOCKED_MESSAGES: Record<LimitPeriod, string> = {
-  day: "Você chegou ao limite de IA de hoje. Ela volta amanhã; ler, marcar e revisar continuam funcionando.",
-  month:
-    "Você chegou ao limite de IA deste mês. Ela volta no dia 1º; ler, marcar e revisar continuam funcionando.",
-};
+const BLOCKED_DETAIL: Record<LimitPeriod, string> = { day: "limitDay", month: "limitMonth" };
 
 export async function resolveLimit(
   deps: LimitDeps,
@@ -45,7 +41,7 @@ export function makeEnsureAiAllowed(deps: LimitDeps) {
     const events = await deps.usage.listEvents(userId, periods.monthStart);
     const today = sumEvents(events.filter((event) => event.createdAt >= periods.dayStart));
     const state = checkLimit(limit, today, sumEvents(events));
-    if (state.blocked) throw new AppError("AI_LIMIT_REACHED", BLOCKED_MESSAGES[state.blocked]);
+    if (state.blocked) throw new AppError("AI_LIMIT_REACHED", BLOCKED_DETAIL[state.blocked]);
   };
 }
 
@@ -62,7 +58,7 @@ export function makeSetAiUsageLimit(deps: Pick<LimitDeps, "limits" | "clock">) {
     if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira os valores do limite.");
     if (input.target.scope === "shared") {
       if (!input.actor.isAdmin) {
-        throw new AppError("FORBIDDEN", "Só o administrador define o limite da chave compartilhada.");
+        throw new AppError("FORBIDDEN", "adminOnlySharedLimit");
       }
       await deps.limits.save(
         input.target.userId,

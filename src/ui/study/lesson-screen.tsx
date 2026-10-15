@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { completeLessonAction } from "@/app/actions/study";
 import {
@@ -26,26 +27,27 @@ export type LessonScreenView = {
   exercises: Exercise[];
 };
 
-const PRAISE = ["Isso aí!", "Mandou bem!", "Perfeito!", "Na mosca!"];
+const PRAISE_COUNT = 4;
 type Phase = "ask" | "right" | "wrong";
 
 function SpeakButtons(props: { cueId: string; big?: boolean; speech: ReturnType<typeof useSpeech> }) {
+  const t = useTranslations("lesson");
   const loading = props.speech.loadingId === props.cueId;
   return (
     <div className="row" style={{ gap: props.big ? 14 : 10 }}>
       <button
         className={`speak ${props.big ? "big" : ""}`}
         onClick={() => props.speech.play("cue", props.cueId)}
-        aria-label="Ouvir"
+        aria-label={t("listen")}
         disabled={loading}
       >
         <SoundIcon />
-        {loading ? <span className="small">gerando…</span> : null}
+        {loading ? <span className="small">{t("generating")}</span> : null}
       </button>
       <button
         className="speak slow"
         onClick={() => props.speech.play("cue", props.cueId, true)}
-        aria-label="Ouvir devagar"
+        aria-label={t("listenSlow")}
       >
         <TurtleIcon />
       </button>
@@ -54,6 +56,7 @@ function SpeakButtons(props: { cueId: string; big?: boolean; speech: ReturnType<
 }
 
 export function LessonScreen({ view }: { view: LessonScreenView }) {
+  const t = useTranslations("lesson");
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -78,12 +81,10 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
     return (
       <div className="lesson">
         <div className="done">
-          <h1>Sem exercícios</h1>
-          <p className="muted">
-            Esta cena é curta demais para montar uma lição. Leia o episódio e marque o que não entendeu.
-          </p>
+          <h1>{t("noExercises")}</h1>
+          <p className="muted">{t("noExercisesBody")}</p>
           <Link className="btn" href={backHref}>
-            Voltar
+            {t("back")}
           </Link>
         </div>
       </div>
@@ -115,27 +116,27 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               fontWeight="700"
               fill="var(--cue)"
             >
-              {result.passed ? `BLOCO ${view.nodeIndex + 1} · OK` : `BLOCO ${view.nodeIndex + 1} · DE NOVO`}
+              {t(result.passed ? "clapOk" : "clapAgain", { block: view.nodeIndex + 1 })}
             </text>
           </svg>
           <div className="col" style={{ gap: 6, alignItems: "center" }}>
             <h1>
               {!result.passed
-                ? "Ainda não foi desta vez"
+                ? t("notYet")
                 : result.episodeCompleted
-                  ? "Episódio concluído!"
+                  ? t("episodeDone")
                   : result.accuracy === 100
-                    ? "Bloco perfeito!"
-                    : "Bloco concluído!"}
+                    ? t("perfectBlock")
+                    : t("blockDone")}
             </h1>
             <p className="muted">
               {!result.passed
-                ? `Você precisa de ${result.requiredAccuracy}% de acerto para concluir este bloco. Sem XP desta vez.`
+                ? t("needAccuracy", { percent: result.requiredAccuracy })
                 : result.replay
                   ? result.xp > 0
-                    ? "Bloco repetido: XP reduzido pela metade."
-                    : "Bloco repetido várias vezes hoje: sem XP desta vez."
-                  : `Episódio em ${result.progressPercent}%.`}
+                    ? t("replayHalfXp")
+                    : t("replayNoXp")
+                  : t("episodeAt", { percent: result.progressPercent })}
             </p>
           </div>
           <div className="donestats">
@@ -147,13 +148,13 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             </div>
             <div className="dstat" style={{ borderColor: "var(--good)" }}>
               <div className="h" style={{ background: "var(--good)" }}>
-                Precisão
+                {t("accuracy")}
               </div>
               <div className="v">{result.accuracy}%</div>
             </div>
             <div className="dstat" style={{ borderColor: "var(--brand)" }}>
               <div className="h" style={{ background: "var(--brand)" }}>
-                Tempo
+                {t("time")}
               </div>
               <div className="v">
                 {minutes}:{seconds}
@@ -161,9 +162,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             </div>
           </div>
           {result.queuedForReview > 0 ? (
-            <p className="small muted">
-              {result.queuedForReview} fala(s) com erro foram para a fila de revisão.
-            </p>
+            <p className="small muted">{t("queued", { count: result.queuedForReview })}</p>
           ) : null}
         </div>
         <div className="lfoot col" style={{ gap: 12 }}>
@@ -181,7 +180,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
                 startedAt.current = Date.now();
               }}
             >
-              Tentar de novo
+              {t("tryAgain")}
             </button>
           ) : null}
           <button
@@ -191,7 +190,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               router.refresh();
             }}
           >
-            {result.passed ? "Continuar" : "Voltar ao início"}
+            {result.passed ? t("continue") : t("backHome")}
           </button>
         </div>
       </div>
@@ -287,7 +286,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   } else if (exercise.kind === "choice") {
     body = (
       <>
-        <div className="prompt">{exercise.prompt}</div>
+        <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         <div className="cuebox">
           <div className="tcode">
             <span>{formatTimecode(exercise.startMs)}</span>
@@ -296,7 +295,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               style={{ color: "#8A90A8", display: "flex", gap: 4, alignItems: "center" }}
             >
               <SoundIcon width={16} height={16} />
-              ouvir
+              {t("listen")}
             </button>
           </div>
           <div className="line">{exercise.english}</div>
@@ -309,10 +308,10 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   } else if (exercise.kind === "listen") {
     body = (
       <>
-        <div className="prompt">{exercise.prompt}</div>
+        <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         <div className="cuebox">
           <div className="tcode">
-            <span>legenda oculta</span>
+            <span>{t("hiddenSubtitle")}</span>
             <span>{formatTimecode(exercise.startMs)}</span>
           </div>
           <SpeakButtons cueId={exercise.cueId} speech={speech} big />
@@ -325,7 +324,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   } else if (exercise.kind === "blank") {
     body = (
       <>
-        <div className="prompt">{exercise.prompt}</div>
+        <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         <div className="cuebox">
           <div className="line" style={{ color: "#fff" }}>
             {exercise.before}{" "}
@@ -344,7 +343,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         {exercise.hint ? (
           <div className="hint">
             <span>
-              <b>PT:</b> {exercise.hint}
+              <b>{t("nativeTag")}</b> {exercise.hint}
             </span>
           </div>
         ) : null}
@@ -356,11 +355,11 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   } else if (exercise.kind === "order") {
     body = (
       <>
-        <div className="prompt">{exercise.prompt}</div>
+        <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         {exercise.hint ? (
           <div className="hint">
             <span>
-              <b>PT:</b> {exercise.hint}
+              <b>{t("nativeTag")}</b> {exercise.hint}
             </span>
           </div>
         ) : (
@@ -398,7 +397,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   } else {
     body = (
       <>
-        <div className="prompt">{exercise.prompt}</div>
+        <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         {exercise.hint ? (
           <div className="cuebox">
             <div className="line" style={{ color: "#fff" }}>
@@ -412,11 +411,11 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
           className="ta"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Digite em inglês"
+          placeholder={t("typeTarget")}
           disabled={locked}
           autoCapitalize="off"
           spellCheck={false}
-          aria-label="Sua resposta em inglês"
+          aria-label={t("yourAnswer")}
         />
       </>
     );
@@ -425,7 +424,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   return (
     <div className="lesson">
       <div className="lhead">
-        <Link className="iconbtn" href={backHref} aria-label="Sair da lição">
+        <Link className="iconbtn" href={backHref} aria-label={t("exit")}>
           <XIcon />
         </Link>
         <div className="bar">
@@ -437,7 +436,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
       {phase === "ask" ? (
         <div className="lfoot">
           <button className="btn wide" onClick={check} disabled={!ready}>
-            {exercise.kind === "intro" ? "Entendi" : "Verificar"}
+            {exercise.kind === "intro" ? t("gotIt") : t("check")}
           </button>
         </div>
       ) : (
@@ -447,13 +446,13 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               {phase === "right" ? <CheckIcon /> : <XIcon />}
               {phase === "right"
                 ? exercise.kind === "intro"
-                  ? "Vamos praticar"
-                  : PRAISE[position % PRAISE.length]
-                : "Quase!"}
+                  ? t("letsPractice")
+                  : t(`praise.${position % PRAISE_COUNT}`)
+                : t("almost")}
             </h3>
             {phase === "wrong" ? (
               <p>
-                <b>Resposta:</b> {correctAnswerText(exercise)}
+                <b>{t("answer")}</b> {correctAnswerText(exercise)}
               </p>
             ) : null}
           </div>
@@ -462,7 +461,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             onClick={next}
             disabled={pending}
           >
-            {pending ? "Salvando…" : "Continuar"}
+            {pending ? t("saving") : t("continue")}
           </button>
         </div>
       )}

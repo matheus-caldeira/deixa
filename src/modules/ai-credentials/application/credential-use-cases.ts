@@ -6,7 +6,6 @@ import {
   SECRET_KINDS,
   SERVICE_LABELS,
   looksLikeSecret,
-  shapeHint,
   type CredentialService,
 } from "../domain/services";
 import type { CredentialRepository, CredentialTester, KeyCipher, StoredCredential } from "./ports";
@@ -59,7 +58,7 @@ function describeStored(
 
 function requireAdmin(actor: CredentialActor, scope: CredentialScope): void {
   if (scope === "global" && !actor.isAdmin) {
-    throw new AppError("FORBIDDEN", "Só o administrador altera as chaves globais.");
+    throw new AppError("FORBIDDEN", "adminOnlyGlobalKeys");
   }
 }
 
@@ -74,18 +73,18 @@ export function makeSaveCredential(deps: Deps) {
     if (SECRET_KINDS[input.service] === "endpoint" && !input.actor.isAdmin) {
       const allowed = deps.endpointsAllowed ? await deps.endpointsAllowed() : true;
       if (!allowed) {
-        throw new AppError("FORBIDDEN", "O administrador desligou endereços próprios de IA por conta.");
+        throw new AppError("FORBIDDEN", "customEndpointsOff");
       }
     }
     const secret = input.secret.trim();
     if (!looksLikeSecret(input.service, secret)) {
-      throw new AppError("AI_KEY_INVALID", `Essa chave não parece válida. ${shapeHint(input.service)}`);
+      throw new AppError("AI_KEY_INVALID", `keyShape.${input.service}`);
     }
     if (!(await deps.testCredential(input.service, secret))) {
-      throw new AppError(
-        "AI_KEY_REJECTED",
-        `${SERVICE_LABELS[input.service]} recusou essa chave. Confira se ela está ativa.`,
-      );
+      throw new AppError("AI_KEY_REJECTED", {
+        key: "keyRejected",
+        params: { service: SERVICE_LABELS[input.service] },
+      });
     }
     const stored = { encryptedApiKey: deps.cipher.encrypt(secret), keyVersion: deps.cipher.version };
     if (input.scope === "global") {

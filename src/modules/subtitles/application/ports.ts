@@ -25,7 +25,10 @@ export type StoredAlignment = {
   offsetMs: number;
   status: AlignmentStatus;
 };
-export type ProcessingStep = { label: string; detail: string };
+export type ProcessingStep = {
+  key: string;
+  detail: { key: string; params?: Record<string, string | number> };
+};
 
 export type NewSubtitleFile = StoredSubtitleFile & {
   originalFilename: string;

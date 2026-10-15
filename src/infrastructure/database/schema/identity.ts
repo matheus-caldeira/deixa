@@ -37,6 +37,7 @@ export const userPreferences = pgTable("user_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   level: text("level").notNull(),
   nativeLanguage: text("native_language").notNull(),
+  locale: text("locale").notNull().default("pt-BR"),
   dailyGoal: integer("daily_goal").notNull(),
   preferredAccent: text("preferred_accent").notNull(),
   audioSpeed: doublePrecision("audio_speed").notNull(),
@@ -89,8 +90,7 @@ export const notifications = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     kind: text("kind").notNull(),
-    title: text("title").notNull(),
-    body: text("body").notNull(),
+    params: jsonb("params").notNull().default({}),
     href: text("href").notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

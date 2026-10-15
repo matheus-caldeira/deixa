@@ -2,49 +2,43 @@ import { z } from "zod";
 import { cleanLlmText } from "@/shared/llm-text";
 
 export type ThemeIcon = "coffee" | "brief" | "bed" | "film" | "chat" | "target" | "scale" | "spark";
-export type Theme = { id: string; icon: ThemeIcon; title: string; detail: string; opener: string };
+export type Theme = { id: string; icon: ThemeIcon; topic: string; opener: string };
 
 export const THEMES: readonly Theme[] = [
   {
     id: "daily",
+    topic: "everyday life: routine, home, weekends, plans",
     icon: "coffee",
-    title: "Dia a dia",
-    detail: "Rotina, casa, fim de semana, planos.",
     opener: "Hi! How's your day going so far?",
   },
   {
     id: "work",
+    topic: "work and studies: projects, meetings, career, college",
     icon: "brief",
-    title: "Trabalho e estudos",
-    detail: "Projetos, reuniões, carreira, faculdade.",
     opener: "Hey! What are you working on these days?",
   },
   {
     id: "travel",
+    topic: "travel: places, mishaps, next destinations",
     icon: "bed",
-    title: "Viagens",
-    detail: "Lugares, perrengues, próximos destinos.",
     opener: "Hi there! What's the best trip you've ever taken?",
   },
   {
     id: "shows",
+    topic: "shows and movies: what you are watching and what you thought",
     icon: "film",
-    title: "Séries e filmes",
-    detail: "O que você está assistindo e o que achou.",
     opener: "Hey! What have you been watching lately?",
   },
   {
     id: "food",
+    topic: "food: restaurants, recipes, favorites",
     icon: "target",
-    title: "Comida",
-    detail: "Restaurantes, receitas, o que você gosta.",
     opener: "Hi! What's your favorite thing to eat when you go out?",
   },
   {
     id: "opinions",
+    topic: "opinions and debates: defending a point, agreeing and disagreeing",
     icon: "scale",
-    title: "Opiniões e debates",
-    detail: "Defender um ponto, concordar e discordar.",
     opener: "Hi! Here's a question: is it better to work from home or at the office?",
   },
 ];
@@ -90,7 +84,7 @@ const plain = (max: number) =>
   z.unknown().transform((value, context) => {
     const cleaned = cleanLlmText(value, max);
     if (!cleaned) {
-      context.addIssue({ code: "custom", message: "texto inválido" });
+      context.addIssue({ code: "custom", message: "invalid text" });
       return z.NEVER;
     }
     return cleaned;
@@ -146,5 +140,5 @@ export function resolveTheme(
     };
   }
   const theme = THEMES.find((candidate) => candidate.id === themeId);
-  return theme ? { id: theme.id, title: theme.title, opener: theme.opener } : null;
+  return theme ? { id: theme.id, title: theme.topic, opener: theme.opener } : null;
 }

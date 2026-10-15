@@ -25,7 +25,7 @@ export async function importPackageAction(input: unknown): Promise<ActionResult<
       ? [`${ORIGIN_THROTTLE_PREFIX}${originEmail}`, `${IMPORTER_THROTTLE_PREFIX}${user.id}`]
       : [];
     if (throttleKeys.some((key) => throttle.isBlocked(key))) {
-      throw new AppError("INVALID_CREDENTIALS", "Muitas tentativas. Espere alguns minutos e tente de novo.");
+      throw new AppError("INVALID_CREDENTIALS", "tooManyAttempts");
     }
     for (const key of throttleKeys) throttle.recordFailure(key);
     const report = await app().importPackage({

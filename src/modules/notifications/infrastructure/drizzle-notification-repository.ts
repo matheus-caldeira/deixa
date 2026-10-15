@@ -2,6 +2,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { notifications } from "@/infrastructure/database/schema";
+import type { MessageParams } from "@/shared/errors";
 import type {
   NewNotification,
   Notification,
@@ -10,6 +11,12 @@ import type {
 } from "../application/notifications";
 
 const KINDS: readonly NotificationKind[] = ["cards_ready", "cards_failed", "trail_ready", "trail_failed"];
+const paramsSchema = z.record(z.string(), z.union([z.string(), z.number()]));
+
+function readParams(value: unknown): MessageParams {
+  const parsed = paramsSchema.safeParse(value);
+  return parsed.success ? parsed.data : {};
+}
 
 export class DrizzleNotificationRepository implements NotificationRepository {
   constructor(private readonly db: Database) {}
@@ -28,8 +35,7 @@ export class DrizzleNotificationRepository implements NotificationRepository {
     return rows.map((row) => ({
       id: row.id,
       kind: KINDS.find((kind) => kind === row.kind) ?? "cards_ready",
-      title: row.title,
-      body: row.body,
+      params: readParams(row.params),
       href: row.href,
       read: row.readAt !== null,
       createdAt: row.createdAt,

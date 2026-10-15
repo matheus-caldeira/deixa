@@ -6,19 +6,19 @@ type Base = { id: string; cueId: string; startMs: number; translation: string | 
 
 export type Exercise =
   | (Base & { kind: "intro"; english: string; portuguese: string | null })
-  | (Base & { kind: "choice"; prompt: string; english: string; options: string[]; answer: number })
-  | (Base & { kind: "listen"; prompt: string; english: string; options: string[]; answer: number })
-  | (Base & { kind: "order"; prompt: string; hint: string | null; bank: string[]; solution: string[] })
+  | (Base & { kind: "choice"; prompt: PromptKey; english: string; options: string[]; answer: number })
+  | (Base & { kind: "listen"; prompt: PromptKey; english: string; options: string[]; answer: number })
+  | (Base & { kind: "order"; prompt: PromptKey; hint: string | null; bank: string[]; solution: string[] })
   | (Base & {
       kind: "blank";
-      prompt: string;
+      prompt: PromptKey;
       before: string;
       after: string;
       hint: string | null;
       options: string[];
       answer: number;
     })
-  | (Base & { kind: "type"; prompt: string; hint: string | null; best: string });
+  | (Base & { kind: "type"; prompt: PromptKey; hint: string | null; best: string });
 
 export type ExerciseKind = Exercise["kind"];
 export type Answer = null | number | number[] | string;
@@ -44,14 +44,15 @@ const PLANS: Record<LevelBand, ExerciseKind[]> = {
 };
 
 export const PROMPTS = {
-  choice: "O que significa esta fala?",
-  listen: "Toque para ouvir e escolha o que foi dito",
-  orderFromHint: "Monte a frase em inglês",
-  orderFromAudio: "Ouça e monte o que foi dito",
-  blank: "Complete a frase",
-  typeFromHint: "Escreva em inglês",
-  dictation: "Ditado: ouça e escreva exatamente",
+  choice: "choice",
+  listen: "listen",
+  orderFromHint: "orderFromHint",
+  orderFromAudio: "orderFromAudio",
+  blank: "blank",
+  typeFromHint: "typeFromHint",
+  dictation: "dictation",
 } as const;
+export type PromptKey = (typeof PROMPTS)[keyof typeof PROMPTS];
 
 export function levelBand(level: CefrLevel): LevelBand {
   const index = levelIndex(level);

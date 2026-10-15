@@ -121,12 +121,12 @@ describe("geração de cards a partir das marcações", () => {
     ]);
     expect(result.drafts.every((draft) => draft.lineTranslationSource === "subtitle_pt")).toBe(true);
     expect(result.translationsFromSubtitle).toBe(3);
-    expect(result.steps.map((step) => step.detail)).toEqual([
-      "3 marcações · 1 expressões",
-      "0 chamadas LLM",
-      "IA simulada · 1 chamada em lote",
-      "formato conferido",
-      "3 cards",
+    expect(result.steps.map((step) => step.counts)).toEqual([
+      { highlights: 3, expressions: 1 },
+      { fromSubtitle: 3, byLlm: 0 },
+      { reused: 0, llmCalls: 1, provider: "fake" },
+      {},
+      { cards: 3 },
     ]);
   });
 
@@ -149,8 +149,8 @@ describe("geração de cards a partir das marcações", () => {
       lineTranslationSource: "llm",
     });
     expect(result.steps[1]).toEqual({
-      label: "Traduzindo as falas sem par na legenda PT",
-      detail: "0 da legenda · 1 por IA",
+      key: "translateMissing",
+      counts: { fromSubtitle: 0, byLlm: 1 },
     });
   });
 
@@ -361,7 +361,8 @@ describe("geração em segundo plano", () => {
   function background(llm: LlmProvider = new FakeLlmProvider()) {
     const base = setup(llm);
     const clock = new FixedClock("2026-10-10T12:00:00Z");
-    const sent: { userId: string; kind: string; title: string; href: string }[] = [];
+    const sent: { userId: string; kind: string; params: Record<string, string | number>; href: string }[] =
+      [];
     const deps = { learning: base.learning, clock, ids: new SequentialIds("job") };
     return {
       ...base,
@@ -402,7 +403,7 @@ describe("geração em segundo plano", () => {
       expect.objectContaining({
         userId: "ana",
         kind: "cards_ready",
-        title: "Seus cards estão prontos",
+        params: { episode: "Friends · T1 · E1", count: 2 },
         href: `/read/ep-1?batch=${batchId}`,
       }),
     ]);
@@ -424,7 +425,7 @@ describe("geração em segundo plano", () => {
     await app.process({ ...job, batchId });
     expect(await app.state("ana", batchId)).toMatchObject({
       status: "FAILED",
-      message: "A IA não respondeu. Tente de novo em instantes.",
+      reason: "LLM_FAILED",
     });
     expect(app.sent[0]).toMatchObject({ kind: "cards_failed", href: "/read/ep-1" });
   });

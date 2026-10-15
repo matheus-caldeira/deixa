@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { anticipateReviewAction, gradeCardAction } from "@/app/actions/review";
-import { RATINGS, RATING_LABELS, type Rating } from "@/modules/flashcards";
+import { RATINGS, type Interval, type Rating } from "@/modules/flashcards";
 import { CheckIcon, SoundIcon } from "../icons";
 import { useToast } from "../shell/toast";
+import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
 
 export type ReviewCard = {
@@ -15,8 +17,14 @@ export type ReviewCard = {
   meaning: string;
   contextText: string | null;
   contextTranslation: string | null;
-  sourceLabel: string;
-  intervals: Record<Rating, string>;
+  source: {
+    mediaTitle: string | null;
+    mediaType: "series" | "movie" | null;
+    seasonNumber: number | null;
+    episodeNumber: number | null;
+    sourceKind: string;
+  };
+  intervals: Record<Rating, Interval>;
 };
 
 export type ReviewView = {
@@ -24,10 +32,11 @@ export type ReviewView = {
   dueCount: number;
   anticipation: { available: boolean; batchSize: number };
   audioSpeed: number;
-  recurringErrors: { label: string; count: string }[];
 };
 
 export function ReviewScreen({ view }: { view: ReviewView }) {
+  const t = useTranslations("review");
+  const errorText = useErrorText();
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -37,6 +46,19 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
   const [earned, setEarned] = useState(0);
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
   const card = view.cards[index];
+
+  const sourceLabel = (source: ReviewCard["source"]): string => {
+    const episode =
+      source.mediaType === "movie"
+        ? t("movie")
+        : source.seasonNumber !== null && source.episodeNumber !== null
+          ? t("seasonEpisode", { season: source.seasonNumber, episode: source.episodeNumber })
+          : null;
+    const suffix = t.has(`sources.${source.sourceKind}`) ? t(`sources.${source.sourceKind}`) : null;
+    return [source.mediaTitle, episode, suffix].filter((part) => part).join(" · ") || t("title");
+  };
+  const intervalLabel = (interval: Interval): string =>
+    t(`interval.${interval.unit}`, { count: interval.value });
 
   const grade = (rating: Rating) => {
     if (!card) return;
@@ -58,33 +80,18 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
     startTransition(async () => {
       const result = await anticipateReviewAction().catch(() => null);
       if (!result?.ok) {
-        toast(result?.message ?? "Não deu para falar com o servidor.");
+        toast(result?.message ?? errorText(null));
         return;
       }
-      toast(`${result.data.moved} cartões antecipados.`);
+      toast(t("anticipated", { count: result.data.moved }));
       router.refresh();
     });
-
-  const errors =
-    view.recurringErrors.length > 0 ? (
-      <section className="card col" style={{ gap: 4 }}>
-        <div className="sec-h">
-          <h2 style={{ fontSize: 17 }}>Erros recorrentes</h2>
-        </div>
-        {view.recurringErrors.map((entry) => (
-          <div className="dueitem" key={entry.label}>
-            <span>{entry.label}</span>
-            <span className="chip bad">{entry.count}</span>
-          </div>
-        ))}
-      </section>
-    ) : null;
 
   if (!card) {
     const reviewed = index;
     return (
       <>
-        <h1 style={{ fontSize: 28, paddingTop: 4 }}>Revisar</h1>
+        <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
         <div
           className="card col"
           style={{ alignItems: "center", textAlign: "center", gap: 12, padding: "28px 16px" }}
@@ -92,12 +99,10 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
           <div style={{ width: 56, height: 56, color: "var(--good)" }}>
             <CheckIcon />
           </div>
-          <h2>Fila em dia</h2>
+          <h2>{t("queueClear")}</h2>
           <p className="muted">
-            {reviewed > 0
-              ? `Você revisou ${reviewed} cartões e ganhou ${earned} XP.`
-              : "Nenhum cartão vencido agora. Leia um episódio e marque o que não entendeu para criar novos."}
-            {dueCount > 0 ? ` Ainda há ${dueCount} na fila.` : ""}
+            {reviewed > 0 ? t("reviewedSummary", { count: reviewed, xp: earned }) : t("noDue")}
+            {dueCount > 0 ? ` ${t("stillInQueue", { count: dueCount })}` : ""}
           </p>
           {dueCount > 0 ? (
             <button
@@ -107,21 +112,17 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
                 router.refresh();
               }}
             >
-              Continuar revisando
+              {t("keepReviewing")}
             </button>
           ) : view.anticipation.available ? (
             <>
               <button className="btn" onClick={anticipate} disabled={pending}>
-                Antecipar próxima revisão
+                {t("anticipate")}
               </button>
-              <p className="small muted">
-                Traz os {view.anticipation.batchSize} cartões que venceriam primeiro. Pode antecipar quantas
-                vezes quiser.
-              </p>
+              <p className="small muted">{t("anticipateBody", { count: view.anticipation.batchSize })}</p>
             </>
           ) : null}
         </div>
-        {errors}
       </>
     );
   }
@@ -129,9 +130,9 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
   return (
     <>
       <div className="sec-h" style={{ paddingTop: 4 }}>
-        <h1 style={{ fontSize: 28 }}>Revisar</h1>
+        <h1 style={{ fontSize: 28 }}>{t("title")}</h1>
         <span className="chip mono">
-          {index + 1}/{view.cards.length} · {dueCount} na fila
+          {index + 1}/{view.cards.length} · {t("inQueue", { count: dueCount })}
         </span>
       </div>
       <div className="bar good">
@@ -140,7 +141,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
       <div className={`flash ${flipped ? "flip" : ""}`}>
         <div className="inner">
           <div className="face" aria-hidden={flipped}>
-            <span className="eyebrow">{card.sourceLabel}</span>
+            <span className="eyebrow">{sourceLabel(card.source)}</span>
             <div className="en">{card.term}</div>
             <button
               className="speak"
@@ -148,7 +149,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
               onClick={() => speech.play("item", card.learningItemId)}
               tabIndex={flipped ? -1 : 0}
             >
-              <SoundIcon /> {speech.loadingId === card.learningItemId ? "Gerando…" : "Ouvir"}
+              <SoundIcon /> {speech.loadingId === card.learningItemId ? t("generating") : t("listen")}
             </button>
             {card.contextText && card.contextText !== card.term ? (
               <div className="ctxline">
@@ -156,10 +157,10 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
               </div>
             ) : null}
             <span className="spacer" />
-            <p className="small muted">Lembre o significado antes de virar.</p>
+            <p className="small muted">{t("rememberFirst")}</p>
           </div>
           <div className="face back" aria-hidden={!flipped}>
-            <span className="eyebrow">{card.sourceLabel}</span>
+            <span className="eyebrow">{sourceLabel(card.source)}</span>
             <div className="en" style={{ fontSize: 20 }}>
               {card.term}
             </div>
@@ -171,7 +172,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
               </div>
             ) : null}
             <span className="spacer" />
-            <p className="small muted">Quanto você lembrou?</p>
+            <p className="small muted">{t("howMuch")}</p>
           </div>
         </div>
       </div>
@@ -184,17 +185,16 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
               onClick={() => grade(rating)}
               disabled={pending}
             >
-              {RATING_LABELS[rating]}
-              <small>{card.intervals[rating]}</small>
+              {t(`rating.${rating}`)}
+              <small>{intervalLabel(card.intervals[rating])}</small>
             </button>
           ))}
         </div>
       ) : (
         <button className="btn wide" onClick={() => setFlipped(true)}>
-          Mostrar resposta
+          {t("showAnswer")}
         </button>
       )}
-      {errors}
     </>
   );
 }

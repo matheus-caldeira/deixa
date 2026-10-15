@@ -7,7 +7,7 @@ function requireDatabaseUrl(): string {
 }
 
 runMigrations(requireDatabaseUrl())
-  .then(() => console.info("migrações aplicadas"))
+  .then(() => console.info("migrations applied"))
   .catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : "falha ao migrar");
     process.exit(1);

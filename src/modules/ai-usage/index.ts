@@ -3,7 +3,6 @@ export {
   DEFAULT_MODEL_PRICES,
   DEFAULT_PRICES_DATE,
   KEY_SOURCES,
-  OPERATION_LABELS,
   estimateCostUsd,
   findDefaultPrice,
   modelPriceSchema,

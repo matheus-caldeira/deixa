@@ -1,4 +1,5 @@
 import { AppError } from "@/shared/errors";
+import type { ProcessingStep } from "@/modules/subtitles";
 import type { Clock } from "@/shared/clock";
 import { rankCandidates, type Ranking, type SourceLanguage, type SubtitleCandidate } from "../domain/ranking";
 
@@ -76,7 +77,7 @@ type Deps = {
 
 export type ImportOutcome = {
   outcome: "PROCESSED" | "DUPLICATE";
-  steps: { label: string; detail: string }[];
+  steps: ProcessingStep[];
   hasPortuguese: boolean;
 };
 
@@ -134,10 +135,7 @@ export function makeSearchSubtitles(
       };
     }
     if (!episode.query) {
-      throw new AppError(
-        "SUBTITLE_SOURCE_EMPTY",
-        "Esta obra não tem identificador do TMDB para buscar legendas.",
-      );
+      throw new AppError("SUBTITLE_SOURCE_EMPTY", "noExternalId");
     }
     const candidates = await deps.provider.search(episode.query);
     await deps.sources.saveSearch(input.episodeId, deps.provider.name, candidates, now);
@@ -156,9 +154,7 @@ export function makeImportFromSource(deps: Deps) {
     if (stored && stored.externalFileId !== candidate.fileId) {
       throw new AppError(
         "SUBTITLE_VERSION_CONFLICT",
-        candidate.language === "en"
-          ? "Este episódio já tem uma legenda em inglês diferente. A troca de versão ainda não é suportada."
-          : "Este episódio já tem uma legenda em português diferente. A troca de versão ainda não é suportada.",
+        candidate.language === "en" ? "targetVersionConflict" : "nativeVersionConflict",
       );
     }
     let bytes = stored ? await deps.readExistingFile(episode.episodeId, candidate.language) : null;
@@ -179,10 +175,7 @@ export function makeImportFromSource(deps: Deps) {
       downloads.count += 1;
       if (downloaded.quota) await deps.sources.saveQuota(deps.quotaKey, downloaded.quota, deps.clock.now());
       if (downloaded.bytes.byteLength === 0 || downloaded.bytes.byteLength > MAX_SUBTITLE_BYTES) {
-        throw new AppError(
-          "SUBTITLE_INVALID",
-          "O arquivo baixado é inválido. Escolha outra opção ou envie manualmente.",
-        );
+        throw new AppError("SUBTITLE_INVALID", "downloadInvalid");
       }
       bytes = downloaded.bytes;
       fileName = downloaded.fileName || candidate.fileName;
@@ -244,10 +237,10 @@ export function makeImportFromSource(deps: Deps) {
     const used =
       needed > 0 ? await deps.sources.countUserDownloads(input.userId, deps.provider.name, since) : 0;
     if (used + needed > deps.userDailyDownloads) {
-      throw new AppError(
-        "SUBTITLE_SOURCE_QUOTA",
-        `Você já usou ${used} de ${deps.userDailyDownloads} downloads nas últimas 24 horas. Envie o arquivo manualmente ou tente depois.`,
-      );
+      throw new AppError("SUBTITLE_SOURCE_QUOTA", {
+        key: "userQuota",
+        params: { used, limit: deps.userDailyDownloads },
+      });
     }
 
     const downloads = { count: 0 };

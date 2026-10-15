@@ -4,6 +4,7 @@ import { SequentialIds } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
 import {
   MAX_USER_TURNS,
+  THEMES,
   conversationReviewSchema,
   resolveTheme,
   tutorReplySchema,
@@ -153,7 +154,7 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
 
 describe("temas", () => {
   it("resolve tema pronto e tema livre, e recusa assunto vazio ou com marcação", () => {
-    expect(resolveTheme("travel", null)).toMatchObject({ id: "travel", title: "Viagens" });
+    expect(resolveTheme("travel", null)).toMatchObject({ id: "travel", title: THEMES[2]?.topic });
     expect(resolveTheme("custom", "  futebol de domingo ")).toMatchObject({
       id: "custom",
       title: "futebol de domingo",
@@ -179,7 +180,7 @@ describe("conversa aberta com o tutor", () => {
       level: "A1",
     });
     const view = await app.get("ana", sessionId);
-    expect(view.session).toMatchObject({ themeTitle: "Séries e filmes", review: null });
+    expect(view.session).toMatchObject({ themeTitle: THEMES[3]?.topic, review: null });
     expect(view.turns.map((turn) => [turn.role, turn.text])).toEqual([
       ["tutor", "Hey! What have you been watching lately?"],
     ]);
@@ -206,7 +207,7 @@ describe("conversa aberta com o tutor", () => {
       text: "Interesting! Can you tell me a bit more about that?",
     });
     expect(result.queuedForReview).toBe(2);
-    expect(app.queued[0]).toMatchObject({ userId: "ana", label: "Conversa · Comida" });
+    expect(app.queued[0]).toMatchObject({ userId: "ana", label: THEMES[4]?.topic });
     expect((await app.get("ana", sessionId)).turns).toHaveLength(3);
   });
 

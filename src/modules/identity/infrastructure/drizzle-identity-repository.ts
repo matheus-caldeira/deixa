@@ -2,6 +2,7 @@ import { and, eq, gt, like, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
 import { sessions, userPreferences, users } from "@/infrastructure/database/schema";
 import { isCefrLevel } from "@/shared/levels";
+import { DEFAULT_LOCALE, isLocale } from "@/shared/locales";
 import type { Accent, Preferences, User } from "../domain/user";
 import type {
   NewUser,
@@ -19,6 +20,7 @@ function toPreferences(row: PreferencesRow): Preferences {
   return {
     level: isCefrLevel(row.level) ? row.level : "A1",
     nativeLanguage: row.nativeLanguage,
+    locale: isLocale(row.locale) ? row.locale : DEFAULT_LOCALE,
     dailyGoal: row.dailyGoal,
     preferredAccent: (row.preferredAccent === "UK" ? "UK" : "US") satisfies Accent,
     audioSpeed: row.audioSpeed,
