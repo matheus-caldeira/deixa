@@ -93,7 +93,7 @@ export const SAMPLE_LINES = [
 export function sampleScript(episodeId: string): ReadableScript {
   return {
     episodeId,
-    hasPortuguese: true,
+    hasNative: true,
     lines: SAMPLE_LINES.map((line, index) => ({
       cueId: `cue-${index + 1}`,
       sequence: index + 1,

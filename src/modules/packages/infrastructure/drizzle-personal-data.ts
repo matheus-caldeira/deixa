@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
+import { isStudyLanguage, type StudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
   episodeProgress,
@@ -30,9 +31,6 @@ import type {
   PersonalMergeReport,
   PersonalWorkRef,
 } from "../application/ports";
-
-const LOCALE = "pt-BR";
-const ENGLISH = "en";
 
 type Deps = {
   db: Database;
@@ -90,13 +88,21 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
     );
   }
 
-  private async cueSequences(cueIds: string[]): Promise<Map<string, number>> {
+  private async cueSequences(
+    cueIds: string[],
+  ): Promise<Map<string, { sequence: number; language: StudyLanguage }>> {
     if (cueIds.length === 0) return new Map();
     const rows = await this.deps.db
-      .select({ id: subtitleCues.id, sequence: subtitleCues.sequence })
+      .select({ id: subtitleCues.id, sequence: subtitleCues.sequence, language: subtitleFiles.language })
       .from(subtitleCues)
+      .innerJoin(subtitleFiles, eq(subtitleFiles.id, subtitleCues.subtitleFileId))
       .where(inArray(subtitleCues.id, [...new Set(cueIds)]));
-    return new Map(rows.map((row) => [row.id, row.sequence]));
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        { sequence: row.sequence, language: isStudyLanguage(row.language) ? row.language : "en" },
+      ]),
+    );
   }
 
   async listReferencedWorks(userId: string): Promise<(PersonalWorkRef & { mediaId: string })[]> {
@@ -146,13 +152,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       .select({ card: userCards, item: learningItems, explanation: learningItemExplanations })
       .from(userCards)
       .innerJoin(learningItems, eq(learningItems.id, userCards.learningItemId))
-      .leftJoin(
-        learningItemExplanations,
-        and(
-          eq(learningItemExplanations.learningItemId, learningItems.id),
-          eq(learningItemExplanations.locale, LOCALE),
-        ),
-      )
+      .leftJoin(learningItemExplanations, eq(learningItemExplanations.learningItemId, learningItems.id))
       .where(eq(userCards.userId, userId));
     const reviews = cardRows.length
       ? await db
@@ -196,7 +196,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
     const cards: PersonalCard[] = [];
     for (const { card, item, explanation } of cardRows) {
       const location = item.episodeId ? locations.get(item.episodeId) : undefined;
-      const sequence = item.cueId ? sequences.get(item.cueId) : undefined;
+      const sequence = item.cueId ? sequences.get(item.cueId)?.sequence : undefined;
       const base = {
         sourceKind: card.sourceKind,
         dueAt: card.dueAt.toISOString(),
@@ -216,6 +216,8 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         explanation
       ) {
         const packaged: PackagedCard = {
+          language: isStudyLanguage(item.language) ? item.language : "en",
+          locale: isStudyLanguage(explanation.locale) ? explanation.locale : "pt-BR",
           cueSequence: sequence,
           startToken: item.startToken,
           endToken: item.endToken,
@@ -241,6 +243,8 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
           ...base,
           item: {
             origin: "standalone",
+            language: isStudyLanguage(item.language) ? item.language : "en",
+            locale: explanation && isStudyLanguage(explanation.locale) ? explanation.locale : "pt-BR",
             term: item.sourceText,
             meaning: explanation?.translation ?? "",
             context: item.contextText,
@@ -276,12 +280,13 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       },
       highlights: highlightRows.flatMap((row) => {
         const location = locations.get(row.episodeId);
-        const sequence = sequences.get(row.cueId);
-        if (!location || sequence === undefined) return [];
+        const cue = sequences.get(row.cueId);
+        if (!location || cue === undefined) return [];
         return [
           {
             ref: location.ref,
-            cueSequence: sequence,
+            language: cue.language,
+            cueSequence: cue.sequence,
             startToken: row.startToken,
             endToken: row.endToken,
             kind: row.kind as "word" | "phrase" | "line",
@@ -329,11 +334,11 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
     return episode?.id ?? null;
   }
 
-  private async englishCues(episodeId: string): Promise<Map<number, string>> {
+  private async cuesOf(episodeId: string, language: StudyLanguage): Promise<Map<number, string>> {
     const [file] = await this.deps.db
       .select({ id: subtitleFiles.id })
       .from(subtitleFiles)
-      .where(and(eq(subtitleFiles.episodeId, episodeId), eq(subtitleFiles.language, ENGLISH)))
+      .where(and(eq(subtitleFiles.episodeId, episodeId), eq(subtitleFiles.language, language)))
       .limit(1);
     if (!file) return new Map();
     const rows = await this.deps.db
@@ -361,9 +366,14 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       if (!episodeCache.has(key)) episodeCache.set(key, await this.resolveEpisode(ref));
       return episodeCache.get(key) ?? null;
     };
-    const cueFor = async (episodeId: string, sequence: number): Promise<string | null> => {
-      if (!cueCache.has(episodeId)) cueCache.set(episodeId, await this.englishCues(episodeId));
-      return cueCache.get(episodeId)?.get(sequence) ?? null;
+    const cueFor = async (
+      episodeId: string,
+      language: StudyLanguage,
+      sequence: number,
+    ): Promise<string | null> => {
+      const key = `${episodeId}:${language}`;
+      if (!cueCache.has(key)) cueCache.set(key, await this.cuesOf(episodeId, language));
+      return cueCache.get(key)?.get(sequence) ?? null;
     };
 
     await db
@@ -379,7 +389,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
 
     for (const highlight of data.highlights) {
       const episodeId = await episodeFor(highlight.ref);
-      const cueId = episodeId ? await cueFor(episodeId, highlight.cueSequence) : null;
+      const cueId = episodeId ? await cueFor(episodeId, highlight.language, highlight.cueSequence) : null;
       if (!episodeId || !cueId) {
         report.skipped += 1;
         continue;
@@ -407,13 +417,16 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       let learningItemId: string | null = null;
       if (card.item.origin === "episode") {
         const episodeId = await episodeFor(card.item.ref);
-        const cueId = episodeId ? await cueFor(episodeId, card.item.card.cueSequence) : null;
+        const cueId = episodeId
+          ? await cueFor(episodeId, card.item.card.language, card.item.card.cueSequence)
+          : null;
         if (!episodeId || !cueId) {
           report.skipped += 1;
           continue;
         }
         const packaged = card.item.card;
-        const reusable = (await this.deps.learning.findReusable(userId, episodeId)).find(
+        const pair = { target: packaged.language, native: packaged.locale };
+        const reusable = (await this.deps.learning.findReusable(userId, episodeId, pair)).find(
           (item) =>
             item.cueId === cueId &&
             item.startToken === packaged.startToken &&
@@ -425,6 +438,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
           await this.deps.learning.createItem({
             id: learningItemId,
             episodeId,
+            pair,
             visibility: "private",
             ownerUserId: userId,
             createdAt: new Date(card.createdAt),
@@ -456,6 +470,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         learningItemId = await this.deps.learning.upsertStandaloneItem({
           id: this.deps.ids.next(),
           ownerUserId: userId,
+          pair: { target: card.item.language, native: card.item.locale },
           term: card.item.term,
           meaning: card.item.meaning,
           context: card.item.context,

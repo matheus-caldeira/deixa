@@ -105,7 +105,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.getByRole("button", { name: "EN + PT", exact: true }).click();
   await expect(page.getByText("Nada demais. Ia ficar em casa e colocar o sono em dia.")).toBeVisible();
   await expect(page.getByRole("button", { name: "traduzir com IA" })).toHaveCount(1);
-  await page.getByRole("button", { name: "Só inglês" }).click();
+  await page.getByRole("button", { name: "Só EN" }).click();
   await expect(firstTranslation).toHaveCount(0);
   await page.getByRole("button", { name: "EN + PT", exact: true }).click();
 

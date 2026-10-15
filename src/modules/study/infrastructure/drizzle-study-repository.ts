@@ -1,4 +1,5 @@
 import { and, asc, eq, ne, or, sql } from "drizzle-orm";
+import { pairKey, type LanguagePair } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import { lessonAttempts, lessonPlans } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
@@ -19,6 +20,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
   async listAttempts(
     userId: string,
     episodeId: string,
+    pair: LanguagePair,
     level: CefrLevel,
   ): Promise<{ nodeIndex: number; passed: boolean; createdAt: Date }[]> {
     return this.db
@@ -32,6 +34,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
         and(
           eq(lessonAttempts.userId, userId),
           eq(lessonAttempts.episodeId, episodeId),
+          eq(lessonAttempts.languagePair, pairKey(pair)),
           eq(lessonAttempts.level, level),
         ),
       )
@@ -39,14 +42,21 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
   }
 
   async saveAttempt(attempt: LessonAttempt): Promise<void> {
-    await this.db.insert(lessonAttempts).values(attempt);
+    const { pair, ...row } = attempt;
+    await this.db.insert(lessonAttempts).values({ ...row, languagePair: pairKey(pair) });
   }
 
-  async find(episodeId: string, level: CefrLevel): Promise<StoredPlan | null> {
+  async find(episodeId: string, pair: LanguagePair, level: CefrLevel): Promise<StoredPlan | null> {
     const [row] = await this.db
       .select()
       .from(lessonPlans)
-      .where(and(eq(lessonPlans.episodeId, episodeId), eq(lessonPlans.level, level)))
+      .where(
+        and(
+          eq(lessonPlans.episodeId, episodeId),
+          eq(lessonPlans.languagePair, pairKey(pair)),
+          eq(lessonPlans.level, level),
+        ),
+      )
       .limit(1);
     if (!row) return null;
     const parsed = row.plan ? lessonPlanSchema.safeParse(row.plan) : null;
@@ -61,7 +71,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
   }
 
   private async upsert(
-    input: { id: string; episodeId: string; level: CefrLevel; now: Date },
+    input: { id: string; episodeId: string; pair: LanguagePair; level: CefrLevel; now: Date },
     values: {
       status: string;
       provider: string | null;
@@ -75,6 +85,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
       .values({
         id: input.id,
         episodeId: input.episodeId,
+        languagePair: pairKey(input.pair),
         level: input.level,
         requestedBy,
         createdAt: input.now,
@@ -82,7 +93,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
         ...values,
       })
       .onConflictDoUpdate({
-        target: [lessonPlans.episodeId, lessonPlans.level],
+        target: [lessonPlans.episodeId, lessonPlans.languagePair, lessonPlans.level],
         set: { ...values, updatedAt: input.now },
         setWhere: or(
           ne(lessonPlans.status, "READY"),
@@ -94,6 +105,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
   async markPending(input: {
     id: string;
     episodeId: string;
+    pair: LanguagePair;
     level: CefrLevel;
     requestedBy: string;
     now: Date;
@@ -108,6 +120,7 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
   async saveReady(input: {
     id: string;
     episodeId: string;
+    pair: LanguagePair;
     level: CefrLevel;
     plan: LessonPlan;
     now: Date;
@@ -119,13 +132,20 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
     );
   }
 
-  async markFailed(input: { episodeId: string; level: CefrLevel; reason: string; now: Date }): Promise<void> {
+  async markFailed(input: {
+    episodeId: string;
+    pair: LanguagePair;
+    level: CefrLevel;
+    reason: string;
+    now: Date;
+  }): Promise<void> {
     await this.db
       .update(lessonPlans)
       .set({ status: "FAILED", failureReason: input.reason.slice(0, 300), updatedAt: input.now })
       .where(
         and(
           eq(lessonPlans.episodeId, input.episodeId),
+          eq(lessonPlans.languagePair, pairKey(input.pair)),
           eq(lessonPlans.level, input.level),
           eq(lessonPlans.status, "PENDING"),
         ),

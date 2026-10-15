@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { CefrLevel } from "@/shared/levels";
 import { MS_PER_DAY } from "@/shared/time";
 
@@ -31,6 +32,7 @@ export type MediaItem = {
   levelMin: CefrLevel;
   levelMax: CefrLevel;
   accent: string | null;
+  originalLanguage: StudyLanguage;
   uploaderName: string | null;
   metadataSyncedAt: Date | null;
 };
@@ -57,7 +59,7 @@ export type Episode = {
   cueCount: number;
   alignmentPairs: number | null;
   alignmentRate: number | null;
-  hasPortuguese: boolean;
+  subtitleLanguages: StudyLanguage[];
 };
 
 export type EpisodeContext = { episode: Episode; season: Season; media: MediaItem };

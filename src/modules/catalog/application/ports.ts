@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { CefrLevel } from "@/shared/levels";
 import type {
   Episode,
@@ -21,6 +22,7 @@ export type WorkSummary = {
   posterPath: string | null;
   backdropPath?: string | null;
   posterColors?: PosterColors;
+  originalLanguage?: string | null;
 };
 
 export type WorkCandidate = WorkSummary & {
@@ -52,7 +54,7 @@ export interface MetadataProvider {
   getWork(type: MediaType, externalId: string): Promise<WorkDetails>;
   getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]>;
   listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]>;
-  listPopularWorks(): Promise<WorkCandidate[]>;
+  listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]>;
 }
 
 export type MediaUpsert = {
@@ -70,6 +72,7 @@ export type MediaUpsert = {
   levelMin: CefrLevel;
   levelMax: CefrLevel;
   accent: string | null;
+  originalLanguage: StudyLanguage;
   createdBy: string | null;
   syncedAt: Date | null;
   createdAt: Date;

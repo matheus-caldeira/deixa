@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { pairOf } from "@/modules/identity";
 import { RATINGS } from "@/modules/flashcards";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
@@ -20,7 +21,7 @@ export async function gradeCardAction(
       })
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const result = await app().gradeCard({ userId: user.id, ...parsed.data });
+    const result = await app().gradeCard({ userId: user.id, pair: pairOf(user.preferences), ...parsed.data });
     await app().settleMissions(user.id, user.preferences.timezone);
     revalidatePath("/", "layout");
     return result;
@@ -30,7 +31,7 @@ export async function gradeCardAction(
 export async function anticipateReviewAction(): Promise<ActionResult<{ moved: number }>> {
   const user = await requireUser();
   return runAction("anticipateReview", async () => {
-    const result = await app().anticipateReview(user.id);
+    const result = await app().anticipateReview(user.id, pairOf(user.preferences));
     revalidatePath("/", "layout");
     return result;
   });

@@ -14,6 +14,8 @@ import { InMemoryCards } from "./testing/fakes";
 
 const DAY = 24 * 60 * 60 * 1000;
 
+const PAIR = { target: "en", native: "pt-BR" } as const;
+
 describe("agendamento da revisão", () => {
   it("mostra o próximo intervalo de cada nota para um card novo", () => {
     expect(previewIntervals(NEW_CARD_STATE)).toEqual({
@@ -101,7 +103,7 @@ describe("fila de revisão", () => {
     expect(await app.addCards("lucas", [{ learningItemId: "item-1", sourceKind: "highlight_catalog" }])).toBe(
       1,
     );
-    const queue = await app.listDue("ana");
+    const queue = await app.listDue("ana", PAIR);
     expect(queue.dueCount).toBe(1);
     expect(queue.cards[0]).toMatchObject({
       mediaTitle: "How I Met Your Mother",
@@ -115,40 +117,42 @@ describe("fila de revisão", () => {
         easy: { unit: "days", value: 7 },
       },
     });
-    expect((await app.listDue("lucas")).cards[0]?.sourceKind).toBe("highlight_catalog");
+    expect((await app.listDue("lucas", PAIR)).cards[0]?.sourceKind).toBe("highlight_catalog");
   });
 
   it("agenda a próxima revisão, registra o histórico e rende XP", async () => {
     await app.addCards("ana", [{ learningItemId: "item-1", sourceKind: "highlight_private" }]);
-    const cardId = (await app.listDue("ana")).cards[0]?.cardId ?? "";
-    const result = await app.grade({ userId: "ana", cardId, rating: "good" });
+    const cardId = (await app.listDue("ana", PAIR)).cards[0]?.cardId ?? "";
+    const result = await app.grade({ userId: "ana", pair: PAIR, cardId, rating: "good" });
     expect(result).toEqual({ dueCount: 0, xpAwarded: 2 });
     expect(app.cards.logs).toMatchObject([{ cardId, rating: "good" }]);
     expect(app.xp).toEqual([{ userId: "ana", source: "review", amount: 2 }]);
 
     app.clock.advanceDays(2);
-    expect(await app.countDue("ana")).toBe(0);
+    expect(await app.countDue("ana", PAIR)).toBe(0);
     app.clock.advanceDays(1);
-    expect(await app.countDue("ana")).toBe(1);
+    expect(await app.countDue("ana", PAIR)).toBe(1);
   });
 
   it("De novo traz o card de volta em minutos", async () => {
     await app.addCards("ana", [{ learningItemId: "item-1", sourceKind: "highlight_private" }]);
-    const cardId = (await app.listDue("ana")).cards[0]?.cardId ?? "";
-    await app.grade({ userId: "ana", cardId, rating: "again" });
-    expect(await app.countDue("ana")).toBe(0);
+    const cardId = (await app.listDue("ana", PAIR)).cards[0]?.cardId ?? "";
+    await app.grade({ userId: "ana", pair: PAIR, cardId, rating: "again" });
+    expect(await app.countDue("ana", PAIR)).toBe(0);
     app.clock.advanceMs(11 * 60 * 1000);
-    expect(await app.countDue("ana")).toBe(1);
+    expect(await app.countDue("ana", PAIR)).toBe(1);
   });
 
   it("um usuário não vê nem avalia o card do outro", async () => {
     await app.addCards("ana", [{ learningItemId: "item-1", sourceKind: "highlight_private" }]);
-    const anaCardId = (await app.listDue("ana")).cards[0]?.cardId ?? "";
-    expect((await app.listDue("lucas")).cards).toEqual([]);
-    await expect(app.grade({ userId: "lucas", cardId: anaCardId, rating: "easy" })).rejects.toMatchObject({
+    const anaCardId = (await app.listDue("ana", PAIR)).cards[0]?.cardId ?? "";
+    expect((await app.listDue("lucas", PAIR)).cards).toEqual([]);
+    await expect(
+      app.grade({ userId: "lucas", pair: PAIR, cardId: anaCardId, rating: "easy" }),
+    ).rejects.toMatchObject({
       code: "CARD_NOT_FOUND",
     });
-    expect(await app.countDue("ana")).toBe(1);
+    expect(await app.countDue("ana", PAIR)).toBe(1);
     expect(app.xp).toEqual([]);
   });
 
@@ -160,11 +164,11 @@ describe("fila de revisão", () => {
     }));
     await app.addCards("ana", items);
     for (let round = 0; round < 2; round += 1) {
-      for (const card of (await app.listDue("ana")).cards)
-        await app.grade({ userId: "ana", cardId: card.cardId, rating: "good" });
+      for (const card of (await app.listDue("ana", PAIR)).cards)
+        await app.grade({ userId: "ana", pair: PAIR, cardId: card.cardId, rating: "good" });
     }
-    expect(await app.countDue("ana")).toBe(0);
-    expect(await app.status("ana", tz)).toMatchObject({
+    expect(await app.countDue("ana", PAIR)).toBe(0);
+    expect(await app.status("ana", tz, PAIR)).toMatchObject({
       available: true,
       upcoming: 24,
       batchSize: 10,
@@ -172,22 +176,22 @@ describe("fila de revisão", () => {
     });
 
     for (const expected of [10, 10, 4]) {
-      expect(await app.anticipate("ana")).toEqual({ moved: expected });
+      expect(await app.anticipate("ana", PAIR)).toEqual({ moved: expected });
     }
-    expect(await app.countDue("ana")).toBe(24);
-    expect(await app.status("ana", tz)).toMatchObject({ usedToday: 3, upcoming: 0, available: false });
-    await expect(app.anticipate("ana")).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(await app.countDue("ana", PAIR)).toBe(24);
+    expect(await app.status("ana", tz, PAIR)).toMatchObject({ usedToday: 3, upcoming: 0, available: false });
+    await expect(app.anticipate("ana", PAIR)).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 
   it("a antecipação de um usuário não mexe nos cartões do outro", async () => {
     await app.addCards("ana", [{ learningItemId: "a", sourceKind: "curated" }]);
     await app.addCards("lucas", [{ learningItemId: "b", sourceKind: "curated" }]);
     for (const user of ["ana", "lucas"]) {
-      const cardId = (await app.listDue(user)).cards[0]?.cardId ?? "";
-      await app.grade({ userId: user, cardId, rating: "good" });
+      const cardId = (await app.listDue(user, PAIR)).cards[0]?.cardId ?? "";
+      await app.grade({ userId: user, pair: PAIR, cardId, rating: "good" });
     }
-    await app.anticipate("ana");
-    expect(await app.countDue("ana")).toBe(1);
-    expect(await app.countDue("lucas")).toBe(0);
+    await app.anticipate("ana", PAIR);
+    expect(await app.countDue("ana", PAIR)).toBe(1);
+    expect(await app.countDue("lucas", PAIR)).toBe(0);
   });
 });

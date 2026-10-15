@@ -1,3 +1,4 @@
+import type { LanguagePair } from "@/shared/study-languages";
 import { normalizeTerm } from "@/shared/text";
 import type { ItemType } from "../domain/learning";
 import type { ExplainRequest, LlmProvider } from "../application/ports";
@@ -118,7 +119,7 @@ export class FakeLlmProvider implements LlmProvider {
     }));
   }
 
-  async translateLines(lines: { id: string; text: string }[]): Promise<unknown> {
+  async translateLines(lines: { id: string; text: string }[], _pair: LanguagePair): Promise<unknown> {
     this.translationCalls += 1;
     return lines.map((line) => ({ id: line.id, translation: fakeTranslation(line.text) }));
   }

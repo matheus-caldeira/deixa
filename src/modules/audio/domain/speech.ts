@@ -1,12 +1,27 @@
 import { sha256Hex } from "@/shared/hash";
+import type { StudyLanguage } from "@/shared/study-languages";
 
 export type Accent = "US" | "UK";
 export type Voice = { voiceId: string; language: string };
 
-export const VOICE_BY_ACCENT: Record<Accent, Voice> = {
+const ENGLISH_VOICES: Record<Accent, Voice> = {
   US: { voiceId: "af_heart", language: "en-us" },
   UK: { voiceId: "bf_emma", language: "en-gb" },
 };
+
+export const VOICES_BY_LANGUAGE: Record<StudyLanguage, readonly Voice[]> = {
+  en: [ENGLISH_VOICES.US, ENGLISH_VOICES.UK],
+  "pt-BR": [{ voiceId: "pf_dora", language: "pt-br" }],
+  es: [{ voiceId: "ef_dora", language: "es" }],
+  fr: [{ voiceId: "ff_siwis", language: "fr-fr" }],
+};
+
+export const ALL_VOICES: readonly Voice[] = Object.values(VOICES_BY_LANGUAGE).flat();
+
+export function voiceFor(language: StudyLanguage, accent: Accent): Voice {
+  if (language === "en") return ENGLISH_VOICES[accent];
+  return VOICES_BY_LANGUAGE[language][0] ?? ENGLISH_VOICES.US;
+}
 
 export const MAX_SPEECH_TEXT_LENGTH = 500;
 const WAV_HEADER_BYTES = 44;

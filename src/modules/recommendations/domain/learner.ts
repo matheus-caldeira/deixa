@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { StudyLanguage } from "@/shared/study-languages";
 import { CEFR_LEVELS, levelIndex, type CefrLevel, type LevelFit } from "@/shared/levels";
 
 export type StudiedWork = {
@@ -13,6 +14,7 @@ export type StudiedWork = {
 
 export type LearnerSignals = {
   level: CefrLevel;
+  language: StudyLanguage;
   works: StudiedWork[];
   lessons: { answers: number; correct: number; attempts: number; failed: number };
   reviews: { total: number; again: number };
@@ -157,6 +159,7 @@ export function signalsFingerprint(signals: LearnerSignals, feedbackCount: numbe
   const assessment = assessLearner(signals);
   return JSON.stringify([
     signals.level,
+    signals.language,
     signals.works
       .map((work) => `${work.workKey}:${bucket(work.engagement, ENGAGEMENT_STEP)}`)
       .sort((left, right) => left.localeCompare(right)),

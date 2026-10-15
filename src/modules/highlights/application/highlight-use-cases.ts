@@ -2,6 +2,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import { tokenize } from "@/shared/text";
+import type { LanguagePair } from "@/shared/study-languages";
 import {
   spanKey,
   spansFromMarks,
@@ -17,7 +18,7 @@ type Deps = { highlights: HighlightRepository; loadScript: LoadScript; clock: Cl
 export type ReadingLine = ReadableLine & { tokens: string[]; markedByCount: number | null };
 export type ReadingView = {
   episodeId: string;
-  hasPortuguese: boolean;
+  hasNative: boolean;
   lines: ReadingLine[];
   highlights: Highlight[];
 };
@@ -26,9 +27,10 @@ export function makeSyncHighlights(deps: Deps) {
   return async function syncHighlights(input: {
     userId: string;
     episodeId: string;
+    pair: LanguagePair;
     marks: CueMarks[];
   }): Promise<Highlight[]> {
-    const script = await deps.loadScript(input.episodeId);
+    const script = await deps.loadScript(input.episodeId, input.pair);
     if (!script) throw new AppError("EPISODE_NOT_READY");
     const tokenCountByCue = new Map(script.lines.map((line) => [line.cueId, tokenize(line.text).length]));
     const desired = spansFromMarks(input.marks, tokenCountByCue);
@@ -53,8 +55,12 @@ export function makeSyncHighlights(deps: Deps) {
 }
 
 export function makeGetReadingView(deps: Pick<Deps, "highlights" | "loadScript">) {
-  return async function getReadingView(userId: string, episodeId: string): Promise<ReadingView> {
-    const script = await deps.loadScript(episodeId);
+  return async function getReadingView(
+    userId: string,
+    episodeId: string,
+    pair: LanguagePair,
+  ): Promise<ReadingView> {
+    const script = await deps.loadScript(episodeId, pair);
     if (!script) throw new AppError("EPISODE_NOT_READY");
     const [highlights, stats] = await Promise.all([
       deps.highlights.listForEpisode(userId, episodeId),
@@ -63,7 +69,7 @@ export function makeGetReadingView(deps: Pick<Deps, "highlights" | "loadScript">
     const counts = visibleMarkCounts(stats);
     return {
       episodeId,
-      hasPortuguese: script.hasPortuguese,
+      hasNative: script.hasNative,
       highlights,
       lines: script.lines.map((line) => ({
         ...line,

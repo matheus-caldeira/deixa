@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { AppError } from "@/shared/errors";
-import type { SubtitleCandidate } from "../domain/ranking";
+import type { SourceLanguage, SubtitleCandidate } from "../domain/ranking";
 import {
   SourceQuotaExceeded,
+  type SourceQuery,
   type SourceQuota,
   type SubtitleSourceProvider,
 } from "../application/source-use-cases";
@@ -12,6 +13,7 @@ const FIXTURES: Record<string, string> = {
   "fake-en-1": "sample.en.srt",
   "fake-en-2": "sample.en.srt",
   "fake-pt-1": "sample.pt-BR.srt",
+  "fake-es-1": "sample.es.srt",
 };
 const DAILY_LIMIT = 10;
 
@@ -52,6 +54,18 @@ export const FAKE_CANDIDATES: readonly SubtitleCandidate[] = [
     fps: 23.976,
     uploader: "demo",
   },
+  {
+    fileId: "fake-es-1",
+    language: "es",
+    release: "Sample.Show.S01E01.720p.WEB-DEMO",
+    fileName: "sample.es.srt",
+    downloads: 600,
+    rating: 8,
+    hearingImpaired: false,
+    machineTranslated: false,
+    fps: 23.976,
+    uploader: "demo",
+  },
 ];
 
 export class FakeSubtitleSourceProvider implements SubtitleSourceProvider {
@@ -59,9 +73,9 @@ export class FakeSubtitleSourceProvider implements SubtitleSourceProvider {
   readonly calls = { search: 0, download: 0 };
   private remaining = DAILY_LIMIT;
 
-  async search(): Promise<SubtitleCandidate[]> {
+  async search(_query: SourceQuery, languages: readonly SourceLanguage[]): Promise<SubtitleCandidate[]> {
     this.calls.search += 1;
-    return [...FAKE_CANDIDATES];
+    return FAKE_CANDIDATES.filter((candidate) => languages.includes(candidate.language));
   }
 
   async download(

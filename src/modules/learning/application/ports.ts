@@ -1,4 +1,5 @@
 import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair, StudyLanguage } from "@/shared/study-languages";
 import type { CardDraft, CardScope, MarkKind, ReusableItem, Visibility } from "../domain/learning";
 
 export type ExplainRequestItem = {
@@ -9,13 +10,13 @@ export type ExplainRequestItem = {
   lineTranslation: string | null;
 };
 
-export type ExplainRequest = { learnerLevel: CefrLevel; items: ExplainRequestItem[] };
+export type ExplainRequest = { learnerLevel: CefrLevel; pair: LanguagePair; items: ExplainRequestItem[] };
 export type LlmProviderName = string;
 
 export interface LlmProvider {
   readonly name: LlmProviderName;
   explainTerms(request: ExplainRequest): Promise<unknown>;
-  translateLines(lines: { id: string; text: string }[]): Promise<unknown>;
+  translateLines(lines: { id: string; text: string }[], pair: LanguagePair): Promise<unknown>;
 }
 
 export type ResolveLlm = (userId: string) => Promise<LlmProvider>;
@@ -23,6 +24,7 @@ export type ResolveLlm = (userId: string) => Promise<LlmProvider>;
 export type NewLearningItem = {
   id: string;
   episodeId: string;
+  pair: LanguagePair;
   draft: CardDraft;
   visibility: Visibility;
   ownerUserId: string | null;
@@ -48,7 +50,7 @@ export type CatalogSuggestion = {
 };
 
 export interface LearningRepository {
-  findReusable(userId: string, episodeId: string): Promise<ReusableItem[]>;
+  findReusable(userId: string, episodeId: string, pair: LanguagePair): Promise<ReusableItem[]>;
   createItem(item: NewLearningItem): Promise<void>;
   promoteToGlobal(userId: string, itemId: string): Promise<void>;
   saveDraftBatch(batch: {
@@ -70,17 +72,18 @@ export interface LearningRepository {
     scope: CardScope;
     cardsCreated: number;
   }): Promise<void>;
-  listGlobalSuggestions(episodeId: string): Promise<CatalogSuggestion[]>;
+  listGlobalSuggestions(episodeId: string, language: StudyLanguage): Promise<CatalogSuggestion[]>;
   upsertStandaloneItem(item: {
     id: string;
     ownerUserId: string;
+    pair: LanguagePair;
     term: string;
     meaning: string;
     context: string | null;
     origin: string;
     createdAt: Date;
   }): Promise<string>;
-  findSpeakableText(userId: string, itemId: string): Promise<string | null>;
+  findSpeakable(userId: string, itemId: string): Promise<{ text: string; language: StudyLanguage } | null>;
 }
 
 export type ScriptLineForCards = {
@@ -101,7 +104,7 @@ export type PendingHighlight = {
 };
 
 export type LearningCollaborators = {
-  loadScript: (episodeId: string) => Promise<{ lines: ScriptLineForCards[] } | null>;
+  loadScript: (episodeId: string, pair: LanguagePair) => Promise<{ lines: ScriptLineForCards[] } | null>;
   listPendingHighlights: (userId: string, episodeId: string) => Promise<PendingHighlight[]>;
   markHighlightsCarded: (input: {
     userId: string;

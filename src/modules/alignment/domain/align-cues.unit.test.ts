@@ -8,7 +8,7 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     const en = [cue("en1", 1000, 3000), cue("en2", 4000, 6000), cue("en3", 7000, 9000)];
     const pt = [cue("pt1", 1050, 3100), cue("pt2", 3950, 5900), cue("pt3", 7100, 9050)];
     const result = alignCues(en, pt);
-    expect(result.alignments.map((a) => [a.enCueId, a.ptCueIds, a.status])).toEqual([
+    expect(result.alignments.map((a) => [a.sourceCueId, a.alignedCueIds, a.status])).toEqual([
       ["en1", ["pt1"], "ALIGNED"],
       ["en2", ["pt2"], "ALIGNED"],
       ["en3", ["pt3"], "ALIGNED"],
@@ -23,18 +23,22 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     const pt = [cue("pt1", 0, 1900), cue("pt2", 2000, 4000), cue("pt3", 5000, 7000)];
     const result = alignCues(en, pt);
     expect(result.alignments[0]).toMatchObject({
-      enCueId: "en1",
-      ptCueIds: ["pt1", "pt2"],
+      sourceCueId: "en1",
+      alignedCueIds: ["pt1", "pt2"],
       status: "ALIGNED",
     });
-    expect(result.alignments[1]).toMatchObject({ enCueId: "en2", ptCueIds: ["pt3"], status: "ALIGNED" });
+    expect(result.alignments[1]).toMatchObject({
+      sourceCueId: "en2",
+      alignedCueIds: ["pt3"],
+      status: "ALIGNED",
+    });
   });
 
   it("alinha N:1 quando a legenda PT juntou duas falas", () => {
     const en = [cue("en1", 0, 2000), cue("en2", 2100, 4000), cue("en3", 6000, 8000)];
     const pt = [cue("pt1", 0, 4000), cue("pt2", 6000, 8000)];
     const result = alignCues(en, pt);
-    expect(result.alignments.map((a) => a.ptCueIds)).toEqual([["pt1"], ["pt1"], ["pt2"]]);
+    expect(result.alignments.map((a) => a.alignedCueIds)).toEqual([["pt1"], ["pt1"], ["pt2"]]);
     expect(result.alignedCount).toBe(3);
   });
 
@@ -49,7 +53,7 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     expect(estimateFixedOffset(en, pt)).toBe(-800);
     const result = alignCues(en, pt);
     expect(result.offsetMs).toBe(-800);
-    expect(result.alignments.map((a) => a.ptCueIds)).toEqual([["pt1"], ["pt2"], ["pt3"], ["pt4"]]);
+    expect(result.alignments.map((a) => a.alignedCueIds)).toEqual([["pt1"], ["pt2"], ["pt3"], ["pt4"]]);
     expect(result.alignments.every((a) => a.overlapScore === 1 && a.offsetMs === -800)).toBe(true);
   });
 
@@ -66,7 +70,7 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     const pt = [cue("pt1", 0, 2000), cue("pt3", 7500, 9500)];
     const result = alignCues(en, pt);
     expect(result.alignments.map((a) => a.status)).toEqual(["ALIGNED", "UNALIGNED", "UNALIGNED"]);
-    expect(result.alignments[1]).toMatchObject({ ptCueIds: [], overlapScore: 0 });
+    expect(result.alignments[1]).toMatchObject({ alignedCueIds: [], overlapScore: 0 });
     expect(result.alignments[2]?.overlapScore).toBe(0.25);
     expect(result.rate).toBeCloseTo(1 / 3);
   });
@@ -75,13 +79,13 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     const en = [cue("en1", 0, 2000), cue("en2", 2000, 4000)];
     const pt = [cue("pt1", 0, 2100), cue("pt2", 2100, 4000)];
     const result = alignCues(en, pt);
-    expect(result.alignments.map((a) => a.ptCueIds)).toEqual([["pt1"], ["pt2"]]);
+    expect(result.alignments.map((a) => a.alignedCueIds)).toEqual([["pt1"], ["pt2"]]);
   });
 
   it("é determinístico e aceita listas vazias", () => {
     const en = [cue("en1", 0, 1000)];
     expect(alignCues(en, [])).toEqual(alignCues(en, []));
-    expect(alignCues(en, []).alignments[0]).toMatchObject({ status: "UNALIGNED", ptCueIds: [] });
+    expect(alignCues(en, []).alignments[0]).toMatchObject({ status: "UNALIGNED", alignedCueIds: [] });
     expect(alignCues([], []).rate).toBe(0);
   });
 
@@ -109,7 +113,9 @@ describe("alinhamento EN ↔ PT por sobreposição de tempo", () => {
     ];
     const result = alignCues(en, pt);
     expect(result.rate).toBe(1);
-    expect(result.alignments[150]?.ptCueIds).toEqual(["pt-en150"]);
-    expect(result.alignments.filter((a) => a.ptCueIds.includes("pt-gigante")).length).toBeLessThanOrEqual(10);
+    expect(result.alignments[150]?.alignedCueIds).toEqual(["pt-en150"]);
+    expect(
+      result.alignments.filter((a) => a.alignedCueIds.includes("pt-gigante")).length,
+    ).toBeLessThanOrEqual(10);
   });
 });

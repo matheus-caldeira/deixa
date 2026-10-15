@@ -2,8 +2,8 @@ export type TimedCue = { id: string; startMs: number; endMs: number };
 export type AlignmentStatus = "ALIGNED" | "UNALIGNED";
 
 export type CueAlignment = {
-  enCueId: string;
-  ptCueIds: string[];
+  sourceCueId: string;
+  alignedCueIds: string[];
   overlapScore: number;
   offsetMs: number;
   status: AlignmentStatus;
@@ -121,8 +121,8 @@ export function alignCues(enCues: readonly TimedCue[], ptCues: readonly TimedCue
     const overlapScore = Math.min(1, Math.round((covered / duration(english)) * 1000) / 1000);
     const aligned = overlapScore >= ALIGNMENT_THRESHOLD;
     return {
-      enCueId: english.id,
-      ptCueIds: aligned ? contributors.map(({ portuguese }) => portuguese.id) : [],
+      sourceCueId: english.id,
+      alignedCueIds: aligned ? contributors.map(({ portuguese }) => portuguese.id) : [],
       overlapScore,
       offsetMs,
       status: aligned ? "ALIGNED" : "UNALIGNED",

@@ -25,6 +25,15 @@ validar e anote o resultado; o que falhar vira tarefa.
 - [ ] Com a conta em inglês (perfil → English), o aviso da bandeja ao chegar uma notificação sai em inglês;
       os menus nativos continuam em português (pendência conhecida).
 
+## Idiomas (qualquer máquina, com chaves reais)
+
+- [ ] Com a chave do OpenSubtitles, buscar legendas de um episódio com uma conta espanhol → português:
+      aparecem opções em ES e PT e o download importa o par.
+- [ ] Com o Kokoro ligado, ouvir uma fala em espanhol (`ef_dora`), uma em francês (`ff_siwis`) e uma em
+      português (`pf_dora`): voz no idioma certo. Inglês segue com o sotaque do perfil.
+- [ ] Com uma chave de IA, gerar cards numa conta espanhol → português: explicações em português sobre termos
+      em espanhol; na conta inglês → espanhol, explicações em espanhol.
+
 ## Linux
 
 - [ ] AppImage e `.deb` abrem (WebKitGTK).

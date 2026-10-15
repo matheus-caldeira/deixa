@@ -7,11 +7,11 @@ import {
   type SubtitleSourceProvider,
 } from "@/modules/subtitle-sources";
 import { AppError } from "@/shared/errors";
+import { normalizeLanguageTag } from "@/shared/study-languages";
 import { downloadSchema, loginSchema, quotaSchema, searchSchema, type SearchResponse } from "./schemas";
 
 const BASE_URL = "https://api.opensubtitles.com/api/v1";
 const USER_AGENT = "Deixa v0.1";
-const LANGUAGES = "en,pt-br";
 const TIMEOUT_MS = 10_000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 600;
@@ -32,12 +32,9 @@ export type OpenSubtitlesFetch = (
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-function toLanguage(value: string): SourceLanguage | null {
-  const normalized = value.toLowerCase();
-  if (normalized === "en") return "en";
-  if (normalized === "pt-br") return "pt-BR";
-  return null;
-}
+const toLanguage = (value: string): SourceLanguage | null => normalizeLanguageTag(value);
+
+const toRequestTag = (language: SourceLanguage): string => language.toLowerCase();
 
 export function mapSearchResponse(response: SearchResponse): SubtitleCandidate[] {
   const candidates: SubtitleCandidate[] = [];
@@ -74,11 +71,12 @@ function toQuota(remaining: number | undefined, resetTime: string | undefined): 
   };
 }
 
-function searchParams(query: SourceQuery): Record<string, string> {
-  if (query.kind === "movie") return { languages: LANGUAGES, tmdb_id: query.tmdbId };
+function searchParams(query: SourceQuery, languages: readonly SourceLanguage[]): Record<string, string> {
+  const requested = [...new Set(languages.map(toRequestTag))].sort().join(",");
+  if (query.kind === "movie") return { languages: requested, tmdb_id: query.tmdbId };
   return {
     episode_number: String(query.episodeNumber),
-    languages: LANGUAGES,
+    languages: requested,
     parent_tmdb_id: query.showTmdbId,
     season_number: String(query.seasonNumber),
   };
@@ -161,9 +159,10 @@ export class OpenSubtitlesProvider implements SubtitleSourceProvider {
     this.token = parsed.data.token;
   }
 
-  async search(query: SourceQuery): Promise<SubtitleCandidate[]> {
+  async search(query: SourceQuery, languages: readonly SourceLanguage[]): Promise<SubtitleCandidate[]> {
     const url = new URL(`${BASE_URL}/subtitles`);
-    for (const [name, value] of Object.entries(searchParams(query))) url.searchParams.set(name, value);
+    for (const [name, value] of Object.entries(searchParams(query, languages)))
+      url.searchParams.set(name, value);
     const response = await this.send("GET", url.toString(), undefined, false);
     if (!response.ok) throw this.failure(response);
     const parsed = searchSchema.safeParse(await response.json().catch(() => null));

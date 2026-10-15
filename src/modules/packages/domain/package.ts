@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studyLanguageSchema } from "@/shared/study-languages";
 
 export const PACKAGE_FORMAT_VERSION = 1;
 export const PACKAGE_EXTENSION = ".deixa.zip";
@@ -52,7 +53,7 @@ export const packagedEpisodeSchema = z.object({
   stillPath: z.string().max(MAX_SHORT).nullable(),
   subtitles: z.array(
     z.object({
-      language: z.enum(["en", "pt-BR"]),
+      language: studyLanguageSchema,
       path: z.string().regex(SAFE_PATH),
       sha256: SHA256,
       originalFilename: z.string().max(MAX_SHORT),
@@ -92,6 +93,8 @@ export const packagedCatalogSchema = z.object({ works: z.array(packagedWorkSchem
 export type PackagedCatalog = z.infer<typeof packagedCatalogSchema>;
 
 export const packagedCardSchema = z.object({
+  language: studyLanguageSchema.default("en"),
+  locale: studyLanguageSchema.default("pt-BR"),
   cueSequence: z.number().int().min(1),
   startToken: z.number().int().min(0),
   endToken: z.number().int().min(0),

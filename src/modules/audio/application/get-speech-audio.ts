@@ -2,14 +2,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { FileStorage } from "@/shared/storage";
-import {
-  VOICE_BY_ACCENT,
-  audioHash,
-  audioStoragePath,
-  looksLikeWav,
-  normalizeSpeechText,
-  type Accent,
-} from "../domain/speech";
+import { audioHash, audioStoragePath, looksLikeWav, normalizeSpeechText, type Voice } from "../domain/speech";
 import type { AudioAssetRepository, ConcurrencyGate, TtsProvider, TtsProviderName } from "./ports";
 
 export type SpeechAudio = { bytes: Uint8Array; cache: "hit" | "miss"; provider: TtsProviderName };
@@ -26,8 +19,12 @@ type Deps = {
 };
 
 export function makeGetSpeechAudio(deps: Deps) {
-  async function fromCache(provider: TtsProvider, text: string, accent: Accent): Promise<Uint8Array | null> {
-    const voice = provider.voiceFor(VOICE_BY_ACCENT[accent]);
+  async function fromCache(
+    provider: TtsProvider,
+    text: string,
+    requested: Voice,
+  ): Promise<Uint8Array | null> {
+    const voice = provider.voiceFor(requested);
     const hash = audioHash({ text, ...voice, modelVersion: provider.modelVersion });
     const asset = await deps.assets.find(hash, voice.voiceId);
     if (!asset) return null;
@@ -35,8 +32,8 @@ export function makeGetSpeechAudio(deps: Deps) {
     return bytes && looksLikeWav(bytes) ? bytes : null;
   }
 
-  async function generate(provider: TtsProvider, text: string, accent: Accent): Promise<Uint8Array> {
-    const voice = provider.voiceFor(VOICE_BY_ACCENT[accent]);
+  async function generate(provider: TtsProvider, text: string, requested: Voice): Promise<Uint8Array> {
+    const voice = provider.voiceFor(requested);
     const bytes = await provider.synthesize({ text, voice });
     if (!looksLikeWav(bytes)) throw new Error("generated audio in unexpected format");
     const hash = audioHash({ text, ...voice, modelVersion: provider.modelVersion });
@@ -60,12 +57,12 @@ export function makeGetSpeechAudio(deps: Deps) {
   return async function getSpeechAudio(input: {
     userId: string;
     text: string;
-    accent: Accent;
+    voice: Voice;
   }): Promise<SpeechAudio> {
     const text = normalizeSpeechText(input.text);
     if (text.length === 0) throw new AppError("AUDIO_UNAVAILABLE");
 
-    const cached = await fromCache(deps.primary, text, input.accent);
+    const cached = await fromCache(deps.primary, text, input.voice);
     if (cached) return { bytes: cached, cache: "hit", provider: deps.primary.name };
 
     if (!deps.gate.tryEnter(input.userId)) {
@@ -74,17 +71,17 @@ export function makeGetSpeechAudio(deps: Deps) {
     try {
       try {
         return {
-          bytes: await generate(deps.primary, text, input.accent),
+          bytes: await generate(deps.primary, text, input.voice),
           cache: "miss",
           provider: deps.primary.name,
         };
       } catch (error) {
         deps.onPrimaryFailure?.(error instanceof Error ? error.message : "falha desconhecida");
       }
-      const cachedFallback = await fromCache(deps.fallback, text, input.accent);
+      const cachedFallback = await fromCache(deps.fallback, text, input.voice);
       if (cachedFallback) return { bytes: cachedFallback, cache: "hit", provider: deps.fallback.name };
       return {
-        bytes: await generate(deps.fallback, text, input.accent),
+        bytes: await generate(deps.fallback, text, input.voice),
         cache: "miss",
         provider: deps.fallback.name,
       };
@@ -96,10 +93,10 @@ export function makeGetSpeechAudio(deps: Deps) {
 
 export function makeListCachedSpeech(deps: Pick<Deps, "assets" | "primary">) {
   return async function listCachedSpeech(input: {
-    accent: Accent;
+    voice: Voice;
     lines: { id: string; text: string }[];
   }): Promise<string[]> {
-    const voice = deps.primary.voiceFor(VOICE_BY_ACCENT[input.accent]);
+    const voice = deps.primary.voiceFor(input.voice);
     const hashById = new Map(
       input.lines.map((line) => [
         line.id,

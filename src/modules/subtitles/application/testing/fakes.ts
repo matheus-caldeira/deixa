@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { SubtitleLanguage } from "../../domain/srt";
 import type {
   EpisodeLocation,
@@ -14,7 +15,7 @@ export class InMemorySubtitles implements SubtitleRepository {
   readonly files = new Map<string, StoredSubtitleFile & { episodeId: string }>();
   readonly cues = new Map<string, StoredCue[]>();
   readonly alignments = new Map<string, StoredAlignment[]>();
-  readonly translations = new Map<string, string>();
+  readonly translations = new Map<string, Map<string, string>>();
   readonly episodeStatus = new Map<
     string,
     { status: string; cueCount: number; alignmentRate: number | null }
@@ -30,16 +31,20 @@ export class InMemorySubtitles implements SubtitleRepository {
     return this.cues.get(subtitleFileId) ?? [];
   }
 
-  async listAlignments(episodeId: string): Promise<StoredAlignment[]> {
-    return this.alignments.get(episodeId) ?? [];
+  async listAlignments(episodeId: string, alignedLanguage: StudyLanguage): Promise<StoredAlignment[]> {
+    return (this.alignments.get(episodeId) ?? []).filter(
+      (alignment) => alignment.alignedLanguage === alignedLanguage,
+    );
   }
 
-  async listCueTranslations(): Promise<Map<string, string>> {
-    return new Map(this.translations);
+  async listCueTranslations(_episodeId: string, locale: StudyLanguage): Promise<Map<string, string>> {
+    return new Map(this.translations.get(locale) ?? []);
   }
 
-  async saveCueTranslation(cueId: string, text: string, _now?: Date): Promise<void> {
-    if (!this.translations.has(cueId)) this.translations.set(cueId, text);
+  async saveCueTranslation(cueId: string, locale: StudyLanguage, text: string, _now?: Date): Promise<void> {
+    const byLocale = this.translations.get(locale) ?? new Map<string, string>();
+    if (!byLocale.has(cueId)) byLocale.set(cueId, text);
+    this.translations.set(locale, byLocale);
   }
 
   async findCue(
@@ -63,12 +68,11 @@ export class InMemorySubtitles implements SubtitleRepository {
       this.files.set(file.id, { ...stored, episodeId: record.episodeId });
       this.cues.set(file.id, cues);
     }
-    if (record.alignments) {
-      this.alignments.set(
-        record.episodeId,
-        record.alignments.map(({ id: _id, ...alignment }) => alignment),
-      );
-    }
+    const replaced = new Set(record.alignments.map((alignment) => alignment.sourceCueId));
+    this.alignments.set(record.episodeId, [
+      ...(this.alignments.get(record.episodeId) ?? []).filter((kept) => !replaced.has(kept.sourceCueId)),
+      ...record.alignments.map(({ id: _id, ...alignment }) => alignment),
+    ]);
     this.episodeStatus.set(record.episodeId, {
       status: "READY",
       cueCount: record.cueCount,

@@ -1,4 +1,5 @@
 import type { ExplainRequest, LlmProvider } from "@/modules/learning";
+import type { LanguagePair } from "@/shared/study-languages";
 import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 import { type PromptLanguages, languageNames } from "./prompt-languages";
@@ -54,10 +55,10 @@ export class AiLlmProvider implements LlmProvider {
   }
 
   explainTerms(request: ExplainRequest): Promise<unknown> {
-    return this.generateJson("cards", explainInstructions(this.deps), request);
+    return this.generateJson("cards", explainInstructions({ ...this.deps, pair: request.pair }), request);
   }
 
-  translateLines(lines: { id: string; text: string }[]): Promise<unknown> {
-    return this.generateJson("translation", translateInstructions(this.deps), lines);
+  translateLines(lines: { id: string; text: string }[], pair: LanguagePair): Promise<unknown> {
+    return this.generateJson("translation", translateInstructions({ ...this.deps, pair }), lines);
   }
 }

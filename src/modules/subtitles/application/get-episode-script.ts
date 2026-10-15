@@ -1,3 +1,4 @@
+import type { LanguagePair } from "@/shared/study-languages";
 import { sceneIndexes } from "../domain/srt";
 import type { SubtitleRepository } from "./ports";
 
@@ -17,33 +18,37 @@ export type ScriptLine = {
 
 export type EpisodeScript = {
   episodeId: string;
-  englishFileId: string;
-  hasPortuguese: boolean;
+  pair: LanguagePair;
+  targetFileId: string;
+  hasNative: boolean;
   lines: ScriptLine[];
 };
 
 export function makeGetEpisodeScript(deps: { subtitles: SubtitleRepository }) {
-  return async function getEpisodeScript(episodeId: string): Promise<EpisodeScript | null> {
+  return async function getEpisodeScript(
+    episodeId: string,
+    pair: LanguagePair,
+  ): Promise<EpisodeScript | null> {
     const files = await deps.subtitles.listFiles(episodeId);
-    const english = files.find((file) => file.language === "en");
-    if (!english) return null;
-    const portuguese = files.find((file) => file.language === "pt-BR");
-    const [englishCues, portugueseCues, alignments, machineTranslations] = await Promise.all([
-      deps.subtitles.listCues(english.id),
-      portuguese ? deps.subtitles.listCues(portuguese.id) : Promise.resolve([]),
-      deps.subtitles.listAlignments(episodeId),
-      deps.subtitles.listCueTranslations(episodeId),
+    const target = files.find((file) => file.language === pair.target);
+    if (!target) return null;
+    const native = files.find((file) => file.language === pair.native);
+    const [targetCues, nativeCues, alignments, machineTranslations] = await Promise.all([
+      deps.subtitles.listCues(target.id),
+      native ? deps.subtitles.listCues(native.id) : Promise.resolve([]),
+      native ? deps.subtitles.listAlignments(episodeId, pair.native) : Promise.resolve([]),
+      deps.subtitles.listCueTranslations(episodeId, pair.native),
     ]);
-    const portugueseById = new Map(portugueseCues.map((cue) => [cue.id, cue]));
-    const alignmentByEnglishCue = new Map(alignments.map((alignment) => [alignment.enCueId, alignment]));
-    const scenes = sceneIndexes(englishCues);
+    const nativeById = new Map(nativeCues.map((cue) => [cue.id, cue]));
+    const alignmentBySourceCue = new Map(alignments.map((alignment) => [alignment.sourceCueId, alignment]));
+    const scenes = sceneIndexes(targetCues);
 
-    const lines = englishCues.map((cue, index): ScriptLine => {
-      const alignment = alignmentByEnglishCue.get(cue.id);
+    const lines = targetCues.map((cue, index): ScriptLine => {
+      const alignment = alignmentBySourceCue.get(cue.id);
       const fromSubtitle =
         alignment?.status === "ALIGNED"
-          ? alignment.ptCueIds
-              .map((id) => portugueseById.get(id))
+          ? alignment.alignedCueIds
+              .map((id) => nativeById.get(id))
               .filter((candidate) => candidate !== undefined)
               .sort((a, b) => a.sequence - b.sequence)
               .map((candidate) => candidate.text)
@@ -64,6 +69,6 @@ export function makeGetEpisodeScript(deps: { subtitles: SubtitleRepository }) {
       };
     });
 
-    return { episodeId, englishFileId: english.id, hasPortuguese: Boolean(portuguese), lines };
+    return { episodeId, pair, targetFileId: target.id, hasNative: Boolean(native), lines };
   };
 }

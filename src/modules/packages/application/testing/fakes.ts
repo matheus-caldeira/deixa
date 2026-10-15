@@ -114,7 +114,7 @@ export class InMemoryPackageCatalog implements PackageCatalogReader, PackageCata
     return this.episode(episodeId)?.subtitles ?? [];
   }
 
-  async listEnglishCues(episodeId: string): Promise<CueRef[]> {
+  async listCues(episodeId: string): Promise<CueRef[]> {
     return this.episode(episodeId)?.cues ?? [];
   }
 
@@ -176,14 +176,14 @@ export class InMemoryPackageCatalog implements PackageCatalogReader, PackageCata
     }
     if (episode.ready) return "DUPLICATE" as const;
     episode.ready = true;
-    const text = new TextDecoder().decode(input.english.bytes);
+    const text = new TextDecoder().decode(input.target.upload.bytes);
     episode.cues = text
       .split("\n")
-      .map((line, index) => ({ id: this.nextId("cue"), sequence: index + 1, text: line }));
+      .map((line, index) => ({ id: this.nextId("cue"), sequence: index + 1, text: line, language: "en" }));
     this.imported.push({
       episodeId: input.episodeId,
       english: text,
-      portuguese: input.portuguese ? new TextDecoder().decode(input.portuguese.bytes) : null,
+      portuguese: input.native ? new TextDecoder().decode(input.native.upload.bytes) : null,
     });
     return "PROCESSED" as const;
   }

@@ -1,3 +1,4 @@
+import { DEFAULT_TARGET_LANGUAGE, normalizeLanguageTag } from "@/shared/study-languages";
 import { AppError, isAppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
@@ -41,6 +42,10 @@ async function storeWork(
     levelMin: existing?.levelMin ?? levelMin,
     levelMax: existing?.levelMax ?? levelMax,
     accent: existing?.accent ?? details.accent ?? null,
+    originalLanguage:
+      existing?.originalLanguage ??
+      normalizeLanguageTag(details.originalLanguage ?? "") ??
+      DEFAULT_TARGET_LANGUAGE,
     createdBy: userId,
     syncedAt: now,
     createdAt: now,

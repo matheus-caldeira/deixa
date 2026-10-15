@@ -1,4 +1,5 @@
 import type { AlignmentStatus } from "@/modules/alignment";
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { SubtitleLanguage } from "../domain/srt";
 
 export type SubtitleOrigin = {
@@ -19,8 +20,9 @@ export type StoredSubtitleFile = {
 };
 export type StoredCue = { id: string; sequence: number; startMs: number; endMs: number; text: string };
 export type StoredAlignment = {
-  enCueId: string;
-  ptCueIds: string[];
+  sourceCueId: string;
+  alignedLanguage: StudyLanguage;
+  alignedCueIds: string[];
   overlapScore: number;
   offsetMs: number;
   status: AlignmentStatus;
@@ -42,7 +44,7 @@ export type ImportRecord = {
   now: Date;
   jobId: string;
   files: NewSubtitleFile[];
-  alignments: (StoredAlignment & { id: string })[] | null;
+  alignments: (StoredAlignment & { id: string })[];
   cueCount: number;
   alignmentPairs: number | null;
   alignmentRate: number | null;
@@ -52,9 +54,9 @@ export type ImportRecord = {
 export interface SubtitleRepository {
   listFiles(episodeId: string): Promise<StoredSubtitleFile[]>;
   listCues(subtitleFileId: string): Promise<StoredCue[]>;
-  listAlignments(episodeId: string): Promise<StoredAlignment[]>;
-  listCueTranslations(episodeId: string): Promise<Map<string, string>>;
-  saveCueTranslation(cueId: string, text: string, now: Date): Promise<void>;
+  listAlignments(episodeId: string, alignedLanguage: StudyLanguage): Promise<StoredAlignment[]>;
+  listCueTranslations(episodeId: string, locale: StudyLanguage): Promise<Map<string, string>>;
+  saveCueTranslation(cueId: string, locale: StudyLanguage, text: string, now: Date): Promise<void>;
   findCue(cueId: string): Promise<(StoredCue & { episodeId: string; language: SubtitleLanguage }) | null>;
   saveImport(record: ImportRecord): Promise<void>;
   markFailed(input: {

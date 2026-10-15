@@ -7,6 +7,8 @@ import { refreshSettings } from "@/infrastructure/container";
 import type { AppSettings } from "@/modules/settings";
 import { AppError } from "@/shared/errors";
 import { localeSchema } from "@/shared/locales";
+import { CEFR_LEVELS } from "@/shared/levels";
+import { studyLanguageSchema } from "@/shared/study-languages";
 import { rememberLocale } from "./locale";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
@@ -76,5 +78,29 @@ export async function updateSettingsAction(input: unknown): Promise<ActionResult
     await refreshSettings();
     revalidatePath("/", "layout");
     return saved;
+  });
+}
+
+const pairSchema = z.object({ target: studyLanguageSchema, native: studyLanguageSchema });
+
+export async function switchLanguagePairAction(input: unknown): Promise<ActionResult<null>> {
+  const user = await requireUser();
+  return runAction("switchLanguagePair", async () => {
+    const parsed = pairSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    await app().switchLanguagePair(user.id, parsed.data);
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+export async function addLanguagePairAction(input: unknown): Promise<ActionResult<null>> {
+  const user = await requireUser();
+  return runAction("addLanguagePair", async () => {
+    const parsed = pairSchema.extend({ level: z.enum(CEFR_LEVELS) }).safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    await app().addLanguagePair(user.id, parsed.data);
+    revalidatePath("/", "layout");
+    return null;
   });
 }

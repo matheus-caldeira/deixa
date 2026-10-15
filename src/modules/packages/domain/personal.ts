@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { studyLanguageSchema } from "@/shared/study-languages";
 import { episodeRefSchema, packagedCardSchema } from "./package";
 
 export const PERSONAL_PATH = "personal.enc";
@@ -23,6 +24,8 @@ const cardItemSchema = z.discriminatedUnion("origin", [
   z.object({ origin: z.literal("episode"), ref: episodeRefSchema, card: packagedCardSchema }),
   z.object({
     origin: z.literal("standalone"),
+    language: studyLanguageSchema.default("en"),
+    locale: studyLanguageSchema.default("pt-BR"),
     term: SHORT,
     meaning: z.string().max(4000),
     context: z.string().max(4000).nullable(),
@@ -67,6 +70,7 @@ export const personalDataSchema = z.object({
     .array(
       z.object({
         ref: episodeRefSchema,
+        language: studyLanguageSchema.default("en"),
         cueSequence: z.number().int().min(1),
         startToken: z.number().int().min(0),
         endToken: z.number().int().min(0),

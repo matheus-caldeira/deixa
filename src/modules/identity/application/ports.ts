@@ -1,3 +1,5 @@
+import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair } from "@/shared/study-languages";
 import type { Preferences, User } from "../domain/user";
 
 export type UserRecord = User & { passwordHash: string };
@@ -26,6 +28,13 @@ export interface SessionRepository {
 export interface PreferencesRepository {
   get(userId: string): Promise<Preferences | null>;
   update(userId: string, patch: Partial<Preferences>): Promise<void>;
+}
+
+export type StoredLanguagePair = LanguagePair & { level: CefrLevel };
+
+export interface LanguagePairRepository {
+  listPairs(userId: string): Promise<StoredLanguagePair[]>;
+  upsertPair(userId: string, pair: StoredLanguagePair, now: Date): Promise<void>;
 }
 
 export interface PasswordHasher {

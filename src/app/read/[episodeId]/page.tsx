@@ -2,7 +2,10 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
+import { voiceFor } from "@/modules/audio";
 import { episodeLabel } from "@/modules/catalog";
+import { pairOf } from "@/modules/identity";
+import { LANGUAGE_TAGS } from "@/shared/study-languages";
 import { defaultDisplayMode } from "@/shared/levels";
 import { ReadScreen } from "@/ui/read/read-screen";
 import { ToastProvider } from "@/ui/shell/toast";
@@ -21,24 +24,26 @@ export default async function ReadPage(props: {
   const container = getContainer();
   const context = await container.getEpisodeContext(episodeId);
   if (!context || context.episode.status !== "READY") notFound();
+  const pair = pairOf(user.preferences);
+  if (!context.episode.subtitleLanguages.includes(pair.target)) notFound();
 
   const [view, suggestions, origins] = await Promise.all([
-    container.getReadingView(user.id, episodeId),
-    container.listCatalogSuggestions(episodeId),
+    container.getReadingView(user.id, episodeId, pair),
+    container.listCatalogSuggestions(episodeId, pair.target),
     container.listSubtitleOrigins(episodeId),
   ]);
   const t = await getTranslations("read");
   const subtitleCredits = origins.flatMap(({ language, origin }) =>
     origin
       ? [
-          [t("credit", { tag: language === "en" ? "EN" : "PT" }), origin.releaseName, origin.author]
+          [t("credit", { tag: LANGUAGE_TAGS[language] }), origin.releaseName, origin.author]
             .filter(Boolean)
             .join(" · "),
         ]
       : [],
   );
   const cachedAudioCueIds = await container.listCachedSpeech({
-    accent: user.preferences.preferredAccent,
+    voice: voiceFor(pair.target, user.preferences.preferredAccent),
     lines: view.lines.map((line) => ({ id: line.cueId, text: line.text })),
   });
 
@@ -52,7 +57,8 @@ export default async function ReadPage(props: {
           mediaTitle: context.media.title,
           label: episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber),
           episodeTitle: context.episode.title,
-          hasPortuguese: view.hasPortuguese,
+          hasNative: view.hasNative,
+          pair,
           subtitleCredits,
           defaultMode: defaultDisplayMode(user.preferences.level),
           audioSpeed: user.preferences.audioSpeed,

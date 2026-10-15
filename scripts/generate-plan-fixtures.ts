@@ -19,13 +19,15 @@ async function linesOf(name: string): Promise<PlannerLine[]> {
   const en = withIds("en", english);
   const pt = withIds("pt", portuguese);
   const byId = new Map(pt.map((cue) => [cue.id, cue.text]));
-  const aligned = new Map(alignCues(en, pt).alignments.map((entry) => [entry.enCueId, entry.ptCueIds]));
+  const aligned = new Map(
+    alignCues(en, pt).alignments.map((entry) => [entry.sourceCueId, entry.alignedCueIds]),
+  );
   return en.map((cue, index) => ({
     index,
     english: cue.text,
     portuguese:
       (aligned.get(cue.id) ?? [])
-        .map((id) => byId.get(id) ?? "")
+        .map((id: string) => byId.get(id) ?? "")
         .join(" ")
         .trim() || null,
   }));
@@ -37,7 +39,11 @@ async function main(): Promise<void> {
   const planner = new AiLessonPlanner(
     { provider: "gemini", apiKey, baseUrl: null },
     process.env.GEMINI_MODEL || "gemini-2.5-flash",
-    { meter: { ensureAllowed: async () => undefined, record: async () => undefined }, locale: "pt-BR" },
+    {
+      meter: { ensureAllowed: async () => undefined, record: async () => undefined },
+      locale: "pt-BR",
+      pair: { target: "en", native: "pt-BR" },
+    },
   );
   await mkdir(PLANS_DIR, { recursive: true });
   const jobs = SEED_DIALOGUES.flatMap((name) => SEED_PLAN_LEVELS.map((level) => ({ name, level })));
@@ -48,7 +54,7 @@ async function main(): Promise<void> {
     const lines = await linesOf(job.name);
     const english = parseSrt(await readFile(`${DIALOGUES_DIR}/${job.name}.en.srt`, "utf8")).cues;
     const scenes = sceneIndexes(english);
-    const raw = await planner.plan({ level: job.level, lines });
+    const raw = await planner.plan({ level: job.level, pair: { target: "en", native: "pt-BR" }, lines });
     const check = assemblePlan({
       raw,
       level: job.level,

@@ -25,9 +25,11 @@
     "signupIntro": "Create your account. Your progress, your highlights and your reviews are yours alone.",
     "name": "Name",
     "passwordMin": "Password (at least {min} characters)",
-    "levelToday": "Your English level today",
+    "levelToday": "Your {language} level today",
     "creating": "Creating…",
-    "haveAccount": "I already have an account"
+    "haveAccount": "I already have an account",
+    "nativeLanguage": "Your language",
+    "targetLanguage": "I want to learn"
   },
   "shell": {
     "tabs": {
@@ -82,7 +84,17 @@
     "createdBy": "Created by <b>{name}</b>. Contact:",
     "metadata": "Show and movie metadata:",
     "demoMetadata": " (demo data in this environment)",
-    "subtitles": "Subtitles fetched on request: <b>OpenSubtitles</b> (opensubtitles.com). Each subtitle shows the release and the uploader."
+    "subtitles": "Subtitles fetched on request: <b>OpenSubtitles</b> (opensubtitles.com). Each subtitle shows the release and the uploader.",
+    "languages": "Study languages",
+    "pairLabel": "{target} from {native}",
+    "activePair": "In use",
+    "usePair": "Use",
+    "nativeLanguage": "Your language",
+    "targetLanguage": "I want to learn",
+    "pairLevel": "Level in this language",
+    "cancel": "Cancel",
+    "addPair": "Add",
+    "addPairLink": "Study another language"
   },
   "inbox": {
     "title": "Notifications",
@@ -197,7 +209,10 @@
       },
       "limitInvalid": "Check the limit values.",
       "modelInvalid": "Check the provider and the model name.",
-      "previousBlock": "Finish the previous block to unlock this one."
+      "previousBlock": "Finish the previous block to unlock this one.",
+      "searchAgainBeforeImport": "Search the subtitles again before importing.",
+      "pairExists": "You already study this language pair.",
+      "pairMissing": "This language pair is not on your account."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -268,8 +283,6 @@
     "noEpisodes": "No episode loaded yet. Upload the first subtitle below.",
     "status": {
       "ready": "Ready · {count} lines",
-      "bothLanguages": "EN + PT",
-      "onlyTarget": "EN only",
       "processing": "Processing",
       "needsReview": "In review",
       "failed": "Failed · upload again",
@@ -752,7 +765,7 @@
     "scopeCatalog": "For the catalog",
     "scopePrivateBody": "The cards go only to your review. Nobody sees what you highlighted.",
     "scopeCatalogBody": "The cards also become suggestions for whoever studies this episode. Your highlights enter an anonymous count (\"highlighted by N learners\").",
-    "fromSubtitle": "<b>Line translations came from the PT subtitle</b>, at no AI cost. The AI only explained the meaning of each term.",
+    "fromSubtitle": "<b>Line translations came from the {native} subtitle</b>, at no AI cost. The AI only explained the meaning of each term.",
     "simulated": "Simulated explanations.",
     "simulatedBody": "Add your AI key in Settings for real explanations.",
     "allRemoved": "You removed every card.",
@@ -763,20 +776,19 @@
       "slang": "Slang",
       "sentence": "Sentence"
     },
-    "fromNativeSubtitle": "PT subtitle",
+    "fromNativeSubtitle": "{native} subtitle",
     "ai": "AI",
-    "nativeTag": "PT",
     "removeCard": "Remove card {term}",
     "saving": "Saving…",
     "addToReview": "Add {count} cards to review",
     "back": "Back",
-    "subtitleAligned": "EN + PT aligned subtitle",
-    "subtitleAiOnly": "EN subtitle, AI translation",
+    "subtitleAligned": "{target} + {native} aligned subtitle",
+    "subtitleAiOnly": "{target} subtitle, AI translation",
     "credit": "{tag} subtitle: OpenSubtitles",
     "modes": {
-      "both": "EN + PT",
-      "tap": "PT on tap",
-      "en": "English only"
+      "both": "{target} + {native}",
+      "tap": "{native} on tap",
+      "en": "{target} only"
     },
     "searchLine": "Find a line you heard",
     "searchLineLabel": "Find a line",
@@ -860,10 +872,6 @@
     "showAnswer": "Show answer"
   },
   "sources": {
-    "languages": {
-      "en": "English",
-      "pt-BR": "Portuguese"
-    },
     "downloads": "{count} downloads",
     "hearingImpaired": "With sound descriptions",
     "machineTranslated": "Machine translated",
@@ -881,12 +889,12 @@
     "noRelease": "No release name",
     "doNotUse": "Do not use a {name} subtitle",
     "uploadSrt": "Upload .srt files manually",
-    "intro": "We search <b>OpenSubtitles</b> for the English and Portuguese subtitles of this episode. Nothing is downloaded until you confirm your choice.",
+    "intro": "We search <b>OpenSubtitles</b> for the {target} and {native} subtitles of this episode. Nothing is downloaded until you confirm your choice.",
     "searching": "Searching…",
     "search": "Search subtitles",
     "suggestion": "OpenSubtitles suggestion",
-    "sameRelease": "EN and PT from the same release",
-    "noTargetFound": "We could not find an English subtitle for this episode. Upload the file manually.",
+    "sameRelease": "{target} and {native} from the same release",
+    "noTargetFound": "We could not find a {target} subtitle for this episode. Upload the file manually.",
     "remaining": "Downloads left today: {count}",
     "resetsAt": " · resets at {time}",
     "remainingUnknown": "Downloads left today: reported by OpenSubtitles on the first download",
@@ -951,7 +959,7 @@
     "step2": "Step 2 of 3 ·",
     "step2Movie": "Fetch the movie subtitles or upload the files.",
     "step2Series": "Pick the episode and fetch the subtitles, or upload the files.",
-    "step2Native": "With the Portuguese subtitle, line translations skip the AI.",
+    "step2Native": "With the {native} subtitle, line translations skip the AI.",
     "season": "Season",
     "episode": "Episode",
     "status": {
@@ -962,19 +970,19 @@
       "FAILED": "failed",
       "NONE": "no subtitle"
     },
-    "targetSubtitle": "English subtitle",
+    "targetSubtitle": "{target} subtitle",
     "targetHint": ".srt · required",
-    "targetFile": "English subtitle file",
-    "nativeSubtitle": "Portuguese subtitle",
+    "targetFile": "{target} subtitle file",
+    "nativeSubtitle": "{native} subtitle",
     "nativeHint": ".srt · optional · lines arrive already translated, without spending AI",
-    "nativeFile": "Portuguese subtitle file",
+    "nativeFile": "{native} subtitle file",
     "script": "Script or transcript",
     "scriptHint": ".txt or .pdf · coming in a later phase",
     "scriptFile": "Script file",
     "soon": "Soon",
     "change": "Change",
     "choose": "Choose",
-    "useSample": "Use sample files (EN + PT)",
+    "useSample": "Use sample files ({target} + {native})",
     "sending": "Sending…",
     "sendAndProcess": "Send and process",
     "searchOpenSubtitles": "Search subtitles on OpenSubtitles",
@@ -983,7 +991,7 @@
     "processing": "Processing",
     "duplicate": "This subtitle already exists in the catalog. Nothing was reprocessed and the episode is already available to every account.",
     "published": "Episode published. You can already read the whole subtitle; the audio of each line is generated on first tap. Every account sees the episode without a new upload.",
-    "publishedBoth": "Episode published. You can already read the whole subtitle in English and Portuguese; the audio of each line is generated on first tap. Every account sees the episode without a new upload.",
+    "publishedBoth": "Episode published. You can already read the whole subtitle in {target} and {native}; the audio of each line is generated on first tap. Every account sees the episode without a new upload.",
     "seeInCatalog": "See in the catalog"
   },
   "transfer": {
@@ -1128,5 +1136,11 @@
       "fromEnvironment": "The connection comes from this server’s DATABASE_URL variable. Adjust the value there and restart.",
       "generic": "Could not connect. Check the fields and try again."
     }
+  },
+  "languages": {
+    "en": "English",
+    "pt-BR": "Portuguese",
+    "es": "Spanish",
+    "fr": "French"
   }
 }

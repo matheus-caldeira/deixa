@@ -40,7 +40,7 @@ describe("catálogo fixo do seed", () => {
     await expect(provider.getWork("movie", found?.externalId ?? "")).rejects.toMatchObject({
       code: "METADATA_NOT_FOUND",
     });
-    expect((await provider.listPopularWorks()).length).toBe(works.length);
+    expect((await provider.listPopularWorks("en")).length).toBe(works.length);
     expect((await provider.listRelatedWorks("series", found?.externalId ?? "")).length).toBeGreaterThan(0);
   });
 });

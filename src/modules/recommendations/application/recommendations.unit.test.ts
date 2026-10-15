@@ -65,7 +65,7 @@ describe("vetores", () => {
 
 describe("retrato do aluno", () => {
   it("sem estudo suficiente mantém o nível e explica que ainda há pouco dado", () => {
-    const assessment = assessLearner({ level: "B1", ...EMPTY_SIGNALS });
+    const assessment = assessLearner({ ...EMPTY_SIGNALS, level: "B1", language: "en" });
     expect(assessment).toMatchObject({ challenge: "steady", targetIndex: 2, accuracy: null });
     expect(assessment.insight).toMatchObject({ accuracyPercent: null, againPercent: null });
   });
@@ -73,6 +73,7 @@ describe("retrato do aluno", () => {
   it("acertos altos, poucos esquecimentos e poucas marcações sobem o desafio", () => {
     const assessment = assessLearner({
       level: "B1",
+      language: "en",
       ...EMPTY_SIGNALS,
       lessons: { answers: 60, correct: 55, attempts: 10, failed: 0 },
       reviews: { total: 40, again: 3 },
@@ -86,11 +87,17 @@ describe("retrato do aluno", () => {
   it("muitos erros ou muitos esquecimentos pedem algo mais tranquilo", () => {
     const failing = assessLearner({
       level: "B2",
+      language: "en",
       ...EMPTY_SIGNALS,
       lessons: { answers: 40, correct: 20, attempts: 8, failed: 5 },
     });
     expect(failing).toMatchObject({ challenge: "easier", targetIndex: 2.5 });
-    const forgetting = assessLearner({ level: "B2", ...EMPTY_SIGNALS, reviews: { total: 30, again: 15 } });
+    const forgetting = assessLearner({
+      ...EMPTY_SIGNALS,
+      level: "B2",
+      language: "en",
+      reviews: { total: 30, again: 15 },
+    });
     expect(forgetting.challenge).toBe("easier");
   });
 
@@ -164,8 +171,9 @@ describe("sugestões para o usuário", () => {
       fallbacks.push(stage);
     },
   });
-  const refresh = (userId = "ana") => makeRefreshRecommendations(deps())({ userId, level: "B2" });
-  const view = (userId = "ana") => makeGetRecommendations(deps())({ userId, level: "B2" });
+  const refresh = (userId = "ana") =>
+    makeRefreshRecommendations(deps())({ userId, level: "B2", language: "en" });
+  const view = (userId = "ana") => makeGetRecommendations(deps())({ userId, level: "B2", language: "en" });
 
   beforeEach(() => {
     repository = new InMemoryRecommendationRepository();
@@ -347,7 +355,9 @@ describe("sugestões para o usuário", () => {
         },
       }),
     };
-    await expect(makeRefreshRecommendations(broken)({ userId: "ana", level: "B2" })).rejects.toThrow();
+    await expect(
+      makeRefreshRecommendations(broken)({ userId: "ana", level: "B2", language: "en" }),
+    ).rejects.toThrow();
     expect(repository.runs.get("ana")).toMatchObject({ status: "FAILED" });
   });
 });

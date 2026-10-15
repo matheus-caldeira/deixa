@@ -1,28 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { signUpAction } from "@/app/actions/auth";
 import { MIN_PASSWORD_LENGTH } from "@/modules/identity";
 import { CEFR_LEVELS, type CefrLevel } from "@/shared/levels";
+import {
+  STUDY_LANGUAGES,
+  defaultTargetFor,
+  nativeLanguageFor,
+  type StudyLanguage,
+} from "@/shared/study-languages";
 import { Logo } from "../shell/logo";
 
 export function SignupScreen() {
   const t = useTranslations("auth");
   const levels = useTranslations("levels");
+  const languages = useTranslations("languages");
+  const locale = useLocale();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [level, setLevel] = useState<CefrLevel>("A1");
+  const [nativeLanguage, setNativeLanguage] = useState<StudyLanguage>(() =>
+    nativeLanguageFor(locale === "en" ? "en" : "pt-BR"),
+  );
+  const [targetLanguage, setTargetLanguage] = useState<StudyLanguage>(() =>
+    defaultTargetFor(nativeLanguageFor(locale === "en" ? "en" : "pt-BR")),
+  );
   const [error, setError] = useState("");
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await signUpAction({ name, email, password, level });
+      const result = await signUpAction({ name, email, password, level, nativeLanguage, targetLanguage });
       if (result && !result.ok) setError(result.message);
     });
   };
@@ -67,8 +81,42 @@ export function SignupScreen() {
             required
           />
         </div>
+        <div className="row" style={{ alignItems: "flex-start" }}>
+          <div className="field" style={{ flex: 1 }}>
+            <label htmlFor="signup-native">{t("nativeLanguage")}</label>
+            <select
+              id="signup-native"
+              value={nativeLanguage}
+              onChange={(event) => {
+                const next = event.target.value as StudyLanguage;
+                setNativeLanguage(next);
+                if (next === targetLanguage) setTargetLanguage(defaultTargetFor(next));
+              }}
+            >
+              {STUDY_LANGUAGES.map((option) => (
+                <option key={option} value={option}>
+                  {languages(option)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <label htmlFor="signup-target">{t("targetLanguage")}</label>
+            <select
+              id="signup-target"
+              value={targetLanguage}
+              onChange={(event) => setTargetLanguage(event.target.value as StudyLanguage)}
+            >
+              {STUDY_LANGUAGES.filter((option) => option !== nativeLanguage).map((option) => (
+                <option key={option} value={option}>
+                  {languages(option)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="field">
-          <label htmlFor="signup-level">{t("levelToday")}</label>
+          <label htmlFor="signup-level">{t("levelToday", { language: languages(targetLanguage) })}</label>
           <select
             id="signup-level"
             value={level}

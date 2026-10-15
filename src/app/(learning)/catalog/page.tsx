@@ -2,6 +2,7 @@ import { after } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { posterUrl, type MediaItem } from "@/modules/catalog";
+import { pairOf } from "@/modules/identity";
 import { fitLabel, parseLearnerInsight, parseLocalReason } from "@/modules/recommendations";
 import { posterColorsFor } from "@/modules/catalog";
 import { fitFor, levelIndex } from "@/shared/levels";
@@ -26,12 +27,17 @@ export default async function CatalogPage() {
   const user = await requireUser();
   const container = getContainer();
   const level = user.preferences.level;
+  const pair = pairOf(user.preferences);
   const [overview, recommendations] = await Promise.all([
     container.getCatalogOverview(user.id),
-    container.getRecommendations({ userId: user.id, level }),
+    container.getRecommendations({ userId: user.id, level, language: pair.target }),
   ]);
   if (recommendations.refresh) {
-    after(() => container.refreshRecommendations({ userId: user.id, level }).catch(() => undefined));
+    after(() =>
+      container
+        .refreshRecommendations({ userId: user.id, level, language: pair.target })
+        .catch(() => undefined),
+    );
   }
   const t = await getTranslations("suggestions");
   const insight = parseLearnerInsight(recommendations.insight);
@@ -62,6 +68,7 @@ export default async function CatalogPage() {
         id: media.id,
         fit: fitFor(user.preferences.level, media.levelMin, media.levelMax),
         levelRange: levelRange(media),
+        originalLanguage: media.originalLanguage,
       }))}
       suggestions={{
         status: recommendations.status,

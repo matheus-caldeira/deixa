@@ -15,6 +15,8 @@ import {
 } from "./highlight-use-cases";
 import { InMemoryHighlights, scriptsFor } from "./testing/fakes";
 
+const PAIR = { target: "en", native: "pt-BR" } as const;
+
 describe("agrupamento de marcações", () => {
   it("junta palavras vizinhas em expressão e mantém separadas as que não se tocam", () => {
     expect(tokenRuns([5, 2, 3, 4, 8, 2])).toEqual([
@@ -84,6 +86,7 @@ describe("marcações do usuário", () => {
   it("salva as marcações e sincroniza por diferença, preservando as que não mudaram", async () => {
     const first = await app.sync({
       userId: "ana",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [
         { cueId: "cue-1", tokens: [5], wholeLine: false },
@@ -98,6 +101,7 @@ describe("marcações do usuário", () => {
 
     const second = await app.sync({
       userId: "ana",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [
         { cueId: "cue-2", tokens: [2, 3, 4, 5], wholeLine: false },
@@ -113,36 +117,38 @@ describe("marcações do usuário", () => {
 
   it("repetir a mesma sincronização não duplica nada", async () => {
     const marks = [{ cueId: "cue-1", tokens: [1, 2], wholeLine: false }];
-    await app.sync({ userId: "ana", episodeId: "ep-1", marks });
-    await app.sync({ userId: "ana", episodeId: "ep-1", marks });
+    await app.sync({ userId: "ana", pair: PAIR, episodeId: "ep-1", marks });
+    await app.sync({ userId: "ana", pair: PAIR, episodeId: "ep-1", marks });
     expect(app.highlights.rows).toHaveLength(1);
   });
 
   it("isola as marcações: um usuário não vê nem apaga as do outro", async () => {
     await app.sync({
       userId: "ana",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [{ cueId: "cue-1", tokens: [5], wholeLine: false }],
     });
     await app.sync({
       userId: "lucas",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [{ cueId: "cue-2", tokens: [7, 8], wholeLine: false }],
     });
 
-    const ana = await app.readingView("ana", "ep-1");
-    const lucas = await app.readingView("lucas", "ep-1");
+    const ana = await app.readingView("ana", "ep-1", PAIR);
+    const lucas = await app.readingView("lucas", "ep-1", PAIR);
     expect(ana.highlights.map((h) => h.cueId)).toEqual(["cue-1"]);
     expect(lucas.highlights.map((h) => h.cueId)).toEqual(["cue-2"]);
 
-    await app.sync({ userId: "lucas", episodeId: "ep-1", marks: [] });
-    expect((await app.readingView("ana", "ep-1")).highlights).toHaveLength(1);
-    expect((await app.readingView("lucas", "ep-1")).highlights).toHaveLength(0);
+    await app.sync({ userId: "lucas", pair: PAIR, episodeId: "ep-1", marks: [] });
+    expect((await app.readingView("ana", "ep-1", PAIR)).highlights).toHaveLength(1);
+    expect((await app.readingView("lucas", "ep-1", PAIR)).highlights).toHaveLength(0);
   });
 
   it("entrega a legenda com palavras separadas e a tradução de cada fala", async () => {
-    const view = await app.readingView("ana", "ep-1");
-    expect(view.hasPortuguese).toBe(true);
+    const view = await app.readingView("ana", "ep-1", PAIR);
+    expect(view.hasNative).toBe(true);
     expect(view.lines[1]).toMatchObject({
       tokens: ["Nope.", "I", "picked", "up", "the", "tab,", "like", "an", "idiot."],
       translation: "Não. Eu paguei a conta, feito um idiota.",
@@ -150,13 +156,15 @@ describe("marcações do usuário", () => {
       markedByCount: null,
     });
     expect(view.lines[2]).toMatchObject({ translation: null, translationSource: null });
-    await expect(app.readingView("ana", "sem-legenda")).rejects.toMatchObject({ code: "EPISODE_NOT_READY" });
+    await expect(app.readingView("ana", "sem-legenda", PAIR)).rejects.toMatchObject({
+      code: "EPISODE_NOT_READY",
+    });
   });
 
   it("marcações privadas não entram na contagem; as do catálogo entram sem identificar ninguém", async () => {
     const mark = [{ cueId: "cue-2", tokens: [2, 3, 4, 5], wholeLine: false }];
     for (const userId of ["ana", "matheus", "lucas"]) {
-      await app.sync({ userId, episodeId: "ep-1", marks: mark });
+      await app.sync({ userId, episodeId: "ep-1", pair: PAIR, marks: mark });
     }
     const idsOf = async (userId: string) => (await app.pending(userId, "ep-1")).map((h) => h.id);
 
@@ -176,7 +184,7 @@ describe("marcações do usuário", () => {
       batchId: "b2",
       scope: "catalog",
     });
-    expect((await app.readingView("ana", "ep-1")).lines[1]?.markedByCount).toBeNull();
+    expect((await app.readingView("ana", "ep-1", PAIR)).lines[1]?.markedByCount).toBeNull();
 
     await app.markCarded({
       userId: "lucas",
@@ -185,7 +193,7 @@ describe("marcações do usuário", () => {
       batchId: "b3",
       scope: "catalog",
     });
-    expect((await app.readingView("ana", "ep-1")).lines[1]?.markedByCount).toBe(2);
+    expect((await app.readingView("ana", "ep-1", PAIR)).lines[1]?.markedByCount).toBe(2);
     expect(Object.keys(app.highlights.stats[0] ?? {}).sort()).toEqual([
       "cueId",
       "endToken",
@@ -198,6 +206,7 @@ describe("marcações do usuário", () => {
   it("não conta duas vezes a mesma marcação e tira da fila as que já viraram card", async () => {
     await app.sync({
       userId: "ana",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [{ cueId: "cue-1", tokens: [5], wholeLine: false }],
     });
@@ -214,7 +223,7 @@ describe("marcações do usuário", () => {
     await app.markCarded(input);
     expect(app.highlights.stats).toMatchObject([{ cueId: "cue-1", userCount: 1 }]);
     expect(await app.pending("ana", "ep-1")).toEqual([]);
-    expect((await app.readingView("ana", "ep-1")).highlights[0]).toMatchObject({
+    expect((await app.readingView("ana", "ep-1", PAIR)).highlights[0]).toMatchObject({
       cardBatchId: "b1",
       shareScope: "catalog",
     });
@@ -223,7 +232,7 @@ describe("marcações do usuário", () => {
   it("conta usuários distintos: uma pessoa sozinha não infla a contagem nem atinge o mínimo", async () => {
     const marks = [{ cueId: "cue-2", tokens: [2, 3, 4, 5], wholeLine: false }];
     for (let round = 0; round < 3; round += 1) {
-      await app.sync({ userId: "ana", episodeId: "ep-1", marks });
+      await app.sync({ userId: "ana", pair: PAIR, episodeId: "ep-1", marks });
       const ids = (await app.pending("ana", "ep-1")).map((h) => h.id);
       await app.markCarded({
         userId: "ana",
@@ -233,15 +242,16 @@ describe("marcações do usuário", () => {
         scope: "catalog",
       });
       expect(app.highlights.stats).toMatchObject([{ cueId: "cue-2", userCount: 1 }]);
-      await app.sync({ userId: "ana", episodeId: "ep-1", marks: [] });
+      await app.sync({ userId: "ana", pair: PAIR, episodeId: "ep-1", marks: [] });
       expect(app.highlights.stats).toEqual([]);
     }
-    expect((await app.readingView("lucas", "ep-1")).lines[1]?.markedByCount).toBeNull();
+    expect((await app.readingView("lucas", "ep-1", PAIR)).lines[1]?.markedByCount).toBeNull();
   });
 
   it("não marca como card a marcação de outro usuário", async () => {
     await app.sync({
       userId: "ana",
+      pair: PAIR,
       episodeId: "ep-1",
       marks: [{ cueId: "cue-1", tokens: [5], wholeLine: false }],
     });

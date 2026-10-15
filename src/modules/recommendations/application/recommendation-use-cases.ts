@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import type { WorkCandidate } from "@/modules/catalog";
 import type { Clock } from "@/shared/clock";
 import { AppError } from "@/shared/errors";
@@ -43,7 +44,6 @@ const MAX_OVERVIEW_CHARS = 320;
 const MAX_STUDIED_IN_PROMPT = 8;
 const ADDED_WEIGHT = 0.5;
 const RELATED_SIMILARITY = 0.15;
-const ENGLISH = "en";
 const PERCENT = 100;
 const MS_PER_MINUTE = 60_000;
 const MS_PER_HOUR = 60 * MS_PER_MINUTE;
@@ -85,21 +85,28 @@ function isDue(run: RecommendationRun | null, fingerprint: string, visible: numb
   return run.fingerprint !== fingerprint && age > MIN_REFRESH_HOURS * MS_PER_HOUR;
 }
 
-async function loadSignals(deps: Deps, userId: string, level: CefrLevel, now: Date): Promise<LearnerSignals> {
+async function loadSignals(
+  deps: Deps,
+  userId: string,
+  level: CefrLevel,
+  language: StudyLanguage,
+  now: Date,
+): Promise<LearnerSignals> {
   const since = new Date(now.getTime() - SIGNAL_WINDOW_DAYS * MS_PER_DAY);
-  return { level, ...(await deps.repository.loadSignals(userId, since)) };
+  return { ...(await deps.repository.loadSignals(userId, since)), level, language };
 }
 
 export function makeGetRecommendations(deps: Deps) {
   return async function getRecommendations(input: {
     userId: string;
     level: CefrLevel;
+    language: StudyLanguage;
   }): Promise<RecommendationsView> {
     const now = deps.clock.now();
     const [run, items, signals, feedback] = await Promise.all([
       deps.repository.getRun(input.userId),
       deps.repository.listSuggestions(input.userId),
-      loadSignals(deps, input.userId, input.level, now),
+      loadSignals(deps, input.userId, input.level, input.language, now),
       deps.repository.listFeedback(input.userId),
     ]);
     const refresh = isDue(run, signalsFingerprint(signals, feedback.length), items.length, now);
@@ -121,6 +128,7 @@ async function gatherCandidates(
   source: CandidateSource,
   studied: StudiedWork[],
   excluded: ReadonlySet<string>,
+  language: StudyLanguage,
 ): Promise<WorkCandidate[]> {
   const seeds = studied
     .filter((work) => work.provider === source.name)
@@ -132,13 +140,13 @@ async function gatherCandidates(
   };
   const lists = await Promise.all([
     ...seeds.map((seed) => source.listRelatedWorks(seed.type, seed.externalId).catch(failed)),
-    source.listPopularWorks().catch(failed),
+    source.listPopularWorks(language).catch(failed),
   ]);
   const unique = new Map<string, WorkCandidate>();
   for (const work of lists.flat()) {
     const key = workKeyOf(work);
     if (excluded.has(key) || unique.has(key)) continue;
-    if (work.originalLanguage !== null && work.originalLanguage !== ENGLISH) continue;
+    if (work.originalLanguage !== null && normalizeLanguageTag(work.originalLanguage) !== language) continue;
     unique.set(key, work);
   }
   return [...unique.values()].slice(0, MAX_CANDIDATES);
@@ -335,6 +343,7 @@ export function makeRefreshRecommendations(deps: Deps) {
   return async function refreshRecommendations(input: {
     userId: string;
     level: CefrLevel;
+    language: StudyLanguage;
   }): Promise<{ refreshed: boolean }> {
     const startedAt = deps.clock.now();
     const previous = await deps.repository.getRun(input.userId);
@@ -347,7 +356,7 @@ export function makeRefreshRecommendations(deps: Deps) {
 
     try {
       const [signals, feedback] = await Promise.all([
-        loadSignals(deps, input.userId, input.level, startedAt),
+        loadSignals(deps, input.userId, input.level, input.language, startedAt),
         deps.repository.listFeedback(input.userId),
       ]);
       const assessment = assessLearner(signals);
@@ -361,6 +370,7 @@ export function makeRefreshRecommendations(deps: Deps) {
         await deps.resolveCandidates(input.userId),
         studied,
         excluded,
+        input.language,
       );
 
       const documents = new Map<string, string>();

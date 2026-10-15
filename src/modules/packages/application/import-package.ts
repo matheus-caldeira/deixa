@@ -147,24 +147,30 @@ export function makeImportPackage(deps: Deps) {
           continue;
         }
         importedEpisodeIds.push(episodeId);
-        const english = episode.subtitles.find((subtitle) => subtitle.language === "en");
-        const portuguese = episode.subtitles.find((subtitle) => subtitle.language === "pt-BR");
-        if (english) {
+        const [first, second, ...rest] = episode.subtitles;
+        const upload = (subtitle: NonNullable<typeof first>) => ({
+          language: subtitle.language,
+          upload: {
+            filename: subtitle.originalFilename,
+            bytes: pkg.files.get(subtitle.path) ?? new Uint8Array(),
+          },
+        });
+        if (first) {
           try {
             const outcome = await deps.writer.importSubtitles({
               userId: input.userId,
               episodeId,
-              english: {
-                filename: english.originalFilename,
-                bytes: pkg.files.get(english.path) ?? new Uint8Array(),
-              },
-              portuguese: portuguese
-                ? {
-                    filename: portuguese.originalFilename,
-                    bytes: pkg.files.get(portuguese.path) ?? new Uint8Array(),
-                  }
-                : null,
+              target: upload(first),
+              native: second ? upload(second) : null,
             });
+            for (const extra of rest) {
+              await deps.writer.importSubtitles({
+                userId: input.userId,
+                episodeId,
+                target: upload(extra),
+                native: null,
+              });
+            }
             if (outcome === "PROCESSED") report.episodesImported += 1;
             else report.episodesSkipped += 1;
           } catch (error) {
@@ -180,7 +186,7 @@ export function makeImportPackage(deps: Deps) {
         }
         if (episode.cardsPath) {
           const cues = new Map(
-            (await deps.reader.listEnglishCues(episodeId)).map((cue) => [cue.sequence, cue.id]),
+            (await deps.reader.listCues(episodeId)).map((cue) => [`${cue.language}:${cue.sequence}`, cue.id]),
           );
           const existing = new Set(
             (await deps.reader.listCatalogCards(episodeId)).map(
@@ -188,7 +194,7 @@ export function makeImportPackage(deps: Deps) {
             ),
           );
           for (const card of pkg.cardsAt(episode.cardsPath)) {
-            const cueId = cues.get(card.cueSequence);
+            const cueId = cues.get(`${card.language}:${card.cueSequence}`);
             if (!cueId || existing.has(`${cueId}:${card.startToken}:${card.endToken}`)) continue;
             await deps.writer.createCatalogCard({ id: deps.ids.next(), episodeId, cueId, card, now });
             existing.add(`${cueId}:${card.startToken}:${card.endToken}`);
@@ -199,7 +205,7 @@ export function makeImportPackage(deps: Deps) {
     }
     const knownTexts: string[] = [];
     for (const episodeId of importedEpisodeIds) {
-      knownTexts.push(...(await deps.reader.listEnglishCues(episodeId)).map((cue) => cue.text));
+      knownTexts.push(...(await deps.reader.listCues(episodeId)).map((cue) => cue.text));
     }
     for (const asset of pkg.audio) {
       if (!SAFE_SEGMENT.test(asset.voiceId) || asset.format !== AUDIO_FORMAT) continue;

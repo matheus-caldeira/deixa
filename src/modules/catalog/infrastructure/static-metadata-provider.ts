@@ -1,3 +1,4 @@
+import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import { z } from "zod";
 import { AppError } from "@/shared/errors";
 import type { MediaType } from "../domain/catalog";
@@ -123,7 +124,9 @@ export class StaticMetadataProvider implements MetadataProvider {
     );
   }
 
-  async listPopularWorks(): Promise<WorkCandidate[]> {
-    return this.works.map((work, position) => this.toCandidate(work, position));
+  async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {
+    return this.works
+      .map((work, position) => this.toCandidate(work, position))
+      .filter((work) => normalizeLanguageTag(work.originalLanguage ?? "") === language);
   }
 }

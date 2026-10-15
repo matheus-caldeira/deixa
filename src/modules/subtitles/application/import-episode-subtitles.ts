@@ -4,6 +4,7 @@ import type { Clock } from "@/shared/clock";
 import { sha256Hex } from "@/shared/hash";
 import type { IdGenerator } from "@/shared/ids";
 import type { FileStorage } from "@/shared/storage";
+import type { StudyLanguage } from "@/shared/study-languages";
 import {
   decodeSubtitle,
   formatFileSize,
@@ -16,18 +17,22 @@ import type {
   FindEpisodeLocation,
   NewSubtitleFile,
   ProcessingStep,
+  StoredAlignment,
   StoredCue,
+  StoredSubtitleFile,
   SubtitleOrigin,
   SubtitleRepository,
 } from "./ports";
 
 export type UploadedSubtitle = { filename: string; bytes: Uint8Array; origin?: SubtitleOrigin };
+export type SubtitleUpload = { language: StudyLanguage; upload: UploadedSubtitle };
 
 export type ImportResult = {
   outcome: "PROCESSED" | "DUPLICATE";
   episodeId: string;
   steps: ProcessingStep[];
-  hasPortuguese: boolean;
+  languages: StudyLanguage[];
+  hasNative: boolean;
   cueCount: number;
   alignment: { pairs: number; rate: number } | null;
 };
@@ -45,10 +50,11 @@ const shortHash = (hash: string): string =>
 const percent = (rate: number): string => `${Math.round(rate * PERCENT)}%`;
 
 type Prepared = { language: SubtitleLanguage; upload: UploadedSubtitle; sha256: string };
+type FileWithCues = { id: string; language: StudyLanguage; cues: StoredCue[] };
 
-function prepare(language: SubtitleLanguage, upload: UploadedSubtitle): Prepared {
-  validateSubtitleFile(upload);
-  return { language, upload, sha256: sha256Hex(upload.bytes) };
+function prepare(file: SubtitleUpload): Prepared {
+  validateSubtitleFile(file.upload);
+  return { language: file.language, upload: file.upload, sha256: sha256Hex(file.upload.bytes) };
 }
 
 export function makeImportEpisodeSubtitles(deps: {
@@ -60,128 +66,142 @@ export function makeImportEpisodeSubtitles(deps: {
 }) {
   function parseToCues(prepared: Prepared): StoredCue[] {
     const { cues } = parseSrt(decodeSubtitle(prepared.upload.bytes));
-    if (cues.length === 0) {
-      throw new AppError("SUBTITLE_INVALID", "noCues");
-    }
+    if (cues.length === 0) throw new AppError("SUBTITLE_INVALID", "noCues");
     return cues.map((cue) => ({ id: deps.ids.next(), ...cue }));
+  }
+
+  async function withCues(file: StoredSubtitleFile): Promise<FileWithCues> {
+    return { id: file.id, language: file.language, cues: await deps.subtitles.listCues(file.id) };
   }
 
   return async function importEpisodeSubtitles(input: {
     userId: string;
     episodeId: string;
-    english: UploadedSubtitle;
-    portuguese?: UploadedSubtitle;
+    target: SubtitleUpload;
+    native?: SubtitleUpload;
   }): Promise<ImportResult> {
+    if (input.native && input.native.language === input.target.language) {
+      throw new AppError("INVALID_INPUT");
+    }
     const location = await deps.findEpisodeLocation(input.episodeId);
     if (!location) throw new AppError("EPISODE_NOT_FOUND");
 
-    const english = prepare("en", input.english);
-    const portuguese = input.portuguese ? prepare("pt-BR", input.portuguese) : null;
+    const target = prepare(input.target);
+    const native = input.native ? prepare(input.native) : null;
     const steps: ProcessingStep[] = [
       {
         key: "validate",
-        detail: portuguese
+        detail: native
           ? {
               key: "bothSizes",
               params: {
-                target: formatFileSize(english.upload.bytes.byteLength),
-                native: formatFileSize(portuguese.upload.bytes.byteLength),
+                target: formatFileSize(target.upload.bytes.byteLength),
+                native: formatFileSize(native.upload.bytes.byteLength),
               },
             }
-          : { key: "targetSize", params: { size: formatFileSize(english.upload.bytes.byteLength) } },
+          : { key: "targetSize", params: { size: formatFileSize(target.upload.bytes.byteLength) } },
       },
-      { key: "hash", detail: { key: "hash", params: { hash: shortHash(english.sha256) } } },
+      { key: "hash", detail: { key: "hash", params: { hash: shortHash(target.sha256) } } },
     ];
 
     const existing = await deps.subtitles.listFiles(input.episodeId);
-    const existingEnglish = existing.find((file) => file.language === "en");
-    const existingPortuguese = existing.find((file) => file.language === "pt-BR");
+    const existingTarget = existing.find((file) => file.language === target.language);
+    const existingNative = native ? existing.find((file) => file.language === native.language) : undefined;
 
-    if (existingEnglish && existingEnglish.sha256 !== english.sha256) {
+    if (existingTarget && existingTarget.sha256 !== target.sha256) {
       throw new AppError("SUBTITLE_VERSION_CONFLICT", "targetVersionConflict");
     }
-    if (portuguese && existingPortuguese && existingPortuguese.sha256 !== portuguese.sha256) {
+    if (native && existingNative && existingNative.sha256 !== native.sha256) {
       throw new AppError("SUBTITLE_VERSION_CONFLICT", "nativeVersionConflict");
     }
 
-    const englishIsNew = !existingEnglish;
-    const portugueseIsNew = Boolean(portuguese) && !existingPortuguese;
+    const targetIsNew = !existingTarget;
+    const nativeIsNew = Boolean(native) && !existingNative;
+    const nativeLanguage = native?.language ?? null;
 
-    if (!englishIsNew && !portugueseIsNew) {
-      const cues = existingEnglish ? await deps.subtitles.listCues(existingEnglish.id) : [];
-      const alignments = await deps.subtitles.listAlignments(input.episodeId);
+    if (!targetIsNew && !nativeIsNew) {
+      const cues = existingTarget ? await deps.subtitles.listCues(existingTarget.id) : [];
+      const alignments = nativeLanguage
+        ? await deps.subtitles.listAlignments(input.episodeId, nativeLanguage)
+        : [];
       const pairs = alignments.filter((alignment) => alignment.status === "ALIGNED").length;
       return {
         outcome: "DUPLICATE",
         episodeId: input.episodeId,
         steps: [...steps, { key: "duplicates", detail: { key: "identicalFound" } }],
-        hasPortuguese: Boolean(existingPortuguese),
+        languages: existing.map((file) => file.language),
+        hasNative: Boolean(existingNative),
         cueCount: cues.length,
-        alignment: existingPortuguese && cues.length > 0 ? { pairs, rate: pairs / cues.length } : null,
+        alignment: existingNative && cues.length > 0 ? { pairs, rate: pairs / cues.length } : null,
       };
     }
-    steps.push({
-      key: "duplicates",
-      detail: { key: englishIsNew ? "none" : "addingNative" },
-    });
+    steps.push({ key: "duplicates", detail: { key: targetIsNew ? "none" : "addingNative" } });
 
     const jobId = deps.ids.next();
     const now = deps.clock.now();
     try {
       const directory = episodeDirectory(location);
       const newFiles: NewSubtitleFile[] = [];
+      const added: FileWithCues[] = [];
 
-      let englishCues: StoredCue[];
-      if (englishIsNew) {
-        const storagePath = `${directory}/original.en.srt`;
-        await deps.storage.write(storagePath, english.upload.bytes);
-        englishCues = parseToCues(english);
-        newFiles.push({
+      const store = async (prepared: Prepared): Promise<FileWithCues> => {
+        const storagePath = `${directory}/original.${prepared.language}.srt`;
+        await deps.storage.write(storagePath, prepared.upload.bytes);
+        const cues = parseToCues(prepared);
+        const file: NewSubtitleFile = {
           id: deps.ids.next(),
-          language: "en",
-          sha256: english.sha256,
+          language: prepared.language,
+          sha256: prepared.sha256,
           storagePath,
-          origin: english.upload.origin ?? null,
-          originalFilename: english.upload.filename,
-          sizeBytes: english.upload.bytes.byteLength,
-          cues: englishCues,
-        });
-      } else {
-        englishCues = existingEnglish ? await deps.subtitles.listCues(existingEnglish.id) : [];
-      }
-      steps.push({ key: "readTarget", detail: { key: "cues", params: { count: englishCues.length } } });
+          origin: prepared.upload.origin ?? null,
+          originalFilename: prepared.upload.filename,
+          sizeBytes: prepared.upload.bytes.byteLength,
+          cues,
+        };
+        newFiles.push(file);
+        added.push({ id: file.id, language: file.language, cues });
+        return { id: file.id, language: file.language, cues };
+      };
 
-      let portugueseCues: StoredCue[] | null = null;
-      if (portuguese && portugueseIsNew) {
-        const storagePath = `${directory}/original.pt-BR.srt`;
-        await deps.storage.write(storagePath, portuguese.upload.bytes);
-        portugueseCues = parseToCues(portuguese);
-        newFiles.push({
-          id: deps.ids.next(),
-          language: "pt-BR",
-          sha256: portuguese.sha256,
-          storagePath,
-          origin: portuguese.upload.origin ?? null,
-          originalFilename: portuguese.upload.filename,
-          sizeBytes: portuguese.upload.bytes.byteLength,
-          cues: portugueseCues,
-        });
-        steps.push({ key: "readNative", detail: { key: "cues", params: { count: portugueseCues.length } } });
+      const targetFile = existingTarget ? await withCues(existingTarget) : await store(target);
+      steps.push({ key: "readTarget", detail: { key: "cues", params: { count: targetFile.cues.length } } });
+
+      let nativeFile: FileWithCues | null = null;
+      if (native && nativeIsNew) {
+        nativeFile = await store(native);
+        steps.push({ key: "readNative", detail: { key: "cues", params: { count: nativeFile.cues.length } } });
+      } else if (existingNative) {
+        nativeFile = await withCues(existingNative);
       }
 
-      const alignment = portugueseCues ? alignCues(englishCues, portugueseCues) : null;
-      if (alignment) {
-        steps.push({
-          key: "align",
-          detail: {
-            key: "pairs",
-            params: { count: alignment.alignedCount, percent: percent(alignment.rate) },
-          },
-        });
-        await deps.storage.write(
-          `${directory}/alignment.json`,
-          new TextEncoder().encode(JSON.stringify(alignment, null, 2)),
-        );
+      const others = await Promise.all(
+        existing
+          .filter((file) => file.id !== existingTarget?.id && file.id !== existingNative?.id)
+          .map(withCues),
+      );
+      const all = [...others, targetFile, ...(nativeFile ? [nativeFile] : [])];
+      const addedIds = new Set(added.map((file) => file.id));
+      const alignments: (StoredAlignment & { id: string })[] = [];
+      let pairAlignment: { pairs: number; rate: number } | null = null;
+      for (const source of all) {
+        for (const aligned of all) {
+          if (source.language === aligned.language) continue;
+          if (!addedIds.has(source.id) && !addedIds.has(aligned.id)) continue;
+          const result = alignCues(source.cues, aligned.cues);
+          for (const entry of result.alignments) {
+            alignments.push({ id: deps.ids.next(), alignedLanguage: aligned.language, ...entry });
+          }
+          if (source.id === targetFile.id && nativeFile && aligned.id === nativeFile.id) {
+            pairAlignment = { pairs: result.alignedCount, rate: result.rate };
+            steps.push({
+              key: "align",
+              detail: {
+                key: "pairs",
+                params: { count: result.alignedCount, percent: percent(result.rate) },
+              },
+            });
+          }
+        }
       }
       steps.push({ key: "publish", detail: { key: "ready" } });
       steps.push({ key: "audio", detail: { key: "onDemand" } });
@@ -192,12 +212,10 @@ export function makeImportEpisodeSubtitles(deps: {
         now,
         jobId,
         files: newFiles,
-        alignments: alignment
-          ? alignment.alignments.map((entry) => ({ id: deps.ids.next(), ...entry }))
-          : null,
-        cueCount: englishCues.length,
-        alignmentPairs: alignment ? alignment.alignedCount : null,
-        alignmentRate: alignment ? alignment.rate : null,
+        alignments,
+        cueCount: targetFile.cues.length,
+        alignmentPairs: pairAlignment ? pairAlignment.pairs : null,
+        alignmentRate: pairAlignment ? pairAlignment.rate : null,
         steps,
       });
 
@@ -205,9 +223,10 @@ export function makeImportEpisodeSubtitles(deps: {
         outcome: "PROCESSED",
         episodeId: input.episodeId,
         steps,
-        hasPortuguese: Boolean(portugueseCues) || Boolean(existingPortuguese),
-        cueCount: englishCues.length,
-        alignment: alignment ? { pairs: alignment.alignedCount, rate: alignment.rate } : null,
+        languages: all.map((file) => file.language),
+        hasNative: nativeFile !== null,
+        cueCount: targetFile.cues.length,
+        alignment: pairAlignment,
       };
     } catch (error) {
       if (isAppError(error) && error.code === "SUBTITLE_INVALID") throw error;
@@ -215,7 +234,7 @@ export function makeImportEpisodeSubtitles(deps: {
         episodeId: input.episodeId,
         userId: input.userId,
         jobId,
-        reason: error instanceof Error ? error.message : "falha desconhecida",
+        reason: error instanceof Error ? error.message : "unknown failure",
         steps,
         now,
       });

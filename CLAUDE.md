@@ -1,8 +1,9 @@
 # CLAUDE.md
 
-**Deixa** (nome provisório): plataforma para aprender inglês a partir das séries e filmes que a pessoa já
-assiste. O usuário importa a legenda do episódio (EN e, de preferência, PT), lê o episódio inteiro, marca o que
-não entendeu e transforma as marcações em cards de revisão. Especificação: @PROJETO.md. Protótipo aprovado da
+**Deixa** (nome provisório): plataforma para aprender um idioma (inglês, português, espanhol ou francês) a
+partir das séries e filmes que a pessoa já assiste. O usuário escolhe o par idioma base → idioma de estudo,
+importa a legenda do episódio (no idioma de estudo e, de preferência, no idioma base), lê o episódio inteiro,
+marca o que não entendeu e transforma as marcações em cards de revisão. Especificação: @PROJETO.md. Protótipo aprovado da
 interface: `deixa.html`.
 
 Idioma: português do Brasil com acentuação correta; identificadores de código em inglês. Texto de interface
@@ -21,7 +22,8 @@ nunca fica no código: vai para `locales/pt-BR.json` e `locales/en.json`, com a 
 ## Regra central
 
 **O catálogo é compartilhado. O aprendizado é individual.** Todo dado individual é lido e escrito com o `userId`
-da sessão. Detalhes: @.claude/rules/user-isolation.md
+da sessão e, quando depende do idioma, com o par ativo da conta (`pairOf(user.preferences)`), nunca com um
+par vindo do cliente. Detalhes: @.claude/rules/user-isolation.md
 
 ## Stack (versões e uso em `.contexts/engineering/stacks/`)
 
@@ -42,7 +44,7 @@ src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastr
                       ai-credentials, audio, gamification, study, notifications, conversations,
                       subtitle-sources, recommendations, settings, ai-usage, packages
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
-src/shared/           app.ts (APP_NAME), errors, levels, locales, clock, ids
+src/shared/           app.ts (APP_NAME), errors, levels, locales, study-languages (par de idiomas), clock, ids
 src/i18n/             request.ts (idioma por pedido), messages.ts (carrega locales/<idioma>.json)
 locales/              pt-BR.json e en.json: todo texto da interface, por tela (ADR 0018)
 src/seed/             seed de demonstração

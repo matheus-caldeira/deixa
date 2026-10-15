@@ -1,4 +1,6 @@
-export type SourceLanguage = "en" | "pt-BR";
+import type { LanguagePair, StudyLanguage } from "@/shared/study-languages";
+
+export type SourceLanguage = StudyLanguage;
 
 export type SubtitleCandidate = {
   fileId: string;
@@ -14,11 +16,11 @@ export type SubtitleCandidate = {
 };
 
 export type Ranking = {
-  english: SubtitleCandidate[];
-  portuguese: SubtitleCandidate[];
+  target: SubtitleCandidate[];
+  native: SubtitleCandidate[];
   suggestion: {
-    english: SubtitleCandidate | null;
-    portuguese: SubtitleCandidate | null;
+    target: SubtitleCandidate | null;
+    native: SubtitleCandidate | null;
     sameRelease: boolean;
   };
 };
@@ -37,6 +39,16 @@ const NOISE_TOKENS = new Set([
   "br",
   "portuguese",
   "brazilian",
+  "es",
+  "spa",
+  "spanish",
+  "espanol",
+  "latino",
+  "fr",
+  "fre",
+  "fra",
+  "french",
+  "francais",
   "legendado",
   "legenda",
   "hi",
@@ -94,35 +106,33 @@ function byQuality(commonFps: number | null) {
     a.fileId.localeCompare(b.fileId);
 }
 
-export function rankCandidates(candidates: readonly SubtitleCandidate[]): Ranking {
+export function rankCandidates(candidates: readonly SubtitleCandidate[], pair: LanguagePair): Ranking {
   const commonFps = mostCommonFps(candidates);
   const order = byQuality(commonFps);
   const ofLanguage = (language: SourceLanguage): SubtitleCandidate[] =>
     withoutMachineTranslation(candidates.filter((candidate) => candidate.language === language)).sort(order);
-  const english = ofLanguage("en");
-  const portuguese = ofLanguage("pt-BR");
+  const target = ofLanguage(pair.target);
+  const native = ofLanguage(pair.native);
 
-  const portugueseByRelease = new Map<string, SubtitleCandidate>();
-  for (const candidate of portuguese) {
+  const nativeByRelease = new Map<string, SubtitleCandidate>();
+  for (const candidate of native) {
     const key = releaseKey(candidate.release);
-    if (key !== "" && !portugueseByRelease.has(key)) portugueseByRelease.set(key, candidate);
+    if (key !== "" && !nativeByRelease.has(key)) nativeByRelease.set(key, candidate);
   }
-  const pairs = english.flatMap((candidate) => {
-    const match = portugueseByRelease.get(releaseKey(candidate.release));
-    return match ? [{ english: candidate, portuguese: match }] : [];
+  const pairs = target.flatMap((candidate) => {
+    const match = nativeByRelease.get(releaseKey(candidate.release));
+    return match ? [{ target: candidate, native: match }] : [];
   });
-  const usablePairs = pairs.filter(
-    (pair) => !pair.english.hearingImpaired && !pair.portuguese.hearingImpaired,
-  );
+  const usablePairs = pairs.filter((found) => !found.target.hearingImpaired && !found.native.hearingImpaired);
   const bestPair = (usablePairs.length > 0 ? usablePairs : pairs).sort(
-    (a, b) => b.english.downloads + b.portuguese.downloads - (a.english.downloads + a.portuguese.downloads),
+    (a, b) => b.target.downloads + b.native.downloads - (a.target.downloads + a.native.downloads),
   )[0];
 
   return {
-    english,
-    portuguese,
+    target,
+    native,
     suggestion: bestPair
       ? { ...bestPair, sameRelease: true }
-      : { english: english[0] ?? null, portuguese: portuguese[0] ?? null, sameRelease: false },
+      : { target: target[0] ?? null, native: native[0] ?? null, sameRelease: false },
   };
 }

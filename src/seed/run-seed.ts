@@ -9,6 +9,7 @@ import {
   mediaItems,
   learningItems,
   userCards,
+  userLanguagePairs,
   userPreferences,
   users,
 } from "@/infrastructure/database/schema";
@@ -22,6 +23,7 @@ import {
 import { fakeExternalId } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import type { CueMarks } from "@/modules/highlights";
 import { defaultPreferences } from "@/modules/identity";
+import { pairKey, type LanguagePair } from "@/shared/study-languages";
 import { assemblePlan } from "@/modules/study";
 import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { systemClock } from "@/shared/clock";
@@ -42,6 +44,7 @@ import {
 } from "./data";
 
 const SEED_HISTORY_DAYS = 60;
+const SEED_PAIR: LanguagePair = { target: "en", native: "pt-BR" };
 const DIALOGUES_DIR = "fixtures/dialogues";
 const PLANS_DIR = "fixtures/plans";
 
@@ -79,6 +82,16 @@ export async function runSeed(input: {
         audioSpeed: profile.audioSpeed,
       });
     }
+    await db
+      .insert(userLanguagePairs)
+      .values({
+        userId: id,
+        targetLanguage: SEED_PAIR.target,
+        nativeLanguage: SEED_PAIR.native,
+        level: profile.level,
+        createdAt: now,
+      })
+      .onConflictDoNothing();
     userIdBySlug.set(profile.slug, id);
   }
   const [admin] = await db.select({ id: users.id }).from(users).where(eq(users.isAdmin, true)).limit(1);
@@ -117,7 +130,7 @@ export async function runSeed(input: {
   let seededPlans = 0;
 
   async function seedPlans(episodeId: string, dialogueName: string): Promise<void> {
-    const script = await container.getEpisodeScript(episodeId);
+    const script = await container.getEpisodeScript(episodeId, SEED_PAIR);
     if (!script) return;
     const lines = script.lines.map((line) => ({
       cueId: line.cueId,
@@ -137,7 +150,7 @@ export async function runSeed(input: {
         provider: "gemini",
       });
       if (!plan) continue;
-      await container.savePlan({ id: ids.next(), episodeId, level, plan, now });
+      await container.savePlan({ id: ids.next(), episodeId, pair: SEED_PAIR, level, plan, now });
       seededPlans += 1;
     }
   }
@@ -169,7 +182,7 @@ export async function runSeed(input: {
       const dialogue = dialogues[importedEpisodes % dialogues.length];
       importedEpisodes += 1;
       if (!dialogue) continue;
-      const alreadyImported = (await container.getEpisodeScript(episodeId)) !== null;
+      const alreadyImported = (await container.getEpisodeScript(episodeId, SEED_PAIR)) !== null;
       if (alreadyImported) {
         await seedPlans(episodeId, dialogue.name);
         continue;
@@ -177,8 +190,8 @@ export async function runSeed(input: {
       await container.importEpisodeSubtitles({
         userId: uploaderId,
         episodeId,
-        english: dialogue.english,
-        portuguese: state === "READY_PT" ? dialogue.portuguese : undefined,
+        target: { language: "en", upload: dialogue.english },
+        native: state === "READY_PT" ? { language: "pt-BR", upload: dialogue.portuguese } : undefined,
       });
       await seedPlans(episodeId, dialogue.name);
     }
@@ -192,7 +205,7 @@ export async function runSeed(input: {
     ranges: [number, number, number][],
     lines: number[],
   ): Promise<CueMarks[]> {
-    const script = await container.getEpisodeScript(episodeId);
+    const script = await container.getEpisodeScript(episodeId, SEED_PAIR);
     if (!script) return [];
     const byCue = new Map<string, CueMarks>();
     const entry = (lineIndex: number): CueMarks | null => {
@@ -257,7 +270,7 @@ export async function runSeed(input: {
       const profile = SEED_PROFILES.find((candidate) => candidate.slug === slug);
       const userId = userIdBySlug.get(slug);
       if (!profile || !userId) continue;
-      const current = await container.getReadingView(userId, episodeId);
+      const current = await container.getReadingView(userId, episodeId, SEED_PAIR);
       const alreadyCarded = current.highlights.some((highlight) => highlight.cardBatchId !== null);
       if (alreadyCarded && shared.by.length > 1) continue;
       const known = current.highlights.map((highlight) => highlight.cueId);
@@ -279,11 +292,17 @@ export async function runSeed(input: {
           })),
       ];
       if (known.length > 0 && marks.every((mark) => known.includes(mark.cueId))) continue;
-      await container.syncHighlights({ userId, episodeId, marks: merged });
+      await container.syncHighlights({ userId, episodeId, pair: SEED_PAIR, marks: merged });
       try {
-        const batch = await container.generateCardDrafts({ userId, episodeId, learnerLevel: profile.level });
+        const batch = await container.generateCardDrafts({
+          userId,
+          episodeId,
+          learnerLevel: profile.level,
+          pair: SEED_PAIR,
+        });
         await container.confirmCardBatch({
           userId,
+          pair: SEED_PAIR,
           batchId: batch.batchId,
           keepKeys: batch.drafts.map((draft) => draft.key),
           scope: "catalog",
@@ -309,11 +328,12 @@ export async function runSeed(input: {
       await container.ensurePlan({
         userId,
         episodeId: currentEpisodeId,
+        pair: SEED_PAIR,
         level: profile.level,
         episodeLabel: "",
         retry: true,
       });
-      const trail = await container.getTrail(userId, currentEpisodeId, profile.level);
+      const trail = await container.getTrail(userId, currentEpisodeId, SEED_PAIR, profile.level);
       const alreadyStudied = trail.nodes.some((node) => node.state === "done");
       for (let nodeIndex = 0; !alreadyStudied && nodeIndex < profile.scenesDone; nodeIndex += 1) {
         await db.insert(lessonAttempts).values({
@@ -321,6 +341,7 @@ export async function runSeed(input: {
           userId,
           episodeId: currentEpisodeId,
           nodeIndex,
+          languagePair: pairKey(SEED_PAIR),
           level: profile.level,
           correct: 5,
           total: 6,
@@ -331,11 +352,12 @@ export async function runSeed(input: {
           createdAt: new Date(now.getTime() - (profile.scenesDone - nodeIndex) * 3_600_000),
         });
       }
-      const view = await container.getReadingView(userId, currentEpisodeId);
+      const view = await container.getReadingView(userId, currentEpisodeId, SEED_PAIR);
       if (view.highlights.length === 0) {
         await container.syncHighlights({
           userId,
           episodeId: currentEpisodeId,
+          pair: SEED_PAIR,
           marks: await marksFor(currentEpisodeId, profile.premarks, profile.prelines),
         });
       }
@@ -348,7 +370,7 @@ export async function runSeed(input: {
       .limit(1);
     const hasCurated =
       Boolean(curated) &&
-      (await container.listDueCards(userId)).cards.some((card) => card.sourceKind === "curated");
+      (await container.listDueCards(userId, SEED_PAIR)).cards.some((card) => card.sourceKind === "curated");
     if (hasCurated) continue;
     const created: { learningItemId: string; sourceKind: string }[] = [];
     for (const [index, review] of profile.reviews.entries()) {

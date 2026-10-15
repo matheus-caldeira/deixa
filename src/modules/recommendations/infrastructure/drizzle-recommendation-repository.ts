@@ -68,7 +68,7 @@ const integer = (expression: ReturnType<typeof sql>) => sql<number>`coalesce(${e
 export class DrizzleRecommendationRepository implements RecommendationRepository {
   constructor(private readonly db: Database) {}
 
-  async loadSignals(userId: string, since: Date): Promise<Omit<LearnerSignals, "level">> {
+  async loadSignals(userId: string, since: Date): Promise<Omit<LearnerSignals, "level" | "language">> {
     const [works, lessonRows, reviewRows, markedEpisodes, terms] = await Promise.all([
       this.db
         .select({

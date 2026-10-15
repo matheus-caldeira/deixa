@@ -1,7 +1,8 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 
 export type ParsedCue = { sequence: number; startMs: number; endMs: number; text: string };
-export type SubtitleLanguage = "en" | "pt-BR";
+export type SubtitleLanguage = StudyLanguage;
 
 export const MAX_SUBTITLE_BYTES = 5_000_000;
 const MAX_SUBTITLE_MB = 5;

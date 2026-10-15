@@ -1,4 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
+import { isStudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
   episodeProgress,
@@ -76,6 +77,7 @@ function toMedia(row: MediaRow, uploaderName: string | null): MediaItem {
     levelMin: isCefrLevel(row.levelMin) ? row.levelMin : "B1",
     levelMax: isCefrLevel(row.levelMax) ? row.levelMax : "B2",
     accent: row.accent,
+    originalLanguage: isStudyLanguage(row.originalLanguage) ? row.originalLanguage : "en",
     uploaderName,
     metadataSyncedAt: row.metadataSyncedAt,
   };
@@ -92,7 +94,7 @@ function toSeason(row: SeasonRow): Season {
   };
 }
 
-function toEpisode(row: EpisodeRow, hasPortuguese: boolean): Episode {
+function toEpisode(row: EpisodeRow, subtitleLanguages: string[] | null): Episode {
   return {
     id: row.id,
     seasonId: row.seasonId,
@@ -106,11 +108,13 @@ function toEpisode(row: EpisodeRow, hasPortuguese: boolean): Episode {
     cueCount: row.cueCount,
     alignmentPairs: row.alignmentPairs,
     alignmentRate: row.alignmentRate,
-    hasPortuguese,
+    subtitleLanguages: (subtitleLanguages ?? []).filter(isStudyLanguage),
   };
 }
 
-const hasPortugueseSubtitle = sql<boolean>`exists (select 1 from ${subtitleFiles} where ${subtitleFiles.episodeId} = ${episodes.id} and ${subtitleFiles.language} = 'pt-BR')`;
+const subtitleLanguagesOf = sql<
+  string[] | null
+>`(select array_agg(${subtitleFiles.language} order by ${subtitleFiles.language}) from ${subtitleFiles} where ${subtitleFiles.episodeId} = ${episodes.id})`;
 
 export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgressRepository {
   constructor(private readonly db: Database) {}
@@ -152,6 +156,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
         levelMin: input.levelMin,
         levelMax: input.levelMax,
         accent: input.accent,
+        originalLanguage: input.originalLanguage,
         createdBy: input.createdBy,
         metadataSyncedAt: input.syncedAt,
         createdAt: input.createdAt,
@@ -219,22 +224,26 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
 
   async listEpisodes(seasonId: string): Promise<Episode[]> {
     const rows = await this.db
-      .select({ episode: episodes, hasPortuguese: hasPortugueseSubtitle })
+      .select({ episode: episodes, subtitleLanguages: subtitleLanguagesOf })
       .from(episodes)
       .where(eq(episodes.seasonId, seasonId))
       .orderBy(asc(episodes.episodeNumber));
-    return rows.map((row) => toEpisode(row.episode, row.hasPortuguese));
+    return rows.map((row) => toEpisode(row.episode, row.subtitleLanguages));
   }
 
   async listEpisodesByMedia(mediaItemId: string): Promise<EpisodeWithSeason[]> {
     const rows = await this.db
-      .select({ episode: episodes, seasonNumber: seasons.seasonNumber, hasPortuguese: hasPortugueseSubtitle })
+      .select({
+        episode: episodes,
+        seasonNumber: seasons.seasonNumber,
+        subtitleLanguages: subtitleLanguagesOf,
+      })
       .from(episodes)
       .innerJoin(seasons, eq(seasons.id, episodes.seasonId))
       .where(eq(seasons.mediaItemId, mediaItemId))
       .orderBy(asc(seasons.seasonNumber), asc(episodes.episodeNumber));
     return rows.map((row) => ({
-      ...toEpisode(row.episode, row.hasPortuguese),
+      ...toEpisode(row.episode, row.subtitleLanguages),
       seasonNumber: row.seasonNumber,
     }));
   }
@@ -259,7 +268,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
         season: seasons,
         media: mediaItems,
         uploaderName: users.name,
-        hasPortuguese: hasPortugueseSubtitle,
+        subtitleLanguages: subtitleLanguagesOf,
       })
       .from(episodes)
       .innerJoin(seasons, eq(seasons.id, episodes.seasonId))
@@ -269,7 +278,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
       .limit(1);
     if (!row) return null;
     return {
-      episode: toEpisode(row.episode, row.hasPortuguese),
+      episode: toEpisode(row.episode, row.subtitleLanguages),
       season: toSeason(row.season),
       media: toMedia(row.media, row.uploaderName),
     };

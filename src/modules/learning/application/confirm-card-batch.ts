@@ -1,3 +1,4 @@
+import type { LanguagePair, StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
@@ -16,6 +17,7 @@ export function makeConfirmCardBatch(deps: Deps) {
   return async function confirmCardBatch(input: {
     userId: string;
     batchId: string;
+    pair: LanguagePair;
     keepKeys: string[];
     scope: CardScope;
   }): Promise<ConfirmedBatch> {
@@ -27,7 +29,7 @@ export function makeConfirmCardBatch(deps: Deps) {
 
     const visibility = input.scope === "catalog" ? "global" : "private";
     const reusable = new Map(
-      (await deps.learning.findReusable(input.userId, batch.episodeId)).map((item) => [
+      (await deps.learning.findReusable(input.userId, batch.episodeId, input.pair)).map((item) => [
         spanKeyOf(item),
         item,
       ]),
@@ -47,6 +49,7 @@ export function makeConfirmCardBatch(deps: Deps) {
       await deps.learning.createItem({
         id,
         episodeId: batch.episodeId,
+        pair: input.pair,
         draft,
         visibility,
         ownerUserId: visibility === "private" ? input.userId : null,
@@ -84,15 +87,18 @@ export function makeConfirmCardBatch(deps: Deps) {
 }
 
 export function makeListCatalogSuggestions(deps: { learning: LearningRepository }) {
-  return async function listCatalogSuggestions(episodeId: string) {
-    return deps.learning.listGlobalSuggestions(episodeId);
+  return async function listCatalogSuggestions(episodeId: string, language: StudyLanguage) {
+    return deps.learning.listGlobalSuggestions(episodeId, language);
   };
 }
 
-export function makeGetSpeakableItemText(deps: { learning: LearningRepository }) {
-  return async function getSpeakableItemText(userId: string, itemId: string): Promise<string> {
-    const text = await deps.learning.findSpeakableText(userId, itemId);
-    if (!text) throw new AppError("ITEM_NOT_FOUND");
-    return text;
+export function makeGetSpeakableItem(deps: { learning: LearningRepository }) {
+  return async function getSpeakableItem(
+    userId: string,
+    itemId: string,
+  ): Promise<{ text: string; language: StudyLanguage }> {
+    const found = await deps.learning.findSpeakable(userId, itemId);
+    if (!found) throw new AppError("ITEM_NOT_FOUND");
+    return found;
   };
 }

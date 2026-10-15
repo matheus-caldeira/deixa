@@ -16,6 +16,7 @@ function setup() {
     users: store,
     sessions: store,
     preferences: store,
+    pairs: store,
     passwords: plainPasswords,
     tokens,
     clock,

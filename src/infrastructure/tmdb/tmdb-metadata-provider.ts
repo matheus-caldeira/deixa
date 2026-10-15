@@ -26,13 +26,14 @@ import {
   tvDetailsSchema,
   workListSchema,
 } from "./schemas";
+import type { StudyLanguage } from "@/shared/study-languages";
 
 const PORTUGUESE = "pt-BR";
 const ENGLISH = "en-US";
 const TMDB_KIND = { series: "tv", movie: "movie" } as const;
 const MEDIA_TYPES: readonly MediaType[] = ["series", "movie"];
+const TMDB_LANGUAGE: Record<StudyLanguage, string> = { en: "en", "pt-BR": "pt", es: "es", fr: "fr" };
 const POPULAR_FILTERS = {
-  with_original_language: "en",
   sort_by: "popularity.desc",
   "vote_count.gte": "400",
   include_adult: "false",
@@ -71,13 +72,13 @@ export class TmdbMetadataProvider implements MetadataProvider {
     return mapWorkList(type, list, genres);
   }
 
-  async listPopularWorks(): Promise<WorkCandidate[]> {
+  async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {
     const lists = await Promise.all(
       MEDIA_TYPES.map(async (type) => {
         const [list, genres] = await Promise.all([
           this.client.get(
             `discover/${TMDB_KIND[type]}`,
-            { ...POPULAR_FILTERS, language: PORTUGUESE },
+            { ...POPULAR_FILTERS, with_original_language: TMDB_LANGUAGE[language], language: PORTUGUESE },
             workListSchema,
           ),
           this.genresFor(type),

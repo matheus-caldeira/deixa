@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
+import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { LessonScreen } from "@/ui/study/lesson-screen";
@@ -15,7 +16,13 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
   const nodeIndex = Number(node);
   if (!z.uuid().safeParse(episodeId).success || !Number.isInteger(nodeIndex) || nodeIndex < 0) notFound();
   const lesson = await getContainer()
-    .startLesson({ userId: user.id, episodeId, nodeIndex, level: user.preferences.level })
+    .startLesson({
+      userId: user.id,
+      episodeId,
+      nodeIndex,
+      pair: pairOf(user.preferences),
+      level: user.preferences.level,
+    })
     .catch((error: unknown) => {
       if (isAppError(error)) redirect("/");
       throw error;

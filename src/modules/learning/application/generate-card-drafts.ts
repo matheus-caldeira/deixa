@@ -2,6 +2,7 @@ import { AppError, isAppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair } from "@/shared/study-languages";
 import { termFromTokens, tokenize } from "@/shared/text";
 import {
   MAX_HIGHLIGHTS_PER_BATCH,
@@ -137,11 +138,16 @@ function draftFromExplanation(
 }
 
 export function makeGenerateCardDrafts(deps: Deps) {
-  async function explain(userId: string, learnerLevel: CefrLevel, items: ExplainRequestItem[]) {
+  async function explain(
+    userId: string,
+    learnerLevel: CefrLevel,
+    pair: LanguagePair,
+    items: ExplainRequestItem[],
+  ) {
     const provider = await deps.resolveLlm(userId);
     let raw: unknown;
     try {
-      raw = await provider.explainTerms({ learnerLevel, items });
+      raw = await provider.explainTerms({ learnerLevel, pair, items });
     } catch (error) {
       if (isAppError(error)) throw error;
       throw new AppError("LLM_FAILED");
@@ -160,9 +166,10 @@ export function makeGenerateCardDrafts(deps: Deps) {
     userId: string;
     episodeId: string;
     learnerLevel: CefrLevel;
+    pair: LanguagePair;
     batchId?: string;
   }): Promise<GeneratedDrafts> {
-    const script = await deps.loadScript(input.episodeId);
+    const script = await deps.loadScript(input.episodeId, input.pair);
     if (!script) throw new AppError("EPISODE_NOT_READY");
     const pending = (await deps.listPendingHighlights(input.userId, input.episodeId)).slice(
       0,
@@ -172,7 +179,7 @@ export function makeGenerateCardDrafts(deps: Deps) {
 
     const lineByCue = new Map(script.lines.map((line) => [line.cueId, line]));
     const reusable = new Map(
-      (await deps.learning.findReusable(input.userId, input.episodeId)).map((item) => [
+      (await deps.learning.findReusable(input.userId, input.episodeId, input.pair)).map((item) => [
         spanKeyOf(item),
         item,
       ]),
@@ -202,6 +209,7 @@ export function makeGenerateCardDrafts(deps: Deps) {
       const { byId, providerName } = await explain(
         input.userId,
         input.learnerLevel,
+        input.pair,
         toExplain.map(({ highlight, line, term }) => ({
           id: highlight.id,
           term,

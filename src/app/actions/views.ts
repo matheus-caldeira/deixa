@@ -1,5 +1,6 @@
 import type { ProcessingStep } from "@/modules/subtitles";
 import type { EpisodeStatus, MediaType, PosterColors } from "@/modules/catalog";
+import type { LanguagePair, StudyLanguage } from "@/shared/study-languages";
 
 export type SearchResultView = {
   externalId: string;
@@ -17,7 +18,7 @@ export type UploadEpisodeView = {
   episodeNumber: number;
   title: string;
   status: EpisodeStatus;
-  hasPortuguese: boolean;
+  subtitleLanguages: StudyLanguage[];
 };
 
 export type UploadTargetView = {
@@ -36,7 +37,7 @@ export type UploadTargetView = {
 export type ImportView = {
   outcome: "PROCESSED" | "DUPLICATE";
   steps: ProcessingStep[];
-  hasPortuguese: boolean;
+  hasNative: boolean;
   episodeId: string;
   mediaId: string;
   seasonNumber: number;
@@ -45,7 +46,7 @@ export type ImportView = {
 
 export type SubtitleOptionView = {
   fileId: string;
-  language: "en" | "pt-BR";
+  language: StudyLanguage;
   release: string;
   downloads: number;
   hearingImpaired: boolean;
@@ -55,14 +56,15 @@ export type SubtitleOptionView = {
 
 export type SubtitleSearchView = {
   provider: "opensubtitles" | "fake";
-  english: SubtitleOptionView[];
-  portuguese: SubtitleOptionView[];
-  suggestion: { englishFileId: string | null; portugueseFileId: string | null; sameRelease: boolean };
+  pair: LanguagePair;
+  target: SubtitleOptionView[];
+  native: SubtitleOptionView[];
+  suggestion: { targetFileId: string | null; nativeFileId: string | null; sameRelease: boolean };
   existing: {
-    english: string | null;
-    portuguese: string | null;
-    hasEnglish: boolean;
-    hasPortuguese: boolean;
+    target: string | null;
+    native: string | null;
+    hasTarget: boolean;
+    hasNative: boolean;
   };
   quota: { remaining: number; resetAt: string | null } | null;
   cached: boolean;

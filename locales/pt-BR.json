@@ -25,9 +25,11 @@
     "signupIntro": "Crie sua conta. Seu progresso, suas marcações e suas revisões são só seus.",
     "name": "Nome",
     "passwordMin": "Senha (mínimo de {min} caracteres)",
-    "levelToday": "Seu nível de inglês hoje",
+    "levelToday": "Seu nível de {language} hoje",
     "creating": "Criando…",
-    "haveAccount": "Já tenho conta"
+    "haveAccount": "Já tenho conta",
+    "nativeLanguage": "Seu idioma",
+    "targetLanguage": "Quero aprender"
   },
   "shell": {
     "tabs": {
@@ -82,7 +84,17 @@
     "createdBy": "Criado por <b>{name}</b>. Contato:",
     "metadata": "Metadados de séries e filmes:",
     "demoMetadata": " (dados de demonstração neste ambiente)",
-    "subtitles": "Legendas buscadas a pedido: <b>OpenSubtitles</b> (opensubtitles.com). Cada legenda mostra o release e quem enviou."
+    "subtitles": "Legendas buscadas a pedido: <b>OpenSubtitles</b> (opensubtitles.com). Cada legenda mostra o release e quem enviou.",
+    "languages": "Idiomas de estudo",
+    "pairLabel": "{target} a partir do {native}",
+    "activePair": "Em uso",
+    "usePair": "Usar",
+    "nativeLanguage": "Seu idioma",
+    "targetLanguage": "Quero aprender",
+    "pairLevel": "Nível nesse idioma",
+    "cancel": "Cancelar",
+    "addPair": "Adicionar",
+    "addPairLink": "Estudar outro idioma"
   },
   "inbox": {
     "title": "Notificações",
@@ -197,7 +209,10 @@
       },
       "limitInvalid": "Confira os valores do limite.",
       "modelInvalid": "Confira o provedor e o nome do modelo.",
-      "previousBlock": "Conclua o bloco anterior para liberar este."
+      "previousBlock": "Conclua o bloco anterior para liberar este.",
+      "searchAgainBeforeImport": "Busque as legendas de novo antes de importar.",
+      "pairExists": "Você já estuda esse par de idiomas.",
+      "pairMissing": "Esse par de idiomas não está na sua conta."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -268,8 +283,6 @@
     "noEpisodes": "Nenhum episódio carregado ainda. Envie a primeira legenda abaixo.",
     "status": {
       "ready": "Pronto · {count} falas",
-      "bothLanguages": "EN + PT",
-      "onlyTarget": "só EN",
       "processing": "Processando",
       "needsReview": "Em revisão",
       "failed": "Falhou · envie de novo",
@@ -752,7 +765,7 @@
     "scopeCatalog": "Para o catálogo",
     "scopePrivateBody": "Os cards vão só para a sua revisão. Ninguém vê o que você marcou.",
     "scopeCatalogBody": "Os cards também viram sugestões para quem estudar este episódio. Suas marcações entram numa contagem anônima (\"marcada por N alunos\").",
-    "fromSubtitle": "<b>Tradução das falas veio da legenda PT</b>, sem custo de IA. A IA só explicou o significado de cada termo.",
+    "fromSubtitle": "<b>Tradução das falas veio da legenda {native}</b>, sem custo de IA. A IA só explicou o significado de cada termo.",
     "simulated": "Explicações simuladas.",
     "simulatedBody": "Adicione sua chave de IA em Configurações para explicações de verdade.",
     "allRemoved": "Você removeu todos os cards.",
@@ -763,20 +776,19 @@
       "slang": "Gíria",
       "sentence": "Frase"
     },
-    "fromNativeSubtitle": "legenda PT",
+    "fromNativeSubtitle": "legenda {native}",
     "ai": "IA",
-    "nativeTag": "PT",
     "removeCard": "Remover card {term}",
     "saving": "Salvando…",
     "addToReview": "Adicionar {count} cards à revisão",
     "back": "Voltar",
-    "subtitleAligned": "legenda EN + PT alinhada",
-    "subtitleAiOnly": "legenda EN, tradução por IA",
+    "subtitleAligned": "legenda {target} + {native} alinhada",
+    "subtitleAiOnly": "legenda {target}, tradução por IA",
     "credit": "Legenda {tag}: OpenSubtitles",
     "modes": {
-      "both": "EN + PT",
-      "tap": "PT ao tocar",
-      "en": "Só inglês"
+      "both": "{target} + {native}",
+      "tap": "{native} ao tocar",
+      "en": "Só {target}"
     },
     "searchLine": "Procurar uma fala que você ouviu",
     "searchLineLabel": "Procurar uma fala",
@@ -860,10 +872,6 @@
     "showAnswer": "Mostrar resposta"
   },
   "sources": {
-    "languages": {
-      "en": "inglês",
-      "pt-BR": "português"
-    },
     "downloads": "{count} downloads",
     "hearingImpaired": "Com descrição de sons",
     "machineTranslated": "Tradução automática",
@@ -881,12 +889,12 @@
     "noRelease": "Sem nome de release",
     "doNotUse": "Não usar legenda em {name}",
     "uploadSrt": "Enviar arquivos .srt manualmente",
-    "intro": "Buscamos no <b>OpenSubtitles</b> as legendas em inglês e português deste episódio. Nada é baixado até você confirmar a escolha.",
+    "intro": "Buscamos no <b>OpenSubtitles</b> as legendas em {target} e {native} deste episódio. Nada é baixado até você confirmar a escolha.",
     "searching": "Buscando…",
     "search": "Buscar legendas",
     "suggestion": "Sugestão do OpenSubtitles",
-    "sameRelease": "EN e PT do mesmo release",
-    "noTargetFound": "Não encontramos legenda em inglês para este episódio. Envie o arquivo manualmente.",
+    "sameRelease": "{target} e {native} do mesmo release",
+    "noTargetFound": "Não encontramos legenda em {target} para este episódio. Envie o arquivo manualmente.",
     "remaining": "Downloads restantes hoje: {count}",
     "resetsAt": " · renova às {time}",
     "remainingUnknown": "Downloads restantes hoje: informado pelo OpenSubtitles no primeiro download",
@@ -951,7 +959,7 @@
     "step2": "Passo 2 de 3 ·",
     "step2Movie": "Busque as legendas do filme ou envie os arquivos.",
     "step2Series": "Escolha o episódio e busque as legendas, ou envie os arquivos.",
-    "step2Native": "Com a legenda em português, a tradução das falas não passa pela IA.",
+    "step2Native": "Com a legenda em {native}, a tradução das falas não passa pela IA.",
     "season": "Temporada",
     "episode": "Episódio",
     "status": {
@@ -962,19 +970,19 @@
       "FAILED": "falhou",
       "NONE": "sem legenda"
     },
-    "targetSubtitle": "Legenda em inglês",
+    "targetSubtitle": "Legenda em {target}",
     "targetHint": ".srt · obrigatória",
-    "targetFile": "Arquivo da legenda em inglês",
-    "nativeSubtitle": "Legenda em português",
+    "targetFile": "Arquivo da legenda em {target}",
+    "nativeSubtitle": "Legenda em {native}",
     "nativeHint": ".srt · opcional · as falas já chegam traduzidas, sem gastar IA",
-    "nativeFile": "Arquivo da legenda em português",
+    "nativeFile": "Arquivo da legenda em {native}",
     "script": "Roteiro ou transcrição",
     "scriptHint": ".txt ou .pdf · chega numa próxima fase",
     "scriptFile": "Arquivo de roteiro",
     "soon": "Em breve",
     "change": "Trocar",
     "choose": "Escolher",
-    "useSample": "Usar arquivos de exemplo (EN + PT)",
+    "useSample": "Usar arquivos de exemplo ({target} + {native})",
     "sending": "Enviando…",
     "sendAndProcess": "Enviar e processar",
     "searchOpenSubtitles": "Buscar legendas no OpenSubtitles",
@@ -983,7 +991,7 @@
     "processing": "Processando",
     "duplicate": "Essa legenda já existe no catálogo. Nada foi reprocessado e o episódio já está disponível para todas as contas.",
     "published": "Episódio publicado. Já dá para ler a legenda inteira; o áudio de cada fala é gerado no primeiro toque. Todas as contas veem o episódio sem novo upload.",
-    "publishedBoth": "Episódio publicado. Já dá para ler a legenda inteira em inglês e português; o áudio de cada fala é gerado no primeiro toque. Todas as contas veem o episódio sem novo upload.",
+    "publishedBoth": "Episódio publicado. Já dá para ler a legenda inteira em {target} e {native}; o áudio de cada fala é gerado no primeiro toque. Todas as contas veem o episódio sem novo upload.",
     "seeInCatalog": "Ver no catálogo"
   },
   "transfer": {
@@ -1128,5 +1136,11 @@
       "fromEnvironment": "A conexão vem da variável DATABASE_URL deste servidor. Ajuste o valor lá e reinicie.",
       "generic": "Não foi possível conectar. Confira os dados e tente de novo."
     }
+  },
+  "languages": {
+    "en": "inglês",
+    "pt-BR": "português",
+    "es": "espanhol",
+    "fr": "francês"
   }
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import { logger } from "@/infrastructure/logger/logger";
 import { backdropUrl, posterUrl, stillUrl } from "@/modules/catalog";
+import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { fitFor } from "@/shared/levels";
 import { MediaDetailScreen } from "@/ui/catalog/media-detail-screen";
@@ -70,6 +71,7 @@ export default async function MediaDetailPage(props: {
         uploaderName: media.uploaderName,
         canRefresh: media.metadataProvider === (await container.metadataNameFor(user.id)),
         seasonNumber,
+        pair: pairOf(user.preferences),
         seasons: allSeasons.map((entry) => ({
           seasonNumber: entry.seasonNumber,
           title: entry.title,
@@ -81,7 +83,7 @@ export default async function MediaDetailPage(props: {
           title: episode.title,
           status: episode.status,
           cueCount: episode.cueCount,
-          hasPortuguese: episode.hasPortuguese,
+          subtitleLanguages: episode.subtitleLanguages,
           durationMinutes: episode.durationSeconds
             ? Math.round(episode.durationSeconds / SECONDS_PER_MINUTE)
             : null,

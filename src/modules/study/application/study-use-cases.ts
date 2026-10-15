@@ -2,6 +2,7 @@ import { AppError, type MessageParams } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
+import { pairKey, type LanguagePair } from "@/shared/study-languages";
 import { localDateKey, startOfLocalDay } from "@/shared/time";
 import {
   PASS_ACCURACY,
@@ -20,6 +21,7 @@ export type LessonAttempt = {
   userId: string;
   episodeId: string;
   nodeIndex: number;
+  pair: LanguagePair;
   level: CefrLevel;
   correct: number;
   total: number;
@@ -34,6 +36,7 @@ export interface StudyRepository {
   listAttempts(
     userId: string,
     episodeId: string,
+    pair: LanguagePair,
     level: CefrLevel,
   ): Promise<{ nodeIndex: number; passed: boolean; createdAt: Date }[]>;
   saveAttempt(attempt: LessonAttempt): Promise<void>;
@@ -47,10 +50,11 @@ export type StoredPlan = {
 };
 
 export interface PlanRepository {
-  find(episodeId: string, level: CefrLevel): Promise<StoredPlan | null>;
+  find(episodeId: string, pair: LanguagePair, level: CefrLevel): Promise<StoredPlan | null>;
   markPending(input: {
     id: string;
     episodeId: string;
+    pair: LanguagePair;
     level: CefrLevel;
     requestedBy: string;
     now: Date;
@@ -58,27 +62,35 @@ export interface PlanRepository {
   saveReady(input: {
     id: string;
     episodeId: string;
+    pair: LanguagePair;
     level: CefrLevel;
     plan: LessonPlan;
     now: Date;
   }): Promise<void>;
-  markFailed(input: { episodeId: string; level: CefrLevel; reason: string; now: Date }): Promise<void>;
+  markFailed(input: {
+    episodeId: string;
+    pair: LanguagePair;
+    level: CefrLevel;
+    reason: string;
+    now: Date;
+  }): Promise<void>;
 }
 
 export type PlannerLine = { index: number; english: string; portuguese: string | null };
 
 export interface LessonPlanner {
   readonly name: PlanProvider;
-  plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown>;
+  plan(input: { level: CefrLevel; pair: LanguagePair; lines: PlannerLine[] }): Promise<unknown>;
 }
 
 export type StudyCollaborators = {
-  loadLines: (episodeId: string) => Promise<TrailLine[] | null>;
+  loadLines: (episodeId: string, pair: LanguagePair) => Promise<TrailLine[] | null>;
   awardXp: (input: { userId: string; source: string; sourceId: string; amount: number }) => Promise<void>;
   saveProgress: (userId: string, episodeId: string, percent: number) => Promise<void>;
   queueForReview: (
     userId: string,
     episodeId: string,
+    pair: LanguagePair,
     items: { cueId: string; translation: string | null }[],
   ) => Promise<number>;
   resolvePlanner: (userId: string) => Promise<LessonPlanner | null>;
@@ -101,7 +113,13 @@ export const PLAN_TIMEOUT_MS = 5 * 60 * 1000;
 const MAX_LESSON_SECONDS = 3600;
 const PLAN_FAILURE = "PLAN_FAILED";
 
-export type PlanJob = { userId: string; episodeId: string; level: CefrLevel; episodeLabel: string };
+export type PlanJob = {
+  userId: string;
+  episodeId: string;
+  pair: LanguagePair;
+  level: CefrLevel;
+  episodeLabel: string;
+};
 export type PlanStatus =
   { status: "READY" } | { status: "PENDING"; job: PlanJob | null } | { status: "FAILED"; reason: string };
 
@@ -147,7 +165,7 @@ const ICONS = ["quote", "ear", "pen"] as const;
 export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolvePlanner" | "clock" | "ids">) {
   return async function ensurePlan(input: PlanJob & { retry?: boolean }): Promise<PlanStatus> {
     const now = deps.clock.now();
-    const stored = await deps.plans.find(input.episodeId, input.level);
+    const stored = await deps.plans.find(input.episodeId, input.pair, input.level);
     if (stored?.status === "READY" && stored.plan) return { status: "READY" };
     const stale =
       stored?.status === "PENDING" && now.getTime() - stored.updatedAt.getTime() > PLAN_TIMEOUT_MS;
@@ -156,7 +174,7 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
       return { status: "FAILED", reason: stored.failureReason ?? PLAN_FAILURE };
     }
 
-    const lines = await deps.loadLines(input.episodeId);
+    const lines = await deps.loadLines(input.episodeId, input.pair);
     if (!lines || lines.length === 0) throw new AppError("EPISODE_NOT_READY");
     const planner = await deps.resolvePlanner(input.userId);
     if (!planner) {
@@ -165,6 +183,7 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
       await deps.plans.saveReady({
         id: deps.ids.next(),
         episodeId: input.episodeId,
+        pair: input.pair,
         level: input.level,
         plan,
         now,
@@ -174,6 +193,7 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
     await deps.plans.markPending({
       id: deps.ids.next(),
       episodeId: input.episodeId,
+      pair: input.pair,
       level: input.level,
       requestedBy: input.userId,
       now,
@@ -188,11 +208,12 @@ export function makeGeneratePlan(
 ) {
   return async function generatePlan(job: PlanJob): Promise<void> {
     try {
-      const lines = await deps.loadLines(job.episodeId);
+      const lines = await deps.loadLines(job.episodeId, job.pair);
       const planner = await deps.resolvePlanner(job.userId);
       if (!lines || lines.length === 0 || !planner) throw new AppError("EPISODE_NOT_READY");
       const raw = await planner.plan({
         level: job.level,
+        pair: job.pair,
         lines: lines.map((line, index) => ({ index, english: line.text, portuguese: line.translation })),
       });
       const plan = assemblePlan({
@@ -206,6 +227,7 @@ export function makeGeneratePlan(
       await deps.plans.saveReady({
         id: deps.ids.next(),
         episodeId: job.episodeId,
+        pair: job.pair,
         level: job.level,
         plan,
         now: deps.clock.now(),
@@ -219,6 +241,7 @@ export function makeGeneratePlan(
     } catch {
       await deps.plans.markFailed({
         episodeId: job.episodeId,
+        pair: job.pair,
         level: job.level,
         reason: PLAN_FAILURE,
         now: deps.clock.now(),
@@ -237,18 +260,24 @@ async function loadPlanState(
   deps: Pick<Deps, "plans" | "study">,
   userId: string,
   episodeId: string,
+  pair: LanguagePair,
   level: CefrLevel,
 ) {
-  const stored = await deps.plans.find(episodeId, level);
+  const stored = await deps.plans.find(episodeId, pair, level);
   if (!stored || stored.status !== "READY" || !stored.plan) throw new AppError("EPISODE_NOT_READY");
-  const attempts = await deps.study.listAttempts(userId, episodeId, level);
+  const attempts = await deps.study.listAttempts(userId, episodeId, pair, level);
   const completed = new Set(attempts.filter((attempt) => attempt.passed).map((attempt) => attempt.nodeIndex));
   return { plan: stored.plan, attempts, completed, states: nodeStates(stored.plan.blocks.length, completed) };
 }
 
 export function makeGetTrail(deps: Pick<Deps, "plans" | "study">) {
-  return async function getTrail(userId: string, episodeId: string, level: CefrLevel): Promise<TrailView> {
-    const { plan, completed, states } = await loadPlanState(deps, userId, episodeId, level);
+  return async function getTrail(
+    userId: string,
+    episodeId: string,
+    pair: LanguagePair,
+    level: CefrLevel,
+  ): Promise<TrailView> {
+    const { plan, completed, states } = await loadPlanState(deps, userId, episodeId, pair, level);
     const current = states.indexOf("current");
     return {
       episodeId,
@@ -272,9 +301,16 @@ export function makeStartLesson(deps: Pick<Deps, "plans" | "study">) {
     userId: string;
     episodeId: string;
     nodeIndex: number;
+    pair: LanguagePair;
     level: CefrLevel;
   }): Promise<LessonView> {
-    const { plan, states } = await loadPlanState(deps, input.userId, input.episodeId, input.level);
+    const { plan, states } = await loadPlanState(
+      deps,
+      input.userId,
+      input.episodeId,
+      input.pair,
+      input.level,
+    );
     const block = plan.blocks[input.nodeIndex];
     if (!block || states[input.nodeIndex] === "locked") {
       throw new AppError("EPISODE_NOT_READY", "previousBlock");
@@ -294,6 +330,7 @@ export function makeCompleteLesson(deps: Deps) {
     userId: string;
     episodeId: string;
     nodeIndex: number;
+    pair: LanguagePair;
     level: CefrLevel;
     timezone: string;
     answers: Answer[];
@@ -303,6 +340,7 @@ export function makeCompleteLesson(deps: Deps) {
       deps,
       input.userId,
       input.episodeId,
+      input.pair,
       input.level,
     );
     const block = plan.blocks[input.nodeIndex];
@@ -335,6 +373,7 @@ export function makeCompleteLesson(deps: Deps) {
       userId: input.userId,
       episodeId: input.episodeId,
       nodeIndex: input.nodeIndex,
+      pair: input.pair,
       level: input.level,
       correct,
       total,
@@ -345,7 +384,7 @@ export function makeCompleteLesson(deps: Deps) {
       createdAt: now,
     });
 
-    const nodeKey = `${input.episodeId}:${input.level}:${input.nodeIndex}`;
+    const nodeKey = `${input.episodeId}:${pairKey(input.pair)}:${input.level}:${input.nodeIndex}`;
     const sourceId = replay
       ? `${nodeKey}:${localDateKey(now, input.timezone)}:repeticao-${paidReplaysToday + 1}`
       : `${nodeKey}:primeira`;
@@ -364,6 +403,7 @@ export function makeCompleteLesson(deps: Deps) {
         ? await deps.queueForReview(
             input.userId,
             input.episodeId,
+            input.pair,
             [...wrong].map(([cueId, translation]) => ({ cueId, translation })),
           )
         : 0;

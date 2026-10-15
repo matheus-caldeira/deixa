@@ -26,7 +26,7 @@ fixtures/             SRT fictícios EN e PT
 | `identity`        | Contas, senha, sessão, preferências                                           |
 | `catalog`         | Obras, temporadas, episódios, `MetadataProvider`, sincronização com o TMDB    |
 | `subtitles`       | Parser SRT, validação, hash, deduplicação, importação, falas                  |
-| `alignment`       | Alinhamento EN ↔ PT por sobreposição de tempo (puro)                          |
+| `alignment`       | Alinhamento entre duas legendas de idiomas diferentes por tempo (puro)        |
 | `highlights`      | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio   |
 | `learning`        | Itens de aprendizado, explicações, `LlmProvider`, geração de cards            |
 | `flashcards`      | Cards do usuário, agendamento de revisão, histórico                           |

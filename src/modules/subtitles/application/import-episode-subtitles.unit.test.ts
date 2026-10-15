@@ -38,6 +38,8 @@ function setup() {
   };
 }
 
+const PAIR = { target: "en", native: "pt-BR" } as const;
+
 describe("importação de legendas", () => {
   let app: ReturnType<typeof setup>;
 
@@ -49,10 +51,10 @@ describe("importação de legendas", () => {
     const result = await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
     });
-    expect(result).toMatchObject({ outcome: "PROCESSED", hasPortuguese: true, cueCount: 23 });
+    expect(result).toMatchObject({ outcome: "PROCESSED", hasNative: true, cueCount: 23 });
     expect(result.alignment?.pairs).toBe(22);
     expect(Math.round((result.alignment?.rate ?? 0) * 100)).toBe(96);
     expect(result.steps.map((step) => step.key)).toEqual([
@@ -71,7 +73,6 @@ describe("importação de legendas", () => {
     });
     expect(app.subtitles.episodeStatus.get("ep-1")).toMatchObject({ status: "READY", cueCount: 23 });
     expect([...app.storage.files.keys()].sort()).toEqual([
-      "catalog/series/media-1/seasons/1/episodes/ep-1/alignment.json",
       "catalog/series/media-1/seasons/1/episodes/ep-1/original.en.srt",
       "catalog/series/media-1/seasons/1/episodes/ep-1/original.pt-BR.srt",
     ]);
@@ -81,8 +82,8 @@ describe("importação de legendas", () => {
     const upload = {
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en" as const, upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR" as const, upload: fixture("sample.pt-BR.srt") },
     };
     await app.importSubtitles(upload);
     const filesBefore = app.subtitles.files.size;
@@ -92,18 +93,22 @@ describe("importação de legendas", () => {
     const again = await app.importSubtitles({ ...upload, userId: "u2" });
     expect(again.outcome).toBe("DUPLICATE");
     expect(again.steps.at(-1)).toEqual({ key: "duplicates", detail: { key: "identicalFound" } });
-    expect(again).toMatchObject({ cueCount: 23, hasPortuguese: true, alignment: { pairs: 22 } });
+    expect(again).toMatchObject({ cueCount: 23, hasNative: true, alignment: { pairs: 22 } });
     expect(app.subtitles.files.size).toBe(filesBefore);
     expect([...app.subtitles.cues.values()].flat().length).toBe(cuesBefore);
     expect(app.subtitles.jobs.length).toBe(jobsBefore);
   });
 
   it("deduplica por episódio: o mesmo arquivo pode entrar em outro episódio", async () => {
-    await app.importSubtitles({ userId: "u1", episodeId: "ep-1", english: fixture("sample.en.srt") });
+    await app.importSubtitles({
+      userId: "u1",
+      episodeId: "ep-1",
+      target: { language: "en", upload: fixture("sample.en.srt") },
+    });
     const other = await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-2",
-      english: fixture("sample.en.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
     });
     expect(other.outcome).toBe("PROCESSED");
     expect(app.subtitles.files.size).toBe(2);
@@ -113,39 +118,47 @@ describe("importação de legendas", () => {
     const result = await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
     });
-    expect(result).toMatchObject({ outcome: "PROCESSED", hasPortuguese: false, alignment: null });
-    const script = await app.getEpisodeScript("ep-1");
-    expect(script?.hasPortuguese).toBe(false);
+    expect(result).toMatchObject({ outcome: "PROCESSED", hasNative: false, alignment: null });
+    const script = await app.getEpisodeScript("ep-1", PAIR);
+    expect(script?.hasNative).toBe(false);
     expect(script?.lines.every((line) => line.translation === null && line.translationSource === null)).toBe(
       true,
     );
   });
 
   it("acrescenta o português depois, sem recriar as falas em inglês", async () => {
-    await app.importSubtitles({ userId: "u1", episodeId: "ep-1", english: fixture("sample.en.srt") });
-    const englishCueIds = (await app.getEpisodeScript("ep-1"))?.lines.map((line) => line.cueId);
+    await app.importSubtitles({
+      userId: "u1",
+      episodeId: "ep-1",
+      target: { language: "en", upload: fixture("sample.en.srt") },
+    });
+    const targetCueIds = (await app.getEpisodeScript("ep-1", PAIR))?.lines.map((line) => line.cueId);
     const result = await app.importSubtitles({
       userId: "u2",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
     });
-    expect(result).toMatchObject({ outcome: "PROCESSED", hasPortuguese: true, alignment: { pairs: 22 } });
-    expect((await app.getEpisodeScript("ep-1"))?.lines.map((line) => line.cueId)).toEqual(englishCueIds);
+    expect(result).toMatchObject({ outcome: "PROCESSED", hasNative: true, alignment: { pairs: 22 } });
+    expect((await app.getEpisodeScript("ep-1", PAIR))?.lines.map((line) => line.cueId)).toEqual(targetCueIds);
   });
 
   it("recusa versão diferente de uma legenda que já existe", async () => {
     await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
     });
     const otherEnglish = text("outra.srt", "1\n00:00:01,000 --> 00:00:02,000\nDifferent line\n");
     await expect(
-      app.importSubtitles({ userId: "u1", episodeId: "ep-1", english: otherEnglish }),
+      app.importSubtitles({
+        userId: "u1",
+        episodeId: "ep-1",
+        target: { language: "en", upload: otherEnglish },
+      }),
     ).rejects.toMatchObject({
       code: "SUBTITLE_VERSION_CONFLICT",
     });
@@ -154,8 +167,8 @@ describe("importação de legendas", () => {
       app.importSubtitles({
         userId: "u1",
         episodeId: "ep-1",
-        english: fixture("sample.en.srt"),
-        portuguese: otherPortuguese,
+        target: { language: "en", upload: fixture("sample.en.srt") },
+        native: { language: "pt-BR", upload: otherPortuguese },
       }),
     ).rejects.toMatchObject({ code: "SUBTITLE_VERSION_CONFLICT" });
     expect(app.subtitles.episodeStatus.get("ep-1")?.status).toBe("READY");
@@ -163,17 +176,25 @@ describe("importação de legendas", () => {
 
   it("recusa arquivo inválido sem mudar o episódio", async () => {
     await expect(
-      app.importSubtitles({ userId: "u1", episodeId: "ep-1", english: text("legenda.txt", "x") }),
+      app.importSubtitles({
+        userId: "u1",
+        episodeId: "ep-1",
+        target: { language: "en", upload: text("legenda.txt", "x") },
+      }),
     ).rejects.toMatchObject({ code: "SUBTITLE_INVALID" });
     await expect(
       app.importSubtitles({
         userId: "u1",
         episodeId: "ep-1",
-        english: text("vazia.srt", "isto não é uma legenda"),
+        target: { language: "en", upload: text("vazia.srt", "isto não é uma legenda") },
       }),
     ).rejects.toMatchObject({ code: "SUBTITLE_INVALID" });
     await expect(
-      app.importSubtitles({ userId: "u1", episodeId: "nao-existe", english: fixture("sample.en.srt") }),
+      app.importSubtitles({
+        userId: "u1",
+        episodeId: "nao-existe",
+        target: { language: "en", upload: fixture("sample.en.srt") },
+      }),
     ).rejects.toMatchObject({ code: "EPISODE_NOT_FOUND" });
     expect(app.subtitles.episodeStatus.size).toBe(0);
     expect(app.subtitles.files.size).toBe(0);
@@ -182,7 +203,11 @@ describe("importação de legendas", () => {
   it("marca FAILED com o motivo quando a gravação falha e permite reenviar", async () => {
     app.subtitles.failNextSave = true;
     await expect(
-      app.importSubtitles({ userId: "u1", episodeId: "ep-1", english: fixture("sample.en.srt") }),
+      app.importSubtitles({
+        userId: "u1",
+        episodeId: "ep-1",
+        target: { language: "en", upload: fixture("sample.en.srt") },
+      }),
     ).rejects.toThrow("banco indisponível");
     expect(app.subtitles.episodeStatus.get("ep-1")?.status).toBe("FAILED");
     expect(app.subtitles.jobs.at(-1)).toMatchObject({ status: "FAILED", reason: "banco indisponível" });
@@ -190,7 +215,7 @@ describe("importação de legendas", () => {
     const retry = await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
     });
     expect(retry.outcome).toBe("PROCESSED");
     expect(app.subtitles.episodeStatus.get("ep-1")?.status).toBe("READY");
@@ -198,7 +223,11 @@ describe("importação de legendas", () => {
   });
 
   it("guarda o filme em catalog/movies", async () => {
-    await app.importSubtitles({ userId: "u1", episodeId: "movie-ep", english: fixture("sample.en.srt") });
+    await app.importSubtitles({
+      userId: "u1",
+      episodeId: "movie-ep",
+      target: { language: "en", upload: fixture("sample.en.srt") },
+    });
     expect([...app.storage.files.keys()]).toEqual(["catalog/movies/media-2/original.en.srt"]);
   });
 });
@@ -209,10 +238,10 @@ describe("roteiro do episódio para leitura", () => {
     await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
     });
-    const script = await app.getEpisodeScript("ep-1");
+    const script = await app.getEpisodeScript("ep-1", PAIR);
     const lines = script?.lines ?? [];
     expect(lines).toHaveLength(23);
     expect(lines[0]).toMatchObject({
@@ -229,22 +258,49 @@ describe("roteiro do episódio para leitura", () => {
     expect(lines[21]).toMatchObject({ text: "Promise?", translation: null, translationSource: null });
     expect(lines.filter((line) => line.startsScene).map((line) => line.sequence)).toEqual([1, 6, 12, 17]);
   });
+  it("aceita outro par de idiomas e alinha cada legenda nova com as que já existem", async () => {
+    const app = setup();
+    await app.importSubtitles({
+      userId: "u1",
+      episodeId: "ep-1",
+      target: { language: "es", upload: fixture("sample.es.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
+    });
+    const spanish = await app.getEpisodeScript("ep-1", { target: "es", native: "pt-BR" });
+    expect(spanish?.hasNative).toBe(true);
+    expect(spanish?.lines.filter((line) => line.translationSource === "subtitle_pt")).toHaveLength(22);
+
+    const result = await app.importSubtitles({
+      userId: "u2",
+      episodeId: "ep-1",
+      target: { language: "en", upload: fixture("sample.en.srt") },
+    });
+    expect(result).toMatchObject({ outcome: "PROCESSED", hasNative: false, cueCount: 23 });
+    expect(result.languages.sort()).toEqual(["en", "es", "pt-BR"]);
+    const english = await app.getEpisodeScript("ep-1", { target: "en", native: "pt-BR" });
+    expect(english?.lines.filter((line) => line.translationSource === "subtitle_pt")).toHaveLength(22);
+    const crossed = await app.getEpisodeScript("ep-1", { target: "pt-BR", native: "en" });
+    expect(crossed?.lines.filter((line) => line.translationSource === "subtitle_pt").length).toBeGreaterThan(
+      20,
+    );
+    expect(await app.getEpisodeScript("ep-1", { target: "fr", native: "pt-BR" })).toBeNull();
+  });
 
   it("usa a tradução por IA guardada quando a fala não tem par", async () => {
     const app = setup();
     await app.importSubtitles({
       userId: "u1",
       episodeId: "ep-1",
-      english: fixture("sample.en.srt"),
-      portuguese: fixture("sample.pt-BR.srt"),
+      target: { language: "en", upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR", upload: fixture("sample.pt-BR.srt") },
     });
-    const before = await app.getEpisodeScript("ep-1");
+    const before = await app.getEpisodeScript("ep-1", PAIR);
     const orphan = before?.lines[21];
     if (!orphan) throw new Error("fala esperada");
-    await app.subtitles.saveCueTranslation(orphan.cueId, "Promete?", new Date());
-    const after = await app.getEpisodeScript("ep-1");
+    await app.subtitles.saveCueTranslation(orphan.cueId, "pt-BR", "Promete?", new Date());
+    const after = await app.getEpisodeScript("ep-1", PAIR);
     expect(after?.lines[21]).toMatchObject({ translation: "Promete?", translationSource: "llm" });
     expect(after?.lines[0]?.translationSource).toBe("subtitle_pt");
-    expect(await app.getEpisodeScript("sem-legenda")).toBeNull();
+    expect(await app.getEpisodeScript("sem-legenda", PAIR)).toBeNull();
   });
 });

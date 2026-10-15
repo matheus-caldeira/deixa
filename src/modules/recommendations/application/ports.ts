@@ -84,7 +84,7 @@ export type FeedbackVerdict = "dismissed" | "added";
 export type Feedback = { workKey: string; verdict: FeedbackVerdict };
 
 export interface RecommendationRepository {
-  loadSignals(userId: string, since: Date): Promise<Omit<LearnerSignals, "level">>;
+  loadSignals(userId: string, since: Date): Promise<Omit<LearnerSignals, "level" | "language">>;
   getRun(userId: string): Promise<RecommendationRun | null>;
   claimRun(userId: string, now: Date, stuckBefore: Date): Promise<boolean>;
   finishRun(userId: string, outcome: RunOutcome, now: Date): Promise<void>;

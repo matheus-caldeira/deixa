@@ -2,7 +2,14 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { SequentialIds } from "@/shared/ids";
 import { InMemoryFileStorage } from "@/shared/storage";
-import { audioHash, looksLikeWav, normalizeSpeechText, silentWav, type Voice } from "../domain/speech";
+import {
+  audioHash,
+  looksLikeWav,
+  normalizeSpeechText,
+  silentWav,
+  voiceFor,
+  type Voice,
+} from "../domain/speech";
 import { PerUserGate } from "../infrastructure/per-user-gate";
 import { SilentTtsProvider } from "../infrastructure/silent-tts-provider";
 import { makeGetSpeechAudio, makeListCachedSpeech } from "./get-speech-audio";
@@ -74,6 +81,9 @@ function setup() {
   };
 }
 
+const US = voiceFor("en", "US");
+const UK = voiceFor("en", "UK");
+
 describe("hash e formato do áudio", () => {
   it("é estável para o mesmo texto normalizado e muda com voz, idioma ou versão do modelo", () => {
     const base = { text: "What are you up to?", voiceId: "af_heart", language: "en-us", modelVersion: "v1" };
@@ -104,7 +114,7 @@ describe("áudio sob demanda com cache", () => {
     const first = await app.getAudio({
       userId: "ana",
       text: "Hey, what are you up to tonight?",
-      accent: "US",
+      voice: US,
     });
     expect(first).toMatchObject({ cache: "miss", provider: "kokoro" });
     const [path] = [...app.storage.files.keys()];
@@ -113,7 +123,7 @@ describe("áudio sob demanda com cache", () => {
     const second = await app.getAudio({
       userId: "lucas",
       text: "Hey, what are you up to tonight?",
-      accent: "US",
+      voice: US,
     });
     expect(second).toMatchObject({ cache: "hit", provider: "kokoro" });
     expect(app.primary.calls).toHaveLength(1);
@@ -121,8 +131,8 @@ describe("áudio sob demanda com cache", () => {
   });
 
   it("usa a voz do sotaque do usuário e guarda um áudio por voz", async () => {
-    await app.getAudio({ userId: "ana", text: "Fair enough.", accent: "US" });
-    await app.getAudio({ userId: "lucas", text: "Fair enough.", accent: "UK" });
+    await app.getAudio({ userId: "ana", text: "Fair enough.", voice: US });
+    await app.getAudio({ userId: "lucas", text: "Fair enough.", voice: UK });
     expect(app.primary.calls.map((call) => call.voice)).toEqual([
       { voiceId: "af_heart", language: "en-us" },
       { voiceId: "bf_emma", language: "en-gb" },
@@ -131,10 +141,10 @@ describe("áudio sob demanda com cache", () => {
   });
 
   it("regenera quando o arquivo do cache sumiu ou está corrompido", async () => {
-    await app.getAudio({ userId: "ana", text: "No way.", accent: "US" });
+    await app.getAudio({ userId: "ana", text: "No way.", voice: US });
     const [path] = [...app.storage.files.keys()];
     app.storage.files.set(path ?? "", new Uint8Array([0, 1, 2]));
-    const again = await app.getAudio({ userId: "ana", text: "No way.", accent: "US" });
+    const again = await app.getAudio({ userId: "ana", text: "No way.", voice: US });
     expect(again.cache).toBe("miss");
     expect(app.primary.calls).toHaveLength(2);
     expect(app.assets.rows).toHaveLength(1);
@@ -142,17 +152,17 @@ describe("áudio sob demanda com cache", () => {
 
   it("cai para o silêncio quando o Kokoro falha, sem ocupar o cache da voz real", async () => {
     app.primary.failing = true;
-    const first = await app.getAudio({ userId: "ana", text: "Deal.", accent: "US" });
+    const first = await app.getAudio({ userId: "ana", text: "Deal.", voice: US });
     expect(first).toMatchObject({ cache: "miss", provider: "silent" });
     expect(app.failures).toEqual(["serviço fora"]);
     expect([...app.storage.files.keys()].every((path) => path.startsWith("audio/silent/"))).toBe(true);
 
-    const second = await app.getAudio({ userId: "ana", text: "Deal.", accent: "US" });
+    const second = await app.getAudio({ userId: "ana", text: "Deal.", voice: US });
     expect(second).toMatchObject({ cache: "hit", provider: "silent" });
     expect(app.fallback.calls).toBe(1);
 
     app.primary.failing = false;
-    const recovered = await app.getAudio({ userId: "ana", text: "Deal.", accent: "US" });
+    const recovered = await app.getAudio({ userId: "ana", text: "Deal.", voice: US });
     expect(recovered).toMatchObject({ cache: "miss", provider: "kokoro" });
   });
 
@@ -167,14 +177,14 @@ describe("áudio sob demanda com cache", () => {
   });
 
   it("informa quais falas já têm áudio para a voz do usuário e recusa texto vazio", async () => {
-    await app.getAudio({ userId: "ana", text: "Deal.", accent: "US" });
+    await app.getAudio({ userId: "ana", text: "Deal.", voice: US });
     const lines = [
       { id: "c1", text: "Deal." },
       { id: "c2", text: "Promise?" },
     ];
-    expect(await app.listCached({ accent: "US", lines })).toEqual(["c1"]);
-    expect(await app.listCached({ accent: "UK", lines })).toEqual([]);
-    await expect(app.getAudio({ userId: "ana", text: "   ", accent: "US" })).rejects.toMatchObject({
+    expect(await app.listCached({ voice: US, lines })).toEqual(["c1"]);
+    expect(await app.listCached({ voice: UK, lines })).toEqual([]);
+    await expect(app.getAudio({ userId: "ana", text: "   ", voice: US })).rejects.toMatchObject({
       code: "AUDIO_UNAVAILABLE",
     });
   });

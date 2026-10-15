@@ -30,6 +30,7 @@ export const learningItems = pgTable(
     contextText: text("context_text"),
     difficulty: text("difficulty").notNull(),
     itemType: text("item_type").notNull(),
+    language: text("language").notNull().default("en"),
     origin: text("origin").notNull(),
     visibility: text("visibility").notNull(),
     ownerUserId: uuid("owner_user_id").references(() => users.id, { onDelete: "cascade" }),
@@ -213,6 +214,7 @@ export const lessonAttempts = pgTable(
       .notNull()
       .references(() => episodes.id, { onDelete: "cascade" }),
     nodeIndex: integer("node_index").notNull(),
+    languagePair: text("language_pair").notNull().default("en>pt-BR"),
     level: text("level").notNull(),
     correct: integer("correct").notNull(),
     total: integer("total").notNull(),
@@ -232,6 +234,7 @@ export const lessonPlans = pgTable(
     episodeId: uuid("episode_id")
       .notNull()
       .references(() => episodes.id, { onDelete: "cascade" }),
+    languagePair: text("language_pair").notNull().default("en>pt-BR"),
     level: text("level").notNull(),
     status: text("status").notNull(),
     provider: text("provider"),
@@ -241,7 +244,9 @@ export const lessonPlans = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
-  (table) => [uniqueIndex("lesson_plans_episode_level").on(table.episodeId, table.level)],
+  (table) => [
+    uniqueIndex("lesson_plans_episode_pair_level").on(table.episodeId, table.languagePair, table.level),
+  ],
 );
 
 export const reviewAnticipations = pgTable(

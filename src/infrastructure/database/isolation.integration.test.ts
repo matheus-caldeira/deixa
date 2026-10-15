@@ -6,6 +6,7 @@ import {
   FakeMetadataProvider,
   fakeExternalId,
 } from "@/modules/catalog/infrastructure/fake-metadata-provider";
+import { voiceFor } from "@/modules/audio";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
@@ -32,6 +33,7 @@ import {
 } from "./schema";
 
 const TEST_DATABASE = "deixa_test";
+const PAIR = { target: "en", native: "pt-BR" } as const;
 const baseUrl = process.env.DATABASE_URL;
 const fixture = (name: string) => ({
   filename: name,
@@ -101,7 +103,11 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
   });
 
   it("importa EN + PT, publica como READY e detecta o reenvio sem duplicar linhas", async () => {
-    const upload = { episodeId, english: fixture("sample.en.srt"), portuguese: fixture("sample.pt-BR.srt") };
+    const upload = {
+      episodeId,
+      target: { language: "en" as const, upload: fixture("sample.en.srt") },
+      native: { language: "pt-BR" as const, upload: fixture("sample.pt-BR.srt") },
+    };
     const first = await app.importEpisodeSubtitles({ userId: ana, ...upload });
     expect(first).toMatchObject({ outcome: "PROCESSED", cueCount: 23, alignment: { pairs: 22 } });
     const context = await app.getEpisodeContext(episodeId);
@@ -109,7 +115,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       status: "READY",
       cueCount: 23,
       alignmentPairs: 22,
-      hasPortuguese: true,
+      subtitleLanguages: ["en", "pt-BR"],
     });
 
     const again = await app.importEpisodeSubtitles({ userId: lucas, ...upload });
@@ -123,28 +129,30 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       bytes: new TextEncoder().encode("1\n00:00:01,000 --> 00:00:02,000\nOther\n"),
     };
     await expect(
-      app.importEpisodeSubtitles({ userId: lucas, episodeId, english: other }),
+      app.importEpisodeSubtitles({ userId: lucas, episodeId, target: { language: "en", upload: other } }),
     ).rejects.toMatchObject({
       code: "SUBTITLE_VERSION_CONFLICT",
     });
   });
 
   it("um usuário não vê marcações, cards, XP nem a chave de IA do outro", async () => {
-    const view = await app.getReadingView(ana, episodeId);
+    const view = await app.getReadingView(ana, episodeId, PAIR);
     const line = view.lines.find((candidate) => candidate.text.includes("picked up the tab"));
     if (!line) throw new Error("fala esperada");
     await app.syncHighlights({
       userId: ana,
+      pair: PAIR,
       episodeId,
       marks: [{ cueId: line.cueId, tokens: [2, 3, 4, 5], wholeLine: false }],
     });
-    expect((await app.getReadingView(ana, episodeId)).highlights).toHaveLength(1);
-    expect((await app.getReadingView(lucas, episodeId)).highlights).toHaveLength(0);
+    expect((await app.getReadingView(ana, episodeId, PAIR)).highlights).toHaveLength(1);
+    expect((await app.getReadingView(lucas, episodeId, PAIR)).highlights).toHaveLength(0);
 
-    const batch = await app.generateCardDrafts({ userId: ana, episodeId, learnerLevel: "A1" });
+    const batch = await app.generateCardDrafts({ userId: ana, episodeId, learnerLevel: "A1", pair: PAIR });
     await expect(
       app.confirmCardBatch({
         userId: lucas,
+        pair: PAIR,
         batchId: batch.batchId,
         keepKeys: batch.drafts.map((d) => d.key),
         scope: "catalog",
@@ -152,28 +160,32 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     ).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
     await app.confirmCardBatch({
       userId: ana,
+      pair: PAIR,
       batchId: batch.batchId,
       keepKeys: batch.drafts.map((d) => d.key),
       scope: "private",
     });
 
-    const anaQueue = await app.listDueCards(ana);
+    const anaQueue = await app.listDueCards(ana, PAIR);
     expect(anaQueue.cards.map((card) => card.term)).toEqual(["picked up the tab"]);
     expect(anaQueue.cards[0]).toMatchObject({
       meaning: "pagou a conta (de todos)",
       contextTranslation: "Não. Eu paguei a conta, feito um idiota.",
-      sourceLabel: "Suits · T1 · E1 · suas marcações",
+      mediaTitle: "Suits",
+      seasonNumber: 1,
+      episodeNumber: 1,
+      sourceKind: "highlight_private",
     });
-    expect((await app.listDueCards(lucas)).cards).toEqual([]);
-    expect(await app.listCatalogSuggestions(episodeId)).toEqual([]);
+    expect((await app.listDueCards(lucas, PAIR)).cards).toEqual([]);
+    expect(await app.listCatalogSuggestions(episodeId, "en")).toEqual([]);
 
     const [item] = await handle.db.select().from(learningItems).where(eq(learningItems.ownerUserId, ana));
     expect(item).toMatchObject({ visibility: "private" });
-    await expect(app.getSpeakableItemText(lucas, item?.id ?? "")).rejects.toMatchObject({
+    await expect(app.getSpeakableItem(lucas, item?.id ?? "")).rejects.toMatchObject({
       code: "ITEM_NOT_FOUND",
     });
     await expect(
-      app.gradeCard({ userId: lucas, cardId: anaQueue.cards[0]?.cardId ?? "", rating: "easy" }),
+      app.gradeCard({ userId: lucas, pair: PAIR, cardId: anaQueue.cards[0]?.cardId ?? "", rating: "easy" }),
     ).rejects.toMatchObject({ code: "CARD_NOT_FOUND" });
 
     const prefs = { dailyGoal: 100, timezone: "America/Sao_Paulo" };
@@ -220,30 +232,32 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
   });
 
   it("o outro usuário gera o próprio card sem reaproveitar o privado; ao compartilhar, a contagem é anônima", async () => {
-    const view = await app.getReadingView(lucas, episodeId);
+    const view = await app.getReadingView(lucas, episodeId, PAIR);
     const line = view.lines.find((candidate) => candidate.text.includes("picked up the tab"));
     if (!line) throw new Error("fala esperada");
     const callsBefore = llm.requests.length;
     await app.syncHighlights({
       userId: lucas,
+      pair: PAIR,
       episodeId,
       marks: [{ cueId: line.cueId, tokens: [2, 3, 4, 5], wholeLine: false }],
     });
-    const batch = await app.generateCardDrafts({ userId: lucas, episodeId, learnerLevel: "C1" });
+    const batch = await app.generateCardDrafts({ userId: lucas, episodeId, learnerLevel: "C1", pair: PAIR });
     expect(batch.drafts[0]?.reusedItemId).toBeNull();
     expect(llm.requests.length).toBe(callsBefore + 1);
     await app.confirmCardBatch({
       userId: lucas,
+      pair: PAIR,
       batchId: batch.batchId,
       keepKeys: batch.drafts.map((d) => d.key),
       scope: "catalog",
     });
 
-    expect(await app.listCatalogSuggestions(episodeId)).toMatchObject([{ term: "picked up the tab" }]);
+    expect(await app.listCatalogSuggestions(episodeId, "en")).toMatchObject([{ term: "picked up the tab" }]);
     const [stat] = await handle.db.select().from(highlightStats);
     expect(stat).toMatchObject({ userCount: 1 });
     expect(
-      (await app.getReadingView(ana, episodeId)).lines.every((entry) => entry.markedByCount === null),
+      (await app.getReadingView(ana, episodeId, PAIR)).lines.every((entry) => entry.markedByCount === null),
     ).toBe(true);
     const [events] = await handle.db.select({ total: count() }).from(xpEvents);
     expect(events?.total).toBe(2);
@@ -297,33 +311,37 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
   });
 
   it("gera o áudio uma vez e serve do cache no segundo pedido, para qualquer usuário", async () => {
-    const first = await app.getSpeechAudio({ userId: ana, text: "Deal. First round's on me.", accent: "US" });
+    const first = await app.getSpeechAudio({
+      userId: ana,
+      text: "Deal. First round's on me.",
+      voice: voiceFor("en", "US"),
+    });
     const second = await app.getSpeechAudio({
       userId: lucas,
       text: "Deal. First round's on me.",
-      accent: "US",
+      voice: voiceFor("en", "US"),
     });
     expect([first.cache, second.cache]).toEqual(["miss", "hit"]);
   });
 
   it("sugestões saem do estudo de cada um: lista, recusa e vetores não vazam entre usuários", async () => {
     await app.startEpisode(ana, episodeId);
-    expect(await app.getRecommendations({ userId: ana, level: "A1" })).toMatchObject({
+    expect(await app.getRecommendations({ userId: ana, level: "A1", language: "en" })).toMatchObject({
       status: "pending",
       refresh: true,
     });
     const [first, second] = await Promise.all([
-      app.refreshRecommendations({ userId: ana, level: "A1" }),
-      app.refreshRecommendations({ userId: ana, level: "A1" }),
+      app.refreshRecommendations({ userId: ana, level: "A1", language: "en" }),
+      app.refreshRecommendations({ userId: ana, level: "A1", language: "en" }),
     ]);
     expect([first.refreshed, second.refreshed].filter(Boolean)).toHaveLength(1);
 
-    const forAna = await app.getRecommendations({ userId: ana, level: "A1" });
+    const forAna = await app.getRecommendations({ userId: ana, level: "A1", language: "en" });
     expect(forAna).toMatchObject({ status: "ready", refresh: false, writtenByAi: false });
     expect(forAna.items.length).toBeGreaterThan(0);
     expect(forAna.items.map((item) => item.externalId)).not.toContain(fakeExternalId("suits"));
-    expect(forAna.insight).toContain("pouco estudo");
-    const forLucas = await app.getRecommendations({ userId: lucas, level: "C1" });
+    expect(forAna.insight).toContain("accuracyPercent");
+    const forLucas = await app.getRecommendations({ userId: lucas, level: "C1", language: "en" });
     expect(forLucas).toMatchObject({ status: "pending", items: [] });
 
     const refused = forAna.items[0];
@@ -333,11 +351,11 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     ).rejects.toMatchObject({ code: "MEDIA_NOT_FOUND" });
     expect(await app.findRecommendation(lucas, refused.workKey)).toBeNull();
     await app.dismissRecommendation({ userId: ana, workKey: refused.workKey });
-    const afterRefusal = await app.getRecommendations({ userId: ana, level: "A1" });
+    const afterRefusal = await app.getRecommendations({ userId: ana, level: "A1", language: "en" });
     expect(afterRefusal.items.map((item) => item.workKey)).not.toContain(refused.workKey);
 
-    await app.refreshRecommendations({ userId: lucas, level: "C1" });
-    const lucasItems = (await app.getRecommendations({ userId: lucas, level: "C1" })).items;
+    await app.refreshRecommendations({ userId: lucas, level: "C1", language: "en" });
+    const lucasItems = (await app.getRecommendations({ userId: lucas, level: "C1", language: "en" })).items;
     expect(lucasItems.map((item) => item.workKey)).toContain(refused.workKey);
     const [vectors] = await handle.db.select({ total: count() }).from(workEmbeddings);
     expect(vectors?.total).toBeGreaterThan(0);

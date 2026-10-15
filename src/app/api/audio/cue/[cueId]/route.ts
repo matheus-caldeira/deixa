@@ -6,5 +6,5 @@ export async function GET(
   context: { params: Promise<{ cueId: string }> },
 ): Promise<Response> {
   const { cueId } = await context.params;
-  return respondWithSpeech(cueId, (_userId, id) => getContainer().getCueSpeechText(id));
+  return respondWithSpeech(cueId, (_userId, id) => getContainer().getCueSpeech(id));
 }

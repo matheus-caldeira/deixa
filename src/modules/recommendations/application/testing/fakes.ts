@@ -10,7 +10,7 @@ import type {
   Suggestion,
 } from "../ports";
 
-export type StoredSignals = Omit<LearnerSignals, "level">;
+export type StoredSignals = Omit<LearnerSignals, "level" | "language">;
 
 export const EMPTY_SIGNALS: StoredSignals = {
   works: [],

@@ -4,10 +4,10 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { importFromSourceAction, searchSubtitlesAction } from "@/app/actions/catalog";
 import type { SourceImportView, SubtitleOptionView, SubtitleSearchView } from "@/app/actions/views";
+import { LANGUAGE_TAGS, type LanguagePair, type StudyLanguage } from "@/shared/study-languages";
 import { CheckIcon, SearchIcon } from "../icons";
 
-type Language = "en" | "pt-BR";
-const LANGUAGE_TAG: Record<Language, string> = { en: "EN", "pt-BR": "PT" };
+type Role = "target" | "native";
 
 function OptionChips({ option }: { option: SubtitleOptionView }) {
   const t = useTranslations("sources");
@@ -23,7 +23,7 @@ function OptionChips({ option }: { option: SubtitleOptionView }) {
 }
 
 function Choice(props: {
-  language: Language;
+  language: StudyLanguage;
   options: SubtitleOptionView[];
   chosen: SubtitleOptionView | null;
   locked: "source" | "manual" | null;
@@ -33,9 +33,10 @@ function Choice(props: {
   onChoose: (fileId: string | null) => void;
 }) {
   const t = useTranslations("sources");
+  const languages = useTranslations("languages");
   const { language, chosen, locked } = props;
-  const tag = LANGUAGE_TAG[language];
-  const name = t(`languages.${language}`);
+  const tag = LANGUAGE_TAGS[language];
+  const name = languages(language);
   const canSwitch = !locked && (props.options.length > 1 || (props.optional && props.options.length > 0));
   const title = locked
     ? t("alreadyInCatalog", { name })
@@ -102,17 +103,21 @@ function Choice(props: {
 export function SubtitleSourcePicker(props: {
   mediaId: string;
   episodeId: string;
+  pair: LanguagePair;
   onImported: (view: SourceImportView) => void;
   onManual: () => void;
 }) {
   const t = useTranslations("sources");
+  const languages = useTranslations("languages");
   const format = useFormatter();
   const [pending, startTransition] = useTransition();
   const [search, setSearch] = useState<SubtitleSearchView | null>(null);
-  const [englishId, setEnglishId] = useState<string | null>(null);
-  const [portugueseId, setPortugueseId] = useState<string | null>(null);
-  const [open, setOpen] = useState<Language | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(null);
+  const [nativeId, setNativeId] = useState<string | null>(null);
+  const [open, setOpen] = useState<Role | null>(null);
   const [error, setError] = useState("");
+  const names = { target: languages(props.pair.target), native: languages(props.pair.native) };
+  const tags = { target: LANGUAGE_TAGS[props.pair.target], native: LANGUAGE_TAGS[props.pair.native] };
 
   const runSearch = (refresh: boolean) =>
     startTransition(async () => {
@@ -124,8 +129,8 @@ export function SubtitleSourcePicker(props: {
         return;
       }
       setSearch(result.data);
-      setEnglishId(result.data.existing.english ?? result.data.suggestion.englishFileId);
-      setPortugueseId(result.data.existing.portuguese ?? result.data.suggestion.portugueseFileId);
+      setTargetId(result.data.existing.target ?? result.data.suggestion.targetFileId);
+      setNativeId(result.data.existing.native ?? result.data.suggestion.nativeFileId);
       setOpen(null);
     });
 
@@ -139,7 +144,7 @@ export function SubtitleSourcePicker(props: {
     return (
       <>
         <div className="hint">
-          <span>{t.rich("intro", { b: (chunks) => <b>{chunks}</b> })}</span>
+          <span>{t.rich("intro", { ...names, b: (chunks) => <b>{chunks}</b> })}</span>
         </div>
         {error ? <p className="formerr">{error}</p> : null}
         <button
@@ -154,34 +159,29 @@ export function SubtitleSourcePicker(props: {
     );
   }
 
-  const lockedEnglish = search.existing.hasEnglish ? (search.existing.english ? "source" : "manual") : null;
-  const lockedPortuguese = search.existing.hasPortuguese
-    ? search.existing.portuguese
-      ? "source"
-      : "manual"
-    : null;
-  const english = search.english.find((option) => option.fileId === englishId) ?? null;
-  const portuguese = search.portuguese.find((option) => option.fileId === portugueseId) ?? null;
-  const blockedByManual = lockedEnglish === "manual" || lockedPortuguese === "manual";
-  const complete = Boolean(lockedEnglish) && Boolean(lockedPortuguese);
-  const needed = (lockedEnglish ? 0 : english ? 1 : 0) + (lockedPortuguese ? 0 : portuguese ? 1 : 0);
+  const lockedTarget = search.existing.hasTarget ? (search.existing.target ? "source" : "manual") : null;
+  const lockedNative = search.existing.hasNative ? (search.existing.native ? "source" : "manual") : null;
+  const target = search.target.find((option) => option.fileId === targetId) ?? null;
+  const native = search.native.find((option) => option.fileId === nativeId) ?? null;
+  const blockedByManual = lockedTarget === "manual" || lockedNative === "manual";
+  const complete = Boolean(lockedTarget) && Boolean(lockedNative);
+  const needed = (lockedTarget ? 0 : target ? 1 : 0) + (lockedNative ? 0 : native ? 1 : 0);
   const outOfQuota = search.quota !== null && needed > search.quota.remaining;
-  const canImport = Boolean(englishId) && !blockedByManual && !complete && !outOfQuota && needed > 0;
+  const canImport = Boolean(targetId) && !blockedByManual && !complete && !outOfQuota && needed > 0;
   const samePair =
-    english && portuguese && search.suggestion.sameRelease
-      ? english.fileId === search.suggestion.englishFileId &&
-        portuguese.fileId === search.suggestion.portugueseFileId
+    target && native && search.suggestion.sameRelease
+      ? target.fileId === search.suggestion.targetFileId && native.fileId === search.suggestion.nativeFileId
       : false;
 
   const confirm = () =>
     startTransition(async () => {
-      if (!englishId) return;
+      if (!targetId) return;
       setError("");
       const result = await importFromSourceAction({
         mediaId: props.mediaId,
         episodeId: props.episodeId,
-        englishFileId: englishId,
-        portugueseFileId: lockedPortuguese === "manual" ? null : portugueseId,
+        targetFileId: targetId,
+        nativeFileId: lockedNative === "manual" ? null : nativeId,
       });
       if (result.ok) props.onImported(result.data);
       else setError(result.message);
@@ -191,35 +191,35 @@ export function SubtitleSourcePicker(props: {
     <>
       <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
         <span className="eyebrow">{t("suggestion")}</span>
-        {samePair ? <span className="chip good">{t("sameRelease")}</span> : null}
+        {samePair ? <span className="chip good">{t("sameRelease", tags)}</span> : null}
       </div>
-      {search.english.length === 0 && !lockedEnglish ? (
-        <div className="hint">{t("noTargetFound")}</div>
+      {search.target.length === 0 && !lockedTarget ? (
+        <div className="hint">{t("noTargetFound", names)}</div>
       ) : (
         <>
           <Choice
-            language="en"
-            options={search.english}
-            chosen={english}
-            locked={lockedEnglish}
+            language={props.pair.target}
+            options={search.target}
+            chosen={target}
+            locked={lockedTarget}
             optional={false}
-            open={open === "en"}
-            onToggle={() => setOpen(open === "en" ? null : "en")}
+            open={open === "target"}
+            onToggle={() => setOpen(open === "target" ? null : "target")}
             onChoose={(fileId) => {
-              setEnglishId(fileId);
+              setTargetId(fileId);
               setOpen(null);
             }}
           />
           <Choice
-            language="pt-BR"
-            options={search.portuguese}
-            chosen={portuguese}
-            locked={lockedPortuguese}
+            language={props.pair.native}
+            options={search.native}
+            chosen={native}
+            locked={lockedNative}
             optional
-            open={open === "pt-BR"}
-            onToggle={() => setOpen(open === "pt-BR" ? null : "pt-BR")}
+            open={open === "native"}
+            onToggle={() => setOpen(open === "native" ? null : "native")}
             onChoose={(fileId) => {
-              setPortugueseId(fileId);
+              setNativeId(fileId);
               setOpen(null);
             }}
           />

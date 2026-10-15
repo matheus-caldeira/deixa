@@ -1,15 +1,20 @@
 import type { Preferences, User } from "../../domain/user";
 import type {
+  LanguagePairRepository,
   NewUser,
   PasswordHasher,
   PreferencesRepository,
   SessionRepository,
   SessionTokens,
+  StoredLanguagePair,
   UserRecord,
   UserRepository,
 } from "../ports";
 
-export class InMemoryIdentityStore implements UserRepository, SessionRepository, PreferencesRepository {
+export class InMemoryIdentityStore
+  implements UserRepository, SessionRepository, PreferencesRepository, LanguagePairRepository
+{
+  readonly pairsByUser = new Map<string, StoredLanguagePair[]>();
   readonly users = new Map<string, UserRecord>();
   readonly preferencesByUser = new Map<string, Preferences>();
   readonly sessions = new Map<string, { userId: string; expiresAt: Date }>();
@@ -67,6 +72,16 @@ export class InMemoryIdentityStore implements UserRepository, SessionRepository,
   async update(userId: string, patch: Partial<Preferences>): Promise<void> {
     const current = this.preferencesByUser.get(userId);
     if (current) this.preferencesByUser.set(userId, { ...current, ...patch });
+  }
+  async listPairs(userId: string): Promise<StoredLanguagePair[]> {
+    return [...(this.pairsByUser.get(userId) ?? [])];
+  }
+
+  async upsertPair(userId: string, pair: StoredLanguagePair): Promise<void> {
+    const current = (this.pairsByUser.get(userId) ?? []).filter(
+      (candidate) => candidate.target !== pair.target || candidate.native !== pair.native,
+    );
+    this.pairsByUser.set(userId, [...current, pair]);
   }
 }
 

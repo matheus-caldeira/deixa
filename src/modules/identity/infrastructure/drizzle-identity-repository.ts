@@ -1,12 +1,15 @@
 import { and, eq, gt, like, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
-import { sessions, userPreferences, users } from "@/infrastructure/database/schema";
+import { sessions, userLanguagePairs, userPreferences, users } from "@/infrastructure/database/schema";
+import { isStudyLanguage, type StudyLanguage } from "@/shared/study-languages";
 import { isCefrLevel } from "@/shared/levels";
 import { DEFAULT_LOCALE, isLocale } from "@/shared/locales";
 import type { Accent, Preferences, User } from "../domain/user";
 import type {
+  LanguagePairRepository,
   NewUser,
   PreferencesRepository,
+  StoredLanguagePair,
   SessionRepository,
   UserRecord,
   UserRepository,
@@ -14,12 +17,16 @@ import type {
 
 const FIRST_ACCOUNT_LOCK = 7_301_001;
 
+const toStudyLanguage = (value: string, fallback: StudyLanguage): StudyLanguage =>
+  isStudyLanguage(value) ? value : fallback;
+
 type PreferencesRow = typeof userPreferences.$inferSelect;
 
 function toPreferences(row: PreferencesRow): Preferences {
   return {
     level: isCefrLevel(row.level) ? row.level : "A1",
-    nativeLanguage: row.nativeLanguage,
+    nativeLanguage: toStudyLanguage(row.nativeLanguage, "pt-BR"),
+    targetLanguage: toStudyLanguage(row.targetLanguage, "en"),
     locale: isLocale(row.locale) ? row.locale : DEFAULT_LOCALE,
     dailyGoal: row.dailyGoal,
     preferredAccent: (row.preferredAccent === "UK" ? "UK" : "US") satisfies Accent,
@@ -29,7 +36,9 @@ function toPreferences(row: PreferencesRow): Preferences {
   };
 }
 
-export class DrizzleIdentityRepository implements UserRepository, SessionRepository, PreferencesRepository {
+export class DrizzleIdentityRepository
+  implements UserRepository, SessionRepository, PreferencesRepository, LanguagePairRepository
+{
   constructor(private readonly db: Database) {}
 
   async findByEmail(email: string): Promise<UserRecord | null> {
@@ -144,5 +153,44 @@ export class DrizzleIdentityRepository implements UserRepository, SessionReposit
   async update(userId: string, patch: Partial<Preferences>): Promise<void> {
     if (Object.keys(patch).length === 0) return;
     await this.db.update(userPreferences).set(patch).where(eq(userPreferences.userId, userId));
+  }
+
+  async listPairs(userId: string): Promise<StoredLanguagePair[]> {
+    const rows = await this.db
+      .select()
+      .from(userLanguagePairs)
+      .where(eq(userLanguagePairs.userId, userId))
+      .orderBy(userLanguagePairs.createdAt);
+    return rows.flatMap((row) =>
+      isStudyLanguage(row.targetLanguage) && isStudyLanguage(row.nativeLanguage)
+        ? [
+            {
+              target: row.targetLanguage,
+              native: row.nativeLanguage,
+              level: isCefrLevel(row.level) ? row.level : "A1",
+            },
+          ]
+        : [],
+    );
+  }
+
+  async upsertPair(userId: string, pair: StoredLanguagePair, now: Date): Promise<void> {
+    await this.db
+      .insert(userLanguagePairs)
+      .values({
+        userId,
+        targetLanguage: pair.target,
+        nativeLanguage: pair.native,
+        level: pair.level,
+        createdAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [
+          userLanguagePairs.userId,
+          userLanguagePairs.targetLanguage,
+          userLanguagePairs.nativeLanguage,
+        ],
+        set: { level: pair.level },
+      });
   }
 }

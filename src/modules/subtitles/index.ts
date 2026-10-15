@@ -14,6 +14,7 @@ export type {
 export {
   makeImportEpisodeSubtitles,
   type ImportResult,
+  type SubtitleUpload,
   type UploadedSubtitle,
 } from "./application/import-episode-subtitles";
 export {

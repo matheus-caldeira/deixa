@@ -8,6 +8,7 @@ import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
 import type { EpisodeStatus } from "@/modules/catalog";
 import type { LevelFit } from "@/shared/levels";
+import { LANGUAGE_TAGS, type LanguagePair, type StudyLanguage } from "@/shared/study-languages";
 import { BackIcon, CheckIcon, MarkerIcon, PlayIcon, PlusIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Sheet } from "../shell/sheet";
@@ -21,7 +22,7 @@ export type EpisodeRow = {
   title: string;
   status: EpisodeStatus;
   cueCount: number;
-  hasPortuguese: boolean;
+  subtitleLanguages: StudyLanguage[];
   durationMinutes: number | null;
   progressPercent: number | null;
   failureReason: string | null;
@@ -40,6 +41,7 @@ export type MediaDetailView = {
   canRefresh: boolean;
   seasons: { seasonNumber: number; title: string; episodeCount: number | null }[];
   seasonNumber: number | null;
+  pair: LanguagePair;
   episodes: EpisodeRow[];
 };
 
@@ -54,7 +56,9 @@ function StatusChips({ episode }: { episode: EpisodeRow }) {
     return (
       <>
         <span className="chip good">{t("ready", { count: episode.cueCount })}</span>
-        <span className="chip mono">{episode.hasPortuguese ? t("bothLanguages") : t("onlyTarget")}</span>
+        <span className="chip mono">
+          {episode.subtitleLanguages.map((language) => LANGUAGE_TAGS[language]).join(" + ")}
+        </span>
       </>
     );
   }
@@ -201,7 +205,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
       {media.episodes.length > 0 ? (
         <section className="card" style={{ padding: "4px 16px" }}>
           {media.episodes.map((episode) => {
-            const ready = episode.status === "READY";
+            const ready = episode.status === "READY" && episode.subtitleLanguages.includes(media.pair.target);
             return (
               <div className={`ep ${episode.stillUrl ? "photo" : ""}`} key={episode.id}>
                 {episode.stillUrl ? (

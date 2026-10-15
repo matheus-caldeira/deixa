@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getInboxAction, type InboxView } from "@/app/actions/notifications";
 import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair } from "@/shared/study-languages";
 import {
   BellIcon,
   BoltIcon,
@@ -33,6 +34,7 @@ export type ShellData = {
   goalMet: boolean;
   profile: ProfileSheetData;
   devShortcuts: boolean;
+  pair: LanguagePair;
   unreadableKeys: string[];
 };
 
@@ -237,6 +239,7 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
         <UploadSheet
           mediaId={sheet.mediaId}
           devShortcuts={data.devShortcuts}
+          pair={data.pair}
           onClose={() => setSheet(null)}
         />
       ) : null}

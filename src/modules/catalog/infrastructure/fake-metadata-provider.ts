@@ -1,3 +1,4 @@
+import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 import type { CefrLevel } from "@/shared/levels";
 import type { MediaType, PosterColors } from "../domain/catalog";
@@ -242,8 +243,10 @@ export class FakeMetadataProvider implements MetadataProvider {
     );
   }
 
-  async listPopularWorks(): Promise<WorkCandidate[]> {
-    return FAKE_WORKS.map(toCandidate);
+  async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {
+    return FAKE_WORKS.map(toCandidate).filter(
+      (work) => normalizeLanguageTag(work.originalLanguage ?? "") === language,
+    );
   }
 
   async getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]> {

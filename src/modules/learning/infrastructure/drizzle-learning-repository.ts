@@ -1,5 +1,6 @@
 import { and, asc, eq, isNotNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
+import { isStudyLanguage, type LanguagePair, type StudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
   highlightCardBatches,
@@ -24,7 +25,6 @@ import type {
   NewLearningItem,
 } from "../application/ports";
 
-const LOCALE = "pt-BR";
 const ORIGIN_HIGHLIGHT = "user_highlight";
 const BATCH_STATUSES = ["PENDING", "DRAFT", "SAVED", "FAILED"] as const;
 
@@ -35,7 +35,7 @@ const toSource = (value: string | null): TranslationSource =>
 export class DrizzleLearningRepository implements LearningRepository {
   constructor(private readonly db: Database) {}
 
-  async findReusable(userId: string, episodeId: string): Promise<ReusableItem[]> {
+  async findReusable(userId: string, episodeId: string, pair: LanguagePair): Promise<ReusableItem[]> {
     const rows = await this.db
       .select({ item: learningItems, explanation: learningItemExplanations })
       .from(learningItems)
@@ -43,12 +43,13 @@ export class DrizzleLearningRepository implements LearningRepository {
         learningItemExplanations,
         and(
           eq(learningItemExplanations.learningItemId, learningItems.id),
-          eq(learningItemExplanations.locale, LOCALE),
+          eq(learningItemExplanations.locale, pair.native),
         ),
       )
       .where(
         and(
           eq(learningItems.episodeId, episodeId),
+          eq(learningItems.language, pair.target),
           eq(learningItems.origin, ORIGIN_HIGHLIGHT),
           eq(learningItems.status, "ACTIVE"),
           isNotNull(learningItems.cueId),
@@ -99,6 +100,7 @@ export class DrizzleLearningRepository implements LearningRepository {
         contextText: draft.lineText,
         difficulty: draft.difficulty,
         itemType: draft.itemType,
+        language: item.pair.target,
         origin: ORIGIN_HIGHLIGHT,
         visibility: item.visibility,
         ownerUserId: item.ownerUserId,
@@ -107,7 +109,7 @@ export class DrizzleLearningRepository implements LearningRepository {
       });
       await tx.insert(learningItemExplanations).values({
         learningItemId: item.id,
-        locale: LOCALE,
+        locale: item.pair.native,
         translation: draft.meaning,
         translationSource: draft.meaningSource,
         contextTranslation: draft.lineTranslation,
@@ -222,7 +224,7 @@ export class DrizzleLearningRepository implements LearningRepository {
       .where(and(eq(highlightCardBatches.id, input.batchId), eq(highlightCardBatches.userId, input.userId)));
   }
 
-  async listGlobalSuggestions(episodeId: string): Promise<CatalogSuggestion[]> {
+  async listGlobalSuggestions(episodeId: string, language: StudyLanguage): Promise<CatalogSuggestion[]> {
     const rows = await this.db
       .select({
         itemId: learningItems.id,
@@ -235,6 +237,7 @@ export class DrizzleLearningRepository implements LearningRepository {
       .where(
         and(
           eq(learningItems.episodeId, episodeId),
+          eq(learningItems.language, language),
           eq(learningItems.origin, ORIGIN_HIGHLIGHT),
           eq(learningItems.visibility, "global"),
           eq(learningItems.status, "ACTIVE"),
@@ -252,6 +255,7 @@ export class DrizzleLearningRepository implements LearningRepository {
   async upsertStandaloneItem(item: {
     id: string;
     ownerUserId: string;
+    pair: LanguagePair;
     term: string;
     meaning: string;
     context: string | null;
@@ -267,6 +271,7 @@ export class DrizzleLearningRepository implements LearningRepository {
           and(
             eq(learningItems.ownerUserId, item.ownerUserId),
             eq(learningItems.origin, item.origin),
+            eq(learningItems.language, item.pair.target),
             eq(learningItems.normalizedText, normalizedText),
           ),
         )
@@ -279,6 +284,7 @@ export class DrizzleLearningRepository implements LearningRepository {
         contextText: item.context,
         difficulty: "B1",
         itemType: "expression",
+        language: item.pair.target,
         origin: item.origin,
         visibility: "private",
         ownerUserId: item.ownerUserId,
@@ -287,7 +293,7 @@ export class DrizzleLearningRepository implements LearningRepository {
       });
       await tx.insert(learningItemExplanations).values({
         learningItemId: item.id,
-        locale: LOCALE,
+        locale: item.pair.native,
         translation: item.meaning,
         translationSource: "llm",
       });
@@ -295,10 +301,13 @@ export class DrizzleLearningRepository implements LearningRepository {
     });
   }
 
-  async findSpeakableText(userId: string, itemId: string): Promise<string | null> {
+  async findSpeakable(
+    userId: string,
+    itemId: string,
+  ): Promise<{ text: string; language: StudyLanguage } | null> {
     if (!z.uuid().safeParse(itemId).success) return null;
     const [row] = await this.db
-      .select({ text: learningItems.sourceText })
+      .select({ text: learningItems.sourceText, language: learningItems.language })
       .from(learningItems)
       .where(
         and(
@@ -307,6 +316,7 @@ export class DrizzleLearningRepository implements LearningRepository {
         ),
       )
       .limit(1);
-    return row?.text ?? null;
+    if (!row) return null;
+    return { text: row.text, language: isStudyLanguage(row.language) ? row.language : "en" };
   }
 }

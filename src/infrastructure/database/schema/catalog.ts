@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -30,6 +31,7 @@ export const mediaItems = pgTable(
     levelMin: text("level_min").notNull(),
     levelMax: text("level_max").notNull(),
     accent: text("accent"),
+    originalLanguage: text("original_language").notNull().default("en"),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     metadataSyncedAt: timestamp("metadata_synced_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -135,29 +137,34 @@ export const cueAlignments = pgTable(
     episodeId: uuid("episode_id")
       .notNull()
       .references(() => episodes.id, { onDelete: "cascade" }),
-    enCueId: uuid("en_cue_id")
+    sourceCueId: uuid("source_cue_id")
       .notNull()
       .references(() => subtitleCues.id, { onDelete: "cascade" }),
-    ptCueIds: jsonb("pt_cue_ids").$type<string[]>().notNull(),
+    targetLanguage: text("target_language").notNull().default("pt-BR"),
+    alignedCueIds: jsonb("aligned_cue_ids").$type<string[]>().notNull(),
     overlapScore: doublePrecision("overlap_score").notNull(),
     offsetMs: integer("offset_ms").notNull(),
     status: text("status").notNull(),
   },
   (table) => [
-    uniqueIndex("cue_alignments_en_cue").on(table.enCueId),
+    uniqueIndex("cue_alignments_source_language").on(table.sourceCueId, table.targetLanguage),
     index("cue_alignments_episode").on(table.episodeId),
   ],
 );
 
-export const cueTranslations = pgTable("cue_translations", {
-  cueId: uuid("cue_id")
-    .primaryKey()
-    .references(() => subtitleCues.id, { onDelete: "cascade" }),
-  locale: text("locale").notNull(),
-  text: text("text").notNull(),
-  source: text("source").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+export const cueTranslations = pgTable(
+  "cue_translations",
+  {
+    cueId: uuid("cue_id")
+      .notNull()
+      .references(() => subtitleCues.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    text: text("text").notNull(),
+    source: text("source").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.cueId, table.locale] })],
+);
 
 export const processingJobs = pgTable(
   "processing_jobs",

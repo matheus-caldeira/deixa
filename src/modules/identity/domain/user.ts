@@ -1,5 +1,11 @@
 import type { CefrLevel } from "@/shared/levels";
 import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
+import {
+  defaultTargetFor,
+  nativeLanguageFor,
+  type LanguagePair,
+  type StudyLanguage,
+} from "@/shared/study-languages";
 
 export type Accent = "US" | "UK";
 
@@ -17,7 +23,8 @@ export const MIN_PASSWORD_LENGTH = 8;
 
 export type Preferences = {
   level: CefrLevel;
-  nativeLanguage: string;
+  nativeLanguage: StudyLanguage;
+  targetLanguage: StudyLanguage;
   locale: Locale;
   dailyGoal: number;
   preferredAccent: Accent;
@@ -36,10 +43,22 @@ export type User = {
 
 export type SessionUser = User & { preferences: Preferences };
 
-export function defaultPreferences(level: CefrLevel, locale: Locale = DEFAULT_LOCALE): Preferences {
+export type UserLanguagePair = LanguagePair & { level: CefrLevel; active: boolean };
+
+export function pairOf(preferences: Pick<Preferences, "targetLanguage" | "nativeLanguage">): LanguagePair {
+  return { target: preferences.targetLanguage, native: preferences.nativeLanguage };
+}
+
+export function defaultPreferences(
+  level: CefrLevel,
+  locale: Locale = DEFAULT_LOCALE,
+  pair?: LanguagePair,
+): Preferences {
+  const native = pair?.native ?? nativeLanguageFor(locale);
   return {
     level,
-    nativeLanguage: "pt-BR",
+    nativeLanguage: native,
+    targetLanguage: pair?.target ?? defaultTargetFor(native),
     locale,
     dailyGoal: 100,
     preferredAccent: "US",

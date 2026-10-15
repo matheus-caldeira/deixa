@@ -5,6 +5,7 @@ import { z } from "zod";
 import { CEFR_LEVELS } from "@/shared/levels";
 import { AppError } from "@/shared/errors";
 import { DEFAULT_LOCALE, isLocale } from "@/shared/locales";
+import { studyLanguageSchema } from "@/shared/study-languages";
 import { getLocale } from "next-intl/server";
 import { endSession, requireDatabase, startSession } from "../session";
 import { rememberLocale } from "./locale";
@@ -16,6 +17,8 @@ const signUpSchema = z.object({
   email: z.string().max(200),
   password: z.string().max(200),
   level: z.enum(CEFR_LEVELS),
+  nativeLanguage: studyLanguageSchema,
+  targetLanguage: studyLanguageSchema,
 });
 
 export async function signInAction(input: unknown): Promise<ActionResult<null>> {
@@ -50,7 +53,12 @@ export async function signUpAction(input: unknown): Promise<ActionResult<null>> 
     const parsed = signUpSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     const locale = await getLocale();
-    await app().signUp({ ...parsed.data, locale: isLocale(locale) ? locale : DEFAULT_LOCALE });
+    const { nativeLanguage, targetLanguage, ...account } = parsed.data;
+    await app().signUp({
+      ...account,
+      locale: isLocale(locale) ? locale : DEFAULT_LOCALE,
+      pair: { target: targetLanguage, native: nativeLanguage },
+    });
     const session = await app().signIn({ email: parsed.data.email, password: parsed.data.password });
     await startSession(session.token, session.expiresAt);
     return null;

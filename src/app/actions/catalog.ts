@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { posterUrl, type Episode, type MediaItem, type Season } from "@/modules/catalog";
+import { pairOf } from "@/modules/identity";
+import type { StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
@@ -17,8 +19,7 @@ import type {
   UploadTargetView,
 } from "./views";
 
-const SAMPLE_ENGLISH = "fixtures/sample.en.srt";
-const SAMPLE_PORTUGUESE = "fixtures/sample.pt-BR.srt";
+const SAMPLES_DIR = "fixtures";
 const MAX_UPLOAD_BYTES = 5_000_000;
 const MAX_UPLOAD_MB = 5;
 const MAX_OPTIONS = 8;
@@ -34,7 +35,7 @@ function toEpisodeView(episode: Episode): UploadEpisodeView {
     episodeNumber: episode.episodeNumber,
     title: episode.title,
     status: episode.status,
-    hasPortuguese: episode.hasPortuguese,
+    subtitleLanguages: episode.subtitleLanguages,
   };
 }
 
@@ -137,8 +138,9 @@ async function readUpload(
   return { filename: entry.name, bytes: new Uint8Array(await entry.arrayBuffer()) };
 }
 
-async function readSample(path: string, filename: string) {
-  return { filename, bytes: new Uint8Array(await readFile(path)) };
+async function readSample(language: StudyLanguage) {
+  const filename = `sample.${language}.srt`;
+  return { filename, bytes: new Uint8Array(await readFile(`${SAMPLES_DIR}/${filename}`)) };
 }
 
 export async function uploadSubtitlesAction(form: FormData): Promise<ActionResult<ImportView>> {
@@ -163,26 +165,28 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
     if (!fields.data.episodeId && context.media.metadataProvider !== "manual")
       throw new AppError("EPISODE_NOT_FOUND");
 
+    const pair = pairOf(user.preferences);
     const sample = fields.data.useSample === "true" && app().devShortcuts;
-    const english = sample
-      ? await readSample(SAMPLE_ENGLISH, "sample.en.srt")
-      : await readUpload(form.get("english"));
-    const portuguese = sample
-      ? await readSample(SAMPLE_PORTUGUESE, "sample.pt-BR.srt")
-      : await readUpload(form.get("portuguese"));
-    if (!english) throw new AppError("SUBTITLE_INVALID", "targetRequired");
+    const target = sample ? await readSample(pair.target) : await readUpload(form.get("target"));
+    const native = sample ? await readSample(pair.native) : await readUpload(form.get("native"));
+    if (!target) throw new AppError("SUBTITLE_INVALID", "targetRequired");
 
-    const result = await app().importEpisodeSubtitles({ userId: user.id, episodeId, english, portuguese });
+    const result = await app().importEpisodeSubtitles({
+      userId: user.id,
+      episodeId,
+      target: { language: pair.target, upload: target },
+      native: native ? { language: pair.native, upload: native } : undefined,
+    });
     revalidatePath("/catalog");
     revalidatePath(`/catalog/${context.media.id}`);
     return {
       outcome: result.outcome,
       steps: result.steps,
-      hasPortuguese: result.hasPortuguese,
+      hasNative: result.hasNative,
       episodeId,
       mediaId: context.media.id,
       seasonNumber: context.season.seasonNumber,
-      filename: english.filename,
+      filename: target.filename,
     };
   });
 }
@@ -199,7 +203,7 @@ export async function searchSubtitlesAction(input: unknown): Promise<ActionResul
       app().searchSubtitles({ userId: user.id, ...parsed.data }),
       app().listSubtitleOrigins(parsed.data.episodeId),
     ]);
-    const toOption = (candidate: (typeof search.ranking.english)[number]): SubtitleOptionView => ({
+    const toOption = (candidate: (typeof search.ranking.target)[number]): SubtitleOptionView => ({
       fileId: candidate.fileId,
       language: candidate.language,
       release: candidate.release.slice(0, MAX_RELEASE_CHARS),
@@ -208,22 +212,24 @@ export async function searchSubtitlesAction(input: unknown): Promise<ActionResul
       machineTranslated: candidate.machineTranslated,
       uploader: candidate.uploader?.slice(0, MAX_UPLOADER_CHARS) ?? null,
     });
-    const english = origins.find((file) => file.language === "en");
-    const portuguese = origins.find((file) => file.language === "pt-BR");
+    const pair = pairOf(user.preferences);
+    const target = origins.find((file) => file.language === pair.target);
+    const native = origins.find((file) => file.language === pair.native);
     return {
       provider: search.provider,
-      english: search.ranking.english.slice(0, MAX_OPTIONS).map(toOption),
-      portuguese: search.ranking.portuguese.slice(0, MAX_OPTIONS).map(toOption),
+      pair,
+      target: search.ranking.target.slice(0, MAX_OPTIONS).map(toOption),
+      native: search.ranking.native.slice(0, MAX_OPTIONS).map(toOption),
       suggestion: {
-        englishFileId: search.ranking.suggestion.english?.fileId ?? null,
-        portugueseFileId: search.ranking.suggestion.portuguese?.fileId ?? null,
+        targetFileId: search.ranking.suggestion.target?.fileId ?? null,
+        nativeFileId: search.ranking.suggestion.native?.fileId ?? null,
         sameRelease: search.ranking.suggestion.sameRelease,
       },
       existing: {
-        english: english?.origin?.externalFileId ?? null,
-        portuguese: portuguese?.origin?.externalFileId ?? null,
-        hasEnglish: Boolean(english),
-        hasPortuguese: Boolean(portuguese),
+        target: target?.origin?.externalFileId ?? null,
+        native: native?.origin?.externalFileId ?? null,
+        hasTarget: Boolean(target),
+        hasNative: Boolean(native),
       },
       quota: quotaView(search.quota),
       cached: search.cached,
@@ -239,19 +245,20 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
       .object({
         mediaId: idSchema,
         episodeId: idSchema,
-        englishFileId: fileId,
-        portugueseFileId: fileId.nullable(),
+        targetFileId: fileId,
+        nativeFileId: fileId.nullable(),
       })
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const { mediaId, episodeId, englishFileId, portugueseFileId } = parsed.data;
+    const { mediaId, episodeId, targetFileId, nativeFileId } = parsed.data;
     const context = await app().getEpisodeContext(episodeId);
     if (!context || context.media.id !== mediaId) throw new AppError("EPISODE_NOT_FOUND");
     const result = await app().importFromSource({
       userId: user.id,
       episodeId,
-      englishFileId,
-      portugueseFileId,
+      pair: pairOf(user.preferences),
+      targetFileId,
+      nativeFileId,
     });
     revalidatePath("/catalog");
     revalidatePath(`/catalog/${mediaId}`);
@@ -267,7 +274,7 @@ export async function importFromSourceAction(input: unknown): Promise<ActionResu
         },
         ...result.steps,
       ],
-      hasPortuguese: result.hasPortuguese,
+      hasNative: result.hasNative,
       episodeId,
       mediaId,
       seasonNumber: context.season.seasonNumber,

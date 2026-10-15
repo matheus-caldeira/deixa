@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
 import {
   cueAlignments,
@@ -8,6 +8,7 @@ import {
   subtitleCues,
   subtitleFiles,
 } from "@/infrastructure/database/schema";
+import { isStudyLanguage, type StudyLanguage } from "@/shared/study-languages";
 import { SUBTITLE_PROCESSING_VERSION, type SubtitleLanguage } from "../domain/srt";
 import type {
   ImportRecord,
@@ -19,9 +20,8 @@ import type {
 } from "../application/ports";
 
 const INSERT_CHUNK = 500;
-const LOCALE = "pt-BR";
 
-const toLanguage = (value: string): SubtitleLanguage => (value === "pt-BR" ? "pt-BR" : "en");
+const toLanguage = (value: string): SubtitleLanguage => (isStudyLanguage(value) ? value : "en");
 
 function chunks<Item>(items: Item[]): Item[][] {
   const result: Item[][] = [];
@@ -68,31 +68,35 @@ export class DrizzleSubtitleRepository implements SubtitleRepository {
       .orderBy(asc(subtitleCues.sequence));
   }
 
-  async listAlignments(episodeId: string): Promise<StoredAlignment[]> {
-    const rows = await this.db.select().from(cueAlignments).where(eq(cueAlignments.episodeId, episodeId));
+  async listAlignments(episodeId: string, alignedLanguage: StudyLanguage): Promise<StoredAlignment[]> {
+    const rows = await this.db
+      .select()
+      .from(cueAlignments)
+      .where(and(eq(cueAlignments.episodeId, episodeId), eq(cueAlignments.targetLanguage, alignedLanguage)));
     return rows.map((row) => ({
-      enCueId: row.enCueId,
-      ptCueIds: row.ptCueIds,
+      sourceCueId: row.sourceCueId,
+      alignedLanguage,
+      alignedCueIds: row.alignedCueIds,
       overlapScore: row.overlapScore,
       offsetMs: row.offsetMs,
       status: row.status === "ALIGNED" ? "ALIGNED" : "UNALIGNED",
     }));
   }
 
-  async listCueTranslations(episodeId: string): Promise<Map<string, string>> {
+  async listCueTranslations(episodeId: string, locale: StudyLanguage): Promise<Map<string, string>> {
     const rows = await this.db
       .select({ cueId: cueTranslations.cueId, text: cueTranslations.text })
       .from(cueTranslations)
       .innerJoin(subtitleCues, eq(subtitleCues.id, cueTranslations.cueId))
       .innerJoin(subtitleFiles, eq(subtitleFiles.id, subtitleCues.subtitleFileId))
-      .where(eq(subtitleFiles.episodeId, episodeId));
+      .where(and(eq(subtitleFiles.episodeId, episodeId), eq(cueTranslations.locale, locale)));
     return new Map(rows.map((row) => [row.cueId, row.text]));
   }
 
-  async saveCueTranslation(cueId: string, text: string, now: Date): Promise<void> {
+  async saveCueTranslation(cueId: string, locale: StudyLanguage, text: string, now: Date): Promise<void> {
     await this.db
       .insert(cueTranslations)
-      .values({ cueId, locale: LOCALE, text, source: "llm", createdAt: now })
+      .values({ cueId, locale, text, source: "llm", createdAt: now })
       .onConflictDoNothing();
   }
 
@@ -143,13 +147,18 @@ export class DrizzleSubtitleRepository implements SubtitleRepository {
           await tx.insert(subtitleCues).values(batch.map((cue) => ({ ...cue, subtitleFileId: file.id })));
         }
       }
-      if (record.alignments) {
-        await tx.delete(cueAlignments).where(eq(cueAlignments.episodeId, record.episodeId));
-        for (const batch of chunks(record.alignments)) {
-          await tx
-            .insert(cueAlignments)
-            .values(batch.map((alignment) => ({ ...alignment, episodeId: record.episodeId })));
-        }
+      const sourceCueIds = [...new Set(record.alignments.map((alignment) => alignment.sourceCueId))];
+      if (sourceCueIds.length > 0) {
+        await tx.delete(cueAlignments).where(inArray(cueAlignments.sourceCueId, sourceCueIds));
+      }
+      for (const batch of chunks(record.alignments)) {
+        await tx.insert(cueAlignments).values(
+          batch.map(({ alignedLanguage, ...alignment }) => ({
+            ...alignment,
+            targetLanguage: alignedLanguage,
+            episodeId: record.episodeId,
+          })),
+        );
       }
       await tx
         .update(episodes)
@@ -157,7 +166,7 @@ export class DrizzleSubtitleRepository implements SubtitleRepository {
           status: "READY",
           failureReason: null,
           cueCount: record.cueCount,
-          ...(record.alignments
+          ...(record.alignmentPairs !== null
             ? { alignmentPairs: record.alignmentPairs, alignmentRate: record.alignmentRate }
             : {}),
           uploadedBy: record.userId,

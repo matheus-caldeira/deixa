@@ -16,7 +16,7 @@ import {
   type CredentialService,
   type CredentialTester,
 } from "@/modules/ai-credentials";
-import { makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider, VOICE_BY_ACCENT } from "@/modules/audio";
+import { ALL_VOICES, makeGetSpeechAudio, makeListCachedSpeech, type TtsProvider } from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
 import { PerUserGate } from "@/modules/audio/infrastructure/per-user-gate";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
@@ -78,8 +78,13 @@ import {
   makeSignUp,
   makeStartOwnerSession,
   makeUpdatePreferences,
+  makeAddLanguagePair,
+  makeListLanguagePairs,
+  makeSwitchLanguagePair,
+  pairOf,
 } from "@/modules/identity";
 import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
+import { DEFAULT_TARGET_LANGUAGE, type LanguagePair, type StudyLanguage } from "@/shared/study-languages";
 import { AttemptThrottle } from "@/modules/identity/infrastructure/attempt-throttle";
 import { randomSessionTokens, scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { DrizzleIdentityRepository } from "@/modules/identity/infrastructure/drizzle-identity-repository";
@@ -87,7 +92,7 @@ import {
   makeConfirmCardBatch,
   makeGenerateCardDrafts,
   makeGetCardBatch,
-  makeGetSpeakableItemText,
+  makeGetSpeakableItem,
   makeListCatalogSuggestions,
   makeProcessCardBatch,
   makeRequestCardDrafts,
@@ -381,6 +386,14 @@ export function buildContainer(options: ContainerOptions) {
 
   const localeOf = async (userId: string): Promise<Locale> =>
     (await identity.get(userId))?.locale ?? DEFAULT_LOCALE;
+  const pairFor = async (userId: string): Promise<LanguagePair> => {
+    const preferences = await identity.get(userId);
+    return preferences ? pairOf(preferences) : { target: DEFAULT_TARGET_LANGUAGE, native: "pt-BR" };
+  };
+  const promptLanguagesOf = async (userId: string) => ({
+    locale: await localeOf(userId),
+    pair: await pairFor(userId),
+  });
 
   const fakeLlm = new FakeLlmProvider();
   const resolveLlm =
@@ -390,7 +403,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return fakeLlm;
       return new AiLlmProvider(access, access.model, {
         meter: aiMeterFor(userId, access),
-        locale: await localeOf(userId),
+        ...(await promptLanguagesOf(userId)),
       });
     });
   const resolvePlanner =
@@ -400,7 +413,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return null;
       const meter = aiMeterFor(userId, access);
       await meter.ensureAllowed();
-      return new AiLessonPlanner(access, access.model, { meter, locale: await localeOf(userId) });
+      return new AiLessonPlanner(access, access.model, { meter, ...(await promptLanguagesOf(userId)) });
     });
 
   const fakeTutor = new FakeTutorProvider();
@@ -411,7 +424,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return fakeTutor;
       return new AiTutorProvider(access, access.model, {
         meter: aiMeterFor(userId, access),
-        locale: await localeOf(userId),
+        ...(await promptLanguagesOf(userId)),
       });
     });
   const conversations = new DrizzleConversationRepository(db);
@@ -431,7 +444,7 @@ export function buildContainer(options: ContainerOptions) {
       if (!access) return null;
       return new AiSuggestionWriter(access, access.model, {
         meter: aiMeterFor(userId, access),
-        locale: await localeOf(userId),
+        ...(await promptLanguagesOf(userId)),
       });
     });
   const recommendationDeps = {
@@ -448,6 +461,7 @@ export function buildContainer(options: ContainerOptions) {
     users: identity,
     sessions: identity,
     preferences: identity,
+    pairs: identity,
     passwords: scryptPasswords,
     tokens: randomSessionTokens,
     clock,
@@ -493,8 +507,8 @@ export function buildContainer(options: ContainerOptions) {
 
   const generateCardDrafts = makeGenerateCardDrafts(learningDeps);
 
-  async function loadTrailLines(episodeId: string): Promise<TrailLine[] | null> {
-    const script = await getEpisodeScript(episodeId);
+  async function loadTrailLines(episodeId: string, pair: LanguagePair): Promise<TrailLine[] | null> {
+    const script = await getEpisodeScript(episodeId, pair);
     if (!script) return null;
     return script.lines.map((line) => ({
       cueId: line.cueId,
@@ -508,12 +522,13 @@ export function buildContainer(options: ContainerOptions) {
   async function queueLinesForReview(
     userId: string,
     episodeId: string,
+    pair: LanguagePair,
     items: { cueId: string; translation: string | null }[],
   ): Promise<number> {
-    const script = await getEpisodeScript(episodeId);
+    const script = await getEpisodeScript(episodeId, pair);
     if (!script) return 0;
     const reusable = new Map(
-      (await learning.findReusable(userId, episodeId)).map((item) => [
+      (await learning.findReusable(userId, episodeId, pair)).map((item) => [
         `${item.cueId}:${item.startToken}:${item.endToken}`,
         item.id,
       ]),
@@ -535,6 +550,7 @@ export function buildContainer(options: ContainerOptions) {
       await learning.createItem({
         id,
         episodeId,
+        pair,
         visibility: "private",
         ownerUserId: userId,
         createdAt: clock.now(),
@@ -576,12 +592,14 @@ export function buildContainer(options: ContainerOptions) {
     corrections: Correction[],
     _sourceLabel: string,
   ): Promise<number> {
+    const pair = await pairFor(userId);
     const itemIds: string[] = [];
     for (const correction of corrections) {
       itemIds.push(
         await learning.upsertStandaloneItem({
           id: ids.next(),
           ownerUserId: userId,
+          pair,
           term: correction.right,
           meaning: correction.why,
           context: correction.wrong,
@@ -599,6 +617,7 @@ export function buildContainer(options: ContainerOptions) {
   }
 
   const conversationDeps = { conversations, resolveTutor, queueCorrections, awardXp, clock, ids };
+  const getTurnSpeechText = makeGetTurnSpeechText(conversationDeps);
 
   const studyDeps = {
     study,
@@ -616,9 +635,9 @@ export function buildContainer(options: ContainerOptions) {
     },
   };
 
-  async function findEnglishCue(cueId: string) {
+  async function findCueInLanguage(cueId: string, language: StudyLanguage) {
     const cue = await subtitles.findCue(cueId);
-    return cue && cue.language === "en" ? cue : null;
+    return cue && cue.language === language ? cue : null;
   }
 
   const importEpisodeSubtitles = makeImportEpisodeSubtitles({
@@ -677,7 +696,7 @@ export function buildContainer(options: ContainerOptions) {
       userDailyDownloads: access.ownKey ? UNLIMITED_DOWNLOADS : settings.subtitleDownloadsPerUserPerDay,
       clock,
       findEpisodeSource: (episodeId: string) => findEpisodeSource(access.provider, episodeId),
-      readExistingFile: async (episodeId: string, language: "en" | "pt-BR") => {
+      readExistingFile: async (episodeId: string, language: StudyLanguage) => {
         const file = (await subtitles.listFiles(episodeId)).find((stored) => stored.language === language);
         return file ? storage.read(file.storagePath) : null;
       },
@@ -711,9 +730,9 @@ export function buildContainer(options: ContainerOptions) {
     learning,
     audio: audioAssets,
     importSubtitles: async (input) =>
-      (await importEpisodeSubtitles({ ...input, portuguese: input.portuguese ?? undefined })).outcome,
+      (await importEpisodeSubtitles({ ...input, native: input.native ?? undefined })).outcome,
     ids,
-    voices: Object.values(VOICE_BY_ACCENT),
+    voices: [...ALL_VOICES],
     modelVersion: tts.modelVersion,
   });
   const personalData = new DrizzlePersonalData({ db, catalog, learning, keyCipher: cipher, ids });
@@ -758,7 +777,10 @@ export function buildContainer(options: ContainerOptions) {
     getPreferences: (userId: string) => identity.get(userId),
     startOwnerSession: makeStartOwnerSession(sessionDeps),
     getSessionUser: makeGetSessionUser(sessionDeps),
-    updatePreferences: makeUpdatePreferences({ preferences: identity }),
+    updatePreferences: makeUpdatePreferences({ preferences: identity, pairs: identity, clock }),
+    listLanguagePairs: makeListLanguagePairs({ pairs: identity, preferences: identity }),
+    addLanguagePair: makeAddLanguagePair({ pairs: identity, preferences: identity, clock }),
+    switchLanguagePair: makeSwitchLanguagePair({ pairs: identity, preferences: identity }),
     listPeople: () => identity.listByEmailSuffix(""),
 
     searchWorks: async (userId: string, query: string) => (await catalogFor(userId)).searchWorks(query),
@@ -785,12 +807,13 @@ export function buildContainer(options: ContainerOptions) {
 
     importEpisodeSubtitles,
     searchSubtitles: async (input: { userId: string; episodeId: string; refresh?: boolean }) =>
-      (await sourcesFor(input.userId)).searchSubtitles(input),
+      (await sourcesFor(input.userId)).searchSubtitles({ ...input, pair: await pairFor(input.userId) }),
     importFromSource: async (input: {
       userId: string;
       episodeId: string;
-      englishFileId: string;
-      portugueseFileId: string | null;
+      pair: LanguagePair;
+      targetFileId: string;
+      nativeFileId: string | null;
     }) => (await sourcesFor(input.userId)).importFromSource(input),
     listSubtitleOrigins: async (episodeId: string) =>
       (await subtitles.listFiles(episodeId)).map((file) => ({
@@ -809,7 +832,7 @@ export function buildContainer(options: ContainerOptions) {
     listConversations: makeListConversations(conversationDeps),
     sendMessage: makeSendMessage(conversationDeps),
     reviewConversation: makeReviewConversation(conversationDeps),
-    getTurnSpeechText: makeGetTurnSpeechText(conversationDeps),
+    getTurnSpeechText,
     isTutorSimulated: async (userId: string) => (await resolveTutor(userId)).name === "fake",
     startLesson: makeStartLesson(studyDeps),
     completeLesson: makeCompleteLesson(studyDeps),
@@ -826,14 +849,15 @@ export function buildContainer(options: ContainerOptions) {
     markNotificationsRead: makeMarkNotificationsRead({ notifications: notificationRepository }),
     confirmCardBatch: makeConfirmCardBatch(learningDeps),
     listCatalogSuggestions: makeListCatalogSuggestions({ learning }),
-    getSpeakableItemText: makeGetSpeakableItemText({ learning }),
+    getSpeakableItem: makeGetSpeakableItem({ learning }),
     translateCue: makeTranslateCue({
       resolveLlm,
-      saveCueTranslation: (cueId, text) => subtitles.saveCueTranslation(cueId, text, clock.now()),
-      findCueLine: async (cueId) => {
-        const cue = await findEnglishCue(cueId);
+      saveCueTranslation: (cueId, pair, text) =>
+        subtitles.saveCueTranslation(cueId, pair.native, text, clock.now()),
+      findCueLine: async (cueId, pair) => {
+        const cue = await findCueInLanguage(cueId, pair.target);
         if (!cue) return null;
-        const script = await getEpisodeScript(cue.episodeId);
+        const script = await getEpisodeScript(cue.episodeId, pair);
         const line = script?.lines.find((candidate) => candidate.cueId === cueId);
         return line
           ? {
@@ -845,11 +869,18 @@ export function buildContainer(options: ContainerOptions) {
           : null;
       },
     }),
-    getCueSpeechText: async (cueId: string): Promise<string> => {
-      const cue = await findEnglishCue(cueId);
+    getCueSpeech: async (cueId: string): Promise<{ text: string; language: StudyLanguage }> => {
+      const cue = await subtitles.findCue(cueId);
       if (!cue) throw new AppError("CUE_NOT_FOUND");
-      return cue.text;
+      return { text: cue.text, language: cue.language };
     },
+    getTurnSpeech: async (
+      userId: string,
+      turnId: string,
+    ): Promise<{ text: string; language: StudyLanguage }> => ({
+      text: await getTurnSpeechText(userId, turnId),
+      language: (await pairFor(userId)).target,
+    }),
 
     listDueCards: makeListDueCards({ cards, clock }),
     countDueCards: makeCountDueCards({ cards, clock }),

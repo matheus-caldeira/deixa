@@ -20,7 +20,7 @@ export {
 } from "./application/generate-card-drafts";
 export {
   makeConfirmCardBatch,
-  makeGetSpeakableItemText,
+  makeGetSpeakableItem,
   makeListCatalogSuggestions,
   type ConfirmedBatch,
 } from "./application/confirm-card-batch";

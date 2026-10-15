@@ -1,5 +1,6 @@
 import { and, asc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
+import type { LanguagePair } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
   episodes,
@@ -14,7 +15,8 @@ import {
 import { NEW_CARD_STATE, type CardState } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "../application/ports";
 
-const LOCALE = "pt-BR";
+const itemsInLanguage = (language: string) =>
+  sql`${userCards.learningItemId} in (select ${learningItems.id} from ${learningItems} where ${learningItems.language} = ${language})`;
 
 export class DrizzleCardRepository implements CardRepository {
   constructor(private readonly db: Database) {}
@@ -47,19 +49,19 @@ export class DrizzleCardRepository implements CardRepository {
       );
   }
 
-  async countUpcoming(userId: string, now: Date): Promise<number> {
+  async countUpcoming(userId: string, now: Date, pair: LanguagePair): Promise<number> {
     const [row] = await this.db
       .select({ total: sql<number>`count(*)::int` })
       .from(userCards)
-      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now)));
+      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now), itemsInLanguage(pair.target)));
     return row?.total ?? 0;
   }
 
-  async pullSoonestForward(userId: string, now: Date, limit: number): Promise<number> {
+  async pullSoonestForward(userId: string, now: Date, limit: number, pair: LanguagePair): Promise<number> {
     const soonest = await this.db
       .select({ id: userCards.id })
       .from(userCards)
-      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now)))
+      .where(and(eq(userCards.userId, userId), gt(userCards.dueAt, now), itemsInLanguage(pair.target)))
       .orderBy(asc(userCards.dueAt), asc(userCards.id))
       .limit(limit);
     if (soonest.length === 0) return 0;
@@ -95,7 +97,7 @@ export class DrizzleCardRepository implements CardRepository {
     await this.db.insert(reviewAnticipations).values(entry);
   }
 
-  async listDue(userId: string, now: Date, limit: number): Promise<DueCardRecord[]> {
+  async listDue(userId: string, now: Date, limit: number, pair: LanguagePair): Promise<DueCardRecord[]> {
     const rows = await this.db
       .select({
         card: userCards,
@@ -112,13 +114,15 @@ export class DrizzleCardRepository implements CardRepository {
         learningItemExplanations,
         and(
           eq(learningItemExplanations.learningItemId, learningItems.id),
-          eq(learningItemExplanations.locale, LOCALE),
+          eq(learningItemExplanations.locale, pair.native),
         ),
       )
       .leftJoin(episodes, eq(episodes.id, learningItems.episodeId))
       .leftJoin(seasons, eq(seasons.id, episodes.seasonId))
       .leftJoin(mediaItems, eq(mediaItems.id, seasons.mediaItemId))
-      .where(and(eq(userCards.userId, userId), lte(userCards.dueAt, now)))
+      .where(
+        and(eq(userCards.userId, userId), lte(userCards.dueAt, now), eq(learningItems.language, pair.target)),
+      )
       .orderBy(asc(userCards.dueAt), asc(userCards.createdAt), asc(userCards.id))
       .limit(limit);
     return rows.map((row) => ({
@@ -146,11 +150,11 @@ export class DrizzleCardRepository implements CardRepository {
     }));
   }
 
-  async countDue(userId: string, now: Date): Promise<number> {
+  async countDue(userId: string, now: Date, pair: LanguagePair): Promise<number> {
     const [row] = await this.db
       .select({ total: sql<number>`count(*)::int` })
       .from(userCards)
-      .where(and(eq(userCards.userId, userId), lte(userCards.dueAt, now)));
+      .where(and(eq(userCards.userId, userId), lte(userCards.dueAt, now), itemsInLanguage(pair.target)));
     return row?.total ?? 0;
   }
 

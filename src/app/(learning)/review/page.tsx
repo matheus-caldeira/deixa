@@ -1,13 +1,15 @@
 import { getContainer } from "@/infrastructure/container";
+import { pairOf } from "@/modules/identity";
 import { ReviewScreen } from "@/ui/review/review-screen";
 import { requireUser } from "../../session";
 
 export default async function ReviewPage() {
   const user = await requireUser();
   const container = getContainer();
+  const pair = pairOf(user.preferences);
   const [queue, anticipation] = await Promise.all([
-    container.listDueCards(user.id),
-    container.getAnticipationStatus(user.id, user.preferences.timezone),
+    container.listDueCards(user.id, pair),
+    container.getAnticipationStatus(user.id, user.preferences.timezone, pair),
   ]);
   return (
     <ReviewScreen

@@ -34,3 +34,4 @@ Front-matter (`title`, `updated`, `source`, `status`) e quatro seções: Context
 Alternativas descartadas. ADR aceito não é reescrito: uma decisão nova o substitui e cita o anterior.
 | 0017 | [Postgres embutido na instalação local](0017-postgres-embutido.md) |
 | 0018 | [Interface em N idiomas](0018-interface-em-n-idiomas.md) |
+| 0019 | [Estudo em N idiomas](0019-estudo-em-n-idiomas.md) |

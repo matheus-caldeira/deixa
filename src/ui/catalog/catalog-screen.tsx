@@ -4,12 +4,18 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { LevelFit } from "@/shared/levels";
+import { LANGUAGE_TAGS, type StudyLanguage } from "@/shared/study-languages";
 import { PlusIcon, SearchIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
 import { SuggestionsSection, type SuggestionsView } from "./suggestions-section";
 
-export type CatalogTile = PosterData & { id: string; fit: LevelFit; levelRange: string };
+export type CatalogTile = PosterData & {
+  id: string;
+  fit: LevelFit;
+  levelRange: string;
+  originalLanguage: StudyLanguage;
+};
 export type InProgressTile = {
   episodeId: string;
   mediaId: string;
@@ -121,7 +127,9 @@ export function CatalogScreen({
                 <Poster media={tile} />
                 <div className="meta">
                   <span className={`chip ${FIT_CLASS[tile.fit]}`}>{fits(tile.fit)}</span>
-                  <span className="chip mono">{tile.levelRange}</span>
+                  <span className="chip mono">
+                    {LANGUAGE_TAGS[tile.originalLanguage]} · {tile.levelRange}
+                  </span>
                 </div>
               </Link>
             ))}

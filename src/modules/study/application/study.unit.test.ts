@@ -1,3 +1,4 @@
+import type { LanguagePair } from "@/shared/study-languages";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { AppError } from "@/shared/errors";
@@ -359,14 +360,14 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   const clock = new FixedClock("2026-10-10T15:00:00Z");
   const key = (episodeId: string, level: CefrLevel) => `${episodeId}:${level}`;
   const study: StudyRepository = {
-    listAttempts: async (userId, episodeId, level) =>
+    listAttempts: async (userId, episodeId, _pair, level) =>
       attempts.filter((a) => a.userId === userId && a.episodeId === episodeId && a.level === level),
     saveAttempt: async (attempt) => {
       attempts.push(attempt);
     },
   };
   const plans: PlanRepository = {
-    find: async (episodeId, level) => stored.get(key(episodeId, level)) ?? null,
+    find: async (episodeId, _pair, level) => stored.get(key(episodeId, level)) ?? null,
     markPending: async (input) => {
       if (stored.get(key(input.episodeId, input.level))?.status === "READY") return;
       stored.set(key(input.episodeId, input.level), {
@@ -402,7 +403,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
     plans,
     clock,
     ids: new SequentialIds("at"),
-    loadLines: async (episodeId: string) => (episodeId === "ep-1" ? LINES : null),
+    loadLines: async (episodeId: string, _pair: LanguagePair) => (episodeId === "ep-1" ? LINES : null),
     resolvePlanner: async (_userId: string) => {
       if (outOfBudget) throw new AppError("AI_LIMIT_REACHED", "limite diário");
       return activePlanner;
@@ -426,6 +427,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
     queueForReview: async (
       userId: string,
       _episodeId: string,
+      _pair: LanguagePair,
       items: { cueId: string; translation: string | null }[],
     ) => {
       queued.push({ userId, items });
@@ -454,8 +456,21 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   };
 }
 
-const job = { userId: "ana", episodeId: "ep-1", level: "B1" as const, episodeLabel: "Friends · T1 · E1" };
-const base = { userId: "ana", episodeId: "ep-1", level: "B1" as const, timezone: "America/Sao_Paulo" };
+const PAIR = { target: "en", native: "pt-BR" } as const;
+const job = {
+  userId: "ana",
+  episodeId: "ep-1",
+  pair: PAIR,
+  level: "B1" as const,
+  episodeLabel: "Friends · T1 · E1",
+};
+const base = {
+  userId: "ana",
+  episodeId: "ep-1",
+  pair: PAIR,
+  level: "B1" as const,
+  timezone: "America/Sao_Paulo",
+};
 
 async function ready(app: ReturnType<typeof setup>) {
   const status = await app.ensure(job);
@@ -468,7 +483,7 @@ describe("geração da trilha em segundo plano", () => {
     const first = await app.ensure(job);
     expect(first).toMatchObject({ status: "PENDING", job });
     expect(await app.ensure(job)).toEqual({ status: "PENDING", job: null });
-    await expect(app.trail("ana", "ep-1", "B1")).rejects.toMatchObject({ code: "EPISODE_NOT_READY" });
+    await expect(app.trail("ana", "ep-1", PAIR, "B1")).rejects.toMatchObject({ code: "EPISODE_NOT_READY" });
 
     await app.generate(job);
     expect(await app.ensure(job)).toEqual({ status: "READY" });
@@ -479,7 +494,7 @@ describe("geração da trilha em segundo plano", () => {
         params: expect.objectContaining({ level: "B1", episode: "Friends · T1 · E1" }),
       },
     ]);
-    const trail = await app.trail("ana", "ep-1", "B1");
+    const trail = await app.trail("ana", "ep-1", PAIR, "B1");
     expect(trail.generatedByAi).toBe(true);
     expect(trail.nodes.map((node) => [node.title, node.state, node.icon])).toEqual([
       ["Planos para a noite", "current", "quote"],
@@ -554,7 +569,7 @@ describe("geração da trilha em segundo plano", () => {
   it("sem chave de IA, usa o plano de reserva na hora", async () => {
     const app = setup(null);
     expect(await app.ensure(job)).toEqual({ status: "READY" });
-    expect((await app.trail("ana", "ep-1", "B1")).generatedByAi).toBe(false);
+    expect((await app.trail("ana", "ep-1", PAIR, "B1")).generatedByAi).toBe(false);
     await expect(app.ensure({ ...job, episodeId: "sem-legenda" })).rejects.toMatchObject({
       code: "EPISODE_NOT_READY",
     });
@@ -617,7 +632,7 @@ describe("sessão de estudo", () => {
       "cue-0-3",
     ]);
     expect(app.queued[0]?.items.every((item) => item.translation !== null)).toBe(true);
-    expect((await app.trail("ana", "ep-1", "B1")).nodes[0]?.state).toBe("current");
+    expect((await app.trail("ana", "ep-1", PAIR, "B1")).nodes[0]?.state).toBe("current");
     await expect(app.start({ ...base, nodeIndex: 1 })).rejects.toMatchObject({ code: "EPISODE_NOT_READY" });
   });
 
@@ -683,7 +698,7 @@ describe("sessão de estudo", () => {
   it("o progresso de um usuário não mexe na trilha do outro", async () => {
     const lesson = await app.start({ ...base, nodeIndex: 0 });
     await app.complete({ ...base, nodeIndex: 0, answers: lesson.exercises.map(rightAnswer), seconds: 60 });
-    const lucas = await app.trail("lucas", "ep-1", "B1");
+    const lucas = await app.trail("lucas", "ep-1", PAIR, "B1");
     expect(lucas.nodes.map((node) => node.state)).toEqual(["current", "locked", "locked", "locked"]);
     expect(lucas.progressPercent).toBe(0);
   });

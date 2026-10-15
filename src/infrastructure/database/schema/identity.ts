@@ -37,6 +37,7 @@ export const userPreferences = pgTable("user_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   level: text("level").notNull(),
   nativeLanguage: text("native_language").notNull(),
+  targetLanguage: text("target_language").notNull().default("en"),
   locale: text("locale").notNull().default("pt-BR"),
   dailyGoal: integer("daily_goal").notNull(),
   preferredAccent: text("preferred_accent").notNull(),
@@ -44,6 +45,20 @@ export const userPreferences = pgTable("user_preferences", {
   timezone: text("timezone").notNull(),
   currentEpisodeId: uuid("current_episode_id"),
 });
+
+export const userLanguagePairs = pgTable(
+  "user_language_pairs",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    targetLanguage: text("target_language").notNull(),
+    nativeLanguage: text("native_language").notNull(),
+    level: text("level").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.targetLanguage, table.nativeLanguage] })],
+);
 
 export const userAiCredentials = pgTable(
   "user_ai_credentials",

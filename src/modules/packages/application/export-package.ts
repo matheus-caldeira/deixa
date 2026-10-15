@@ -94,7 +94,7 @@ export function makeExportPackage(deps: Deps) {
         }
       }
       if (episode.ready && (input.options.cards || input.options.audio)) {
-        const cues = await deps.reader.listEnglishCues(episode.id);
+        const cues = await deps.reader.listCues(episode.id);
         if (input.options.cards) {
           const cards = await deps.reader.listCatalogCards(episode.id);
           if (cards.length > 0) {

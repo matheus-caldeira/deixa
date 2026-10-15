@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { isStudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
   audioAssets,
@@ -26,8 +27,6 @@ import type {
 } from "../application/ports";
 
 const ORIGIN_HIGHLIGHT = "user_highlight";
-const LOCALE = "pt-BR";
-const ENGLISH = "en";
 
 type Deps = {
   db: Database;
@@ -115,29 +114,21 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
     }));
   }
 
-  async listEnglishCues(episodeId: string): Promise<CueRef[]> {
-    const english = (await this.deps.subtitles.listFiles(episodeId)).find(
-      (file) => file.language === ENGLISH,
-    );
-    if (!english) return [];
-    return (await this.deps.subtitles.listCues(english.id)).map(({ id, sequence, text }) => ({
-      id,
-      sequence,
-      text,
-    }));
+  async listCues(episodeId: string): Promise<CueRef[]> {
+    const refs: CueRef[] = [];
+    for (const file of await this.deps.subtitles.listFiles(episodeId)) {
+      for (const { id, sequence, text } of await this.deps.subtitles.listCues(file.id)) {
+        refs.push({ id, sequence, text, language: file.language });
+      }
+    }
+    return refs;
   }
 
   async listCatalogCards(episodeId: string): Promise<(PackagedCard & { cueId: string })[]> {
     const rows = await this.deps.db
       .select({ item: learningItems, explanation: learningItemExplanations, sequence: subtitleCues.sequence })
       .from(learningItems)
-      .innerJoin(
-        learningItemExplanations,
-        and(
-          eq(learningItemExplanations.learningItemId, learningItems.id),
-          eq(learningItemExplanations.locale, LOCALE),
-        ),
-      )
+      .innerJoin(learningItemExplanations, eq(learningItemExplanations.learningItemId, learningItems.id))
       .innerJoin(subtitleCues, eq(subtitleCues.id, learningItems.cueId))
       .where(
         and(
@@ -153,9 +144,12 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
       if (item.cueId === null || item.startToken === null || item.endToken === null) return [];
       const kind =
         item.itemType === "sentence" ? "line" : item.startToken === item.endToken ? "word" : "phrase";
+      if (!isStudyLanguage(item.language) || !isStudyLanguage(explanation.locale)) return [];
       return [
         {
           cueId: item.cueId,
+          language: item.language,
+          locale: explanation.locale,
           cueSequence: sequence,
           startToken: item.startToken,
           endToken: item.endToken,
@@ -208,6 +202,7 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
         id: this.deps.ids.next(),
         type: work.type,
         title: work.title,
+        originalLanguage: "en",
         originalTitle: work.originalTitle,
         overview: work.overview,
         year: work.year,
@@ -285,6 +280,7 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
     await this.deps.learning.createItem({
       id: input.id,
       episodeId: input.episodeId,
+      pair: { target: card.language, native: card.locale },
       visibility: "global",
       ownerUserId: null,
       createdAt: input.now,

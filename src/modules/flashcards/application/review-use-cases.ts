@@ -2,6 +2,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import { startOfLocalDay } from "@/shared/time";
+import type { LanguagePair } from "@/shared/study-languages";
 import { ANTICIPATION_BATCH, anticipationStatus, type AnticipationStatus } from "../domain/anticipation";
 import { REVIEW_XP, previewIntervals, review, type Interval, type Rating } from "../domain/schedule";
 import type { CardRepository, DueCardRecord } from "./ports";
@@ -34,11 +35,11 @@ export function makeAddCards(deps: Pick<Deps, "cards" | "clock" | "ids">) {
 }
 
 export function makeListDueCards(deps: Pick<Deps, "cards" | "clock">) {
-  return async function listDueCards(userId: string): Promise<ReviewQueue> {
+  return async function listDueCards(userId: string, pair: LanguagePair): Promise<ReviewQueue> {
     const now = deps.clock.now();
     const [records, dueCount] = await Promise.all([
-      deps.cards.listDue(userId, now, SESSION_LIMIT),
-      deps.cards.countDue(userId, now),
+      deps.cards.listDue(userId, now, SESSION_LIMIT, pair),
+      deps.cards.countDue(userId, now, pair),
     ]);
     return {
       dueCount,
@@ -51,8 +52,8 @@ export function makeListDueCards(deps: Pick<Deps, "cards" | "clock">) {
 }
 
 export function makeCountDueCards(deps: Pick<Deps, "cards" | "clock">) {
-  return async function countDueCards(userId: string): Promise<number> {
-    return deps.cards.countDue(userId, deps.clock.now());
+  return async function countDueCards(userId: string, pair: LanguagePair): Promise<number> {
+    return deps.cards.countDue(userId, deps.clock.now(), pair);
   };
 }
 
@@ -60,6 +61,7 @@ export function makeGradeCard(deps: Deps) {
   return async function gradeCard(input: {
     userId: string;
     cardId: string;
+    pair: LanguagePair;
     rating: Rating;
     responseTimeMs?: number;
   }): Promise<{ dueCount: number; xpAwarded: number }> {
@@ -76,25 +78,29 @@ export function makeGradeCard(deps: Deps) {
       log: { id: logId, rating: input.rating, responseTimeMs: input.responseTimeMs ?? null, reviewedAt: now },
     });
     await deps.awardXp({ userId: input.userId, source: "review", sourceId: logId, amount: REVIEW_XP });
-    return { dueCount: await deps.cards.countDue(input.userId, now), xpAwarded: REVIEW_XP };
+    return { dueCount: await deps.cards.countDue(input.userId, now, input.pair), xpAwarded: REVIEW_XP };
   };
 }
 
 export function makeGetAnticipationStatus(deps: Pick<Deps, "cards" | "clock">) {
-  return async function getAnticipationStatus(userId: string, timezone: string): Promise<AnticipationStatus> {
+  return async function getAnticipationStatus(
+    userId: string,
+    timezone: string,
+    pair: LanguagePair,
+  ): Promise<AnticipationStatus> {
     const now = deps.clock.now();
     const [anticipationsToday, upcoming] = await Promise.all([
       deps.cards.listAnticipations(userId, startOfLocalDay(now, timezone)),
-      deps.cards.countUpcoming(userId, now),
+      deps.cards.countUpcoming(userId, now, pair),
     ]);
     return anticipationStatus({ usedToday: anticipationsToday.length, upcoming });
   };
 }
 
 export function makeAnticipateReview(deps: Pick<Deps, "cards" | "clock" | "ids">) {
-  return async function anticipateReview(userId: string): Promise<{ moved: number }> {
+  return async function anticipateReview(userId: string, pair: LanguagePair): Promise<{ moved: number }> {
     const now = deps.clock.now();
-    const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH);
+    const moved = await deps.cards.pullSoonestForward(userId, now, ANTICIPATION_BATCH, pair);
     if (moved === 0) throw new AppError("INVALID_INPUT", "nothingToAnticipate");
     await deps.cards.recordAnticipation({ id: deps.ids.next(), userId, cardsMoved: moved, createdAt: now });
     return { moved };

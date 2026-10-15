@@ -1,6 +1,6 @@
 ---
 title: Kokoro-FastAPI
-updated: 2026-10-10
+updated: 2026-10-15
 source: PROJETO.md §4 (Tecnologias)
 package: ghcr.io/remsky/kokoro-fastapi-cpu
 version: "0.2.4"
@@ -28,10 +28,16 @@ container, 1881 no host. `KOKORO_URL=http://localhost:1881`. O repositório do K
 
 ## Vozes
 
-| Sotaque   | Voz        | Idioma  |
-| --------- | ---------- | ------- |
-| Americano | `af_heart` | `en-us` |
-| Britânico | `bf_emma`  | `en-gb` |
+Tabela em `VOICES_BY_LANGUAGE` (`src/modules/audio/domain/speech.ts`): a fala usa a voz do idioma da legenda;
+item e tutor usam a do idioma de estudo. Só o inglês tem escolha de sotaque no perfil.
+
+| Idioma            | Voz        | Idioma Kokoro |
+| ----------------- | ---------- | ------------- |
+| Inglês, americano | `af_heart` | `en-us`       |
+| Inglês, britânico | `bf_emma`  | `en-gb`       |
+| Português         | `pf_dora`  | `pt-br`       |
+| Espanhol          | `ef_dora`  | `es`          |
+| Francês           | `ff_siwis` | `fr-fr`       |
 
 ## Cache
 

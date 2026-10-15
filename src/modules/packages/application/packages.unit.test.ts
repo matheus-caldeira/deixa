@@ -11,6 +11,8 @@ import { InMemoryPackageCatalog, JsonArchive, PlainCipher, RecordingPersonalData
 const encode = (text: string) => new TextEncoder().encode(text);
 const card = (cueId: string) => ({
   cueId,
+  language: "en" as const,
+  locale: "pt-BR" as const,
   cueSequence: 1,
   startToken: 0,
   endToken: 1,
@@ -69,7 +71,7 @@ function source() {
           originalFilename: "ep1.pt.srt",
         },
       ],
-      cues: [{ id: "c1", sequence: 1, text: "pick up the tab" }],
+      cues: [{ id: "c1", sequence: 1, text: "pick up the tab", language: "en" }],
       cards: [card("c1")],
     },
     {

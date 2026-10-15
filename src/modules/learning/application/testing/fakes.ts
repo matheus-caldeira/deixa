@@ -1,3 +1,4 @@
+import type { LanguagePair, StudyLanguage } from "@/shared/study-languages";
 import type { CardDraft, CardScope, ReusableItem, Visibility } from "../../domain/learning";
 import type {
   CatalogSuggestion,
@@ -18,7 +19,7 @@ export class InMemoryLearning implements LearningRepository {
   readonly items: StoredItem[] = [];
   readonly batches: StoredBatch[] = [];
 
-  async findReusable(userId: string, episodeId: string): Promise<ReusableItem[]> {
+  async findReusable(userId: string, episodeId: string, _pair: LanguagePair): Promise<ReusableItem[]> {
     return this.items
       .filter(
         (item) =>
@@ -135,7 +136,7 @@ export class InMemoryLearning implements LearningRepository {
     }
   }
 
-  async listGlobalSuggestions(episodeId: string): Promise<CatalogSuggestion[]> {
+  async listGlobalSuggestions(episodeId: string, _language: StudyLanguage): Promise<CatalogSuggestion[]> {
     return this.items
       .filter((item) => item.episodeId === episodeId && item.visibility === "global")
       .map((item) => ({
@@ -171,12 +172,15 @@ export class InMemoryLearning implements LearningRepository {
     return item.id;
   }
 
-  async findSpeakableText(userId: string, itemId: string): Promise<string | null> {
+  async findSpeakable(
+    userId: string,
+    itemId: string,
+  ): Promise<{ text: string; language: StudyLanguage } | null> {
     const item = this.items.find(
       (candidate) =>
         candidate.id === itemId && (candidate.visibility === "global" || candidate.ownerUserId === userId),
     );
-    return item?.term ?? null;
+    return item ? { text: item.term, language: "en" } : null;
   }
 }
 
@@ -198,7 +202,8 @@ export class CollaboratorSpy {
 
   collaborators(): LearningCollaborators {
     return {
-      loadScript: async (episodeId) => (this.episodeIds.includes(episodeId) ? { lines: this.lines } : null),
+      loadScript: async (episodeId, _pair) =>
+        this.episodeIds.includes(episodeId) ? { lines: this.lines } : null,
       listPendingHighlights: async (userId) => this.pending.get(userId) ?? [],
       markHighlightsCarded: async (input) => {
         this.carded.push({ userId: input.userId, highlightIds: input.highlightIds, scope: input.scope });

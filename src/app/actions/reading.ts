@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
 import { episodeLabel } from "@/modules/catalog";
+import { pairOf } from "@/modules/identity";
+import type { LanguagePair } from "@/shared/study-languages";
 import type { CardBatchState, ConfirmedBatch } from "@/modules/learning";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
@@ -33,11 +35,12 @@ export type SavedHighlightView = {
 
 async function sync(
   userId: string,
+  pair: LanguagePair,
   input: unknown,
 ): Promise<{ episodeId: string; highlights: SavedHighlightView[] }> {
   const parsed = z.object({ episodeId: idSchema, marks: marksSchema }).safeParse(input);
   if (!parsed.success) throw new AppError("INVALID_INPUT");
-  const highlights = await app().syncHighlights({ userId, ...parsed.data });
+  const highlights = await app().syncHighlights({ userId, pair, ...parsed.data });
   return {
     episodeId: parsed.data.episodeId,
     highlights: highlights.map((highlight) => ({
@@ -52,13 +55,16 @@ async function sync(
 
 export async function syncHighlightsAction(input: unknown): Promise<ActionResult<SavedHighlightView[]>> {
   const user = await requireUser();
-  return runAction("syncHighlights", async () => (await sync(user.id, input)).highlights);
+  return runAction(
+    "syncHighlights",
+    async () => (await sync(user.id, pairOf(user.preferences), input)).highlights,
+  );
 }
 
 export async function startCardGenerationAction(input: unknown): Promise<ActionResult<{ batchId: string }>> {
   const user = await requireUser();
   return runAction("startCardGeneration", async () => {
-    const { episodeId } = await sync(user.id, input);
+    const { episodeId } = await sync(user.id, pairOf(user.preferences), input);
     const context = await app().getEpisodeContext(episodeId);
     if (!context) throw new AppError("EPISODE_NOT_FOUND");
     const { batchId } = await app().requestCardDrafts({ userId: user.id, episodeId });
@@ -67,6 +73,7 @@ export async function startCardGenerationAction(input: unknown): Promise<ActionR
       episodeId,
       batchId,
       learnerLevel: user.preferences.level,
+      pair: pairOf(user.preferences),
       episodeLabel: `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`,
     };
     after(() => app().processCardBatch(job));
@@ -99,7 +106,11 @@ export async function confirmCardsAction(input: unknown): Promise<ActionResult<C
       .safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
     const batch = await app().getCardBatch(user.id, parsed.data.batchId);
-    const result = await app().confirmCardBatch({ userId: user.id, ...parsed.data });
+    const result = await app().confirmCardBatch({
+      userId: user.id,
+      pair: pairOf(user.preferences),
+      ...parsed.data,
+    });
     await app().markNotificationsRead(user.id, { href: `/read/${batch.episodeId}?batch=${batch.batchId}` });
     revalidatePath("/review");
     revalidatePath("/");
@@ -114,6 +125,6 @@ export async function translateCueAction(
   return runAction("translateCue", async () => {
     const parsed = idSchema.safeParse(cueId);
     if (!parsed.success) throw new AppError("CUE_NOT_FOUND");
-    return app().translateCue({ userId: user.id, cueId: parsed.data });
+    return app().translateCue({ userId: user.id, cueId: parsed.data, pair: pairOf(user.preferences) });
   });
 }

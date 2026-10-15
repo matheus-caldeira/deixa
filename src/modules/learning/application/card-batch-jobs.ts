@@ -2,6 +2,7 @@ import { AppError, isAppError, type MessageParams } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair } from "@/shared/study-languages";
 import type { CardDraft } from "../domain/learning";
 import type { GeneratedDrafts } from "./generate-card-drafts";
 import type { LearningRepository } from "./ports";
@@ -34,6 +35,7 @@ type Generate = (input: {
   userId: string;
   episodeId: string;
   learnerLevel: CefrLevel;
+  pair: LanguagePair;
   batchId?: string;
 }) => Promise<GeneratedDrafts>;
 
@@ -67,6 +69,7 @@ export function makeProcessCardBatch(deps: {
     episodeId: string;
     batchId: string;
     learnerLevel: CefrLevel;
+    pair: LanguagePair;
     episodeLabel: string;
   }): Promise<void> {
     const href = `/read/${input.episodeId}?batch=${input.batchId}`;

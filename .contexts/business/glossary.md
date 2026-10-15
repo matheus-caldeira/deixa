@@ -18,11 +18,11 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Legenda              | `subtitle_file`             | Arquivo `.srt` de um episódio em um idioma                                   |
 | Fala                 | `subtitle_cue` (`cue`)      | Um bloco da legenda, com início, fim e texto                                 |
 | Timecode             | `start_ms`, `end_ms`        | Tempo da fala no episódio                                                    |
-| Alinhamento          | `cue_alignment`             | Ligação entre uma fala EN e as falas PT que se sobrepõem no tempo            |
+| Alinhamento          | `cue_alignment`             | Ligação entre uma fala de uma legenda e as falas de outro idioma no tempo    |
 | Taxa de alinhamento  | `alignment_rate`            | Percentual de falas EN com par em PT                                         |
 | Cena                 | `scene`                     | Trecho contínuo de falas, separado do seguinte por um silêncio longo         |
 | Leitura              | `read`                      | Tela "Ler episódio e marcar", com a legenda completa                         |
-| Modo de exibição     | `display_mode`              | EN + PT, PT ao tocar ou Só inglês                                            |
+| Modo de exibição     | `display_mode`              | Os dois idiomas, tradução ao tocar ou só o idioma de estudo                  |
 | Marcação             | `user_highlight`            | Palavra, expressão ou fala que o usuário marcou                              |
 | Expressão            | `phrase`                    | Palavras vizinhas marcadas na mesma fala                                     |
 | Mapa de dificuldade  | `highlight_stats`           | Contagem anônima de marcações por trecho                                     |
@@ -44,6 +44,9 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Sugestão             | `user_recommendation`       | Obra indicada ao usuário pelo gosto e pelo nível, com o motivo               |
 | Retrato do aluno     | `learner_assessment`        | Resumo do estudo recente que orienta o desafio das sugestões                 |
 | Pacote               | `package` (`.deixa.zip`)    | Arquivo com obras, legendas, cards e áudio para importar em outra instalação |
+| Idioma base          | `native_language`           | Idioma em que a pessoa lê as traduções e explicações                         |
+| Idioma de estudo     | `target_language`           | Idioma que a pessoa está aprendendo: inglês, português, espanhol ou francês  |
+| Par de idiomas       | `user_language_pairs`       | Idioma de estudo + idioma base de uma conta, com o nível; um par ativo       |
 | Estado do episódio   | `episode.status`            | `NONE`, `UPLOADED`, `PROCESSING`, `READY`, `FAILED`, `NEEDS_REVIEW`          |
 
 ## Termos a evitar

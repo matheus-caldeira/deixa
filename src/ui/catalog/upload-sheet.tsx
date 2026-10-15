@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/catalog";
 import type { ImportView, SearchResultView, UploadEpisodeView, UploadTargetView } from "@/app/actions/views";
 import { posterColorsFor } from "@/modules/catalog";
+import { LANGUAGE_TAGS, type LanguagePair } from "@/shared/study-languages";
 import { CheckIcon, SearchIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { Poster } from "./poster";
@@ -64,9 +65,16 @@ function Slot(props: {
   );
 }
 
-export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; onClose: () => void }) {
+export function UploadSheet(props: {
+  mediaId?: string;
+  devShortcuts: boolean;
+  pair: LanguagePair;
+  onClose: () => void;
+}) {
   const t = useTranslations("upload");
   const steps = useTranslations("processing");
+  const languages = useTranslations("languages");
+  const names = { target: languages(props.pair.target), native: languages(props.pair.native) };
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [stage, setStage] = useState<Stage>(props.mediaId ? "files" : "search");
@@ -186,8 +194,8 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
     form.set("mediaId", target.mediaId);
     form.set("episodeId", episodeId);
     form.set("useSample", String(useSample));
-    if (english) form.set("english", english);
-    if (portuguese) form.set("portuguese", portuguese);
+    if (english) form.set("target", english);
+    if (portuguese) form.set("native", portuguese);
     setError("");
     startTransition(async () => {
       const result = await uploadSubtitlesAction(form);
@@ -300,7 +308,8 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
             </div>
           </div>
           <p className="small muted">
-            {t("step2")} {target.type === "movie" ? t("step2Movie") : t("step2Series")} {t("step2Native")}
+            {t("step2")} {target.type === "movie" ? t("step2Movie") : t("step2Series")}{" "}
+            {t("step2Native", names)}
           </p>
 
           {target.type === "series" ? (
@@ -342,21 +351,21 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
           {manual ? (
             <>
               <Slot
-                tag="EN"
-                title={t("targetSubtitle")}
+                tag={LANGUAGE_TAGS[props.pair.target]}
+                title={t("targetSubtitle", names)}
                 hint={t("targetHint")}
                 file={english}
                 accept=".srt"
-                inputLabel={t("targetFile")}
+                inputLabel={t("targetFile", names)}
                 onPick={(file) => pickFile(setEnglish, file)}
               />
               <Slot
-                tag="PT"
-                title={t("nativeSubtitle")}
+                tag={LANGUAGE_TAGS[props.pair.native]}
+                title={t("nativeSubtitle", names)}
                 hint={t("nativeHint")}
                 file={portuguese}
                 accept=".srt"
-                inputLabel={t("nativeFile")}
+                inputLabel={t("nativeFile", names)}
                 onPick={(file) => pickFile(setPortuguese, file)}
               />
               <Slot
@@ -376,7 +385,10 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                   onClick={() => submit(true)}
                   disabled={!hasEpisode || pending}
                 >
-                  {t("useSample")}
+                  {t("useSample", {
+                    target: LANGUAGE_TAGS[props.pair.target],
+                    native: LANGUAGE_TAGS[props.pair.native],
+                  })}
                 </button>
               ) : null}
               {error ? <p className="formerr">{error}</p> : null}
@@ -396,6 +408,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
               key={episodeId}
               mediaId={target.mediaId}
               episodeId={episodeId}
+              pair={props.pair}
               onManual={() => {
                 setError("");
                 setManual(true);
@@ -434,7 +447,7 @@ export function UploadSheet(props: { mediaId?: string; devShortcuts: boolean; on
                 <div className="hint">{t("duplicate")}</div>
               ) : (
                 <div className="hint" style={{ background: "var(--good-soft)" }}>
-                  {outcome.hasPortuguese ? t("publishedBoth") : t("published")}
+                  {outcome.hasNative ? t("publishedBoth", names) : t("published")}
                 </div>
               )}
               <button

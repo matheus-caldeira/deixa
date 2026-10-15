@@ -1,3 +1,4 @@
+import type { LanguagePair } from "@/shared/study-languages";
 import type { Highlight, HighlightSpan, HighlightStat, ShareScope } from "../domain/highlights";
 
 export interface HighlightRepository {
@@ -32,5 +33,5 @@ export type ReadableLine = {
   translationSource: "subtitle_pt" | "llm" | null;
 };
 
-export type ReadableScript = { episodeId: string; hasPortuguese: boolean; lines: ReadableLine[] };
-export type LoadScript = (episodeId: string) => Promise<ReadableScript | null>;
+export type ReadableScript = { episodeId: string; hasNative: boolean; lines: ReadableLine[] };
+export type LoadScript = (episodeId: string, pair: LanguagePair) => Promise<ReadableScript | null>;

@@ -51,7 +51,7 @@ describe("mapeamento da busca do OpenSubtitles", () => {
           ratings: null,
           ai_translated: true,
         }),
-        attributes({ language: "es", files: [{ file_id: 333, file_name: "x.srt" }] }),
+        attributes({ language: "de", files: [{ file_id: 333, file_name: "x.srt" }] }),
         attributes({
           files: [
             { file_id: 444, file_name: "cd1.srt" },
@@ -95,7 +95,10 @@ describe("mapeamento da busca do OpenSubtitles", () => {
 describe("cliente do OpenSubtitles", () => {
   it("busca por episódio com os parâmetros esperados e a chave só no cabeçalho", async () => {
     const { calls, fetcher } = scripted([json(200, { data: [attributes({})] })]);
-    const found = await new OpenSubtitlesProvider({ apiKey: SECRET }, fetcher, noWait).search(episode);
+    const found = await new OpenSubtitlesProvider({ apiKey: SECRET }, fetcher, noWait).search(episode, [
+      "en",
+      "pt-BR",
+    ]);
     expect(found).toHaveLength(1);
     const url = new URL(calls[0]?.url ?? "");
     expect(url.pathname).toBe("/api/v1/subtitles");
@@ -112,10 +115,13 @@ describe("cliente do OpenSubtitles", () => {
 
   it("busca filme pelo identificador do TMDB", async () => {
     const { calls, fetcher } = scripted([json(200, { data: [] })]);
-    await new OpenSubtitlesProvider({ apiKey: SECRET }, fetcher, noWait).search({
-      kind: "movie",
-      tmdbId: "37799",
-    });
+    await new OpenSubtitlesProvider({ apiKey: SECRET }, fetcher, noWait).search(
+      {
+        kind: "movie",
+        tmdbId: "37799",
+      },
+      ["en", "pt-BR"],
+    );
     expect(Object.fromEntries(new URL(calls[0]?.url ?? "").searchParams)).toEqual({
       languages: "en,pt-br",
       tmdb_id: "37799",
@@ -129,13 +135,13 @@ describe("cliente do OpenSubtitles", () => {
       json(200, { data: [] }),
     ]);
     await expect(
-      new OpenSubtitlesProvider({ apiKey: SECRET }, retried.fetcher, noWait).search(episode),
+      new OpenSubtitlesProvider({ apiKey: SECRET }, retried.fetcher, noWait).search(episode, ["en", "pt-BR"]),
     ).resolves.toEqual([]);
     expect(retried.calls).toHaveLength(3);
 
     const down = scripted([json(503, {}), json(503, {}), json(503, {})]);
     const failure = await new OpenSubtitlesProvider({ apiKey: SECRET }, down.fetcher, noWait)
-      .search(episode)
+      .search(episode, ["en", "pt-BR"])
       .catch((error: unknown) => error);
     expect(failure).toMatchObject({ code: "SUBTITLE_SOURCE_UNAVAILABLE" });
     expect(String((failure as Error).message)).not.toContain(SECRET);
@@ -144,11 +150,11 @@ describe("cliente do OpenSubtitles", () => {
   it("trata 401 como credencial recusada e resposta fora do formato como indisponível", async () => {
     const denied = scripted([json(401, { message: "invalid" })]);
     await expect(
-      new OpenSubtitlesProvider({ apiKey: SECRET }, denied.fetcher, noWait).search(episode),
+      new OpenSubtitlesProvider({ apiKey: SECRET }, denied.fetcher, noWait).search(episode, ["en", "pt-BR"]),
     ).rejects.toMatchObject({ code: "SUBTITLE_SOURCE_UNAVAILABLE" });
     const odd = scripted([json(200, { data: "x" })]);
     await expect(
-      new OpenSubtitlesProvider({ apiKey: SECRET }, odd.fetcher, noWait).search(episode),
+      new OpenSubtitlesProvider({ apiKey: SECRET }, odd.fetcher, noWait).search(episode, ["en", "pt-BR"]),
     ).rejects.toMatchObject({ code: "SUBTITLE_SOURCE_UNAVAILABLE" });
   });
 

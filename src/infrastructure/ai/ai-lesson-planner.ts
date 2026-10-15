@@ -1,4 +1,5 @@
 import type { CefrLevel } from "@/shared/levels";
+import type { LanguagePair } from "@/shared/study-languages";
 import type { LessonPlanner, PlannerLine } from "@/modules/study";
 import { levelBand } from "@/modules/study";
 import { generateJson, type AiDeps } from "./generate-json";
@@ -54,12 +55,12 @@ export class AiLessonPlanner implements LessonPlanner {
     private readonly deps: AiDeps & PromptLanguages,
   ) {}
 
-  plan(input: { level: CefrLevel; lines: PlannerLine[] }): Promise<unknown> {
+  plan(input: { level: CefrLevel; pair: LanguagePair; lines: PlannerLine[] }): Promise<unknown> {
     return generateJson(
       {
         access: this.access,
         model: this.model,
-        system: instructions(input.level, input.lines.length, this.deps),
+        system: instructions(input.level, input.lines.length, { ...this.deps, pair: input.pair }),
         messages: [{ role: "user", content: JSON.stringify(input.lines) }],
         timeoutMs: TIMEOUT_MS,
         temperature: 0.4,

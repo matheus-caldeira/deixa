@@ -194,6 +194,20 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md`; aqui só o que não depende da vers�
 
 Pendente desta etapa: menus nativos da casca (Tauri) no idioma da conta.
 
+## Etapa 13: estudo em N idiomas (frente B)
+
+| #   | Tarefa                                                                             | Critério de pronto                                                                                  | Estado |
+| --- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
+| 99  | Par por conta: idioma base e de estudo, pares com nível, troca no perfil, cadastro | Migração 0019; contas existentes ganham o par inglês → nativo; cadastro pede os dois idiomas        | [x]    |
+| 100 | Catálogo por idioma: idioma original da obra, legenda e alinhamento por idioma     | Importar ES + PT e depois EN no mesmo episódio lê os três pares; leitura só com a legenda de estudo | [x]    |
+| 101 | Vozes do Kokoro por idioma; sotaque só para inglês                                 | Fala usa a voz do idioma da legenda; item e tutor usam a do idioma de estudo                        | [x]    |
+| 102 | Prompts e nível por par                                                            | Explicações, tutor, trilha e sugestões recebem o par; o QECR vale para os quatro idiomas            | [x]    |
+| 103 | Cards, trilhas e sugestões filtrados pelo par ativo                                | Trocar o par troca a fila inteira; e2e `languages.spec.ts` passa                                    | [x]    |
+| 104 | OpenSubtitles e pacotes carregam o par                                             | Busca nos idiomas do par; pacote guarda o idioma de legenda, card e marcação                        | [x]    |
+
+Pendente desta etapa: validar com uma legenda real em espanhol e francês no OpenSubtitles e ouvir as vozes
+`ef_dora`, `ff_siwis` e `pf_dora` no Kokoro (lista em `docs/TESTES-MANUAIS.md`).
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
@@ -201,7 +215,8 @@ Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
 1. Confirmar a 0.0.5 no Windows: janela de console oculta e Postgres embutido instalando (lista em
    `docs/TESTES-MANUAIS.md`).
 2. ~~Interface em N idiomas (frente A)~~ Pronta na etapa 12.
-3. Estudo de N idiomas (frente B): par base → estudo por conta entre inglês, português, espanhol e francês,
+3. ~~Estudo de N idiomas (frente B)~~ Pronta na etapa 13.
+   Antes: estudo de N idiomas (frente B): par base → estudo por conta entre inglês, português, espanhol e francês,
    com mais de um par por conta e um ativo por vez.
 4. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
 5. Fase 03 restante: worker separado, áudio em lote, roteiro.

@@ -44,7 +44,11 @@ export async function refreshRecommendationsAction(): Promise<ActionResult<null>
   const user = await requireUser();
   return runAction("refreshRecommendations", async () => {
     const container = app();
-    const input = { userId: user.id, level: user.preferences.level };
+    const input = {
+      userId: user.id,
+      level: user.preferences.level,
+      language: user.preferences.targetLanguage,
+    };
     after(() => container.refreshRecommendations(input).catch(() => undefined));
     return null;
   });

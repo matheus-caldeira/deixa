@@ -15,6 +15,7 @@ import {
 import { tokenRuns } from "@/modules/highlights";
 import type { CardDraft } from "@/modules/learning";
 import type { DisplayMode } from "@/shared/levels";
+import { LANGUAGE_TAGS, type LanguagePair } from "@/shared/study-languages";
 import { formatTimecode } from "@/shared/time";
 import { BackIcon, CheckIcon, MarkerIcon, SearchIcon, SoundIcon, SparkIcon, XIcon } from "../icons";
 import { useToast } from "../shell/toast";
@@ -38,7 +39,8 @@ export type ReadView = {
   mediaTitle: string;
   label: string;
   episodeTitle: string;
-  hasPortuguese: boolean;
+  hasNative: boolean;
+  pair: LanguagePair;
   subtitleCredits: string[];
   defaultMode: DisplayMode;
   audioSpeed: number;
@@ -84,6 +86,7 @@ const cardedKeys = (highlights: SavedHighlightView[]) =>
 export function ReadScreen({ view }: { view: ReadView }) {
   const t = useTranslations("read");
   const errorText = useErrorText();
+  const tags = { target: LANGUAGE_TAGS[view.pair.target], native: LANGUAGE_TAGS[view.pair.native] };
   const router = useRouter();
   const toast = useToast();
   const [, startTransition] = useTransition();
@@ -365,7 +368,10 @@ export function ReadScreen({ view }: { view: ReadView }) {
           {allFromSubtitle ? (
             <div className="hint" style={{ background: "var(--good-soft)" }}>
               <span>
-                {t.rich("fromSubtitle", { b: (chunks) => <b style={{ color: "var(--good)" }}>{chunks}</b> })}
+                {t.rich("fromSubtitle", {
+                  ...tags,
+                  b: (chunks) => <b style={{ color: "var(--good)" }}>{chunks}</b>,
+                })}
               </span>
             </div>
           ) : null}
@@ -393,7 +399,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}
                   >
                     <span className={`srcb ${draft.meaningSource === "subtitle_pt" ? "pt" : "ai"}`}>
-                      {draft.meaningSource === "subtitle_pt" ? t("fromNativeSubtitle") : t("ai")}
+                      {draft.meaningSource === "subtitle_pt" ? t("fromNativeSubtitle", tags) : t("ai")}
                     </span>
                     <span>{draft.meaning}</span>
                   </div>
@@ -421,7 +427,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                     {draft.lineTranslation ? (
                       <span className="muted">
                         <span className={`srcb ${fromSubtitle ? "pt" : "ai"}`} style={{ marginRight: 6 }}>
-                          {fromSubtitle ? t("nativeTag") : t("ai")}
+                          {fromSubtitle ? tags.native : t("ai")}
                         </span>
                         {draft.lineTranslation}
                       </span>
@@ -463,7 +469,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
               className="small muted"
               style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
             >
-              {view.episodeTitle} · {view.hasPortuguese ? t("subtitleAligned") : t("subtitleAiOnly")}
+              {view.episodeTitle} · {view.hasNative ? t("subtitleAligned", tags) : t("subtitleAiOnly", tags)}
             </span>
             {view.subtitleCredits.map((credit) => (
               <span
@@ -486,7 +492,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                 setRevealed(new Set());
               }}
             >
-              {t(`modes.${option}`)}
+              {t(`modes.${option}`, tags)}
             </button>
           ))}
         </div>
@@ -595,7 +601,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
                 {mode === "en" ? null : showTranslation && translation ? (
                   <div className="pt">
                     <span className="src">
-                      {translation.source === "subtitle_pt" ? t("nativeTag") : t("ai")}
+                      {translation.source === "subtitle_pt" ? tags.native : t("ai")}
                     </span>
                     {translation.text}
                   </div>

@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { PackagedCard } from "../domain/package";
 
 export type PackageFile = { path: string; bytes: Uint8Array };
@@ -43,7 +44,7 @@ export type ExportableEpisode = {
 };
 
 export type ExportableSubtitle = {
-  language: "en" | "pt-BR";
+  language: StudyLanguage;
   sha256: string;
   storagePath: string;
   originalFilename: string;
@@ -58,7 +59,7 @@ export type ExportableAudio = {
   storagePath: string;
 };
 
-export type CueRef = { id: string; sequence: number; text: string };
+export type CueRef = { id: string; sequence: number; text: string; language: StudyLanguage };
 
 export type LocalWork = { mediaId: string; title: string; readyEpisodes: Set<string> };
 
@@ -68,7 +69,7 @@ export interface PackageCatalogReader {
   listSeasons(mediaId: string): Promise<ExportableSeason[]>;
   listEpisodes(mediaId: string): Promise<ExportableEpisode[]>;
   listSubtitles(episodeId: string): Promise<ExportableSubtitle[]>;
-  listEnglishCues(episodeId: string): Promise<CueRef[]>;
+  listCues(episodeId: string): Promise<CueRef[]>;
   listCatalogCards(episodeId: string): Promise<(PackagedCard & { cueId: string })[]>;
   listAudioForTexts(texts: string[]): Promise<ExportableAudio[]>;
 }
@@ -105,8 +106,8 @@ export interface PackageCatalogWriter {
   importSubtitles(input: {
     userId: string;
     episodeId: string;
-    english: { filename: string; bytes: Uint8Array };
-    portuguese: { filename: string; bytes: Uint8Array } | null;
+    target: { language: StudyLanguage; upload: { filename: string; bytes: Uint8Array } };
+    native: { language: StudyLanguage; upload: { filename: string; bytes: Uint8Array } } | null;
   }): Promise<"PROCESSED" | "DUPLICATE">;
   createCatalogCard(input: {
     id: string;

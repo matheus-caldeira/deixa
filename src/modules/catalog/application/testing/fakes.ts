@@ -42,6 +42,7 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
       id,
       type: input.type,
       title: input.title,
+      originalLanguage: input.originalLanguage,
       originalTitle: input.originalTitle,
       overview: input.overview,
       year: input.year,
@@ -102,7 +103,7 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
         cueCount: existing?.cueCount ?? 0,
         alignmentPairs: existing?.alignmentPairs ?? null,
         alignmentRate: existing?.alignmentRate ?? null,
-        hasPortuguese: existing?.hasPortuguese ?? false,
+        subtitleLanguages: existing?.subtitleLanguages ?? [],
       });
     }
     const season = this.seasons.get(seasonId);

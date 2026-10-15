@@ -2,11 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { SequentialIds } from "@/shared/ids";
 import { FakeLlmProvider } from "../infrastructure/fake-llm-provider";
-import {
-  makeConfirmCardBatch,
-  makeGetSpeakableItemText,
-  makeListCatalogSuggestions,
-} from "./confirm-card-batch";
+import { makeConfirmCardBatch, makeGetSpeakableItem, makeListCatalogSuggestions } from "./confirm-card-batch";
 import {
   CARD_BATCH_TIMEOUT_MS,
   makeGetCardBatch,
@@ -84,11 +80,13 @@ function setup(llm: LlmProvider = new FakeLlmProvider()) {
     generate: makeGenerateCardDrafts(deps),
     confirm: makeConfirmCardBatch(deps),
     suggestions: makeListCatalogSuggestions(deps),
-    speakable: makeGetSpeakableItemText(deps),
+    speakable: makeGetSpeakableItem(deps),
   };
 }
 
 const requestsOf = (llm: LlmProvider) => (llm as FakeLlmProvider).requests;
+
+const PAIR = { target: "en", native: "pt-BR" } as const;
 
 describe("geração de cards a partir das marcações", () => {
   let app: ReturnType<typeof setup>;
@@ -99,7 +97,12 @@ describe("geração de cards a partir das marcações", () => {
 
   it("explica todos os termos em uma única chamada em lote e não pede à IA a tradução da fala alinhada", async () => {
     app.spy.setPending("matheus", [PHRASE, WORD, LINE_WITH_PT]);
-    const result = await app.generate({ userId: "matheus", episodeId: "ep-1", learnerLevel: "B1" });
+    const result = await app.generate({
+      userId: "matheus",
+      episodeId: "ep-1",
+      learnerLevel: "B1",
+      pair: PAIR,
+    });
 
     expect(result.llmCalls).toBe(1);
     expect(requestsOf(app.llm)).toHaveLength(1);
@@ -132,7 +135,7 @@ describe("geração de cards a partir das marcações", () => {
 
   it("não chama a IA quando só há falas inteiras com par na legenda PT", async () => {
     app.spy.setPending("ana", [LINE_WITH_PT]);
-    const result = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const result = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     expect(result.llmCalls).toBe(0);
     expect(requestsOf(app.llm)).toHaveLength(0);
     expect(result.drafts[0]).toMatchObject({ meaningSource: "subtitle_pt", difficulty: "A1" });
@@ -140,7 +143,7 @@ describe("geração de cards a partir das marcações", () => {
 
   it("cai para a IA, com etiqueta, quando a fala não tem par na legenda PT", async () => {
     app.spy.setPending("ana", [LINE_WITHOUT_PT]);
-    const result = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const result = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     expect(result.drafts[0]).toMatchObject({
       term: "Promise?",
       meaning: "Promete?",
@@ -163,7 +166,7 @@ describe("geração de cards a partir das marcações", () => {
     const strict = setup(broken);
     strict.spy.setPending("ana", [PHRASE]);
     await expect(
-      strict.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" }),
+      strict.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR }),
     ).rejects.toMatchObject({
       code: "LLM_INVALID_OUTPUT",
     });
@@ -177,7 +180,7 @@ describe("geração de cards a partir das marcações", () => {
     const incomplete = setup(partial);
     incomplete.spy.setPending("ana", [PHRASE]);
     await expect(
-      incomplete.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" }),
+      incomplete.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR }),
     ).rejects.toMatchObject({
       code: "LLM_INVALID_OUTPUT",
     });
@@ -192,7 +195,7 @@ describe("geração de cards a partir das marcações", () => {
     const down = setup(offline);
     down.spy.setPending("ana", [PHRASE]);
     await expect(
-      down.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" }),
+      down.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR }),
     ).rejects.toMatchObject({
       code: "LLM_FAILED",
     });
@@ -207,7 +210,7 @@ describe("geração de cards a partir das marcações", () => {
       };
       const scenario = setup(hostile);
       scenario.spy.setPending("ana", [PHRASE]);
-      return scenario.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+      return scenario.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     };
     await expect(attempt("pagou a conta. Veja mais em https://exemplo.test")).rejects.toMatchObject({
       code: "LLM_INVALID_OUTPUT",
@@ -224,12 +227,12 @@ describe("geração de cards a partir das marcações", () => {
 
   it("avisa quando não há marcações ou o episódio não está pronto", async () => {
     await expect(
-      app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" }),
+      app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR }),
     ).rejects.toMatchObject({
       code: "NO_HIGHLIGHTS",
     });
     await expect(
-      app.generate({ userId: "ana", episodeId: "outro", learnerLevel: "A1" }),
+      app.generate({ userId: "ana", episodeId: "outro", learnerLevel: "A1", pair: PAIR }),
     ).rejects.toMatchObject({
       code: "EPISODE_NOT_READY",
     });
@@ -245,27 +248,34 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
 
   it("cards só para mim ficam privados e não aparecem nem são reutilizados para outro usuário", async () => {
     app.spy.setPending("ana", [PHRASE]);
-    const anaBatch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const anaBatch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     const saved = await app.confirm({
       userId: "ana",
+      pair: PAIR,
       batchId: anaBatch.batchId,
       keepKeys: ["h-phrase"],
       scope: "private",
     });
     expect(saved).toEqual({ cardsCreated: 1, cardsKept: 1, xpAwarded: 10, scope: "private" });
     expect(app.learning.items).toMatchObject([{ visibility: "private", ownerUserId: "ana" }]);
-    expect(await app.suggestions("ep-1")).toEqual([]);
+    expect(await app.suggestions("ep-1", "en")).toEqual([]);
 
     const anaItemId = app.learning.items[0]?.id ?? "";
-    expect(await app.speakable("ana", anaItemId)).toBe("picked up the tab");
+    expect(await app.speakable("ana", anaItemId)).toEqual({ text: "picked up the tab", language: "en" });
     await expect(app.speakable("lucas", anaItemId)).rejects.toMatchObject({ code: "ITEM_NOT_FOUND" });
 
     app.spy.setPending("lucas", [{ ...PHRASE, id: "h-lucas" }]);
-    const lucasBatch = await app.generate({ userId: "lucas", episodeId: "ep-1", learnerLevel: "C1" });
+    const lucasBatch = await app.generate({
+      userId: "lucas",
+      episodeId: "ep-1",
+      learnerLevel: "C1",
+      pair: PAIR,
+    });
     expect(lucasBatch.drafts[0]?.reusedItemId).toBeNull();
     expect(lucasBatch.llmCalls).toBe(1);
     await app.confirm({
       userId: "lucas",
+      pair: PAIR,
       batchId: lucasBatch.batchId,
       keepKeys: ["h-lucas"],
       scope: "private",
@@ -276,16 +286,24 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
 
   it("cards para o catálogo viram sugestão anônima e são reaproveitados sem nova chamada de IA", async () => {
     app.spy.setPending("matheus", [PHRASE]);
-    const first = await app.generate({ userId: "matheus", episodeId: "ep-1", learnerLevel: "B1" });
+    const first = await app.generate({
+      userId: "matheus",
+      episodeId: "ep-1",
+      learnerLevel: "B1",
+      pair: PAIR,
+    });
     await app.confirm({
       userId: "matheus",
+      pair: PAIR,
       batchId: first.batchId,
       keepKeys: ["h-phrase"],
       scope: "catalog",
     });
     expect(app.learning.items).toMatchObject([{ visibility: "global", ownerUserId: null }]);
-    expect(await app.suggestions("ep-1")).toMatchObject([{ term: "picked up the tab", cueId: "cue-1" }]);
-    expect(Object.keys((await app.suggestions("ep-1"))[0] ?? {}).sort()).toEqual([
+    expect(await app.suggestions("ep-1", "en")).toMatchObject([
+      { term: "picked up the tab", cueId: "cue-1" },
+    ]);
+    expect(Object.keys((await app.suggestions("ep-1", "en"))[0] ?? {}).sort()).toEqual([
       "cueId",
       "endToken",
       "itemId",
@@ -294,23 +312,36 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
     ]);
 
     app.spy.setPending("ana", [{ ...PHRASE, id: "h-ana" }]);
-    const second = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const second = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     expect(second.llmCalls).toBe(0);
     expect(second.drafts[0]?.reusedItemId).toBe(app.learning.items[0]?.id);
-    await app.confirm({ userId: "ana", batchId: second.batchId, keepKeys: ["h-ana"], scope: "private" });
+    await app.confirm({
+      userId: "ana",
+      pair: PAIR,
+      batchId: second.batchId,
+      keepKeys: ["h-ana"],
+      scope: "private",
+    });
     expect(app.learning.items).toHaveLength(1);
     expect(app.learning.items[0]).toMatchObject({ visibility: "global", ownerUserId: null });
   });
 
   it("promove o card privado do próprio usuário quando ele decide compartilhar", async () => {
     app.spy.setPending("ana", [PHRASE]);
-    const first = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
-    await app.confirm({ userId: "ana", batchId: first.batchId, keepKeys: ["h-phrase"], scope: "private" });
+    const first = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
+    await app.confirm({
+      userId: "ana",
+      pair: PAIR,
+      batchId: first.batchId,
+      keepKeys: ["h-phrase"],
+      scope: "private",
+    });
 
     app.spy.setPending("ana", [{ ...PHRASE, id: "h-again" }]);
-    const second = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const second = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     const saved = await app.confirm({
       userId: "ana",
+      pair: PAIR,
       batchId: second.batchId,
       keepKeys: ["h-again"],
       scope: "catalog",
@@ -322,9 +353,10 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
 
   it("salva só os cards mantidos pelo usuário e marca só as marcações deles", async () => {
     app.spy.setPending("ana", [PHRASE, WORD]);
-    const batch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const batch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     const saved = await app.confirm({
       userId: "ana",
+      pair: PAIR,
       batchId: batch.batchId,
       keepKeys: ["h-word"],
       scope: "private",
@@ -337,22 +369,40 @@ describe("salvar cards: só para mim ou para o catálogo", () => {
 
   it("não deixa confirmar o lote de outro usuário nem o mesmo lote duas vezes", async () => {
     app.spy.setPending("ana", [PHRASE]);
-    const batch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1" });
+    const batch = await app.generate({ userId: "ana", episodeId: "ep-1", learnerLevel: "A1", pair: PAIR });
     await expect(
-      app.confirm({ userId: "lucas", batchId: batch.batchId, keepKeys: ["h-phrase"], scope: "catalog" }),
+      app.confirm({
+        userId: "lucas",
+        pair: PAIR,
+        batchId: batch.batchId,
+        keepKeys: ["h-phrase"],
+        scope: "catalog",
+      }),
     ).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
     expect(app.learning.items).toHaveLength(0);
 
-    await app.confirm({ userId: "ana", batchId: batch.batchId, keepKeys: ["h-phrase"], scope: "private" });
+    await app.confirm({
+      userId: "ana",
+      pair: PAIR,
+      batchId: batch.batchId,
+      keepKeys: ["h-phrase"],
+      scope: "private",
+    });
     await expect(
-      app.confirm({ userId: "ana", batchId: batch.batchId, keepKeys: ["h-phrase"], scope: "private" }),
+      app.confirm({
+        userId: "ana",
+        pair: PAIR,
+        batchId: batch.batchId,
+        keepKeys: ["h-phrase"],
+        scope: "private",
+      }),
     ).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
     expect(app.learning.items).toHaveLength(1);
     expect(app.spy.xp).toEqual([
       { userId: "ana", source: "highlight_cards", sourceId: batch.batchId, amount: 10 },
     ]);
     await expect(
-      app.confirm({ userId: "ana", batchId: "inexistente", keepKeys: [], scope: "private" }),
+      app.confirm({ userId: "ana", pair: PAIR, batchId: "inexistente", keepKeys: [], scope: "private" }),
     ).rejects.toMatchObject({ code: "BATCH_NOT_FOUND" });
   });
 });
@@ -383,6 +433,7 @@ describe("geração em segundo plano", () => {
     userId: "ana",
     episodeId: "ep-1",
     learnerLevel: "A1" as const,
+    pair: PAIR,
     episodeLabel: "Friends · T1 · E1",
   };
 
@@ -407,7 +458,7 @@ describe("geração em segundo plano", () => {
         href: `/read/ep-1?batch=${batchId}`,
       }),
     ]);
-    await app.confirm({ userId: "ana", batchId, keepKeys: ["h-phrase"], scope: "private" });
+    await app.confirm({ userId: "ana", pair: PAIR, batchId, keepKeys: ["h-phrase"], scope: "private" });
     expect(await app.state("ana", batchId)).toMatchObject({ status: "SAVED" });
   });
 
@@ -445,7 +496,7 @@ describe("tradução sob demanda de uma fala", () => {
     const saved = new Map<string, string>();
     const translateCue = makeTranslateCue({
       resolveLlm: async () => llm,
-      saveCueTranslation: async (cueId, text) => {
+      saveCueTranslation: async (cueId, _pair, text) => {
         saved.set(cueId, text);
       },
       findCueLine: async (cueId) => {
@@ -461,22 +512,22 @@ describe("tradução sob demanda de uma fala", () => {
       },
     });
 
-    expect(await translateCue({ userId: "ana", cueId: "cue-1" })).toEqual({
+    expect(await translateCue({ userId: "ana", cueId: "cue-1", pair: PAIR })).toEqual({
       text: "Não. Eu paguei a conta, feito um idiota.",
       source: "subtitle_pt",
     });
     expect(llm.translationCalls).toBe(0);
 
-    expect(await translateCue({ userId: "ana", cueId: "cue-3" })).toEqual({
+    expect(await translateCue({ userId: "ana", cueId: "cue-3", pair: PAIR })).toEqual({
       text: "Promete?",
       source: "llm",
     });
-    expect(await translateCue({ userId: "lucas", cueId: "cue-3" })).toEqual({
+    expect(await translateCue({ userId: "lucas", cueId: "cue-3", pair: PAIR })).toEqual({
       text: "Promete?",
       source: "llm",
     });
     expect(llm.translationCalls).toBe(1);
-    await expect(translateCue({ userId: "ana", cueId: "nao-existe" })).rejects.toMatchObject({
+    await expect(translateCue({ userId: "ana", cueId: "nao-existe", pair: PAIR })).rejects.toMatchObject({
       code: "CUE_NOT_FOUND",
     });
   });

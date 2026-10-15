@@ -1,6 +1,7 @@
 import { AppError } from "@/shared/errors";
 import type { ProcessingStep } from "@/modules/subtitles";
 import type { Clock } from "@/shared/clock";
+import type { LanguagePair } from "@/shared/study-languages";
 import { rankCandidates, type Ranking, type SourceLanguage, type SubtitleCandidate } from "../domain/ranking";
 
 export type SourceProviderName = "opensubtitles" | "fake";
@@ -9,17 +10,15 @@ export type SourceQuery =
   | { kind: "movie"; tmdbId: string };
 export type SourceQuota = { remaining: number; resetAt: Date | null };
 
-const QUOTA_MESSAGE = "A cota de downloads de hoje acabou. Envie o arquivo manualmente ou tente depois.";
-
 export class SourceQuotaExceeded extends AppError {
   constructor(readonly quota: SourceQuota | null) {
-    super("SUBTITLE_SOURCE_QUOTA", QUOTA_MESSAGE);
+    super("SUBTITLE_SOURCE_QUOTA");
   }
 }
 
 export interface SubtitleSourceProvider {
   readonly name: SourceProviderName;
-  search(query: SourceQuery): Promise<SubtitleCandidate[]>;
+  search(query: SourceQuery, languages: readonly SourceLanguage[]): Promise<SubtitleCandidate[]>;
   download(fileId: string): Promise<{ bytes: Uint8Array; fileName: string; quota: SourceQuota | null }>;
 }
 
@@ -68,8 +67,8 @@ type Deps = {
   importSubtitles: (input: {
     userId: string;
     episodeId: string;
-    english: ImportedFile;
-    portuguese?: ImportedFile;
+    target: { language: SourceLanguage; upload: ImportedFile };
+    native?: { language: SourceLanguage; upload: ImportedFile };
   }) => Promise<ImportOutcome>;
   userDailyDownloads: number;
   clock: Clock;
@@ -78,7 +77,7 @@ type Deps = {
 export type ImportOutcome = {
   outcome: "PROCESSED" | "DUPLICATE";
   steps: ProcessingStep[];
-  hasPortuguese: boolean;
+  hasNative: boolean;
 };
 
 export const SEARCH_CACHE_HOURS = 24;
@@ -106,14 +105,15 @@ function currentQuota(stored: (SourceQuota & { updatedAt: Date }) | null, now: D
 export function makeSearchSubtitles(
   deps: Pick<Deps, "provider" | "quotaKey" | "sources" | "findEpisodeSource" | "clock">,
 ) {
-  type SearchInput = { episodeId: string; refresh?: boolean };
+  type SearchInput = { episodeId: string; pair: LanguagePair; refresh?: boolean };
   const running = new Map<string, Promise<SubtitleSearch>>();
 
   return function searchSubtitles(input: SearchInput): Promise<SubtitleSearch> {
-    const current = running.get(input.episodeId);
+    const key = `${input.episodeId}:${input.pair.target}:${input.pair.native}`;
+    const current = running.get(key);
     if (current) return current;
-    const started = searchNow(input).finally(() => running.delete(input.episodeId));
-    running.set(input.episodeId, started);
+    const started = searchNow(input).finally(() => running.delete(key));
+    running.set(key, started);
     return started;
   };
 
@@ -129,7 +129,7 @@ export function makeSearchSubtitles(
     if (cached && (recent || (fresh && !input.refresh))) {
       return {
         provider: deps.provider.name,
-        ranking: rankCandidates(cached.candidates),
+        ranking: rankCandidates(cached.candidates, input.pair),
         quota,
         cached: true,
       };
@@ -137,9 +137,14 @@ export function makeSearchSubtitles(
     if (!episode.query) {
       throw new AppError("SUBTITLE_SOURCE_EMPTY", "noExternalId");
     }
-    const candidates = await deps.provider.search(episode.query);
+    const candidates = await deps.provider.search(episode.query, [input.pair.target, input.pair.native]);
     await deps.sources.saveSearch(input.episodeId, deps.provider.name, candidates, now);
-    return { provider: deps.provider.name, ranking: rankCandidates(candidates), quota, cached: false };
+    return {
+      provider: deps.provider.name,
+      ranking: rankCandidates(candidates, input.pair),
+      quota,
+      cached: false,
+    };
   }
 }
 
@@ -148,14 +153,12 @@ export function makeImportFromSource(deps: Deps) {
     userId: string,
     episode: EpisodeSource,
     candidate: SubtitleCandidate,
+    role: "target" | "native",
     downloads: { count: number },
   ): Promise<ImportedFile> {
     const stored = episode.existing.find((file) => file.language === candidate.language);
     if (stored && stored.externalFileId !== candidate.fileId) {
-      throw new AppError(
-        "SUBTITLE_VERSION_CONFLICT",
-        candidate.language === "en" ? "targetVersionConflict" : "nativeVersionConflict",
-      );
+      throw new AppError("SUBTITLE_VERSION_CONFLICT", `${role}VersionConflict`);
     }
     let bytes = stored ? await deps.readExistingFile(episode.episodeId, candidate.language) : null;
     let fileName = candidate.fileName;
@@ -194,7 +197,13 @@ export function makeImportFromSource(deps: Deps) {
     };
   }
 
-  type Input = { userId: string; episodeId: string; englishFileId: string; portugueseFileId: string | null };
+  type Input = {
+    userId: string;
+    episodeId: string;
+    pair: LanguagePair;
+    targetFileId: string;
+    nativeFileId: string | null;
+  };
   type Output = ImportOutcome & { downloadsUsed: number; quota: SourceQuota | null };
   const queues = new Map<string, Promise<unknown>>();
 
@@ -222,13 +231,13 @@ export function makeImportFromSource(deps: Deps) {
         : (cached?.candidates.find(
             (candidate) => candidate.fileId === fileId && candidate.language === language,
           ) ?? null);
-    const english = pick(input.englishFileId, "en");
-    const portuguese = pick(input.portugueseFileId, "pt-BR");
-    if (!english || (input.portugueseFileId !== null && !portuguese)) {
-      throw new AppError("INVALID_INPUT", "Busque as legendas de novo antes de importar.");
+    const target = pick(input.targetFileId, input.pair.target);
+    const native = pick(input.nativeFileId, input.pair.native);
+    if (!target || (input.nativeFileId !== null && !native)) {
+      throw new AppError("INVALID_INPUT", "searchAgainBeforeImport");
     }
 
-    const needed = [english, portuguese].filter(
+    const needed = [target, native].filter(
       (candidate) => candidate && !episode.existing.some((file) => file.language === candidate.language),
     ).length;
     const known = currentQuota(await deps.sources.getQuota(deps.quotaKey), deps.clock.now());
@@ -244,15 +253,13 @@ export function makeImportFromSource(deps: Deps) {
     }
 
     const downloads = { count: 0 };
-    const englishFile = await obtain(input.userId, episode, english, downloads);
-    const portugueseFile = portuguese
-      ? await obtain(input.userId, episode, portuguese, downloads)
-      : undefined;
+    const targetFile = await obtain(input.userId, episode, target, "target", downloads);
+    const nativeFile = native ? await obtain(input.userId, episode, native, "native", downloads) : undefined;
     const outcome = await deps.importSubtitles({
       userId: input.userId,
       episodeId: input.episodeId,
-      english: englishFile,
-      portuguese: portugueseFile,
+      target: { language: input.pair.target, upload: targetFile },
+      native: nativeFile ? { language: input.pair.native, upload: nativeFile } : undefined,
     });
     const quota = currentQuota(await deps.sources.getQuota(deps.quotaKey), deps.clock.now());
     return { ...outcome, downloadsUsed: downloads.count, quota };
