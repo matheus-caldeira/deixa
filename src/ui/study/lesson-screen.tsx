@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { completePersonalLessonAction } from "@/app/actions/personal-series";
-import { completeLessonAction } from "@/app/actions/study";
+import { completeLessonAction, completeRecapAction } from "@/app/actions/study";
 import {
   correctAnswerText,
   gradeAnswer,
@@ -29,7 +29,7 @@ export type LessonScreenView = {
   replay: boolean;
   audioSpeed: number;
   exercises: Exercise[];
-  source?: "episode" | "personal";
+  source?: "episode" | "personal" | "recap" | "recap-personal";
   backHref: string;
 };
 
@@ -79,15 +79,17 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   const [built, setBuilt] = useState<number[]>([]);
   const [text, setText] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [result, setResult] = useState<LessonResult | null>(null);
+  const [result, setResult] = useState<(LessonResult & { recapNextInDays?: number | null }) | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [confirmingExit, setConfirmingExit] = useState(false);
   const startedAt = useRef(0);
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
   const exercise = view.exercises[position];
   const personal = view.source === "personal";
+  const recap = view.source === "recap" || view.source === "recap-personal";
+  const itemSpeech = personal || view.source === "recap-personal";
   const backHref = view.backHref;
-  const speechKind: SpeechKind = personal ? "item" : "cue";
+  const speechKind: SpeechKind = itemSpeech ? "item" : "cue";
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -163,11 +165,17 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             <p className="muted">
               {!result.passed
                 ? t("needAccuracy", { percent: result.requiredAccuracy })
-                : result.replay
-                  ? result.xp > 0
-                    ? t("replayHalfXp")
-                    : t("replayNoXp")
-                  : t("episodeAt", { percent: result.progressPercent })}
+                : recap
+                  ? result.replay
+                    ? t("recapPractice")
+                    : result.recapNextInDays
+                      ? t("recapNext", { days: result.recapNextInDays })
+                      : t("recapFinished")
+                  : result.replay
+                    ? result.xp > 0
+                      ? t("replayHalfXp")
+                      : t("replayNoXp")
+                    : t("episodeAt", { percent: result.progressPercent })}
             </p>
           </div>
           <div className="donestats">
@@ -221,7 +229,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               router.refresh();
             }}
           >
-            {result.passed ? t("continue") : t("backToTrail")}
+            {result.passed ? t("continue") : recap ? t("backToReview") : t("backToTrail")}
           </button>
         </div>
       </div>
@@ -267,20 +275,22 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
     const seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     setElapsed(seconds);
     startTransition(async () => {
-      const outcome = personal
-        ? await completePersonalLessonAction({
-            episodeId: view.episodeId,
-            nodeIndex: view.nodeIndex,
-            seed: view.seed,
-            answers,
-          })
-        : await completeLessonAction({
-            episodeId: view.episodeId,
-            nodeIndex: view.nodeIndex,
-            seed: view.seed,
-            answers,
-            seconds,
-          });
+      const outcome = recap
+        ? await completeRecapAction({ recapId: view.episodeId, seed: view.seed, answers })
+        : personal
+          ? await completePersonalLessonAction({
+              episodeId: view.episodeId,
+              nodeIndex: view.nodeIndex,
+              seed: view.seed,
+              answers,
+            })
+          : await completeLessonAction({
+              episodeId: view.episodeId,
+              nodeIndex: view.nodeIndex,
+              seed: view.seed,
+              answers,
+              seconds,
+            });
       if (outcome.ok) setResult(outcome.data);
       else toast(outcome.message);
     });
@@ -321,7 +331,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         </span>
         <div className="cuebox">
           <div className="tcode">
-            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
+            <span>{itemSpeech ? null : formatTimecode(exercise.startMs)}</span>
             <span>{view.title}</span>
           </div>
           <div className="line">{exercise.english}</div>
@@ -338,7 +348,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         <div className="cuebox">
           <div className="tcode">
-            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
+            <span>{itemSpeech ? null : formatTimecode(exercise.startMs)}</span>
             <button
               onClick={() => speech.play(speechKind, exercise.cueId)}
               style={{ color: "#8A90A8", display: "flex", gap: 4, alignItems: "center" }}
@@ -361,7 +371,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         <div className="cuebox">
           <div className="tcode">
             <span>{t("hiddenSubtitle")}</span>
-            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
+            <span>{itemSpeech ? null : formatTimecode(exercise.startMs)}</span>
           </div>
           <SpeakButtons cueId={exercise.cueId} kind={speechKind} speech={speech} big />
         </div>

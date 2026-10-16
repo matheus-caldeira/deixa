@@ -81,6 +81,7 @@ import {
   makeRefreshSeriesDescription,
   makeRenameSeries,
   makeSetSeriesLevel,
+  makeBuildPersonalRecap,
   makeStartPersonalLesson,
   type DescribeSeriesInput,
 } from "@/modules/personal-series";
@@ -141,10 +142,18 @@ import {
   makeGeneratePlan,
   makeGetTrail,
   makeGetWorkTrail,
+  makeCompleteRecap,
+  makeCountDueRecaps,
+  makeListRecaps,
+  makeStartRecap,
+  pickRecapExercises,
+  type RecapSource,
   makeStartLesson,
   type LessonPlanner,
   type TrailLine,
 } from "@/modules/study";
+import type { CefrLevel } from "@/shared/levels";
+import { DrizzleRecapRepository } from "@/modules/study/infrastructure/drizzle-recap-repository";
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import {
   makeImportFromSource,
@@ -248,6 +257,7 @@ const UNLIMITED_DOWNLOADS = Number.MAX_SAFE_INTEGER;
 const MISTAKE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const MISTAKES_FOR_TUTOR = 6;
 const CLOSED_SESSIONS_FOR_HINTS = 50;
+const FULL_PERCENT = 100;
 
 const fingerprint = (secret: string): string =>
   createHash("sha256").update(secret).digest("hex").slice(0, FINGERPRINT_CHARS);
@@ -747,6 +757,83 @@ export function buildContainer(options: ContainerOptions) {
     },
   };
 
+  const recapRepository = new DrizzleRecapRepository(db);
+  const getPersonalSeriesView = makeGetPersonalSeries(seriesDeps);
+  const getPersonalEpisodeTrail = makeGetEpisodeTrail(seriesDeps);
+  const buildPersonalRecap = makeBuildPersonalRecap({ series: personalSeriesRepository });
+  const recapDeps = {
+    recaps: recapRepository,
+    awardXp,
+    clock,
+    ids,
+    completedEpisodes: async (userId: string, pair: LanguagePair) => {
+      const preferences = await identity.get(userId);
+      const [progress, personal] = await Promise.all([
+        catalog.listForUser(userId),
+        getPersonalSeriesView({ userId, pair, userLevel: preferences?.level ?? "A1" }),
+      ]);
+      const finished = progress.filter((entry) => entry.progressPercent >= FULL_PERCENT);
+      const contexts = await Promise.all(
+        finished.map((entry) => catalog.findEpisodeContext(entry.episodeId)),
+      );
+      const catalogDone = finished.flatMap((entry, index) =>
+        contexts[index]?.episode.subtitleLanguages.includes(pair.target)
+          ? [{ source: "catalog" as const, episodeId: entry.episodeId }]
+          : [],
+      );
+      const personalDone = personal.seasons.flatMap((season) =>
+        season.episodes
+          .filter((episode) => episode.cardCount > 0 && episode.progress >= FULL_PERCENT)
+          .map((episode) => ({ source: "personal" as const, episodeId: episode.id })),
+      );
+      return [...catalogDone, ...personalDone];
+    },
+    describe: async (userId: string, pair: LanguagePair, source: RecapSource, episodeId: string) => {
+      if (source === "catalog") {
+        const context = await catalog.findEpisodeContext(episodeId);
+        if (!context) return null;
+        return {
+          workTitle: context.media.title,
+          label: {
+            kind: "catalog" as const,
+            mediaType: context.media.type,
+            season: context.season.seasonNumber,
+            episode: context.episode.episodeNumber,
+          },
+          title: context.episode.title,
+          summary: context.episode.overview,
+          cards: (await recapRepository.cardCueIds(userId, episodeId)).size,
+        };
+      }
+      const trail = await getPersonalEpisodeTrail({ userId, pair, episodeId }).catch(() => null);
+      if (!trail) return null;
+      return {
+        workTitle: trail.seriesName ?? "",
+        label: { kind: "personal" as const, level: trail.season.level, episode: trail.episode.number },
+        title: trail.episode.title,
+        summary: "",
+        cards: trail.episode.cardCount,
+      };
+    },
+    material: async (input: {
+      userId: string;
+      pair: LanguagePair;
+      level: CefrLevel;
+      source: RecapSource;
+      episodeId: string;
+      seed: string;
+    }) => {
+      if (input.source === "personal") return buildPersonalRecap(input);
+      const stored = await study.find(input.episodeId, input.pair, input.level);
+      if (stored?.status !== "READY" || !stored.plan) return [];
+      return pickRecapExercises({
+        exercises: stored.plan.blocks.flatMap((block) => block.exercises),
+        focusCueIds: await recapRepository.cardCueIds(input.userId, input.episodeId),
+        seed: input.seed,
+      });
+    },
+  };
+
   async function findCueInLanguage(cueId: string, language: StudyLanguage) {
     const cue = await subtitles.findCue(cueId);
     return cue && cue.language === language ? cue : null;
@@ -1039,6 +1126,10 @@ export function buildContainer(options: ContainerOptions) {
     savePlan: (input: Parameters<typeof study.saveReady>[0]) => study.saveReady(input),
     getTrail: makeGetTrail(studyDeps),
     getWorkTrail: makeGetWorkTrail(studyDeps),
+    listRecaps: makeListRecaps(recapDeps),
+    countDueRecaps: makeCountDueRecaps(recapDeps),
+    startRecap: makeStartRecap(recapDeps),
+    completeRecap: makeCompleteRecap(recapDeps),
 
     startConversation: makeStartConversation(conversationDeps),
     getConversation: makeGetConversation(conversationDeps),
@@ -1049,8 +1140,8 @@ export function buildContainer(options: ContainerOptions) {
     requestConversationReview: makeRequestConversationReview(conversationDeps),
     confirmConversationCards: makeConfirmConversationCards(conversationDeps),
     requestTermCards: makeRequestTermCards(conversationDeps),
-    getPersonalSeries: makeGetPersonalSeries(seriesDeps),
-    getPersonalEpisodeTrail: makeGetEpisodeTrail(seriesDeps),
+    getPersonalSeries: getPersonalSeriesView,
+    getPersonalEpisodeTrail,
     renamePersonalSeries: makeRenameSeries(seriesDeps),
     setPersonalSeriesLevel: makeSetSeriesLevel(seriesDeps),
     startPersonalLesson: makeStartPersonalLesson({ series: personalSeriesRepository, awardXp, clock, ids }),

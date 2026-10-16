@@ -28,3 +28,15 @@ export {
   type WorkTrailNode,
   type WorkTrailSection,
 } from "./application/work-trail";
+export * from "./domain/recap";
+export {
+  makeCompleteRecap,
+  makeCountDueRecaps,
+  makeListRecaps,
+  makeStartRecap,
+  type RecapCollaborators,
+  type RecapEntry,
+  type RecapInfo,
+  type RecapLabel,
+  type RecapRepository,
+} from "./application/recap-use-cases";

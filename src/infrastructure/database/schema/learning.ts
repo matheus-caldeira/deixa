@@ -302,3 +302,24 @@ export const conversationTurns = pgTable(
   },
   (table) => [index("conversation_turns_session").on(table.sessionId, table.createdAt)],
 );
+
+export const episodeRecaps = pgTable(
+  "episode_recaps",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    episodeId: uuid("episode_id").notNull(),
+    languagePair: text("language_pair").notNull(),
+    step: integer("step").notNull().default(0),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("episode_recaps_unique").on(table.userId, table.source, table.episodeId, table.languagePair),
+    index("episode_recaps_user_due").on(table.userId, table.dueAt),
+  ],
+);

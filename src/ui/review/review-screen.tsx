@@ -35,7 +35,7 @@ export type ReviewView = {
   recurringErrors: { term: string; count: number }[];
 };
 
-export function ReviewScreen({ view }: { view: ReviewView }) {
+export function ReviewScreen({ view, tabs }: { view: ReviewView; tabs?: React.ReactNode }) {
   const t = useTranslations("review");
   const errorText = useErrorText();
   const router = useRouter();
@@ -107,6 +107,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
     return (
       <>
         <h1 style={{ fontSize: 28, paddingTop: 4 }}>{t("title")}</h1>
+        {tabs}
         <div
           className="card col"
           style={{ alignItems: "center", textAlign: "center", gap: 12, padding: "28px 16px" }}
@@ -151,6 +152,7 @@ export function ReviewScreen({ view }: { view: ReviewView }) {
           {index + 1}/{view.cards.length} · {t("inQueue", { count: dueCount })}
         </span>
       </div>
+      {tabs}
       <div className="bar good">
         <i style={{ width: `${(index / view.cards.length) * 100}%` }} />
       </div>

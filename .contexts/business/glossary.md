@@ -31,6 +31,7 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Alcance              | `share_scope`, `visibility` | "Só para mim" (`private`) ou "Para o catálogo" (`catalog`/`global`)                   |
 | Origem da tradução   | `translation_source`        | Etiqueta **PT** (legenda) ou **IA** (LLM)                                             |
 | Revisão              | `review`                    | Sessão de cartões vencidos, com nota De novo, Difícil, Bom ou Fácil                   |
+| Recapitulação        | `episode_recaps`            | Lição de um episódio concluído que volta em 1, 7 e 30 dias, na aba Revisar            |
 | Nível                | `level`                     | Nível do QECR: A1, A2, B1, B2, C1, C2                                                 |
 | Faixa de nível       | `level_min`, `level_max`    | Níveis para os quais a obra é adequada                                                |
 | Adequação            | `fit`                       | "No seu nível", "Desafiador" ou "Tranquilo"                                           |

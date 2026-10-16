@@ -19,4 +19,8 @@ export {
   type SeriesDeps,
   type SeriesView,
 } from "./application/series-use-cases";
-export { makeCompletePersonalLesson, makeStartPersonalLesson } from "./application/lesson-use-cases";
+export {
+  makeBuildPersonalRecap,
+  makeCompletePersonalLesson,
+  makeStartPersonalLesson,
+} from "./application/lesson-use-cases";

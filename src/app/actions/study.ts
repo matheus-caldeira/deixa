@@ -59,3 +59,28 @@ export async function retryTrailAction(episodeId: unknown): Promise<ActionResult
     return { status: status.status };
   });
 }
+
+export async function completeRecapAction(
+  input: unknown,
+): Promise<ActionResult<LessonResult & { recapNextInDays: number | null }>> {
+  const user = await requireUser();
+  return runAction("completeRecap", async () => {
+    const parsed = z
+      .object({
+        recapId: z.uuid(),
+        seed: z.string().min(1).max(64),
+        answers: z.array(answerSchema).max(MAX_ANSWERS),
+      })
+      .safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const result = await app().completeRecap({
+      userId: user.id,
+      pair: pairOf(user.preferences),
+      level: user.preferences.level,
+      ...parsed.data,
+    });
+    await app().settleMissions(user.id, user.preferences.timezone);
+    revalidatePath("/", "layout");
+    return result;
+  });
+}

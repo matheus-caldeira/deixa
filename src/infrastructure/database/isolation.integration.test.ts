@@ -11,6 +11,7 @@ import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-pro
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
 import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-cipher";
+import { DrizzleRecapRepository } from "@/modules/study/infrastructure/drizzle-recap-repository";
 import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
@@ -342,6 +343,25 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     await choices.saveAssigned(lucas, null, ana, now);
     expect(await choices.getAssigned(lucas)).toBeNull();
     expect((await choices.listAssigned()).map((entry) => entry.userId)).toEqual([ana]);
+    const recaps = new DrizzleRecapRepository(handle.db);
+    const recapRow = {
+      userId: ana,
+      source: "personal" as const,
+      episodeId: crypto.randomUUID(),
+      pair: "en>pt-BR",
+      dueAt: now,
+    };
+    await recaps.ensure([{ ...recapRow, id: crypto.randomUUID() }], now);
+    await recaps.ensure([{ ...recapRow, id: crypto.randomUUID() }], now);
+    const [anaRecap] = await recaps.list(ana, "en>pt-BR");
+    expect(await recaps.list(ana, "en>pt-BR")).toHaveLength(1);
+    expect(await recaps.list(lucas, "en>pt-BR")).toEqual([]);
+    expect(await recaps.find(lucas, "en>pt-BR", anaRecap?.id ?? "")).toBeNull();
+    expect(await recaps.find(ana, "es>pt-BR", anaRecap?.id ?? "")).toBeNull();
+    await recaps.saveStep(lucas, anaRecap?.id ?? "", 2, null, now);
+    expect((await recaps.find(ana, "en>pt-BR", anaRecap?.id ?? ""))?.step).toBe(0);
+    await recaps.saveStep(ana, anaRecap?.id ?? "", 1, now, now);
+    expect((await recaps.find(ana, "en>pt-BR", anaRecap?.id ?? ""))?.step).toBe(1);
     const totals = await usage.totalsByUser(since);
     expect(totals.find((entry) => entry.userId === ana)?.tokens).toBe(240);
     expect(totals.find((entry) => entry.userId === lucas)?.tokens).toBe(120);

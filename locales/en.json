@@ -353,7 +353,8 @@
     "tutorMore": "Other topics",
     "lessonOf": "lesson {number} of {total}",
     "dueCardsCount": "{count, plural, =1 {# card due} other {# cards due}}",
-    "alsoStudying": "Also studying"
+    "alsoStudying": "Also studying",
+    "dueRecaps": "{count, plural, one {# episode to recap} other {# episodes to recap}}"
   },
   "people": {
     "home": "Home",
@@ -490,7 +491,11 @@
     "exitBody": "You will lose your progress in this lesson. Answered exercises are not saved.",
     "exitStay": "Keep going",
     "exitConfirm": "Leave and lose progress",
-    "backToTrail": "Back to the trail"
+    "backToTrail": "Back to the trail",
+    "recapPractice": "Practice before it is due: the step does not change.",
+    "recapNext": "Next recap in {days, plural, one {# day} other {# days}}.",
+    "recapFinished": "Recaps for this episode are done.",
+    "backToReview": "Back to review"
   },
   "chat": {
     "back": "Back",
@@ -1396,5 +1401,25 @@
     "buildingBody": "The AI is splitting the episode into blocks and writing questions for your level. It takes about a minute; we will let you know in the bell when it is done.",
     "personalEmpty": "Cards from your conversations become episodes here",
     "finalChallenge": "Final challenge"
+  },
+  "recap": {
+    "tabs": "Review type",
+    "cardsTab": "Cards · {count}",
+    "episodesTab": "Episodes · {count}",
+    "intro": "Each finished episode comes back in 1, 7 and 30 days. Opening it starts a new lesson with the episode summary, the lines you studied and your cards from it.",
+    "empty": "No finished episodes yet. Finish an episode trail and it comes back here to recap.",
+    "stepOf": "Recap {step} of {total}",
+    "dueNow": "due today",
+    "dueIn": "in {days, plural, one {# day} other {# days}}",
+    "leave": "Leave the recap",
+    "whatHappened": "What happened",
+    "noSummary": "No synopsis for this episode. The exercises come from what you studied in it.",
+    "summaryNote": "Summary from the episode synopsis. Then come {count, plural, one {# exercise} other {# exercises}} with its lines and cards.",
+    "coming": "Coming up",
+    "exercises": "{count, plural, one {# exercise} other {# exercises}}",
+    "cards": "{count, plural, =0 { none of your cards} one {# of your cards} other {# of your cards}}",
+    "notDue": "Not due yet: you can practice, but the step only moves forward when it is due.",
+    "start": "Start",
+    "noExercises": "This episode trail is not ready at your current level. Open the episode in the trail to build it."
   }
 }

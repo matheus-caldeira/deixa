@@ -70,6 +70,30 @@ async function loadNode(deps: LessonDeps, input: LessonInput) {
   return { episode, cards, completed, node, exercises };
 }
 
+export function makeBuildPersonalRecap(deps: Pick<LessonDeps, "series">) {
+  return async function buildPersonalRecap(input: {
+    userId: string;
+    pair: LanguagePair;
+    level: CefrLevel;
+    episodeId: string;
+    seed: string;
+  }): Promise<Exercise[]> {
+    const episode = await deps.series.findEpisode(input.userId, input.episodeId);
+    const series = await deps.series.findSeries(input.userId, input.pair);
+    if (!episode || !series || series.id !== episode.seriesId) return [];
+    const cards = await deps.series.listEpisodeCards(episode.id, input.pair.native);
+    const pool = await deps.series.listSeriesCards(series.id, input.pair.native, DISTRACTOR_POOL);
+    const nodeLines = cards.map((card) => toLine(card, 0));
+    return buildLesson({
+      seed: input.seed,
+      level: input.level,
+      nodeLines,
+      allLines: [...nodeLines, ...pool.map((card) => toLine(card, -1))],
+      idPrefix: "r",
+    });
+  };
+}
+
 export function makeStartPersonalLesson(deps: LessonDeps) {
   return async function startPersonalLesson(
     input: LessonInput,

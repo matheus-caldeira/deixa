@@ -353,7 +353,8 @@
     "tutorMore": "Outros temas",
     "lessonOf": "lição {number} de {total}",
     "dueCardsCount": "{count, plural, =1 {# card vencido} other {# cards vencidos}}",
-    "alsoStudying": "Também estudando"
+    "alsoStudying": "Também estudando",
+    "dueRecaps": "{count, plural, one {# episódio para recapitular} other {# episódios para recapitular}}"
   },
   "people": {
     "home": "Início",
@@ -490,7 +491,11 @@
     "exitBody": "Você vai perder o progresso desta lição. Os exercícios já respondidos não são salvos.",
     "exitStay": "Continuar a lição",
     "exitConfirm": "Sair e perder o progresso",
-    "backToTrail": "Voltar à trilha"
+    "backToTrail": "Voltar à trilha",
+    "recapPractice": "Treino fora do vencimento: a etapa não muda.",
+    "recapNext": "Próxima recapitulação em {days, plural, one {# dia} other {# dias}}.",
+    "recapFinished": "Recapitulações deste episódio concluídas.",
+    "backToReview": "Voltar à revisão"
   },
   "chat": {
     "back": "Voltar",
@@ -1396,5 +1401,25 @@
     "buildingBody": "A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de um minuto; avisamos no sino quando terminar.",
     "personalEmpty": "Os cards das suas conversas viram episódios aqui",
     "finalChallenge": "Desafio final"
+  },
+  "recap": {
+    "tabs": "Tipo de revisão",
+    "cardsTab": "Cards · {count}",
+    "episodesTab": "Episódios · {count}",
+    "intro": "Cada episódio concluído volta em 1, 7 e 30 dias. Ao abrir, começa uma lição nova com o resumo do episódio, as falas que você estudou e os seus cards dele.",
+    "empty": "Nenhum episódio concluído ainda. Termine a trilha de um episódio e ele volta aqui para recapitular.",
+    "stepOf": "Recapitulação {step} de {total}",
+    "dueNow": "vence hoje",
+    "dueIn": "em {days, plural, one {# dia} other {# dias}}",
+    "leave": "Sair da recapitulação",
+    "whatHappened": "O que aconteceu",
+    "noSummary": "Sem sinopse para este episódio. Os exercícios vêm do que você estudou nele.",
+    "summaryNote": "Resumo da sinopse do episódio. Depois vêm {count, plural, one {# exercício} other {# exercícios}} com as falas e os cards dele.",
+    "coming": "Vai cair",
+    "exercises": "{count, plural, one {# exercício} other {# exercícios}}",
+    "cards": "{count, plural, =0 { nenhum card seu} one {# card seu} other {# cards seus}}",
+    "notDue": "Ainda não venceu: dá para treinar, mas a etapa só avança no vencimento.",
+    "start": "Começar",
+    "noExercises": "A trilha deste episódio não está pronta no seu nível atual. Abra o episódio na trilha para montá-la."
   }
 }

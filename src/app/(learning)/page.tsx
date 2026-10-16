@@ -15,7 +15,7 @@ export default async function HomePage() {
   const pair = pairOf(user.preferences);
   const level = user.preferences.level;
   const t = await getTranslations("trail");
-  const [summary, dueCount, context, overview, conversations, personal] = await Promise.all([
+  const [summary, dueCount, context, overview, conversations, personal, dueRecaps] = await Promise.all([
     container.getProfileSummary({
       userId: user.id,
       dailyGoal: user.preferences.dailyGoal,
@@ -26,6 +26,7 @@ export default async function HomePage() {
     container.getCatalogOverview(user.id),
     container.listConversations(user.id, pair.target),
     container.getPersonalSeries({ userId: user.id, pair, userLevel: level }),
+    container.countDueRecaps({ userId: user.id, pair }),
   ]);
   const suggestedTheme = suggestTheme(conversations.map((session) => session.themeId));
   const unfinished = conversations.find((session) => session.review === null && session.turnCount > 1);
@@ -124,6 +125,7 @@ export default async function HomePage() {
         dailyGoal: summary.dailyGoal,
         streak: summary.streak,
         dueCount,
+        dueRecaps,
         others,
         missions: summary.missions,
         tutor: {

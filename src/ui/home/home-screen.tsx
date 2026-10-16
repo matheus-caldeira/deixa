@@ -27,6 +27,7 @@ export type HomeView = {
   dailyGoal: number;
   streak: number;
   dueCount: number;
+  dueRecaps: number;
   others: {
     key: string;
     title: string;
@@ -205,14 +206,24 @@ export function HomeScreen({ view }: { view: HomeView }) {
         </div>
       </section>
 
-      <Link className="card row" href="/review">
+      <Link
+        className="card row"
+        href={view.dueCount === 0 && view.dueRecaps > 0 ? "/review?tab=episodes" : "/review"}
+      >
         <span className="ic" style={{ width: 44, height: 44, flex: "none", color: "var(--brand)" }}>
           <CardsIcon />
         </span>
         <span className="col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: 16 }}>{t("todayReviews")}</h2>
           <span className="small muted">
-            {view.dueCount === 0 ? t("noDueCards") : t("dueCardsCount", { count: view.dueCount })}
+            {view.dueCount === 0 && view.dueRecaps === 0
+              ? t("noDueCards")
+              : [
+                  view.dueCount > 0 ? t("dueCardsCount", { count: view.dueCount }) : null,
+                  view.dueRecaps > 0 ? t("dueRecaps", { count: view.dueRecaps }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
           </span>
         </span>
         <span className="link">{t("review")}</span>
