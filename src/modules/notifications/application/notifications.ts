@@ -8,6 +8,9 @@ export const NOTIFICATION_KINDS = [
   "trail_ready",
   "trail_failed",
   "audio_ready",
+  "conversation_review_ready",
+  "conversation_review_failed",
+  "conversation_terms_ready",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

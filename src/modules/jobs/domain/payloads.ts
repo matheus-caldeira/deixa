@@ -38,11 +38,43 @@ export const episodeAudioPayloadSchema = z.object({
   episodeLabel: z.string(),
 });
 
+export const conversationReviewPayloadSchema = z.object({
+  userId: z.uuid(),
+  sessionId: z.uuid(),
+  level,
+});
+
+export const conversationTermsPayloadSchema = z.object({
+  userId: z.uuid(),
+  sessionId: z.uuid(),
+  level,
+  terms: z
+    .array(z.object({ turnId: z.uuid(), term: z.string().min(1).max(80), sentence: z.string().max(700) }))
+    .min(1)
+    .max(12),
+});
+
+export const conversationAudioPayloadSchema = z.object({
+  userId: z.uuid(),
+  sessionId: z.uuid(),
+  voice: z.object({ voiceId: z.string().min(1), language: z.string().min(1) }),
+});
+
+export const personalSeriesDescriptionPayloadSchema = z.object({
+  userId: z.uuid(),
+  pair,
+  level,
+});
+
 export const PAYLOAD_SCHEMAS = {
   generate_plan: generatePlanPayloadSchema,
   card_batch: cardBatchPayloadSchema,
   refresh_recommendations: refreshRecommendationsPayloadSchema,
   episode_audio: episodeAudioPayloadSchema,
+  conversation_review: conversationReviewPayloadSchema,
+  conversation_terms: conversationTermsPayloadSchema,
+  conversation_audio: conversationAudioPayloadSchema,
+  personal_series_description: personalSeriesDescriptionPayloadSchema,
 } satisfies Record<JobKind, z.ZodType>;
 
 export type JobPayloads = { [K in JobKind]: z.infer<(typeof PAYLOAD_SCHEMAS)[K]> };

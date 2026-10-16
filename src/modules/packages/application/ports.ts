@@ -141,6 +141,7 @@ export type PersonalMergeReport = {
   progress: number;
   xp: number;
   credentials: number;
+  seriesEpisodes: number;
   skipped: number;
 };
 

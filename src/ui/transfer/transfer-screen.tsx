@@ -437,6 +437,9 @@ function ImportCard() {
                       progress: stage.report.personal.progress,
                       xp: stage.report.personal.xp,
                     })}
+                    {stage.report.personal.seriesEpisodes > 0
+                      ? `, ${t("seriesEpisodes", { count: stage.report.personal.seriesEpisodes })}`
+                      : ""}
                     {stage.report.personal.credentials > 0
                       ? `, ${t("keyCount", { count: stage.report.personal.credentials })}`
                       : ""}

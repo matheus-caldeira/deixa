@@ -55,6 +55,48 @@ export const personalCardSchema = z.object({
 });
 export type PersonalCard = z.infer<typeof personalCardSchema>;
 
+const LEVEL = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
+const MAX_SERIES_CARDS = 500;
+
+export const personalSeriesSchema = z.object({
+  language: studyLanguageSchema,
+  locale: studyLanguageSchema,
+  name: SHORT.nullable(),
+  description: z.string().max(2000).nullable(),
+  levelMode: z.enum(["auto", "fixed", "custom"]),
+  levelMin: LEVEL.nullable(),
+  levelMax: LEVEL.nullable(),
+  startLevel: LEVEL,
+  seasons: z
+    .array(
+      z.object({
+        level: LEVEL,
+        episodes: z
+          .array(
+            z.object({
+              title: SHORT,
+              theme: SHORT,
+              part: z.number().int().min(1),
+              completedNodes: z.array(z.number().int().min(0)).max(200),
+              cards: z
+                .array(
+                  z.object({
+                    term: SHORT,
+                    meaning: z.string().max(4000),
+                    context: z.string().max(4000).nullable(),
+                    source: SHORT,
+                  }),
+                )
+                .max(MAX_SERIES_CARDS),
+            }),
+          )
+          .max(500),
+      }),
+    )
+    .max(6),
+});
+export type PersonalSeriesData = z.infer<typeof personalSeriesSchema>;
+
 export const personalDataSchema = z.object({
   version: z.literal(PERSONAL_FORMAT_VERSION),
   email: z.string().email(),
@@ -98,5 +140,6 @@ export const personalDataSchema = z.object({
     .max(500_000),
   snapshot: z.object({ data: z.unknown(), updatedAt: ISO }).nullable().optional(),
   credentials: z.array(z.object({ service: SHORT, secret: z.string().max(4000) })).max(20),
+  personalSeries: z.array(personalSeriesSchema).max(20).default([]),
 });
 export type PersonalData = z.infer<typeof personalDataSchema>;

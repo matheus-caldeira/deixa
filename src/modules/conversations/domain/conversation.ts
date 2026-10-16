@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cleanLlmText } from "@/shared/llm-text";
+import type { CefrLevel } from "@/shared/levels";
 import type { StudyLanguage } from "@/shared/study-languages";
 
 export type ThemeIcon = "coffee" | "brief" | "bed" | "film" | "chat" | "target" | "scale" | "spark";
@@ -89,6 +90,12 @@ export const MIN_TURNS_FOR_XP = 3;
 export const CONVERSATION_XP = 15;
 export const HISTORY_TURNS_SENT = 16;
 
+export const MAX_DIFFICULTIES = 10;
+export const MAX_MARKED_TERMS = 12;
+export const MAX_MARKED_TERM_LENGTH = 80;
+export const MAX_THEME_LABEL = 40;
+export const MAX_EPISODE_TITLE = 60;
+
 export type Correction = { wrong: string; right: string; why: string };
 export type TurnRole = "user" | "tutor";
 export type Turn = {
@@ -97,7 +104,27 @@ export type Turn = {
   text: string;
   translation: string | null;
   corrections: Correction[];
+  correctedText: string | null;
   createdAt: Date;
+};
+
+export const REVIEW_STATUSES = ["none", "queued", "running", "ready", "failed"] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
+
+export const DIFFICULTY_KINDS = ["grammar", "vocabulary", "tutor"] as const;
+export type DifficultyKind = (typeof DIFFICULTY_KINDS)[number];
+
+export type Difficulty = {
+  id: string;
+  kind: DifficultyKind;
+  turnIndex: number | null;
+  said: string | null;
+  target: string;
+  translation: string;
+  why: string;
+  theme: string;
+  episodeId: string | null;
+  episodeTitle: string;
 };
 
 export type ConversationReview = {
@@ -106,6 +133,7 @@ export type ConversationReview = {
   strengths: string[];
   improvements: string[];
   phrases: Correction[];
+  difficulties: Difficulty[];
 };
 
 export type Session = {
@@ -115,8 +143,20 @@ export type Session = {
   themeTitle: string;
   level: string;
   review: ConversationReview | null;
+  reviewStatus: ReviewStatus;
+  closedAt: Date | null;
+  cardsConfirmedAt: Date | null;
   createdAt: Date;
 };
+
+export type SeasonContext = {
+  level: CefrLevel;
+  episodes: { id: string; title: string; theme: string }[];
+};
+
+export function isReviewStatus(value: string): value is ReviewStatus {
+  return (REVIEW_STATUSES as readonly string[]).includes(value);
+}
 
 const plain = (max: number) =>
   z.unknown().transform((value, context) => {
@@ -156,13 +196,118 @@ export const tutorReplySchema = z.object({
   corrections: tolerantList(correctionSchema, 4),
 });
 
-export const conversationReviewSchema = z.object({
-  summary: plain(600),
-  score: z.number().min(0).max(100).transform(Math.round),
+const turnIndex = z.number().int().min(0).max(500);
+const episodeRef = z
+  .unknown()
+  .optional()
+  .transform((value) => (typeof value === "string" && value.length <= 64 ? value : null));
+
+const difficultySchema = z.object({
+  kind: z.enum(DIFFICULTY_KINDS).catch("vocabulary"),
+  turn: turnIndex.nullable().optional().catch(null),
+  said: optionalPlain(300),
+  target: plain(200),
+  translation: plain(300),
+  why: plain(300),
+  theme: plain(MAX_THEME_LABEL),
+  episodeId: episodeRef,
+  episodeTitle: plain(MAX_EPISODE_TITLE),
+});
+
+export const conversationAnalysisSchema = z.object({
+  summary: plain(1000),
+  score: z.coerce.number().min(0).max(100).transform(Math.round),
   strengths: tolerantList(plain(200), 5),
   improvements: tolerantList(plain(200), 5),
-  phrases: tolerantList(correctionSchema, 8),
+  corrected: tolerantList(z.object({ turn: turnIndex, text: plain(MAX_MESSAGE_LENGTH) }), MAX_USER_TURNS),
+  difficulties: tolerantList(difficultySchema, MAX_DIFFICULTIES),
 });
+export type ConversationAnalysis = z.infer<typeof conversationAnalysisSchema>;
+
+export const termExplanationsSchema = z.object({
+  terms: tolerantList(
+    z.object({
+      term: plain(MAX_MARKED_TERM_LENGTH),
+      translation: plain(300),
+      why: optionalPlain(300),
+      theme: plain(MAX_THEME_LABEL),
+      episodeId: episodeRef,
+      episodeTitle: plain(MAX_EPISODE_TITLE),
+    }),
+    MAX_MARKED_TERMS,
+  ),
+});
+export type TermExplanations = z.infer<typeof termExplanationsSchema>;
+
+export function reviewFromAnalysis(
+  analysis: ConversationAnalysis,
+  turns: readonly Pick<Turn, "role">[],
+  season: SeasonContext,
+): ConversationReview {
+  const knownEpisodes = new Set(season.episodes.map((episode) => episode.id));
+  const difficulties = analysis.difficulties.map((difficulty, index) => {
+    const turn = difficulty.turn ?? null;
+    const turnIndex = turn !== null && turn < turns.length ? turn : null;
+    const role = turnIndex === null ? null : turns[turnIndex]?.role;
+    const kind: DifficultyKind =
+      role === "tutor" ? "tutor" : difficulty.kind === "tutor" ? "vocabulary" : difficulty.kind;
+    return {
+      id: `d${index}`,
+      kind,
+      turnIndex,
+      said: kind === "tutor" ? null : difficulty.said,
+      target: difficulty.target,
+      translation: difficulty.translation,
+      why: difficulty.why,
+      theme: difficulty.theme,
+      episodeId:
+        difficulty.episodeId && knownEpisodes.has(difficulty.episodeId) ? difficulty.episodeId : null,
+      episodeTitle: difficulty.episodeTitle,
+    };
+  });
+  return {
+    summary: analysis.summary,
+    score: analysis.score,
+    strengths: analysis.strengths,
+    improvements: analysis.improvements,
+    phrases: difficulties.flatMap((difficulty) =>
+      difficulty.kind === "grammar" && difficulty.said
+        ? [{ wrong: difficulty.said, right: difficulty.target, why: difficulty.why }]
+        : [],
+    ),
+    difficulties,
+  };
+}
+
+export function correctedTurns(
+  analysis: ConversationAnalysis,
+  turns: readonly Pick<Turn, "id" | "role" | "text">[],
+): { turnId: string; text: string }[] {
+  return analysis.corrected.flatMap((entry) => {
+    const turn = turns[entry.turn];
+    return turn && turn.role === "user" && turn.text !== entry.text
+      ? [{ turnId: turn.id, text: entry.text }]
+      : [];
+  });
+}
+
+export function selectMarkedTerms(
+  marks: readonly { turnId: string; text: string }[],
+  turns: readonly Pick<Turn, "id" | "text">[],
+): { turnId: string; term: string; sentence: string }[] {
+  const seen = new Set<string>();
+  return marks
+    .flatMap((mark) => {
+      const term = mark.text.trim().replace(/\s+/g, " ");
+      const turn = turns.find((candidate) => candidate.id === mark.turnId);
+      const key = term.toLowerCase();
+      if (!turn || term === "" || term.length > MAX_MARKED_TERM_LENGTH || seen.has(key)) return [];
+      if (!turn.text.toLowerCase().includes(key)) return [];
+      seen.add(key);
+      return [{ turnId: turn.id, term, sentence: turn.text }];
+    })
+    .slice(0, MAX_MARKED_TERMS);
+}
 
 export function resolveTheme(
   themeId: string,

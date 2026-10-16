@@ -9,6 +9,12 @@ import {
 import { voiceFor } from "@/modules/audio";
 import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
+import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
+import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-cipher";
+import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
+import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
+import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
+import { uuidGenerator } from "@/shared/ids";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import {
   DrizzleAiUsageRepository,
@@ -24,6 +30,7 @@ import { runMigrations } from "./migrate";
 import {
   highlightStats,
   learningItems,
+  personalEpisodeCards,
   subtitleCues,
   subtitleFiles,
   userAiCredentials,
@@ -33,6 +40,7 @@ import {
 } from "./schema";
 
 const TEST_DATABASE = "deixa_test";
+const tutor = new FakeTutorProvider();
 const PAIR = { target: "en", native: "pt-BR" } as const;
 const baseUrl = process.env.DATABASE_URL;
 const fixture = (name: string) => ({
@@ -80,6 +88,7 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
       metadata: new FakeMetadataProvider(),
       tts: new SilentTtsProvider(),
       llmForUser: async () => llm,
+      tutorForUser: async () => tutor,
       plannerForUser: async () => null,
       embeddingForUser: async () => new HashEmbeddingProvider(),
       suggestionWriterForUser: async () => null,
@@ -366,5 +375,140 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     expect(lucasItems.map((item) => item.workKey)).toContain(refused.workKey);
     const [vectors] = await handle.db.select({ total: count() }).from(workEmbeddings);
     expect(vectors?.total).toBeGreaterThan(0);
+  });
+
+  it("conversa encerrada vira cards na série pessoal de quem conversou, sem duplicar nem vazar", async () => {
+    const { sessionId } = await app.startConversation({
+      userId: ana,
+      themeId: "travel",
+      customTopic: null,
+      level: "A1",
+      language: "en",
+    });
+    for (const text of ["He go to the beach", "Peoples are nice there", "I like the food"]) {
+      await app.sendMessage({ userId: ana, sessionId, level: "A1", language: "en", message: { text } });
+    }
+    await expect(
+      app.closeConversation({ userId: lucas, sessionId, language: "en", withReview: true }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    const closed = await app.closeConversation({ userId: ana, sessionId, language: "en", withReview: true });
+    expect(closed).toEqual({ xpAwarded: 15, reviewQueued: true });
+    await expect(
+      app.sendMessage({ userId: ana, sessionId, level: "A1", language: "en", message: { text: "hi" } }),
+    ).rejects.toMatchObject({ detail: { key: "conversationClosed" } });
+
+    const { jobId } = await app.enqueueJob({
+      kind: "conversation_review",
+      payload: { userId: ana, sessionId, level: "A1" },
+      createdBy: ana,
+    });
+    await app.runJobInline(jobId);
+    const reviewed = await app.getConversation(ana, sessionId, "en");
+    expect(reviewed.session.reviewStatus).toBe("ready");
+    expect(reviewed.session.review?.difficulties.map((item) => item.target)).toEqual(["he goes", "people"]);
+    expect(reviewed.turns[1]?.correctedText).toBe("he goes to the beach");
+
+    const confirmed = await app.confirmConversationCards({
+      userId: ana,
+      sessionId,
+      language: "en",
+      difficultyIds: ["d0", "d1"],
+    });
+    expect(confirmed).toEqual({ cards: 2, newEpisodes: 2 });
+    await expect(
+      app.confirmConversationCards({ userId: ana, sessionId, language: "en", difficultyIds: ["d0"] }),
+    ).rejects.toMatchObject({ detail: { key: "cardsAlreadyConfirmed" } });
+
+    const series = await app.getPersonalSeries({ userId: ana, pair: PAIR, userLevel: "A1" });
+    const episodes = series.seasons.flatMap((season) => season.episodes);
+    expect(series.seasons.map((season) => season.level)).toEqual(["A1"]);
+    expect(episodes.map((episode) => [episode.title, episode.cardCount, episode.sourceCount])).toEqual([
+      ["Verbos", 1, 1],
+      ["Plural", 1, 1],
+    ]);
+    const trail = await app.getPersonalEpisodeTrail({
+      userId: ana,
+      pair: PAIR,
+      episodeId: episodes[0]?.id ?? "",
+    });
+    expect(trail.sources).toEqual([expect.objectContaining({ sessionId, themeId: "travel" })]);
+    expect(trail.nodes).toHaveLength(1);
+
+    const lucasSeries = await app.getPersonalSeries({ userId: lucas, pair: PAIR, userLevel: "C1" });
+    expect(lucasSeries.series.id).not.toBe(series.series.id);
+    expect(lucasSeries.seasons.flatMap((season) => season.episodes)).toEqual([]);
+    await expect(
+      app.getPersonalEpisodeTrail({ userId: lucas, pair: PAIR, episodeId: episodes[0]?.id ?? "" }),
+    ).rejects.toMatchObject({ code: "ITEM_NOT_FOUND" });
+    await expect(
+      app.startPersonalLesson({
+        userId: lucas,
+        pair: PAIR,
+        level: "C1",
+        episodeId: episodes[0]?.id ?? "",
+        nodeIndex: 0,
+      }),
+    ).rejects.toMatchObject({ code: "ITEM_NOT_FOUND" });
+
+    await app.renamePersonalSeries({ userId: ana, pair: PAIR, userLevel: "A1", name: "Inglês da Ana" });
+    await app.setPersonalSeriesLevel({
+      userId: ana,
+      pair: PAIR,
+      userLevel: "A1",
+      level: { mode: "custom", min: "A1", max: "B1" },
+    });
+    const renamed = await app.getPersonalSeries({ userId: ana, pair: PAIR, userLevel: "A1" });
+    expect(renamed.series).toMatchObject({
+      id: series.series.id,
+      name: "Inglês da Ana",
+      level: { mode: "custom", min: "A1", max: "B1" },
+    });
+    const [cards] = await handle.db.select({ total: count() }).from(personalEpisodeCards);
+    expect(cards?.total).toBe(2);
+
+    const personal = new DrizzlePersonalData({
+      db: handle.db,
+      catalog: new DrizzleCatalogRepository(handle.db),
+      learning: new DrizzleLearningRepository(handle.db),
+      keyCipher: new AesGcmCipher(Buffer.alloc(32, 5).toString("base64")),
+      ids: uuidGenerator,
+    });
+    const exported = await personal.collect(ana, false);
+    expect(exported.personalSeries).toEqual([
+      expect.objectContaining({
+        name: "Inglês da Ana",
+        levelMode: "custom",
+        seasons: [
+          expect.objectContaining({
+            level: "A1",
+            episodes: [
+              expect.objectContaining({
+                title: "Verbos",
+                cards: [expect.objectContaining({ term: "he goes" })],
+              }),
+              expect.objectContaining({
+                title: "Plural",
+                cards: [expect.objectContaining({ term: "people" })],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ]);
+    const report = await personal.merge(lucas, exported, new Date());
+    expect(report.seriesEpisodes).toBe(2);
+    expect((await personal.merge(lucas, exported, new Date())).seriesEpisodes).toBe(0);
+    const imported = await app.getPersonalSeries({ userId: lucas, pair: PAIR, userLevel: "C1" });
+    expect(imported.series.name).toBe("Inglês da Ana");
+    expect(
+      imported.seasons
+        .find((season) => season.level === "A1")
+        ?.episodes.map((episode) => [episode.title, episode.cardCount]),
+    ).toEqual([
+      ["Verbos", 1],
+      ["Plural", 1],
+    ]);
+    const [allCards] = await handle.db.select({ total: count() }).from(personalEpisodeCards);
+    expect(allCards?.total).toBe(4);
   });
 });

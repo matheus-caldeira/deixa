@@ -1,4 +1,4 @@
-import { AppError, isAppError } from "@/shared/errors";
+import { AppError, isAppError, type MessageParams } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
@@ -11,12 +11,19 @@ import {
   MAX_USER_TURNS,
   MIN_TURNS_FOR_XP,
   buildLearnerProfile,
-  conversationReviewSchema,
+  conversationAnalysisSchema,
+  correctedTurns,
   resolveTheme,
+  reviewFromAnalysis,
+  selectMarkedTerms,
+  termExplanationsSchema,
   tutorReplySchema,
+  type ConversationAnalysis,
   type ConversationReview,
   type Correction,
   type LearnerProfile,
+  type ReviewStatus,
+  type SeasonContext,
   type Session,
   type Turn,
   type TurnRole,
@@ -36,9 +43,37 @@ export interface TutorProvider {
   review(input: {
     level: CefrLevel;
     theme: string;
-    turns: { role: TurnRole; text: string }[];
+    turns: { index: number; role: TurnRole; text: string }[];
+    season: SeasonContext;
+  }): Promise<unknown>;
+  explainTerms(input: {
+    level: CefrLevel;
+    theme: string;
+    terms: { term: string; sentence: string }[];
+    season: SeasonContext;
+  }): Promise<unknown>;
+  describeSeries(input: {
+    level: CefrLevel;
+    episodes: { title: string; cards: number }[];
+    recentTopics: string[];
+    improvements: string[];
   }): Promise<unknown>;
 }
+
+export type ConversationNotification = {
+  userId: string;
+  kind: "conversation_review_ready" | "conversation_review_failed" | "conversation_terms_ready";
+  params: MessageParams;
+  href: string;
+};
+
+export type NewCard = { term: string; meaning: string; context: string | null };
+export type CardPlacement = {
+  learningItemId: string;
+  theme: string;
+  episodeId: string | null;
+  episodeTitle: string;
+};
 
 export interface ConversationRepository {
   createSession(input: {
@@ -69,14 +104,32 @@ export interface ConversationRepository {
   listTurns(sessionId: string): Promise<Turn[]>;
   claimUserTurn(userId: string, sessionId: string, max: number): Promise<boolean>;
   releaseUserTurn(userId: string, sessionId: string): Promise<void>;
-  saveReview(userId: string, sessionId: string, review: ConversationReview, now: Date): Promise<void>;
+  closeSession(userId: string, sessionId: string, reviewStatus: ReviewStatus, now: Date): Promise<boolean>;
+  queueReview(userId: string, sessionId: string, now: Date): Promise<boolean>;
+  markReviewRunning(userId: string, sessionId: string): Promise<boolean>;
+  markReviewFailed(userId: string, sessionId: string, now: Date): Promise<void>;
+  saveAnalysis(input: {
+    userId: string;
+    sessionId: string;
+    review: ConversationReview;
+    corrected: { turnId: string; text: string }[];
+    now: Date;
+  }): Promise<void>;
+  markCardsConfirmed(userId: string, sessionId: string, now: Date): Promise<boolean>;
   findTurnText(userId: string, turnId: string): Promise<string | null>;
 }
 
 type Deps = {
   conversations: ConversationRepository;
   resolveTutor: (userId: string) => Promise<TutorProvider>;
-  queueCorrections: (userId: string, corrections: Correction[], sourceLabel: string) => Promise<number>;
+  seasonContext: (userId: string) => Promise<SeasonContext>;
+  createCards: (userId: string, cards: NewCard[]) => Promise<string[]>;
+  placeCards: (input: {
+    userId: string;
+    sessionId: string;
+    cards: CardPlacement[];
+  }) => Promise<{ newEpisodes: number }>;
+  notify: (input: ConversationNotification) => Promise<void>;
   recentMistakes: (userId: string, language: StudyLanguage) => Promise<string[]>;
   awardXp: (input: { userId: string; source: string; sourceId: string; amount: number }) => Promise<void>;
   clock: Clock;
@@ -84,6 +137,7 @@ type Deps = {
 };
 
 const RECENT_SESSIONS = 8;
+const REVIEW_ATTEMPTS = 2;
 const PROFILE_SESSIONS = 12;
 
 async function findSessionIn(
@@ -173,7 +227,9 @@ export function makeListConversations(deps: Pick<Deps, "conversations">) {
   };
 }
 
-export function makeSendMessage(deps: Deps) {
+export function makeSendMessage(
+  deps: Pick<Deps, "conversations" | "resolveTutor" | "recentMistakes" | "clock" | "ids">,
+) {
   const getLearnerProfile = makeGetLearnerProfile(deps);
   return async function sendMessage(input: {
     userId: string;
@@ -181,8 +237,9 @@ export function makeSendMessage(deps: Deps) {
     level: CefrLevel;
     language: StudyLanguage;
     message: TutorMessage;
-  }): Promise<{ userTurn: Turn; tutorTurn: Turn; queuedForReview: number }> {
+  }): Promise<{ userTurn: Turn; tutorTurn: Turn }> {
     const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
+    if (session.closedAt) throw new AppError("INVALID_INPUT", "conversationClosed");
     const isAudio = "audio" in input.message;
     if ("text" in input.message) {
       const text = input.message.text.trim();
@@ -241,6 +298,7 @@ export function makeSendMessage(deps: Deps) {
       text: userText,
       translation: null,
       corrections: parsed.data.corrections,
+      correctedText: null,
       createdAt: now,
     };
     const tutorTurn: Turn = {
@@ -249,6 +307,7 @@ export function makeSendMessage(deps: Deps) {
       text: parsed.data.reply,
       translation: parsed.data.replyTranslation,
       corrections: [],
+      correctedText: null,
       createdAt: new Date(now.getTime() + 1),
     };
     await deps.conversations.addTurn({
@@ -263,47 +322,35 @@ export function makeSendMessage(deps: Deps) {
       inputKind: "text",
       now: tutorTurn.createdAt,
     });
-    const queuedForReview =
-      parsed.data.corrections.length > 0
-        ? await deps.queueCorrections(input.userId, parsed.data.corrections, session.themeTitle)
-        : 0;
-    return { userTurn, tutorTurn, queuedForReview };
+    return { userTurn, tutorTurn };
   };
 }
 
-export function makeReviewConversation(deps: Deps) {
-  return async function reviewConversation(input: {
+export function makeCloseConversation(deps: Pick<Deps, "conversations" | "awardXp" | "clock">) {
+  return async function closeConversation(input: {
     userId: string;
     sessionId: string;
-    level: CefrLevel;
     language: StudyLanguage;
-  }): Promise<{ review: ConversationReview; xpAwarded: number; queuedForReview: number }> {
+    withReview: boolean;
+  }): Promise<{ xpAwarded: number; reviewQueued: boolean }> {
     const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
     const turns = await deps.conversations.listTurns(input.sessionId);
-    const userTurns = turns.filter((turn) => turn.role === "user");
-    if (userTurns.length === 0) {
-      throw new AppError("INVALID_INPUT", "talkBeforeReview");
+    const userTurns = turns.filter((turn) => turn.role === "user").length;
+    if (userTurns === 0) throw new AppError("INVALID_INPUT", "talkBeforeReview");
+    const now = deps.clock.now();
+    if (session.closedAt) {
+      const reviewQueued =
+        input.withReview && (await deps.conversations.queueReview(input.userId, input.sessionId, now));
+      return { xpAwarded: 0, reviewQueued };
     }
-    const tutor = await deps.resolveTutor(input.userId);
-    let raw: unknown;
-    try {
-      raw = await tutor.review({
-        level: input.level,
-        theme: session.themeTitle,
-        turns: turns.map((turn) => ({ role: turn.role, text: turn.text })),
-      });
-    } catch (error) {
-      if (isAppError(error)) throw error;
-      throw new AppError("LLM_FAILED", "tutorSilent");
-    }
-    const parsed = conversationReviewSchema.safeParse(raw);
-    if (!parsed.success) throw new AppError("LLM_INVALID_OUTPUT", "reviewMalformed");
-    await deps.conversations.saveReview(input.userId, input.sessionId, parsed.data, deps.clock.now());
-    const queuedForReview =
-      parsed.data.phrases.length > 0
-        ? await deps.queueCorrections(input.userId, parsed.data.phrases, `Conversa · ${session.themeTitle}`)
-        : 0;
-    const earns = userTurns.length >= MIN_TURNS_FOR_XP;
+    const closed = await deps.conversations.closeSession(
+      input.userId,
+      input.sessionId,
+      input.withReview ? "queued" : "none",
+      now,
+    );
+    if (!closed) return { xpAwarded: 0, reviewQueued: false };
+    const earns = userTurns >= MIN_TURNS_FOR_XP;
     if (earns) {
       await deps.awardXp({
         userId: input.userId,
@@ -312,7 +359,210 @@ export function makeReviewConversation(deps: Deps) {
         amount: CONVERSATION_XP,
       });
     }
-    return { review: parsed.data, xpAwarded: earns ? CONVERSATION_XP : 0, queuedForReview };
+    return { xpAwarded: earns ? CONVERSATION_XP : 0, reviewQueued: input.withReview };
+  };
+}
+
+export function makeRequestConversationReview(deps: Pick<Deps, "conversations" | "clock">) {
+  return async function requestConversationReview(input: {
+    userId: string;
+    sessionId: string;
+    language: StudyLanguage;
+  }): Promise<{ reviewQueued: boolean }> {
+    const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
+    if (!session.closedAt) throw new AppError("INVALID_INPUT", "conversationOpen");
+    return {
+      reviewQueued: await deps.conversations.queueReview(input.userId, input.sessionId, deps.clock.now()),
+    };
+  };
+}
+
+export function makeRunConversationReview(
+  deps: Pick<Deps, "conversations" | "resolveTutor" | "seasonContext" | "notify" | "clock">,
+) {
+  return async function runConversationReview(input: {
+    userId: string;
+    sessionId: string;
+    level: CefrLevel;
+  }): Promise<void> {
+    const session = await deps.conversations.findSession(input.userId, input.sessionId);
+    if (!session?.closedAt) return;
+    if (!(await deps.conversations.markReviewRunning(input.userId, input.sessionId))) return;
+    const href = `/tutor/${input.sessionId}`;
+    const fail = async (reason: string) => {
+      await deps.conversations.markReviewFailed(input.userId, input.sessionId, deps.clock.now());
+      await deps.notify({
+        userId: input.userId,
+        kind: "conversation_review_failed",
+        params: { theme: session.themeTitle, themeId: session.themeId, reason },
+        href,
+      });
+    };
+    const turns = await deps.conversations.listTurns(input.sessionId);
+    const season = await deps.seasonContext(input.userId);
+    let analysis: ConversationAnalysis | null = null;
+    try {
+      const tutor = await deps.resolveTutor(input.userId);
+      for (let attempt = 0; attempt < REVIEW_ATTEMPTS && !analysis; attempt += 1) {
+        const parsed = conversationAnalysisSchema.safeParse(
+          await tutor.review({
+            level: input.level,
+            theme: session.themeTitle,
+            turns: turns.map((turn, index) => ({ index, role: turn.role, text: turn.text })),
+            season,
+          }),
+        );
+        if (parsed.success) analysis = parsed.data;
+      }
+    } catch (error) {
+      await fail(isAppError(error) ? error.code : "LLM_FAILED");
+      return;
+    }
+    if (!analysis) {
+      await fail("LLM_INVALID_OUTPUT");
+      return;
+    }
+    const review = reviewFromAnalysis(analysis, turns, season);
+    await deps.conversations.saveAnalysis({
+      userId: input.userId,
+      sessionId: input.sessionId,
+      review,
+      corrected: correctedTurns(analysis, turns),
+      now: deps.clock.now(),
+    });
+    await deps.notify({
+      userId: input.userId,
+      kind: "conversation_review_ready",
+      params: { theme: session.themeTitle, themeId: session.themeId, count: review.difficulties.length },
+      href,
+    });
+  };
+}
+
+export function makeConfirmConversationCards(
+  deps: Pick<Deps, "conversations" | "createCards" | "placeCards" | "clock">,
+) {
+  return async function confirmConversationCards(input: {
+    userId: string;
+    sessionId: string;
+    language: StudyLanguage;
+    difficultyIds: string[];
+  }): Promise<{ cards: number; newEpisodes: number }> {
+    const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
+    if (session.reviewStatus !== "ready" || !session.review)
+      throw new AppError("INVALID_INPUT", "reviewNotReady");
+    if (session.cardsConfirmedAt) throw new AppError("INVALID_INPUT", "cardsAlreadyConfirmed");
+    const wanted = new Set(input.difficultyIds);
+    const chosen = session.review.difficulties.filter((difficulty) => wanted.has(difficulty.id));
+    let newEpisodes = 0;
+    if (chosen.length > 0) {
+      const itemIds = await deps.createCards(
+        input.userId,
+        chosen.map((difficulty) => ({
+          term: difficulty.target,
+          meaning: difficulty.translation,
+          context: difficulty.said ?? difficulty.why,
+        })),
+      );
+      ({ newEpisodes } = await deps.placeCards({
+        userId: input.userId,
+        sessionId: input.sessionId,
+        cards: chosen.flatMap((difficulty, index) => {
+          const learningItemId = itemIds[index];
+          return learningItemId
+            ? [
+                {
+                  learningItemId,
+                  theme: difficulty.theme,
+                  episodeId: difficulty.episodeId,
+                  episodeTitle: difficulty.episodeTitle,
+                },
+              ]
+            : [];
+        }),
+      }));
+    }
+    await deps.conversations.markCardsConfirmed(input.userId, input.sessionId, deps.clock.now());
+    return { cards: chosen.length, newEpisodes };
+  };
+}
+
+export function makeRequestTermCards(deps: Pick<Deps, "conversations">) {
+  return async function requestTermCards(input: {
+    userId: string;
+    sessionId: string;
+    language: StudyLanguage;
+    marks: { turnId: string; text: string }[];
+  }): Promise<{ terms: { turnId: string; term: string; sentence: string }[] }> {
+    const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
+    if (!session.closedAt) throw new AppError("INVALID_INPUT", "conversationOpen");
+    const terms = selectMarkedTerms(input.marks, await deps.conversations.listTurns(input.sessionId));
+    if (terms.length === 0) throw new AppError("INVALID_INPUT", "noTermsMarked");
+    return { terms };
+  };
+}
+
+export function makeRunTermCards(
+  deps: Pick<
+    Deps,
+    "conversations" | "resolveTutor" | "seasonContext" | "createCards" | "placeCards" | "notify"
+  >,
+) {
+  return async function runTermCards(input: {
+    userId: string;
+    sessionId: string;
+    level: CefrLevel;
+    terms: { turnId: string; term: string; sentence: string }[];
+  }): Promise<void> {
+    const session = await deps.conversations.findSession(input.userId, input.sessionId);
+    if (!session?.closedAt || input.terms.length === 0) return;
+    const season = await deps.seasonContext(input.userId);
+    const tutor = await deps.resolveTutor(input.userId);
+    const parsed = termExplanationsSchema.safeParse(
+      await tutor.explainTerms({
+        level: input.level,
+        theme: session.themeTitle,
+        terms: input.terms.map(({ term, sentence }) => ({ term, sentence })),
+        season,
+      }),
+    );
+    if (!parsed.success) throw new AppError("LLM_INVALID_OUTPUT", "termsMalformed");
+    const known = new Set(season.episodes.map((episode) => episode.id));
+    const explained = parsed.data.terms;
+    if (explained.length === 0) return;
+    const itemIds = await deps.createCards(
+      input.userId,
+      explained.map((entry) => ({
+        term: entry.term,
+        meaning: entry.translation,
+        context:
+          input.terms.find((mark) => mark.term.toLowerCase() === entry.term.toLowerCase())?.sentence ??
+          entry.why,
+      })),
+    );
+    await deps.placeCards({
+      userId: input.userId,
+      sessionId: input.sessionId,
+      cards: explained.flatMap((entry, index) => {
+        const learningItemId = itemIds[index];
+        return learningItemId
+          ? [
+              {
+                learningItemId,
+                theme: entry.theme,
+                episodeId: entry.episodeId && known.has(entry.episodeId) ? entry.episodeId : null,
+                episodeTitle: entry.episodeTitle,
+              },
+            ]
+          : [];
+      }),
+    });
+    await deps.notify({
+      userId: input.userId,
+      kind: "conversation_terms_ready",
+      params: { theme: session.themeTitle, themeId: session.themeId, count: explained.length },
+      href: `/tutor/${input.sessionId}`,
+    });
   };
 }
 

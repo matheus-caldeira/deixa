@@ -42,6 +42,7 @@ export class RecordingPersonalData implements PersonalDataWriter {
       progress: 0,
       xp: 0,
       credentials: 0,
+      seriesEpisodes: 0,
       skipped: 0,
     };
   }

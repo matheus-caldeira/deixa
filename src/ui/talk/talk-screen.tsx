@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { startConversationAction } from "@/app/actions/tutor";
 import { CUSTOM_THEME_ID, MAX_TOPIC_LENGTH } from "@/modules/conversations";
-import { BackIcon, Icon, SparkIcon, type IconName } from "../icons";
+import { BackIcon, FilmIcon, Icon, SparkIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
 
 export type ThemeView = { id: string; icon: IconName };
@@ -14,9 +14,12 @@ export type RecentConversation = {
   themeId: string;
   title: string;
   turnCount: number;
-  reviewed: boolean;
+  closed: boolean;
+  reviewStatus: "none" | "queued" | "running" | "ready" | "failed";
   score: number | null;
 };
+
+export type SeriesTeaser = { name: string | null; episodes: number; cards: number };
 
 export type LearnerNotes = { improvements: string[]; strengths: string[]; mistakes: string[] };
 
@@ -53,6 +56,7 @@ export function TalkScreen(props: {
   recent: RecentConversation[];
   simulated: boolean;
   learner: LearnerNotes;
+  series: SeriesTeaser;
 }) {
   const t = useTranslations("talk");
   const toast = useToast();
@@ -78,6 +82,22 @@ export function TalkScreen(props: {
           </span>
         </div>
       ) : null}
+      <Link className="pcard" href="/series">
+        <span className="avatar pposter" style={{ fontSize: 13 }}>
+          <FilmIcon width={24} height={24} />
+        </span>
+        <span className="col" style={{ gap: 2, minWidth: 0 }}>
+          <b>{props.series.name ?? t("seriesDefaultName")}</b>
+          <span className="small muted">
+            {props.series.episodes === 0
+              ? t("seriesEmpty")
+              : t("seriesSummary", { episodes: props.series.episodes, cards: props.series.cards })}
+          </span>
+        </span>
+        <span style={{ color: "var(--muted)", width: 20, transform: "rotate(180deg)" }}>
+          <BackIcon />
+        </span>
+      </Link>
       <LearnerCard learner={props.learner} />
       <section className="card" style={{ padding: "4px 16px" }}>
         {props.themes.map((theme) => (
@@ -139,10 +159,14 @@ export function TalkScreen(props: {
                   <div className="t">{themeTitle(conversation.themeId, conversation.title)}</div>
                   <span className="small muted">{t("messages", { count: conversation.turnCount })}</span>
                 </div>
-                {conversation.reviewed ? (
+                {conversation.reviewStatus === "ready" ? (
                   <span className="chip good">{t("reviewed", { score: conversation.score ?? 0 })}</span>
+                ) : conversation.reviewStatus === "queued" || conversation.reviewStatus === "running" ? (
+                  <span className="chip warn">{t("reviewing")}</span>
+                ) : conversation.closed ? (
+                  <span className="chip">{t("closed")}</span>
                 ) : (
-                  <span className="chip">{t("open")}</span>
+                  <span className="chip brand">{t("open")}</span>
                 )}
               </Link>
             ))}

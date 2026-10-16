@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getContainer } from "@/infrastructure/container";
+import { CONVERSATION_XP, MIN_TURNS_FOR_XP } from "@/modules/conversations";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { ChatScreen } from "@/ui/talk/chat-screen";
@@ -28,13 +29,23 @@ export default async function ConversationPage(props: { params: Promise<{ sessio
           audioSpeed: user.preferences.audioSpeed,
           simulated: conversation.simulated,
           turnsLeft: conversation.turnsLeft,
-          review: conversation.session.review,
+          closed: conversation.session.closedAt !== null,
+          reviewStatus: conversation.session.reviewStatus,
+          score:
+            conversation.session.reviewStatus === "ready"
+              ? (conversation.session.review?.score ?? null)
+              : null,
+          difficultyCount: conversation.session.review?.difficulties.length ?? 0,
+          cardsConfirmed: conversation.session.cardsConfirmedAt !== null,
+          minTurnsForXp: MIN_TURNS_FOR_XP,
+          conversationXp: CONVERSATION_XP,
           turns: conversation.turns.map((turn) => ({
             id: turn.id,
             role: turn.role,
             text: turn.text,
             translation: turn.translation,
             corrections: turn.corrections,
+            correctedText: turn.correctedText,
           })),
         }}
       />

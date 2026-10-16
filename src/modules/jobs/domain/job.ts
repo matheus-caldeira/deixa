@@ -1,4 +1,13 @@
-export const JOB_KINDS = ["generate_plan", "card_batch", "refresh_recommendations", "episode_audio"] as const;
+export const JOB_KINDS = [
+  "generate_plan",
+  "card_batch",
+  "refresh_recommendations",
+  "episode_audio",
+  "conversation_review",
+  "conversation_terms",
+  "conversation_audio",
+  "personal_series_description",
+] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
 export const JOB_STATUSES = ["QUEUED", "RUNNING", "DONE", "FAILED"] as const;
@@ -24,6 +33,10 @@ export const MAX_ATTEMPTS_BY_KIND: Record<JobKind, number> = {
   card_batch: 1,
   refresh_recommendations: 1,
   episode_audio: 3,
+  conversation_review: 1,
+  conversation_terms: 1,
+  conversation_audio: 3,
+  personal_series_description: 1,
 };
 
 export const JOB_LOCK_MS = 15 * 60 * 1000;

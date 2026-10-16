@@ -162,6 +162,20 @@
       "when": 1792115432664,
       "tag": "0022_condemned_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792125416438,
+      "tag": "0023_conversation_close",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792125663134,
+      "tag": "0024_personal_series",
+      "breakpoints": true
     }
   ]
 }

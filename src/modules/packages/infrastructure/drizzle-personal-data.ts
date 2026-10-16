@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { isStudyLanguage, type StudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import {
@@ -7,6 +7,10 @@ import {
   learningItemExplanations,
   learningItems,
   mediaItems,
+  personalEpisodeCards,
+  personalEpisodes,
+  personalSeasons,
+  personalSeries,
   reviewLogs,
   seasons,
   subtitleCues,
@@ -23,7 +27,12 @@ import type { CatalogRepository } from "@/modules/catalog";
 import type { LearningRepository } from "@/modules/learning";
 import type { IdGenerator } from "@/shared/ids";
 import { workKeyOf, type EpisodeRef, type PackagedCard } from "../domain/package";
-import { PERSONAL_FORMAT_VERSION, type PersonalCard, type PersonalData } from "../domain/personal";
+import {
+  PERSONAL_FORMAT_VERSION,
+  type PersonalCard,
+  type PersonalData,
+  type PersonalSeriesData,
+} from "../domain/personal";
 import type {
   PersonalDataReader,
   PersonalDataWriter,
@@ -311,7 +320,210 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         createdAt: row.createdAt.toISOString(),
       })),
       credentials,
+      personalSeries: await this.collectSeries(userId),
     };
+  }
+
+  private async collectSeries(userId: string): Promise<PersonalSeriesData[]> {
+    const db = this.deps.db;
+    const seriesRows = await db.select().from(personalSeries).where(eq(personalSeries.userId, userId));
+    const result: PersonalSeriesData[] = [];
+    for (const series of seriesRows) {
+      const seasonRows = await db
+        .select()
+        .from(personalSeasons)
+        .where(eq(personalSeasons.seriesId, series.id))
+        .orderBy(asc(personalSeasons.number));
+      const episodeRows = await db
+        .select()
+        .from(personalEpisodes)
+        .where(eq(personalEpisodes.seriesId, series.id))
+        .orderBy(asc(personalEpisodes.number));
+      const cardRows = await db
+        .select({ link: personalEpisodeCards, item: learningItems, explanation: learningItemExplanations })
+        .from(personalEpisodeCards)
+        .innerJoin(learningItems, eq(learningItems.id, personalEpisodeCards.learningItemId))
+        .leftJoin(
+          learningItemExplanations,
+          and(
+            eq(learningItemExplanations.learningItemId, learningItems.id),
+            eq(learningItemExplanations.locale, series.nativeLanguage),
+          ),
+        )
+        .where(eq(personalEpisodeCards.seriesId, series.id))
+        .orderBy(asc(personalEpisodeCards.position));
+      if (!isStudyLanguage(series.targetLanguage) || !isStudyLanguage(series.nativeLanguage)) continue;
+      result.push({
+        language: series.targetLanguage,
+        locale: series.nativeLanguage,
+        name: series.name,
+        description: series.description,
+        levelMode: series.levelMode === "fixed" || series.levelMode === "custom" ? series.levelMode : "auto",
+        levelMin: series.levelMin ? asLevel(series.levelMin) : null,
+        levelMax: series.levelMax ? asLevel(series.levelMax) : null,
+        startLevel: asLevel(series.startLevel),
+        seasons: seasonRows.map((season) => ({
+          level: asLevel(season.level),
+          episodes: episodeRows
+            .filter((episode) => episode.seasonId === season.id)
+            .map((episode) => ({
+              title: episode.title,
+              theme: episode.theme,
+              part: episode.part,
+              completedNodes: Array.isArray(episode.completedNodes)
+                ? episode.completedNodes.filter((node): node is number => typeof node === "number")
+                : [],
+              cards: cardRows
+                .filter((row) => row.link.episodeId === episode.id)
+                .map((row) => ({
+                  term: row.item.sourceText,
+                  meaning: row.explanation?.translation ?? "",
+                  context: row.item.contextText,
+                  source: row.item.origin,
+                })),
+            })),
+        })),
+      });
+    }
+    return result;
+  }
+
+  private async mergeSeries(userId: string, data: PersonalSeriesData, now: Date): Promise<number> {
+    const db = this.deps.db;
+    await db
+      .insert(personalSeries)
+      .values({
+        id: this.deps.ids.next(),
+        userId,
+        targetLanguage: data.language,
+        nativeLanguage: data.locale,
+        name: data.name,
+        description: data.description,
+        levelMode: data.levelMode,
+        levelMin: data.levelMin,
+        levelMax: data.levelMax,
+        startLevel: data.startLevel,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
+    const [series] = await db
+      .select({ id: personalSeries.id })
+      .from(personalSeries)
+      .where(
+        and(
+          eq(personalSeries.userId, userId),
+          eq(personalSeries.targetLanguage, data.language),
+          eq(personalSeries.nativeLanguage, data.locale),
+        ),
+      )
+      .limit(1);
+    if (!series) return 0;
+    await db
+      .update(personalSeries)
+      .set({
+        name: sql`coalesce(${personalSeries.name}, ${data.name})`,
+        description: sql`coalesce(${personalSeries.description}, ${data.description})`,
+        updatedAt: now,
+      })
+      .where(eq(personalSeries.id, series.id));
+    let createdEpisodes = 0;
+    for (const season of data.seasons) {
+      const seasonId = await db.transaction(async (tx) => {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${series.id}))`);
+        const [known] = await tx
+          .select({ id: personalSeasons.id })
+          .from(personalSeasons)
+          .where(and(eq(personalSeasons.seriesId, series.id), eq(personalSeasons.level, season.level)))
+          .limit(1);
+        if (known) return known.id;
+        const [last] = await tx
+          .select({ number: sql<number>`coalesce(max(${personalSeasons.number}), 0)::int` })
+          .from(personalSeasons)
+          .where(eq(personalSeasons.seriesId, series.id));
+        const id = this.deps.ids.next();
+        await tx.insert(personalSeasons).values({
+          id,
+          seriesId: series.id,
+          level: season.level,
+          number: (last?.number ?? 0) + 1,
+          createdAt: now,
+        });
+        return id;
+      });
+      for (const episode of season.episodes) {
+        const [known] = await db
+          .select({ id: personalEpisodes.id, completedNodes: personalEpisodes.completedNodes })
+          .from(personalEpisodes)
+          .where(
+            and(
+              eq(personalEpisodes.seasonId, seasonId),
+              eq(personalEpisodes.theme, episode.theme),
+              eq(personalEpisodes.part, episode.part),
+            ),
+          )
+          .limit(1);
+        let episodeId = known?.id;
+        if (!episodeId) {
+          const [last] = await db
+            .select({ number: sql<number>`coalesce(max(${personalEpisodes.number}), 0)::int` })
+            .from(personalEpisodes)
+            .where(eq(personalEpisodes.seasonId, seasonId));
+          episodeId = this.deps.ids.next();
+          await db.insert(personalEpisodes).values({
+            id: episodeId,
+            seriesId: series.id,
+            seasonId,
+            number: (last?.number ?? 0) + 1,
+            title: episode.title,
+            theme: episode.theme,
+            part: episode.part,
+            completedNodes: episode.completedNodes,
+            createdAt: now,
+            updatedAt: now,
+          });
+          createdEpisodes += 1;
+        } else {
+          const local = Array.isArray(known?.completedNodes) ? known.completedNodes : [];
+          const merged = [...new Set([...local, ...episode.completedNodes])];
+          await db
+            .update(personalEpisodes)
+            .set({ completedNodes: merged, updatedAt: now })
+            .where(eq(personalEpisodes.id, episodeId));
+        }
+        const [lastCard] = await db
+          .select({ position: sql<number>`coalesce(max(${personalEpisodeCards.position}), -1)::int` })
+          .from(personalEpisodeCards)
+          .where(eq(personalEpisodeCards.episodeId, episodeId));
+        let position = (lastCard?.position ?? -1) + 1;
+        for (const card of episode.cards) {
+          const learningItemId = await this.deps.learning.upsertStandaloneItem({
+            id: this.deps.ids.next(),
+            ownerUserId: userId,
+            pair: { target: data.language, native: data.locale },
+            term: card.term,
+            meaning: card.meaning,
+            context: card.context,
+            origin: card.source,
+            createdAt: now,
+          });
+          const inserted = await db
+            .insert(personalEpisodeCards)
+            .values({
+              seriesId: series.id,
+              episodeId,
+              learningItemId,
+              sessionId: null,
+              position,
+              createdAt: now,
+            })
+            .onConflictDoNothing()
+            .returning({ id: personalEpisodeCards.learningItemId });
+          position += inserted.length;
+        }
+      }
+    }
+    return createdEpisodes;
   }
 
   private async resolveEpisode(ref: EpisodeRef): Promise<string | null> {
@@ -350,6 +562,7 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
       progress: 0,
       xp: 0,
       credentials: 0,
+      seriesEpisodes: 0,
       skipped: 0,
     };
     const episodeCache = new Map<string, string | null>();
@@ -603,6 +816,10 @@ export class DrizzlePersonalData implements PersonalDataReader, PersonalDataWrit
         })
         .onConflictDoNothing();
       report.credentials += 1;
+    }
+
+    for (const series of data.personalSeries) {
+      report.seriesEpisodes += await this.mergeSeries(userId, series, now);
     }
     return report;
   }

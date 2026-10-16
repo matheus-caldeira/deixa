@@ -21,6 +21,7 @@ import {
   makeGetSpeechAudio,
   makeListCachedSpeech,
   makeSynthesizeLines,
+  voiceFor,
   type TtsProvider,
 } from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
@@ -53,16 +54,41 @@ import {
   makeGetConversation,
   makeGetLearnerProfile,
   makeGetTurnSpeechText,
+  makeCloseConversation,
+  makeConfirmConversationCards,
   makeListConversations,
-  makeReviewConversation,
+  makeRequestConversationReview,
+  makeRequestTermCards,
+  makeRunConversationReview,
+  makeRunTermCards,
   makeSendMessage,
   makeStartConversation,
-  type Correction,
+  type CardPlacement,
+  type ConversationNotification,
+  type NewCard,
   type TutorProvider,
 } from "@/modules/conversations";
+import {
+  makeCompletePersonalLesson,
+  makeGetEpisodeTrail,
+  makeGetPersonalSeries,
+  makeGetSeasonContext,
+  makePlaceCards,
+  makeRefreshSeriesDescription,
+  makeRenameSeries,
+  makeSetSeriesLevel,
+  makeStartPersonalLesson,
+  type DescribeSeriesInput,
+} from "@/modules/personal-series";
+import { DrizzlePersonalSeriesRepository } from "@/modules/personal-series/infrastructure/drizzle-personal-series-repository";
 import { DrizzleConversationRepository } from "@/modules/conversations/infrastructure/drizzle-conversation-repository";
 import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
-import { makeAwardXp, makeGetProfileSummary, makeSettleMissions } from "@/modules/gamification";
+import {
+  levelProgressPercent,
+  makeAwardXp,
+  makeGetProfileSummary,
+  makeSettleMissions,
+} from "@/modules/gamification";
 import { DrizzleGamificationRepository } from "@/modules/gamification/infrastructure/drizzle-gamification-repository";
 import {
   makeGetReadingView,
@@ -216,6 +242,7 @@ const FINGERPRINT_CHARS = 16;
 const UNLIMITED_DOWNLOADS = Number.MAX_SAFE_INTEGER;
 const MISTAKE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const MISTAKES_FOR_TUTOR = 6;
+const CLOSED_SESSIONS_FOR_HINTS = 50;
 
 const fingerprint = (secret: string): string =>
   createHash("sha256").update(secret).digest("hex").slice(0, FINGERPRINT_CHARS);
@@ -607,22 +634,18 @@ export function buildContainer(options: ContainerOptions) {
     return Math.max(created, itemIds.length);
   }
 
-  async function queueCorrections(
-    userId: string,
-    corrections: Correction[],
-    _sourceLabel: string,
-  ): Promise<number> {
+  async function createConversationCards(userId: string, newCards: NewCard[]): Promise<string[]> {
     const pair = await pairFor(userId);
     const itemIds: string[] = [];
-    for (const correction of corrections) {
+    for (const card of newCards) {
       itemIds.push(
         await learning.upsertStandaloneItem({
           id: ids.next(),
           ownerUserId: userId,
           pair,
-          term: correction.right,
-          meaning: correction.why,
-          context: correction.wrong,
+          term: card.term,
+          meaning: card.meaning,
+          context: card.context,
           origin: "tutor_correction",
           createdAt: clock.now(),
         }),
@@ -633,8 +656,43 @@ export function buildContainer(options: ContainerOptions) {
       itemIds.map((learningItemId) => ({ learningItemId, sourceKind: "tutor" })),
     );
     await cards.bringForward(userId, itemIds, clock.now());
-    return itemIds.length;
+    return itemIds;
   }
+
+  const learnerOf = async (userId: string) => {
+    const preferences = await identity.get(userId);
+    return {
+      userId,
+      pair: preferences ? pairOf(preferences) : { target: DEFAULT_TARGET_LANGUAGE, native: "pt-BR" as const },
+      userLevel: preferences?.level ?? ("A1" as const),
+    };
+  };
+  const personalSeriesRepository = new DrizzlePersonalSeriesRepository(db);
+  const seriesDeps = {
+    series: personalSeriesRepository,
+    levelPercent: async (userId: string) =>
+      levelProgressPercent({
+        lessonsPassed: (await gamification.lessonStats(userId, null)).passed,
+        cardsOwned: await gamification.cardsOwned(userId),
+      }),
+    describe: async (userId: string, input: DescribeSeriesInput) =>
+      (await resolveTutor(userId)).describeSeries(input),
+    learnerHints: async (userId: string, pair: LanguagePair) => {
+      const [profile, sessions] = await Promise.all([
+        makeGetLearnerProfile({ conversations, recentMistakes })(userId, pair.target),
+        conversations.listSessions(userId, pair.target, CLOSED_SESSIONS_FOR_HINTS),
+      ]);
+      return {
+        recentTopics: profile.recentTopics,
+        improvements: profile.improvements,
+        conversations: sessions.filter((session) => session.closedAt !== null).length,
+      };
+    },
+    clock,
+    ids,
+  };
+  const getSeasonContext = makeGetSeasonContext(seriesDeps);
+  const placeSeriesCards = makePlaceCards(seriesDeps);
 
   const recentMistakes = async (userId: string, language: StudyLanguage) =>
     (
@@ -648,9 +706,17 @@ export function buildContainer(options: ContainerOptions) {
   const conversationDeps = {
     conversations,
     resolveTutor,
-    queueCorrections,
     recentMistakes,
     awardXp,
+    seasonContext: async (userId: string) => getSeasonContext(await learnerOf(userId)),
+    createCards: createConversationCards,
+    placeCards: async (input: { userId: string; sessionId: string; cards: CardPlacement[] }) =>
+      placeSeriesCards({
+        ...(await learnerOf(input.userId)),
+        sessionId: input.sessionId,
+        cards: input.cards,
+      }),
+    notify: (input: ConversationNotification) => notify(input),
     clock,
     ids,
   };
@@ -836,6 +902,21 @@ export function buildContainer(options: ContainerOptions) {
       href: `/read/${input.episodeId}`,
     });
   };
+  const synthesizeConversationAudio = async (input: {
+    userId: string;
+    sessionId: string;
+    voice: { voiceId: string; language: string };
+  }): Promise<void> => {
+    if (!(await conversations.findSession(input.userId, input.sessionId))) return;
+    const turns = await conversations.listTurns(input.sessionId);
+    const result = await synthesizeLines({
+      voice: input.voice,
+      lines: turns.map((turn) => ({ id: turn.id, text: turn.correctedText ?? turn.text })),
+    });
+    log.info("audio.conversation", { sessionId: input.sessionId, ...result });
+  };
+  const refreshSeriesDescription = makeRefreshSeriesDescription(seriesDeps);
+  const runConversationReview = makeRunConversationReview(conversationDeps);
   const jobs = new DrizzleJobRepository(db);
   const jobHandlers: JobHandlers = {
     generate_plan: generatePlan,
@@ -844,6 +925,26 @@ export function buildContainer(options: ContainerOptions) {
       await refreshRecommendations(payload);
     },
     episode_audio: synthesizeEpisodeAudio,
+    conversation_review: async (payload) => {
+      await runConversationReview(payload);
+      if (!audioBatchAvailable) return;
+      const preferences = await identity.get(payload.userId);
+      if (!preferences) return;
+      await synthesizeConversationAudio({
+        userId: payload.userId,
+        sessionId: payload.sessionId,
+        voice: voiceFor(pairOf(preferences).target, preferences.preferredAccent),
+      });
+    },
+    conversation_terms: makeRunTermCards(conversationDeps),
+    conversation_audio: synthesizeConversationAudio,
+    personal_series_description: async (payload) => {
+      await refreshSeriesDescription({
+        userId: payload.userId,
+        pair: payload.pair,
+        userLevel: payload.level,
+      });
+    },
   };
   const runClaimedJob = makeRunClaimedJob({ jobs, handlers: jobHandlers, clock });
   const runJobInline = makeRunJobInline({ jobs, run: runClaimedJob, clock });
@@ -934,7 +1035,21 @@ export function buildContainer(options: ContainerOptions) {
     getLearnerProfile: makeGetLearnerProfile(conversationDeps),
     listConversations: makeListConversations(conversationDeps),
     sendMessage: makeSendMessage(conversationDeps),
-    reviewConversation: makeReviewConversation(conversationDeps),
+    closeConversation: makeCloseConversation(conversationDeps),
+    requestConversationReview: makeRequestConversationReview(conversationDeps),
+    confirmConversationCards: makeConfirmConversationCards(conversationDeps),
+    requestTermCards: makeRequestTermCards(conversationDeps),
+    getPersonalSeries: makeGetPersonalSeries(seriesDeps),
+    getPersonalEpisodeTrail: makeGetEpisodeTrail(seriesDeps),
+    renamePersonalSeries: makeRenameSeries(seriesDeps),
+    setPersonalSeriesLevel: makeSetSeriesLevel(seriesDeps),
+    startPersonalLesson: makeStartPersonalLesson({ series: personalSeriesRepository, awardXp, clock, ids }),
+    completePersonalLesson: makeCompletePersonalLesson({
+      series: personalSeriesRepository,
+      awardXp,
+      clock,
+      ids,
+    }),
     getTurnSpeechText,
     isTutorSimulated: async (userId: string) => (await resolveTutor(userId)).name === "fake",
     startLesson: makeStartLesson(studyDeps),

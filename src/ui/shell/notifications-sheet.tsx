@@ -9,6 +9,7 @@ import { useErrorText } from "./use-error-text";
 
 export function NotificationsSheet(props: { inbox: InboxView; onChange: () => void; onClose: () => void }) {
   const t = useTranslations("inbox");
+  const talk = useTranslations("talk");
   const format = useFormatter();
   const errorText = useErrorText();
   const router = useRouter();
@@ -28,6 +29,8 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
   const describe = (item: InboxView["items"][number]) => {
     const params = { ...item.params };
     if (typeof params.reason === "string") params.reason = errorText(params.reason);
+    const themeKey = `themes.${params.themeId}.title`;
+    if (typeof params.themeId === "string" && talk.has(themeKey)) params.theme = talk(themeKey);
     return {
       title: t.has(`${item.kind}.title`) ? t(`${item.kind}.title`, params) : item.kind,
       body: t.has(`${item.kind}.body`) ? t(`${item.kind}.body`, params) : "",
@@ -65,7 +68,7 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
                   <span style={{ width: 22, height: 22, display: "grid" }}>
                     {failed ? (
                       <XIcon />
-                    ) : item.kind === "cards_ready" ? (
+                    ) : item.kind === "cards_ready" || item.kind.startsWith("conversation_") ? (
                       <SparkIcon />
                     ) : item.kind === "audio_ready" ? (
                       <SoundIcon />

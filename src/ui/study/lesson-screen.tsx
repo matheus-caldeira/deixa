@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { completePersonalLessonAction } from "@/app/actions/personal-series";
 import { completeLessonAction } from "@/app/actions/study";
 import {
   correctAnswerText,
@@ -28,19 +29,27 @@ export type LessonScreenView = {
   replay: boolean;
   audioSpeed: number;
   exercises: Exercise[];
+  source?: "episode" | "personal";
 };
+
+type SpeechKind = "cue" | "item";
 
 const PRAISE_COUNT = 4;
 type Phase = "ask" | "right" | "wrong";
 
-function SpeakButtons(props: { cueId: string; big?: boolean; speech: ReturnType<typeof useSpeech> }) {
+function SpeakButtons(props: {
+  cueId: string;
+  kind: SpeechKind;
+  big?: boolean;
+  speech: ReturnType<typeof useSpeech>;
+}) {
   const t = useTranslations("lesson");
   const loading = props.speech.loadingId === props.cueId;
   return (
     <div className="row" style={{ gap: props.big ? 14 : 10 }}>
       <button
         className={`speak ${props.big ? "big" : ""}`}
-        onClick={() => props.speech.play("cue", props.cueId)}
+        onClick={() => props.speech.play(props.kind, props.cueId)}
         aria-label={t("listen")}
         disabled={loading}
       >
@@ -49,7 +58,7 @@ function SpeakButtons(props: { cueId: string; big?: boolean; speech: ReturnType<
       </button>
       <button
         className="speak slow"
-        onClick={() => props.speech.play("cue", props.cueId, true)}
+        onClick={() => props.speech.play(props.kind, props.cueId, true)}
         aria-label={t("listenSlow")}
       >
         <TurtleIcon />
@@ -75,7 +84,9 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   const startedAt = useRef(0);
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
   const exercise = view.exercises[position];
-  const backHref = "/";
+  const personal = view.source === "personal";
+  const backHref = personal ? `/series/${view.episodeId}` : "/";
+  const speechKind: SpeechKind = personal ? "item" : "cue";
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -209,7 +220,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               router.refresh();
             }}
           >
-            {result.passed ? t("continue") : t("backHome")}
+            {result.passed ? t("continue") : personal ? t("backToTrail") : t("backHome")}
           </button>
         </div>
       </div>
@@ -255,13 +266,20 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
     const seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     setElapsed(seconds);
     startTransition(async () => {
-      const outcome = await completeLessonAction({
-        episodeId: view.episodeId,
-        nodeIndex: view.nodeIndex,
-        seed: view.seed,
-        answers,
-        seconds,
-      });
+      const outcome = personal
+        ? await completePersonalLessonAction({
+            episodeId: view.episodeId,
+            nodeIndex: view.nodeIndex,
+            seed: view.seed,
+            answers,
+          })
+        : await completeLessonAction({
+            episodeId: view.episodeId,
+            nodeIndex: view.nodeIndex,
+            seed: view.seed,
+            answers,
+            seconds,
+          });
       if (outcome.ok) setResult(outcome.data);
       else toast(outcome.message);
     });
@@ -302,13 +320,13 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         </span>
         <div className="cuebox">
           <div className="tcode">
-            <span>{formatTimecode(exercise.startMs)}</span>
+            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
             <span>{view.title}</span>
           </div>
           <div className="line">{exercise.english}</div>
         </div>
         <div className="intro">
-          <SpeakButtons cueId={exercise.cueId} speech={speech} />
+          <SpeakButtons cueId={exercise.cueId} kind={speechKind} speech={speech} />
           {exercise.portuguese ? <div className="pt">{exercise.portuguese}</div> : null}
         </div>
       </>
@@ -319,9 +337,9 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         <div className="prompt">{t(`prompts.${exercise.prompt}`)}</div>
         <div className="cuebox">
           <div className="tcode">
-            <span>{formatTimecode(exercise.startMs)}</span>
+            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
             <button
-              onClick={() => speech.play("cue", exercise.cueId)}
+              onClick={() => speech.play(speechKind, exercise.cueId)}
               style={{ color: "#8A90A8", display: "flex", gap: 4, alignItems: "center" }}
             >
               <SoundIcon width={16} height={16} />
@@ -342,9 +360,9 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         <div className="cuebox">
           <div className="tcode">
             <span>{t("hiddenSubtitle")}</span>
-            <span>{formatTimecode(exercise.startMs)}</span>
+            <span>{personal ? null : formatTimecode(exercise.startMs)}</span>
           </div>
-          <SpeakButtons cueId={exercise.cueId} speech={speech} big />
+          <SpeakButtons cueId={exercise.cueId} kind={speechKind} speech={speech} big />
         </div>
         <div className="opts">
           {exercise.options.map((label, index) => option(label, index, exercise.answer))}
@@ -393,7 +411,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             </span>
           </div>
         ) : (
-          <SpeakButtons cueId={exercise.cueId} speech={speech} big />
+          <SpeakButtons cueId={exercise.cueId} kind={speechKind} speech={speech} big />
         )}
         <div className="answerline">
           {built.map((bankIndex) => (
@@ -441,7 +459,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
             </div>
           </div>
         ) : (
-          <SpeakButtons cueId={exercise.cueId} speech={speech} big />
+          <SpeakButtons cueId={exercise.cueId} kind={speechKind} speech={speech} big />
         )}
         <textarea
           className="ta"

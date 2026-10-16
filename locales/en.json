@@ -119,6 +119,18 @@
     "audio_ready": {
       "title": "Episode audio is ready",
       "body": "{episode}: {count, plural, one {# line} other {# lines}} with audio, no waiting."
+    },
+    "conversation_review_ready": {
+      "title": "Conversation review ready",
+      "body": "{theme}: {count, plural, =0 { no difficulties} one {# difficulty} other {# difficulties}} to choose from."
+    },
+    "conversation_review_failed": {
+      "title": "Couldn't review the conversation",
+      "body": "{theme}: {reason}"
+    },
+    "conversation_terms_ready": {
+      "title": "New cards in your series",
+      "body": "{theme}: {count, plural, one {# marked term became a card} other {# marked terms became cards}}."
     }
   },
   "errors": {
@@ -223,7 +235,16 @@
       "versionConflict": "This episode already has a script uploaded by someone else. Only the uploader can replace it.",
       "themeRequired": "Pick a topic or write a short subject.",
       "conversationLimit": "This conversation reached its limit. Review it and start another.",
-      "tutorInvalid": "The tutor answered in an unexpected format. Try again."
+      "tutorInvalid": "The tutor answered in an unexpected format. Try again.",
+      "conversationClosed": "This conversation is closed. Start another one to keep talking.",
+      "conversationOpen": "Close the conversation before asking for a review.",
+      "reviewNotReady": "This conversation's review isn't ready yet.",
+      "cardsAlreadyConfirmed": "The cards from this review were already created.",
+      "noTermsMarked": "Mark words that appear in the conversation.",
+      "termsMalformed": "The term explanations came back in the wrong format. Try again.",
+      "seriesNameInvalid": "Use a name of up to 40 characters, without links.",
+      "seriesLevelInvalid": "Pick a level, or a range where the first doesn't go past the second.",
+      "seriesDescriptionMalformed": "The series description came back in the wrong format."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -480,7 +501,8 @@
     "exitTitle": "Leave the lesson?",
     "exitBody": "You will lose your progress in this lesson. Answered exercises are not saved.",
     "exitStay": "Keep going",
-    "exitConfirm": "Leave and lose progress"
+    "exitConfirm": "Leave and lose progress",
+    "backToTrail": "Back to the trail"
   },
   "chat": {
     "back": "Back",
@@ -490,28 +512,63 @@
       "UK": "British accent"
     },
     "simulatedTag": "simulated",
-    "reviewAll": "Review the whole conversation",
     "generating": "generating…",
     "play": "play",
     "correction": "Correction",
-    "limitReached": "This conversation reached its limit. Tap the target to review and start another one.",
+    "limitReached": "This conversation reached its limit. Close it to review and start another one.",
     "stopRecording": "Stop and send the audio",
     "recordAnswer": "Answer with audio",
     "recording": "Recording… tap the microphone to send",
     "answerPlaceholder": "Answer in English…",
     "yourMessage": "Your message",
     "send": "Send",
-    "reviewTitle": "Conversation review",
-    "evaluating": "Evaluating the whole conversation…",
-    "strengths": "What went well",
-    "improvements": "To improve",
-    "phrasesQueued": "Sentences sent to your review",
-    "evaluatingShort": "Evaluating…",
-    "evaluateAgain": "Evaluate again",
-    "queued": "{count, plural, one {# correction} other {# corrections}} in your review.",
     "micInsecure": "The microphone only works on a secure connection (HTTPS). For now, type your answer.",
     "micFailed": "Could not use the microphone.",
-    "reviewedXp": "Conversation reviewed · +{xp} XP"
+    "slow": "slow",
+    "showText": "Show text",
+    "correctedLabel": "Correct version",
+    "close": "Close",
+    "closeTitle": "Close the conversation?",
+    "closeBody": "Once closed, you can't send new messages. The conversation stays available to read and listen to.",
+    "closeStepReview": "With a review, the AI reads your messages in the background; you can leave this screen",
+    "closeStepCards": "When it's done, the bell lets you know and you choose which difficulties become cards",
+    "closeStepSeries": "The cards go into the episodes of your personal series",
+    "closeXp": "+{xp} XP for closing, with or without a review.",
+    "closeNoXp": "Conversation XP starts at {count} of your messages.",
+    "closeAndReview": "Close and review",
+    "closeWithoutReview": "Close without review",
+    "keepTalking": "Keep talking",
+    "closedToast": "Conversation closed{xp, plural, =0 {} other { · +# XP}}",
+    "closedReviewQueued": "Review queued{xp, plural, =0 {} other { · +# XP}}. The bell lets you know when it's done.",
+    "reviewQueuedToast": "Review queued. The bell lets you know when it's done.",
+    "closedChip": "Closed",
+    "closedChipScore": "Closed · {score}",
+    "reviewRunning": "Reviewing in the background",
+    "reviewRunningBody": "Keep reading, listening or leave. The bell lets you know when it's done.",
+    "steps": {
+      "read": "Reading the conversation",
+      "find": "Finding difficulties",
+      "cards": "Drafting cards",
+      "episodes": "Choosing series episodes"
+    },
+    "reviewReady": "Review ready · score {score}",
+    "reviewReadyBody": "{count, plural, =0 { No difficulties found.} one {# difficulty became a suggested card. Decide if it stays.} other {# difficulties became suggested cards. Choose which ones stay.}}",
+    "cardsDone": "Cards already created and placed in your series.",
+    "openReview": "See review",
+    "openSeries": "Open in series",
+    "reviewFailed": "Couldn't review",
+    "reviewFailedBody": "The AI didn't answer this time. The conversation is still saved.",
+    "retryReview": "Try again",
+    "closedNoReview": "Closed without review",
+    "closedNoReviewBody": "Read and listen only. Mark words to create cards or ask for a review whenever you want.",
+    "reviewNow": "Review now",
+    "modeRead": "Read",
+    "modeListen": "Listen",
+    "playAll": "Play all",
+    "stopAll": "Stop",
+    "marked": "marked",
+    "createCards": "Create cards",
+    "termsQueued": "{count, plural, one {# term was} other {# terms were}} sent to the AI. The bell lets you know when the cards are in your series."
   },
   "talk": {
     "title": "Talk",
@@ -554,12 +611,17 @@
     },
     "learnerTitle": "What the tutor takes into account",
     "learnerBody": "It comes from your reviewed conversations and from review mistakes in this language. The tutor uses it to pick words and revisit weak spots.",
-    "learnerEmpty": "Review a conversation when you finish: the tutor will remember your strengths and what to improve next time.",
+    "learnerEmpty": "Close a conversation with a review: the tutor starts remembering your strengths and what to improve next time.",
     "learner": {
       "improvements": "To improve",
       "strengths": "Strengths",
       "mistakes": "Recurring review mistakes"
-    }
+    },
+    "reviewing": "Reviewing",
+    "closed": "Closed",
+    "seriesDefaultName": "My conversations",
+    "seriesEmpty": "Your personal series: close and review a conversation to create the first episode.",
+    "seriesSummary": "Personal series · {episodes, plural, one {# episode} other {# episodes}} · {cards, plural, one {# card} other {# cards}}"
   },
   "credentials": {
     "globalName": "global {label}",
@@ -1110,7 +1172,8 @@
       "personalSkipped": "Personal data of {label} stayed out: enter the source account password to import it."
     },
     "importAnother": "Import another file",
-    "idempotentNote": "What already exists is not overwritten. Importing the same file twice duplicates nothing."
+    "idempotentNote": "What already exists is not overwritten. Importing the same file twice duplicates nothing.",
+    "seriesEpisodes": "{count, plural, one {# personal series episode} other {# personal series episodes}}"
   },
   "setup": {
     "title": "Set up the database",
@@ -1189,5 +1252,85 @@
     "pt-BR": "Portuguese",
     "es": "Spanish",
     "fr": "French"
+  },
+  "conversationReview": {
+    "eyebrow": "Conversation review",
+    "back": "Back to the conversation",
+    "strengths": "What went well",
+    "improvements": "To improve",
+    "difficulties": "Difficulties found",
+    "difficultiesBody": "Each one is already a card. Uncheck what you already know.",
+    "lockedBody": "The cards from this review were already created.",
+    "noDifficulties": "The AI found nothing to turn into a card in this conversation.",
+    "selectAll": "Select all",
+    "unselectAll": "Unselect all",
+    "toggle": "Create a card for {term}",
+    "kinds": {
+      "grammar": "Grammar",
+      "vocabulary": "Vocabulary and false friends",
+      "tutor": "From the tutor: what may have slipped by"
+    },
+    "youSaid": "You said",
+    "tutorSaid": "The tutor said",
+    "inSeries": "In your series",
+    "inSeriesBody": "The AI puts each card in the episode of its theme. When the theme has no episode yet, it creates one.",
+    "noneSelected": "No cards selected.",
+    "newEpisode": "New episode",
+    "plusCards": "+{count}",
+    "confirm": "Create {count, plural, one {# card} other {# cards}} and add to series",
+    "confirmNone": "Don't create cards",
+    "confirmedToast": "{cards, plural, =0 { No cards created} one {# card created} other {# cards created}}{episodes, plural, =0 {} one { · # new episode} other { · # new episodes}}",
+    "openSeries": "Open the series",
+    "reread": "Reread the conversation"
+  },
+  "series": {
+    "back": "Tutor",
+    "defaultName": "My conversations",
+    "personal": "Personal series",
+    "onlyYou": "Made from your conversations with the tutor. Only you can see it.",
+    "rename": "Rename the series",
+    "episodes": "{count, plural, one {# episode} other {# episodes}}",
+    "cards": "{count, plural, one {# card} other {# cards}}",
+    "levelAuto": "Your level · {level}",
+    "levelFixed": "Fixed level · {level}",
+    "levelCustom": "Custom · {min}–{max}",
+    "aboutTitle": "About this series · written by the AI",
+    "aboutEmpty": "The AI writes the description after the first review with cards, and it changes as you study.",
+    "aboutUpdated": "Updated on {date} from {conversations, plural, one {# conversation} other {# conversations}} and {cards, plural, one {# card} other {# cards}}.",
+    "seasonTab": "S{number} · {level}",
+    "seasonTitle": "Season {number}",
+    "seasonEmpty": "Still empty. The AI opens this season's episodes as your conversations call for them.",
+    "locked": "Opens once you pass {unlockAt}% of level {level}. Today: {percent}%.",
+    "upcomingThemes": "Themes likely to come back, more advanced",
+    "upcomingNote": "Each season is a level. These themes come back in {level} with a more advanced focus, picked from what shows up most in your conversations.",
+    "aiCreates": "The AI creates the next episode when a new theme comes up",
+    "newBadge": "NEW",
+    "episodeMeta": "{cards, plural, one {# card} other {# cards}} · {sources, plural, =0 { no conversation} one {# conversation} other {# conversations}}",
+    "open": "Open {title}",
+    "nameTitle": "Series name",
+    "nameLabel": "What do you want to call it",
+    "nameNote": "The series id ({id}) never changes: cards, progress and the .deixa.zip package stay tied to it.",
+    "save": "Save",
+    "levelTitle": "Series level",
+    "levelBody": "Sets the level of new episodes. Each season is a CEFR level.",
+    "modes": {
+      "auto": "My level",
+      "fixed": "Fixed",
+      "custom": "Custom"
+    },
+    "autoNote": "The series follows your level ({level}) and opens the next season when you're close to moving up.",
+    "levelOnly": "Level",
+    "levelFrom": "From",
+    "levelTo": "To",
+    "customNote": "Seasons stay within the range: the series follows your level without leaving it.",
+    "episodeEyebrow": "Season {season} · Episode {number} · {level}",
+    "createdByAi": "created by the AI",
+    "progress": "{percent}% done",
+    "sourcesTitle": "Where the cards came from",
+    "noSources": "No conversations yet.",
+    "reread": "Reread",
+    "emptyTrail": "This episode has no cards yet.",
+    "start": "START",
+    "nodeLabel": "Block {number}"
   }
 }

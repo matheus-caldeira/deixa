@@ -8,15 +8,8 @@ import type { LessonResult } from "@/modules/study";
 import { AppError } from "@/shared/errors";
 import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
+import { answerSchema, MAX_ANSWERS } from "./lesson-answers";
 import { app, runAction, type ActionResult } from "./result";
-
-const MAX_ANSWERS = 12;
-const answerSchema = z.union([
-  z.null(),
-  z.number().int().min(0).max(50),
-  z.array(z.number().int().min(0).max(50)).max(30),
-  z.string().max(400),
-]);
 
 export async function completeLessonAction(input: unknown): Promise<ActionResult<LessonResult>> {
   const user = await requireUser();

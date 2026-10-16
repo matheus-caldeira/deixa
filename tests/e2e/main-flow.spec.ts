@@ -206,11 +206,20 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.getByRole("button", { name: "Enviar" }).click();
   await expect(page.locator(".fix")).toHaveCount(2);
   await expect(page.locator(".fix").first()).toContainText("I'd like");
-  await page.getByRole("button", { name: "Revisar a conversa inteira" }).click();
-  const reviewSheet = page.getByRole("dialog", { name: "Revisão da conversa" });
-  await expect(reviewSheet.getByText(/Revisão simulada/)).toBeVisible();
-  await expect(reviewSheet.getByText("Frases que foram para a sua revisão")).toBeVisible();
-  await reviewSheet.getByRole("button", { name: "Fechar" }).click();
+  await page.getByRole("button", { name: "Encerrar", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Encerrar a conversa?" })
+    .getByRole("button", { name: "Encerrar e revisar" })
+    .click();
+  await expect(page.getByLabel("Sua mensagem")).toHaveCount(0);
+  await expect(page.getByText(/Revisão pronta · nota/)).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("link", { name: "Ver revisão" }).click();
+  await expect(page.getByText(/Revisão simulada/)).toBeVisible();
+  await expect(page.getByText("Na sua série")).toBeVisible();
+  await page.getByRole("button", { name: "Criar 2 cards e adicionar à série" }).click();
+  await expect(page).toHaveURL(/\/series$/);
+  await expect(page.getByText("Pedidos educados")).toBeVisible();
+  await expect(page.getByText("Comparativos")).toBeVisible();
   await page.goto("/review");
   await expect(page.getByText(/\d+ na fila/)).toBeVisible();
   await page.goto("/catalog");

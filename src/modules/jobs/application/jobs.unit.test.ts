@@ -47,6 +47,18 @@ function setup() {
         throw new Error("Kokoro fora do ar");
       }
     },
+    conversation_review: async (payload) => {
+      calls.push(`review:${payload.sessionId}`);
+    },
+    conversation_terms: async (payload) => {
+      calls.push(`terms:${payload.sessionId}`);
+    },
+    conversation_audio: async (payload) => {
+      calls.push(`talk-audio:${payload.sessionId}`);
+    },
+    personal_series_description: async (payload) => {
+      calls.push(`series:${payload.userId}`);
+    },
   };
   const run = makeRunClaimedJob({ jobs, handlers, clock });
   return {

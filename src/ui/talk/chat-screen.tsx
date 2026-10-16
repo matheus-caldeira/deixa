@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
-import { reviewConversationAction, sendMessageAction, type TurnView } from "@/app/actions/tutor";
-import type { ConversationReview } from "@/modules/conversations";
-import { BackIcon, MicIcon, SendIcon, SoundIcon, TargetIcon } from "../icons";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  closeConversationAction,
+  requestConversationReviewAction,
+  requestTermCardsAction,
+  sendMessageAction,
+  type TurnView,
+} from "@/app/actions/tutor";
+import type { ReviewStatus } from "@/modules/conversations";
+import { BackIcon, CheckIcon, LockIcon, MicIcon, PlayIcon, SendIcon, SoundIcon, TurtleIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
@@ -22,10 +28,20 @@ export type ChatView = {
   simulated: boolean;
   turnsLeft: number;
   turns: TurnView[];
-  review: ConversationReview | null;
+  closed: boolean;
+  reviewStatus: ReviewStatus;
+  score: number | null;
+  difficultyCount: number;
+  cardsConfirmed: boolean;
+  minTurnsForXp: number;
+  conversationXp: number;
 };
 
 const MAX_RECORDING_MS = 60_000;
+const REVIEW_POLL_MS = 4000;
+const REVIEW_STEPS = ["read", "find", "cards", "episodes"] as const;
+const STEP_EVERY_MS = 2500;
+const WORD_EDGES = /^[^\p{L}\p{N}']+|[^\p{L}\p{N}']+$/gu;
 
 function toBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -36,28 +52,183 @@ function toBase64(blob: Blob): Promise<string> {
   });
 }
 
+function splitWords(text: string): string[] {
+  return text.split(/(\s+)/);
+}
+
+function markedPhrases(turns: TurnView[], marks: ReadonlySet<string>): { turnId: string; text: string }[] {
+  return turns.flatMap((turn) => {
+    const tokens = splitWords(turn.text);
+    const phrases: { turnId: string; text: string }[] = [];
+    let current: string[] = [];
+    tokens.forEach((token, index) => {
+      if (/^\s*$/.test(token)) return;
+      if (marks.has(`${turn.id}:${index}`)) {
+        current.push(token);
+        return;
+      }
+      if (current.length > 0)
+        phrases.push({ turnId: turn.id, text: current.join(" ").replace(WORD_EDGES, "") });
+      current = [];
+    });
+    if (current.length > 0)
+      phrases.push({ turnId: turn.id, text: current.join(" ").replace(WORD_EDGES, "") });
+    return phrases.filter((phrase) => phrase.text !== "");
+  });
+}
+
+function useConversationPlayer(speed: number, onError: (message: string) => void) {
+  const errors = useTranslations("errors");
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const cancelled = useRef(false);
+  const audio = useRef<HTMLAudioElement | null>(null);
+
+  const stop = useCallback(() => {
+    cancelled.current = true;
+    audio.current?.pause();
+    setPlayingId(null);
+  }, []);
+
+  useEffect(() => stop, [stop]);
+
+  const playAll = useCallback(
+    async (ids: string[]) => {
+      cancelled.current = false;
+      for (const id of ids) {
+        if (cancelled.current) break;
+        setPlayingId(id);
+        document.getElementById(`turn-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+        const response = await fetch(`/api/audio/turn/${id}`).catch(() => null);
+        if (!response?.ok) {
+          onError(errors("AUDIO_UNAVAILABLE"));
+          break;
+        }
+        const url = URL.createObjectURL(await response.blob());
+        await new Promise<void>((resolve) => {
+          const player = new Audio(url);
+          player.playbackRate = speed;
+          audio.current = player;
+          player.onended = () => resolve();
+          player.onerror = () => resolve();
+          player.onpause = () => resolve();
+          player.play().catch(() => resolve());
+        });
+        URL.revokeObjectURL(url);
+      }
+      setPlayingId(null);
+    },
+    [errors, onError, speed],
+  );
+
+  return { playingId, playAll, stop };
+}
+
+function ReviewProgress({ status }: { status: ReviewStatus }) {
+  const t = useTranslations("chat");
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (status !== "running") return;
+    const timer = setInterval(
+      () => setStep((current) => Math.min(current + 1, REVIEW_STEPS.length - 1)),
+      STEP_EVERY_MS,
+    );
+    return () => clearInterval(timer);
+  }, [status]);
+  const active = status === "queued" ? -1 : step;
+  return (
+    <div className="col" style={{ gap: 8, marginTop: 6 }}>
+      {REVIEW_STEPS.map((key, index) => (
+        <div key={key} className={`pstep ${index < active ? "done" : index === active ? "run" : "wait"}`}>
+          <span className="s">{index < active ? <CheckIcon /> : null}</span>
+          <span className="small">{t(`steps.${key}`)}</span>
+          <span />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ClosedBanner(props: { view: ChatView; onRequestReview: () => void; requesting: boolean }) {
+  const t = useTranslations("chat");
+  const { view } = props;
+  const status = view.reviewStatus;
+  const ready = status === "ready";
+  return (
+    <div className={`closedbar ${ready ? "ready" : status === "failed" ? "failed" : ""}`}>
+      <LockIcon />
+      <div className="col" style={{ gap: 4, flex: 1, minWidth: 0 }}>
+        {status === "queued" || status === "running" ? (
+          <>
+            <b>{t("reviewRunning")}</b>
+            <span className="small muted">{t("reviewRunningBody")}</span>
+            <ReviewProgress status={status} />
+          </>
+        ) : ready ? (
+          <>
+            <b>{t("reviewReady", { score: view.score ?? 0 })}</b>
+            <span className="small muted">
+              {view.cardsConfirmed ? t("cardsDone") : t("reviewReadyBody", { count: view.difficultyCount })}
+            </span>
+            <div className="row" style={{ gap: 14, marginTop: 4, flexWrap: "wrap" }}>
+              <Link className="btn sm" href={`/tutor/${view.sessionId}/review`}>
+                {t("openReview")}
+              </Link>
+              <Link className="link" href="/series">
+                {t("openSeries")}
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <b>{status === "failed" ? t("reviewFailed") : t("closedNoReview")}</b>
+            <span className="small muted">
+              {status === "failed" ? t("reviewFailedBody") : t("closedNoReviewBody")}
+            </span>
+            <div className="row" style={{ gap: 14, marginTop: 4 }}>
+              <button className="link" onClick={props.onRequestReview} disabled={props.requesting}>
+                {status === "failed" ? t("retryReview") : t("reviewNow")}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ChatScreen({ view }: { view: ChatView }) {
   const t = useTranslations("chat");
   const themes = useTranslations("talk");
   const errorText = useErrorText();
   const router = useRouter();
   const toast = useToast();
-  const [turns, setTurns] = useState(view.turns);
+  const [pending, startTransition] = useTransition();
+  const [localTurns, setTurns] = useState(view.turns);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [review, setReview] = useState(view.review);
-  const [showReview, setShowReview] = useState(false);
-  const [reviewing, setReviewing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [mode, setMode] = useState<"read" | "listen">("read");
+  const [revealed, setRevealed] = useState<Set<string>>(() => new Set());
+  const [marks, setMarks] = useState<Set<string>>(() => new Set());
   const recorder = useRef<MediaRecorder | null>(null);
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const turns = view.closed ? view.turns : localTurns;
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
+  const player = useConversationPlayer(view.audioSpeed, toast);
   const userTurns = turns.filter((turn) => turn.role === "user").length;
   const initialUserTurns = view.turns.filter((turn) => turn.role === "user").length;
+  const reviewing = view.closed && (view.reviewStatus === "queued" || view.reviewStatus === "running");
 
   useEffect(() => {
-    window.scrollTo(0, document.body.scrollHeight);
-  }, [turns.length]);
+    if (!view.closed) window.scrollTo(0, document.body.scrollHeight);
+  }, [turns.length, view.closed]);
+
+  useEffect(() => {
+    if (!reviewing) return;
+    const timer = setInterval(() => router.refresh(), REVIEW_POLL_MS);
+    return () => clearInterval(timer);
+  }, [reviewing, router]);
 
   const deliver = async (payload: { text?: string; audio?: { mimeType: string; base64: string } }) => {
     setSending(true);
@@ -72,7 +243,6 @@ export function ChatScreen({ view }: { view: ChatView }) {
       return false;
     }
     setTurns((current) => [...current, result.data.userTurn, result.data.tutorTurn]);
-    if (result.data.queuedForReview > 0) toast(t("queued", { count: result.data.queuedForReview }));
     return true;
   };
 
@@ -118,20 +288,79 @@ export function ChatScreen({ view }: { view: ChatView }) {
     }
   };
 
-  const runReview = async () => {
-    setShowReview(true);
-    if (reviewing) return;
-    setReviewing(true);
-    const result = await reviewConversationAction(view.sessionId).catch(() => null);
-    setReviewing(false);
-    if (!result?.ok) {
-      toast(result?.message ?? errorText(null));
-      if (!review) setShowReview(false);
-      return;
-    }
-    setReview(result.data.review);
-    if (result.data.xpAwarded > 0) toast(t("reviewedXp", { xp: result.data.xpAwarded }));
-    router.refresh();
+  const close = (withReview: boolean) =>
+    startTransition(async () => {
+      const result = await closeConversationAction({ sessionId: view.sessionId, withReview }).catch(
+        () => null,
+      );
+      setConfirming(false);
+      if (!result?.ok) {
+        toast(result?.message ?? errorText(null));
+        return;
+      }
+      const xp = result.data.xpAwarded;
+      toast(withReview ? t("closedReviewQueued", { xp }) : t("closedToast", { xp }));
+      router.refresh();
+    });
+
+  const requestReview = () =>
+    startTransition(async () => {
+      const result = await requestConversationReviewAction(view.sessionId).catch(() => null);
+      if (!result?.ok) {
+        toast(result?.message ?? errorText(null));
+        return;
+      }
+      toast(t("reviewQueuedToast"));
+      router.refresh();
+    });
+
+  const createCards = () =>
+    startTransition(async () => {
+      const phrases = markedPhrases(turns, marks);
+      const result = await requestTermCardsAction({ sessionId: view.sessionId, marks: phrases }).catch(
+        () => null,
+      );
+      if (!result?.ok) {
+        toast(result?.message ?? errorText(null));
+        return;
+      }
+      setMarks(new Set());
+      toast(t("termsQueued", { count: result.data.terms }));
+    });
+
+  const toggleMark = (key: string) =>
+    setMarks((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const markCount = markedPhrases(turns, marks).length;
+  const title = themes.has(`themes.${view.themeId}.title`)
+    ? themes(`themes.${view.themeId}.title`)
+    : view.title;
+
+  const renderText = (turn: TurnView) => {
+    if (!view.closed) return turn.text;
+    return splitWords(turn.text).map((token, index) =>
+      /^\s*$/.test(token) ? (
+        token
+      ) : (
+        <span
+          key={index}
+          role="button"
+          tabIndex={0}
+          className={`w ${marks.has(`${turn.id}:${index}`) ? "mk" : ""}`}
+          onClick={() => toggleMark(`${turn.id}:${index}`)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") toggleMark(`${turn.id}:${index}`);
+          }}
+        >
+          {token}
+        </span>
+      ),
+    );
   };
 
   return (
@@ -141,61 +370,131 @@ export function ChatScreen({ view }: { view: ChatView }) {
           <BackIcon />
         </Link>
         <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
-          <b>
-            {themes.has(`themes.${view.themeId}.title`) ? themes(`themes.${view.themeId}.title`) : view.title}
-          </b>
+          <b>{title}</b>
           <span className="small muted">
             {t("header", { accent: t(`accents.${view.accent}`), level: view.level })}
             {view.simulated ? ` · ${t("simulatedTag")}` : ""}
           </span>
         </div>
-        <button
-          className="playbtn"
-          onClick={runReview}
-          disabled={userTurns === 0}
-          aria-label={t("reviewAll")}
-          title={t("reviewAll")}
-        >
-          <TargetIcon />
-        </button>
+        {view.closed ? (
+          <span className={`chip ${view.reviewStatus === "ready" ? "good" : ""}`}>
+            {view.reviewStatus === "ready"
+              ? t("closedChipScore", { score: view.score ?? 0 })
+              : t("closedChip")}
+          </span>
+        ) : (
+          <button
+            className="btn cue sm"
+            onClick={() => setConfirming(true)}
+            disabled={userTurns === 0 || sending}
+          >
+            {t("close")}
+          </button>
+        )}
       </div>
       <div className="msgs">
-        {turns.map((turn) => (
-          <div key={turn.id} style={{ display: "contents" }}>
-            {turn.role === "tutor" ? (
-              <div
-                className="msg ai"
-                role="button"
-                tabIndex={0}
-                onClick={() => speech.play("turn", turn.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") speech.play("turn", turn.id);
-                }}
-              >
-                {turn.text}
-                {turn.translation ? <span className="pt">{turn.translation}</span> : null}
-                <span className="pt" style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <SoundIcon width={14} height={14} />{" "}
-                  {speech.loadingId === turn.id ? t("generating") : t("play")}
-                </span>
+        {view.closed ? (
+          <ClosedBanner view={view} onRequestReview={requestReview} requesting={pending} />
+        ) : null}
+        {turns.map((turn) => {
+          const hidden = view.closed && mode === "listen" && !revealed.has(turn.id);
+          const playing = player.playingId === turn.id;
+          return (
+            <div key={turn.id} style={{ display: "contents" }}>
+              <div className={`msgwrap ${turn.role === "tutor" ? "ai" : "me"}`} id={`turn-${turn.id}`}>
+                <div
+                  className={`msg ${turn.role === "tutor" ? "ai" : "me"} ${hidden ? "hide" : ""} ${playing ? "playing" : ""}`}
+                >
+                  <span className="txt">{renderText(turn)}</span>
+                  {turn.role === "tutor" && turn.translation && !hidden ? (
+                    <span className="pt">{turn.translation}</span>
+                  ) : null}
+                </div>
+                {turn.role === "tutor" || view.closed ? (
+                  <div className="msgtools">
+                    <button onClick={() => speech.play("turn", turn.id)}>
+                      <SoundIcon /> {speech.loadingId === turn.id ? t("generating") : t("play")}
+                    </button>
+                    {view.closed ? (
+                      <button onClick={() => speech.play("turn", turn.id, true)}>
+                        <TurtleIcon /> {t("slow")}
+                      </button>
+                    ) : null}
+                    {hidden ? (
+                      <button onClick={() => setRevealed((current) => new Set(current).add(turn.id))}>
+                        {t("showText")}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-            ) : (
-              <div className="msg me">{turn.text}</div>
-            )}
-            {turn.corrections.map((correction, index) => (
-              <div className="fix" key={`${turn.id}-${index}`}>
-                <span className="eyebrow">{t("correction")}</span>
-                <span>
-                  <s>{correction.wrong}</s> → <ins>{correction.right}</ins>
-                </span>
-                <span className="small muted">{correction.why}</span>
-              </div>
-            ))}
-          </div>
-        ))}
+              {!hidden && turn.correctedText ? (
+                <div className="fix me">
+                  <span className="eyebrow">{t("correctedLabel")}</span>
+                  <ins>{turn.correctedText}</ins>
+                </div>
+              ) : null}
+              {hidden
+                ? null
+                : turn.corrections.map((correction, index) => (
+                    <div className={`fix ${turn.role === "user" ? "me" : ""}`} key={`${turn.id}-${index}`}>
+                      <span className="eyebrow">{t("correction")}</span>
+                      <span>
+                        <s>{correction.wrong}</s> → <ins>{correction.right}</ins>
+                      </span>
+                      <span className="small muted">{correction.why}</span>
+                    </div>
+                  ))}
+            </div>
+          );
+        })}
         {sending ? <div className="msg ai muted">…</div> : null}
       </div>
-      {userTurns >= initialUserTurns + view.turnsLeft ? (
+      {view.closed ? (
+        <div className="readfoot">
+          <div className="row">
+            <div className="seg" style={{ flex: 1 }}>
+              <button
+                className={mode === "read" ? "on" : ""}
+                onClick={() => {
+                  setMode("read");
+                  setRevealed(new Set());
+                }}
+              >
+                {t("modeRead")}
+              </button>
+              <button
+                className={mode === "listen" ? "on" : ""}
+                onClick={() => {
+                  setMode("listen");
+                  setRevealed(new Set());
+                }}
+              >
+                {t("modeListen")}
+              </button>
+            </div>
+            <button
+              className="speak"
+              style={{ padding: "10px 14px" }}
+              onClick={() =>
+                player.playingId ? player.stop() : player.playAll(turns.map((turn) => turn.id))
+              }
+            >
+              <PlayIcon width={18} height={18} />
+              {player.playingId ? t("stopAll") : t("playAll")}
+            </button>
+          </div>
+          <div className="row">
+            <div style={{ flex: 1 }} className="col">
+              <b style={{ fontFamily: "var(--f-display)", fontSize: 22, lineHeight: 1 }}>{markCount}</b>
+              <span className="small muted">{t("marked")}</span>
+            </div>
+            <button className="btn" onClick={createCards} disabled={markCount === 0 || pending}>
+              {t("createCards")}
+            </button>
+          </div>
+        </div>
+      ) : userTurns >= initialUserTurns + view.turnsLeft ? (
         <p className="small muted" style={{ padding: "0 16px 16px" }}>
           {t("limitReached")}
         </p>
@@ -234,60 +533,37 @@ export function ChatScreen({ view }: { view: ChatView }) {
           </button>
         </form>
       )}
-      {showReview ? (
-        <Sheet label={t("reviewTitle")} onClose={() => setShowReview(false)}>
-          <h2 style={{ fontSize: 22 }}>{t("reviewTitle")}</h2>
-          {reviewing && !review ? (
-            <div className="pstep run">
-              <span className="s" />
-              <span>{t("evaluating")}</span>
-              <span />
-            </div>
-          ) : null}
-          {review ? (
-            <>
-              <div className="card goalrow">
-                <b style={{ fontFamily: "var(--f-display)", fontSize: 34, lineHeight: 1 }}>{review.score}</b>
-                <p className="small">{review.summary}</p>
+      {confirming ? (
+        <Sheet label={t("closeTitle")} onClose={() => setConfirming(false)}>
+          <h2 style={{ fontSize: 22 }}>{t("closeTitle")}</h2>
+          <p className="muted">{t("closeBody")}</p>
+          <div className="col" style={{ gap: 10 }}>
+            {(["closeStepReview", "closeStepCards", "closeStepSeries"] as const).map((key) => (
+              <div className="pstep done" key={key}>
+                <span className="s">
+                  <CheckIcon />
+                </span>
+                <span>{t(key)}</span>
+                <span />
               </div>
-              {review.strengths.length > 0 ? (
-                <div className="col">
-                  <span className="eyebrow">{t("strengths")}</span>
-                  {review.strengths.map((item) => (
-                    <span key={item} className="chip good" style={{ whiteSpace: "normal", borderRadius: 12 }}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              {review.improvements.length > 0 ? (
-                <div className="col">
-                  <span className="eyebrow">{t("improvements")}</span>
-                  {review.improvements.map((item) => (
-                    <span key={item} className="chip warn" style={{ whiteSpace: "normal", borderRadius: 12 }}>
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              {review.phrases.length > 0 ? (
-                <div className="col">
-                  <span className="eyebrow">{t("phrasesQueued")}</span>
-                  {review.phrases.map((phrase, index) => (
-                    <div className="fix" key={index} style={{ maxWidth: "100%" }}>
-                      <span>
-                        <s>{phrase.wrong}</s> → <ins>{phrase.right}</ins>
-                      </span>
-                      <span className="small muted">{phrase.why}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <button className="btn ghost wide" onClick={runReview} disabled={reviewing}>
-                {reviewing ? t("evaluatingShort") : t("evaluateAgain")}
-              </button>
-            </>
-          ) : null}
+            ))}
+          </div>
+          <div className="hint">
+            <span>
+              {userTurns >= view.minTurnsForXp
+                ? t("closeXp", { xp: view.conversationXp })
+                : t("closeNoXp", { count: view.minTurnsForXp })}
+            </span>
+          </div>
+          <button className="btn cue block" onClick={() => close(true)} disabled={pending}>
+            {t("closeAndReview")}
+          </button>
+          <button className="btn ghost block" onClick={() => close(false)} disabled={pending}>
+            {t("closeWithoutReview")}
+          </button>
+          <button className="link" style={{ alignSelf: "center" }} onClick={() => setConfirming(false)}>
+            {t("keepTalking")}
+          </button>
         </Sheet>
       ) : null}
     </div>

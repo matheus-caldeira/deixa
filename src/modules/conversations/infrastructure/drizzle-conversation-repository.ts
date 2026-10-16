@@ -1,10 +1,19 @@
-import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { conversationSessions, conversationTurns } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
-import type { ConversationReview, Correction, Session, Turn, TurnRole } from "../domain/conversation";
+import {
+  DIFFICULTY_KINDS,
+  isReviewStatus,
+  type ConversationReview,
+  type Correction,
+  type ReviewStatus,
+  type Session,
+  type Turn,
+  type TurnRole,
+} from "../domain/conversation";
 import type { ConversationRepository } from "../application/conversation-use-cases";
 
 const correctionsSchema = z.array(z.object({ wrong: z.string(), right: z.string(), why: z.string() }));
@@ -14,7 +23,25 @@ const reviewSchema = z.object({
   strengths: z.array(z.string()),
   improvements: z.array(z.string()),
   phrases: correctionsSchema,
+  difficulties: z
+    .array(
+      z.object({
+        id: z.string(),
+        kind: z.enum(DIFFICULTY_KINDS),
+        turnIndex: z.number().nullable(),
+        said: z.string().nullable(),
+        target: z.string(),
+        translation: z.string(),
+        why: z.string(),
+        theme: z.string(),
+        episodeId: z.string().nullable(),
+        episodeTitle: z.string(),
+      }),
+    )
+    .default([]),
 });
+
+const REVIEWABLE: ReviewStatus[] = ["none", "failed"];
 
 type SessionRow = typeof conversationSessions.$inferSelect;
 
@@ -27,6 +54,9 @@ function toSession(row: SessionRow): Session {
     themeTitle: row.themeTitle,
     level: row.level,
     review: review?.success ? review.data : null,
+    reviewStatus: isReviewStatus(row.reviewStatus) ? row.reviewStatus : "none",
+    closedAt: row.closedAt,
+    cardsConfirmedAt: row.cardsConfirmedAt,
     createdAt: row.createdAt,
   };
 }
@@ -124,6 +154,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
         text: row.text,
         translation: row.translation,
         corrections: corrections.success ? corrections.data : [],
+        correctedText: row.correctedText,
         createdAt: row.createdAt,
       };
     });
@@ -151,17 +182,97 @@ export class DrizzleConversationRepository implements ConversationRepository {
       .where(and(eq(conversationSessions.id, sessionId), eq(conversationSessions.userId, userId)));
   }
 
-  async saveReview(userId: string, sessionId: string, review: ConversationReview, now: Date): Promise<void> {
+  private owned(userId: string, sessionId: string) {
+    return and(eq(conversationSessions.id, sessionId), eq(conversationSessions.userId, userId));
+  }
+
+  async closeSession(
+    userId: string,
+    sessionId: string,
+    reviewStatus: ReviewStatus,
+    now: Date,
+  ): Promise<boolean> {
+    const closed = await this.db
+      .update(conversationSessions)
+      .set({ closedAt: now, reviewStatus, updatedAt: now })
+      .where(and(this.owned(userId, sessionId), isNull(conversationSessions.closedAt)))
+      .returning({ id: conversationSessions.id });
+    return closed.length > 0;
+  }
+
+  async queueReview(userId: string, sessionId: string, now: Date): Promise<boolean> {
+    const queued = await this.db
+      .update(conversationSessions)
+      .set({ reviewStatus: "queued", updatedAt: now })
+      .where(
+        and(
+          this.owned(userId, sessionId),
+          isNotNull(conversationSessions.closedAt),
+          inArray(conversationSessions.reviewStatus, REVIEWABLE),
+        ),
+      )
+      .returning({ id: conversationSessions.id });
+    return queued.length > 0;
+  }
+
+  async markReviewRunning(userId: string, sessionId: string): Promise<boolean> {
+    const running = await this.db
+      .update(conversationSessions)
+      .set({ reviewStatus: "running" })
+      .where(
+        and(this.owned(userId, sessionId), inArray(conversationSessions.reviewStatus, ["queued", "running"])),
+      )
+      .returning({ id: conversationSessions.id });
+    return running.length > 0;
+  }
+
+  async markReviewFailed(userId: string, sessionId: string, now: Date): Promise<void> {
     await this.db
       .update(conversationSessions)
-      .set({ review, updatedAt: now })
-      .where(and(eq(conversationSessions.id, sessionId), eq(conversationSessions.userId, userId)));
+      .set({ reviewStatus: "failed", updatedAt: now })
+      .where(this.owned(userId, sessionId));
+  }
+
+  async saveAnalysis(input: {
+    userId: string;
+    sessionId: string;
+    review: ConversationReview;
+    corrected: { turnId: string; text: string }[];
+    now: Date;
+  }): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const saved = await tx
+        .update(conversationSessions)
+        .set({ review: input.review, reviewStatus: "ready", updatedAt: input.now })
+        .where(
+          and(eq(conversationSessions.id, input.sessionId), eq(conversationSessions.userId, input.userId)),
+        )
+        .returning({ id: conversationSessions.id });
+      if (saved.length === 0) return;
+      for (const turn of input.corrected) {
+        await tx
+          .update(conversationTurns)
+          .set({ correctedText: turn.text })
+          .where(
+            and(eq(conversationTurns.id, turn.turnId), eq(conversationTurns.sessionId, input.sessionId)),
+          );
+      }
+    });
+  }
+
+  async markCardsConfirmed(userId: string, sessionId: string, now: Date): Promise<boolean> {
+    const confirmed = await this.db
+      .update(conversationSessions)
+      .set({ cardsConfirmedAt: now, updatedAt: now })
+      .where(and(this.owned(userId, sessionId), isNull(conversationSessions.cardsConfirmedAt)))
+      .returning({ id: conversationSessions.id });
+    return confirmed.length > 0;
   }
 
   async findTurnText(userId: string, turnId: string): Promise<string | null> {
     if (!isId(turnId)) return null;
     const [row] = await this.db
-      .select({ text: conversationTurns.text })
+      .select({ text: sql<string>`coalesce(${conversationTurns.correctedText}, ${conversationTurns.text})` })
       .from(conversationTurns)
       .innerJoin(conversationSessions, eq(conversationSessions.id, conversationTurns.sessionId))
       .where(and(eq(conversationTurns.id, turnId), eq(conversationSessions.userId, userId)))
