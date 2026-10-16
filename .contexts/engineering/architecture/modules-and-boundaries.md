@@ -40,6 +40,8 @@ fixtures/             SRT fictícios EN e PT
 | `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio      |
 | `jobs`            | Fila `job_queue`: enfileirar, reivindicar com `SKIP LOCKED`, tentativas       |
 | `scripts`         | Roteiro `.txt` conferido contra a legenda; falas completadas na leitura       |
+| `conversations`   | Tutor: conversa, encerramento, revisão em job, cards escolhidos e termos      |
+| `personal-series` | Série pessoal: temporada por nível, episódios por tema, trilha e lição        |
 
 Os módulos `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
 chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.

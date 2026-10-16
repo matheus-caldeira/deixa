@@ -1,6 +1,6 @@
 ---
 title: Isolamento entre usuários
-updated: 2026-10-10
+updated: 2026-10-16
 source: PROJETO.md §1, §7, §8
 ---
 
@@ -23,6 +23,8 @@ esquecido vaza marcações, cards ou a chave de IA.
 - Consulta por id de recurso individual sempre leva `AND user_id = $userId`.
 - Reuso de `learning_items`: `visibility = 'global' OR owner_user_id = $userId`.
 - `highlight_stats` não tem coluna de usuário.
+- Série pessoal: `personal_seasons`, `personal_episodes` e `personal_episode_cards` não têm `user_id`; chegam ao
+  dono por `personal_series.user_id`. Episódio ou bloco de outra conta responde como inexistente (ADR 0022).
 
 ## Exemplo
 

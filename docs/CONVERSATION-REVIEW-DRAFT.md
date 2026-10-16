@@ -6,8 +6,8 @@ source: conversa de 16/10/2026
 
 # Rascunho: conversa encerrada vira estudo
 
-**Estado: ideia em rascunho, com protótipo em `docs/conversation-review-poc.html` (`pnpm poc`).** Nada
-implementado.
+**Estado: implementado em 16/10/2026 (etapa 17 do plano, ADR 0022).** Protótipo em
+`docs/conversation-review-poc.html` (`pnpm poc`).
 
 ## A ideia em uma frase
 
@@ -119,8 +119,8 @@ novo quando o assunto ainda não tem um.
 
 ## Perguntas em aberto
 
-- Dificuldade de escuta faz sentido sem áudio da pessoa? Só quando a mensagem veio por voz (`inputKind = audio`).
-- O que conta como "Fixo" quando a pessoa sobe de nível: a série fica parada na temporada escolhida ou avisa que
-  existe uma temporada nova disponível?
-- Episódio com muitos cards se divide sozinho ("Verbos II" vira "Verbos II" e "Verbos III")? A partir de quantos?
-- Marcações feitas na Leitura de episódios do catálogo também entram na série pessoal, ou só as conversas?
+- Nível "Fixo" quando a pessoa sobe de nível: hoje a série fica na temporada escolhida; avisar da temporada nova
+  fica para depois.
+- Dificuldade de escuta só quando a mensagem veio por voz (`inputKind = audio`): ainda não separada.
+- Marcações na Leitura de episódios do catálogo continuam fora da série pessoal.
+- Resolvido: episódio com 12 cards continua em uma parte nova ("Verbos II").
