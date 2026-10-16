@@ -97,7 +97,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
             : t("seasonEpisode", { season: seasonNumber ?? 0, episode: episode.episodeNumber }),
         }),
       );
-      router.push("/");
+      router.push(isMovie ? `/trail/${media.id}` : `/trail/${media.id}?season=${seasonNumber ?? ""}`);
       router.refresh();
     });
 

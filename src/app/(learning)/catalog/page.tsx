@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { getContainer } from "@/infrastructure/container";
 import { posterUrl, type MediaItem } from "@/modules/catalog";
 import { pairOf } from "@/modules/identity";
+import { nextEpisodeId } from "@/modules/personal-series";
 import { fitLabel, parseLearnerInsight, parseLocalReason } from "@/modules/recommendations";
 import { posterColorsFor } from "@/modules/catalog";
 import { fitFor, levelIndex } from "@/shared/levels";
@@ -28,10 +29,16 @@ export default async function CatalogPage() {
   const container = getContainer();
   const level = user.preferences.level;
   const pair = pairOf(user.preferences);
-  const [overview, recommendations] = await Promise.all([
+  const [overview, recommendations, personal] = await Promise.all([
     container.getCatalogOverview(user.id),
     container.getRecommendations({ userId: user.id, level, language: pair.target }),
+    container.getPersonalSeries({ userId: user.id, pair, userLevel: level }),
   ]);
+  const trail = await getTranslations("trail");
+  const personalName = personal.series.name ?? trail("personalName");
+  const activeSeason = personal.seasons.find((season) => season.level === personal.activeLevel);
+  const nextPersonalId = activeSeason ? nextEpisodeId(activeSeason.episodes) : null;
+  const nextPersonal = activeSeason?.episodes.find((episode) => episode.id === nextPersonalId) ?? null;
   if (recommendations.refresh) {
     await scheduleJob(
       container,
@@ -92,9 +99,25 @@ export default async function CatalogPage() {
           fit: fitLabel(levelIndex(level), item.levelMin, item.levelMax),
         })),
       }}
+      personal={{
+        name: personalName,
+        subtitle:
+          nextPersonal && activeSeason
+            ? `${trail("label.personal", { level: activeSeason.level, episode: nextPersonal.number })} · ${nextPersonal.title}`
+            : trail("personalEmpty"),
+        progressPercent: nextPersonal?.progress ?? 0,
+        poster: {
+          title: personalName,
+          type: "series",
+          year: null,
+          posterUrl: null,
+          posterColors: posterColorsFor(personalName),
+        },
+      }}
       inProgress={overview.inProgress.map((entry) => ({
         episodeId: entry.episodeId,
         mediaId: entry.mediaId,
+        seasonNumber: entry.seasonNumber,
         poster: toPoster(entry.media),
         label: entry.label,
         episodeTitle: entry.episodeTitle,

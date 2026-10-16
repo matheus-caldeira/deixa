@@ -30,6 +30,7 @@ export type LessonScreenView = {
   audioSpeed: number;
   exercises: Exercise[];
   source?: "episode" | "personal";
+  backHref: string;
 };
 
 type SpeechKind = "cue" | "item";
@@ -85,7 +86,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
   const exercise = view.exercises[position];
   const personal = view.source === "personal";
-  const backHref = personal ? `/series/${view.episodeId}` : "/";
+  const backHref = view.backHref;
   const speechKind: SpeechKind = personal ? "item" : "cue";
 
   useEffect(() => {
@@ -220,7 +221,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               router.refresh();
             }}
           >
-            {result.passed ? t("continue") : personal ? t("backToTrail") : t("backHome")}
+            {result.passed ? t("continue") : t("backToTrail")}
           </button>
         </div>
       </div>

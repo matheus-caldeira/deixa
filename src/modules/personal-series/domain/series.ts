@@ -172,6 +172,8 @@ export function planPlacements(input: {
   return { assignments, newEpisodes };
 }
 
+const FULL_PROGRESS = 100;
+
 export type TrailNodeState = "done" | "current" | "locked";
 export type EpisodeNode = { index: number; title: string; cardCount: number; state: TrailNodeState };
 
@@ -179,19 +181,25 @@ export function nodeCount(cardCount: number): number {
   return Math.ceil(cardCount / CARDS_PER_NODE);
 }
 
-export function episodeNodes(cards: readonly EpisodeCard[], completed: ReadonlySet<number>): EpisodeNode[] {
-  const total = nodeCount(cards.length);
+export function nodeStatesFor(cardCount: number, completed: ReadonlySet<number>): TrailNodeState[] {
+  const total = nodeCount(cardCount);
   let unlocked = 0;
   while (unlocked < total && completed.has(unlocked)) unlocked += 1;
-  return Array.from({ length: total }, (_, index) => {
+  return Array.from({ length: total }, (_, index) =>
+    completed.has(index) ? "done" : index === unlocked ? "current" : "locked",
+  );
+}
+
+export function episodeNodes(cards: readonly EpisodeCard[], completed: ReadonlySet<number>): EpisodeNode[] {
+  const states = nodeStatesFor(cards.length, completed);
+  return states.map((state, index) => {
     const chunk = cards.slice(index * CARDS_PER_NODE, (index + 1) * CARDS_PER_NODE);
-    return {
-      index,
-      title: chunk.map((card) => card.term).join(" · "),
-      cardCount: chunk.length,
-      state: completed.has(index) ? "done" : index === unlocked ? "current" : "locked",
-    };
+    return { index, title: chunk.map((card) => card.term).join(" · "), cardCount: chunk.length, state };
   });
+}
+
+export function nextEpisodeId(episodes: readonly { id: string; progress: number; cardCount: number }[]) {
+  return episodes.find((episode) => episode.cardCount > 0 && episode.progress < FULL_PROGRESS)?.id ?? null;
 }
 
 export function progressPercent(cardCount: number, completed: ReadonlySet<number>): number {

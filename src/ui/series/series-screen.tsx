@@ -211,6 +211,9 @@ export function SeriesScreen({ view }: { view: SeriesScreenView }) {
           </span>
         ) : null}
       </div>
+      <Link className="btn cue wide" href="/trail/personal">
+        <PlayIcon width={18} height={18} /> {t("openTrail")}
+      </Link>
       <div className="seg">
         {view.seasons.map((candidate) => (
           <button

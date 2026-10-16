@@ -324,7 +324,6 @@
   },
   "home": {
     "continue": "Continuar",
-    "keepStudying": "Continuar estudando",
     "buildingTrail": "Montando sua trilha…",
     "readAndMark": "Ler episódio e marcar",
     "startHere": "Comece por aqui",
@@ -335,22 +334,9 @@
     "xpOfGoal": "{xp} de {goal} XP",
     "goalMet": "Meta cumprida. Sequência garantida: {days} dias.",
     "goalMissing": "Faltam {xp} XP para manter os {days} dias de sequência.",
-    "buildingTrailAi": "Montando sua trilha com IA",
-    "buildingTrailBody": "A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de um minuto; avisamos no sino quando terminar.",
-    "trailFailed": "Não deu para montar a trilha deste episódio",
-    "trailFailedBody": "Suas marcações e revisões continuam funcionando.",
-    "retrying": "Tentando…",
-    "retry": "Tentar de novo",
-    "episodeTrail": "Trilha do episódio",
-    "madeByAi": "feita por IA",
-    "trailBody": "Cada bloco junta as falas de um trecho do episódio. Você precisa de 70% de acerto para liberar o próximo.",
-    "start": "COMEÇAR",
-    "lockedNode": "{name} (bloqueada)",
-    "unlockHint": "Conclua o bloco anterior para liberar este.",
     "todayReviews": "Revisões de hoje",
     "review": "Revisar",
     "noDueCards": "Nenhum cartão vencido. Marque falas num episódio para criar novos.",
-    "dueCards": "cartões vencidos. Revisar agora rende XP extra e protege a memória.",
     "missions": "Missões do dia",
     "missionXp": "+{xp} XP cada",
     "mission": {
@@ -364,7 +350,10 @@
     "tutorBody": "Pratique falando sobre {theme}. O tutor lembra dos seus pontos a melhorar das conversas anteriores.",
     "tutorStart": "Conversar sobre {theme}",
     "tutorContinue": "Continuar: {theme}",
-    "tutorMore": "Outros temas"
+    "tutorMore": "Outros temas",
+    "lessonOf": "lição {number} de {total}",
+    "dueCardsCount": "{count, plural, =1 {# card vencido} other {# cards vencidos}}",
+    "alsoStudying": "Também estudando"
   },
   "people": {
     "home": "Início",
@@ -471,7 +460,6 @@
     "queued": "{count, plural, one {# fala com erro foi} other {# falas com erro foram}} para a fila de revisão.",
     "tryAgain": "Tentar de novo",
     "continue": "Continuar",
-    "backHome": "Voltar ao início",
     "hiddenSubtitle": "legenda oculta",
     "nativeTag": "PT:",
     "typeTarget": "Digite em inglês",
@@ -1323,7 +1311,8 @@
     "reread": "Reler",
     "emptyTrail": "Este episódio ainda não tem cards.",
     "start": "COMEÇAR",
-    "nodeLabel": "Bloco {number}"
+    "nodeLabel": "Bloco {number}",
+    "openTrail": "Abrir trilha"
   },
   "budget": {
     "title": "Orçamento de IA",
@@ -1352,5 +1341,60 @@
     "sharedLimitNote": "Vale só para {name}, no lugar do limite padrão. A pessoa pode pôr um teto menor, nunca maior.",
     "ownLimit": "Limite na chave própria",
     "ownLimitNote": "Vale quando {name} usa a própria chave. A pessoa também pode mudar esse limite."
+  },
+  "trail": {
+    "back": "Voltar para o início",
+    "subtitle": {
+      "series": "Série · uma seção por episódio",
+      "movie": "Filme · uma seção só",
+      "personal": "Série pessoal · temporada por nível"
+    },
+    "manageSeries": "Ajustes",
+    "episodes": "Episódios",
+    "seasons": "Temporadas",
+    "season": "Temporada {number}",
+    "level": "Nível {level}",
+    "label": {
+      "movie": "Filme completo",
+      "episode": "T{season} · E{episode}",
+      "personal": "{level} · episódio {episode}"
+    },
+    "personalName": "Minha série",
+    "status": {
+      "done": "Concluído",
+      "pending": "Montando a trilha",
+      "missing": "Sem legenda",
+      "notStarted": "Não começado",
+      "lessons": "{done} de {total} lições"
+    },
+    "guide": "Resumo de {title}",
+    "noOverview": "Sem sinopse para este episódio.",
+    "readAndMark": "Ler episódio e marcar",
+    "cardsAndSources": "Ver cards e conversas",
+    "startEpisode": "Estudar este episódio",
+    "importSubtitle": "Importar legenda",
+    "lockedSeason": "Nível {level} · travado",
+    "unlockAt": "Abre quando você passar de {percent}% do nível atual",
+    "plannedThemes": "Os temas voltam mais avançados. Previstos pelo que apareceu nas conversas:",
+    "empty": "Nenhum episódio nesta temporada ainda.",
+    "lesson": "Lição {number}",
+    "lockedLesson": "{name}, travada",
+    "unlockHint": "Termine a lição anterior para abrir esta.",
+    "replayLesson": "Refazer {name}",
+    "start": "COMEÇAR",
+    "legend": {
+      "done": "feita",
+      "current": "atual",
+      "locked": "travada"
+    },
+    "backToCurrent": "Voltar para onde parei",
+    "failed": "Não deu para montar a trilha deste episódio",
+    "failedBody": "Suas marcações e revisões continuam funcionando.",
+    "retrying": "Tentando…",
+    "retry": "Tentar de novo",
+    "building": "Montando a trilha com IA",
+    "buildingBody": "A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de um minuto; avisamos no sino quando terminar.",
+    "personalEmpty": "Os cards das suas conversas viram episódios aqui",
+    "finalChallenge": "Desafio final"
   }
 }

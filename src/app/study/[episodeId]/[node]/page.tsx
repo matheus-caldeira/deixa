@@ -28,6 +28,12 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
       throw error;
     });
   const t = await getTranslations("home");
+  const context = await getContainer().getEpisodeContext(episodeId);
+  const backHref = !context
+    ? "/"
+    : context.media.type === "movie"
+      ? `/trail/${context.media.id}`
+      : `/trail/${context.media.id}?season=${context.season.seasonNumber}`;
   return (
     <ToastProvider>
       <LessonScreen
@@ -43,6 +49,7 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
           replay: lesson.replay,
           audioSpeed: user.preferences.audioSpeed,
           exercises: lesson.exercises,
+          backHref,
         }}
       />
     </ToastProvider>

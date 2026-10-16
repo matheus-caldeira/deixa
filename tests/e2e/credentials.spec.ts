@@ -37,7 +37,9 @@ test("configurações: chaves por usuário em IA e Catálogo; globais e servidor
 
   await page.getByRole("tab", { name: "Uso da IA" }).click();
   await expect(page.getByText("Seu limite")).toBeVisible();
-  await expect(page.getByText("Nenhuma chave de IA em uso.")).toBeVisible();
+  await page.getByRole("link", { name: "Mudar o orçamento em IA" }).click();
+  await expect(page.getByRole("heading", { name: "Orçamento de IA" })).toBeVisible();
+  await expect(page.getByText(/Vale quando você cadastrar uma chave própria/)).toBeVisible();
 
   await page.getByRole("button", { name: "Perfil de Ana" }).click();
   await profile.getByRole("button", { name: "Trocar de perfil" }).click();

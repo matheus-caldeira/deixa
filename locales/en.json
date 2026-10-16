@@ -324,7 +324,6 @@
   },
   "home": {
     "continue": "Continue",
-    "keepStudying": "Keep studying",
     "buildingTrail": "Building your trail…",
     "readAndMark": "Read episode and highlight",
     "startHere": "Start here",
@@ -335,22 +334,9 @@
     "xpOfGoal": "{xp} of {goal} XP",
     "goalMet": "Goal met. Streak secured: {days} days.",
     "goalMissing": "{xp} XP to go to keep your {days}-day streak.",
-    "buildingTrailAi": "Building your trail with AI",
-    "buildingTrailBody": "The AI is splitting the episode into blocks and writing questions for your level. It takes about a minute; we will ring the bell when it is done.",
-    "trailFailed": "We could not build the trail for this episode",
-    "trailFailedBody": "Your highlights and reviews keep working.",
-    "retrying": "Trying…",
-    "retry": "Try again",
-    "episodeTrail": "Episode trail",
-    "madeByAi": "made by AI",
-    "trailBody": "Each block gathers the lines of one stretch of the episode. You need 70% accuracy to unlock the next one.",
-    "start": "START",
-    "lockedNode": "{name} (locked)",
-    "unlockHint": "Finish the previous block to unlock this one.",
     "todayReviews": "Today’s reviews",
     "review": "Review",
     "noDueCards": "No card due. Highlight lines in an episode to create new ones.",
-    "dueCards": "cards due. Reviewing now earns extra XP and protects your memory.",
     "missions": "Daily missions",
     "missionXp": "+{xp} XP each",
     "mission": {
@@ -364,7 +350,10 @@
     "tutorBody": "Practice talking about {theme}. The tutor remembers what to improve from earlier conversations.",
     "tutorStart": "Talk about {theme}",
     "tutorContinue": "Continue: {theme}",
-    "tutorMore": "Other topics"
+    "tutorMore": "Other topics",
+    "lessonOf": "lesson {number} of {total}",
+    "dueCardsCount": "{count, plural, =1 {# card due} other {# cards due}}",
+    "alsoStudying": "Also studying"
   },
   "people": {
     "home": "Home",
@@ -471,7 +460,6 @@
     "queued": "{count, plural, one {# line with a mistake went} other {# lines with mistakes went}} to the review queue.",
     "tryAgain": "Try again",
     "continue": "Continue",
-    "backHome": "Back to home",
     "hiddenSubtitle": "subtitle hidden",
     "nativeTag": "PT:",
     "typeTarget": "Type in English",
@@ -1323,7 +1311,8 @@
     "reread": "Reread",
     "emptyTrail": "This episode has no cards yet.",
     "start": "START",
-    "nodeLabel": "Block {number}"
+    "nodeLabel": "Block {number}",
+    "openTrail": "Open trail"
   },
   "budget": {
     "title": "AI budget",
@@ -1352,5 +1341,60 @@
     "sharedLimitNote": "Applies only to {name}, instead of the default limit. The person can set a lower cap, never a higher one.",
     "ownLimit": "Limit on their own key",
     "ownLimitNote": "Applies when {name} uses their own key. The person can change this limit too."
+  },
+  "trail": {
+    "back": "Back to home",
+    "subtitle": {
+      "series": "Series · one section per episode",
+      "movie": "Movie · a single section",
+      "personal": "Personal series · one season per level"
+    },
+    "manageSeries": "Settings",
+    "episodes": "Episodes",
+    "seasons": "Seasons",
+    "season": "Season {number}",
+    "level": "Level {level}",
+    "label": {
+      "movie": "Full movie",
+      "episode": "S{season} · E{episode}",
+      "personal": "{level} · episode {episode}"
+    },
+    "personalName": "My series",
+    "status": {
+      "done": "Done",
+      "pending": "Building the trail",
+      "missing": "No subtitle",
+      "notStarted": "Not started",
+      "lessons": "{done} of {total} lessons"
+    },
+    "guide": "Summary of {title}",
+    "noOverview": "No synopsis for this episode.",
+    "readAndMark": "Read the episode and mark",
+    "cardsAndSources": "See cards and conversations",
+    "startEpisode": "Study this episode",
+    "importSubtitle": "Import subtitle",
+    "lockedSeason": "Level {level} · locked",
+    "unlockAt": "Opens when you pass {percent}% of your current level",
+    "plannedThemes": "Topics come back more advanced. Planned from what came up in your conversations:",
+    "empty": "No episodes in this season yet.",
+    "lesson": "Lesson {number}",
+    "lockedLesson": "{name}, locked",
+    "unlockHint": "Finish the previous lesson to open this one.",
+    "replayLesson": "Redo {name}",
+    "start": "START",
+    "legend": {
+      "done": "done",
+      "current": "current",
+      "locked": "locked"
+    },
+    "backToCurrent": "Back to where I stopped",
+    "failed": "Could not build the trail for this episode",
+    "failedBody": "Your marks and reviews still work.",
+    "retrying": "Retrying…",
+    "retry": "Try again",
+    "building": "Building the trail with AI",
+    "buildingBody": "The AI is splitting the episode into blocks and writing questions for your level. It takes about a minute; we will let you know in the bell when it is done.",
+    "personalEmpty": "Cards from your conversations become episodes here",
+    "finalChallenge": "Final challenge"
   }
 }

@@ -21,3 +21,10 @@ export {
   type StudyRepository,
   type TrailView,
 } from "./application/study-use-cases";
+export * from "./domain/work-trail";
+export {
+  makeGetWorkTrail,
+  type WorkEpisode,
+  type WorkTrailNode,
+  type WorkTrailSection,
+} from "./application/work-trail";

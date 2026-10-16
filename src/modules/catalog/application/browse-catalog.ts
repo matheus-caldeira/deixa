@@ -9,6 +9,8 @@ export type InProgressEntry = {
   mediaId: string;
   media: MediaItem;
   label: string;
+  seasonNumber: number;
+  episodeNumber: number;
   episodeTitle: string;
   progressPercent: number;
 };
@@ -37,6 +39,8 @@ export function makeGetCatalogOverview(deps: {
           mediaId: context.media.id,
           media: context.media,
           label: episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber),
+          seasonNumber: context.season.seasonNumber,
+          episodeNumber: context.episode.episodeNumber,
           episodeTitle: context.episode.title,
           progressPercent: entry.progressPercent,
         },

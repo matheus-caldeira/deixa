@@ -42,6 +42,7 @@ export default async function PersonalLessonPage(props: {
           audioSpeed: user.preferences.audioSpeed,
           exercises: lesson.exercises,
           source: "personal",
+          backHref: "/trail/personal",
         }}
       />
     </ToastProvider>

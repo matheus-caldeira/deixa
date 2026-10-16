@@ -8,6 +8,7 @@ import {
   activeLevel,
   cleanSeriesName,
   episodeNodes,
+  nodeStatesFor,
   planPlacements,
   progressPercent,
   seriesDescriptionSchema,
@@ -18,6 +19,7 @@ import {
   type Season,
   type Series,
   type SeriesLevel,
+  type TrailNodeState,
 } from "../domain/series";
 import type { DescribeSeriesInput, EpisodeSource, LearnerHints, PersonalSeriesRepository } from "./ports";
 
@@ -32,7 +34,9 @@ export type SeriesDeps = {
 
 type Learner = { userId: string; pair: LanguagePair; userLevel: CefrLevel };
 
-export type SeasonView = Season & { episodes: (Episode & { progress: number; fresh: boolean })[] };
+export type SeasonView = Season & {
+  episodes: (Episode & { progress: number; fresh: boolean; nodes: TrailNodeState[] })[];
+};
 export type SeriesView = {
   series: Series;
   activeLevel: CefrLevel;
@@ -73,10 +77,12 @@ export function makeGetPersonalSeries(deps: SeriesDeps) {
     );
     const now = deps.clock.now().getTime();
     const withProgress = episodes.map((episode, index) => {
-      const progress = progressPercent(episode.cardCount, new Set(completed[index]));
+      const done = new Set(completed[index]);
+      const progress = progressPercent(episode.cardCount, done);
       return {
         ...episode,
         progress,
+        nodes: nodeStatesFor(episode.cardCount, done),
         fresh: progress === 0 && now - episode.createdAt.getTime() < FRESH_EPISODE_MS,
       };
     });

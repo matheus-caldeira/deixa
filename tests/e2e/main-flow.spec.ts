@@ -162,9 +162,12 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.locator(".w.mk")).toHaveCount(3);
 
   await page.goto("/");
+  await expect(page.getByText(/lição 3 de \d+/)).toBeVisible();
+  await page.getByRole("link", { name: "Continuar", exact: true }).click();
+  await expect(page).toHaveURL(/\/trail\/.+\?season=1$/);
   await expect(page.getByText("COMEÇAR")).toBeVisible();
-  await expect(page.getByText(/70% de acerto para liberar o próximo/)).toBeVisible();
-  await page.getByRole("link", { name: "Continuar estudando" }).click();
+  await expect(page.getByText(/T1 · E\d+ · 2 de \d+ lições/)).toBeVisible();
+  await page.locator(".wt-node.current").click();
   await expect(page).toHaveURL(/\/study\/.+\/2$/);
   const finished = page.getByRole("heading", { name: /Ainda não foi desta vez|Bloco (perfeito|concluído)!/ });
   for (let step = 0; step < 12; step += 1) {
@@ -184,12 +187,15 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
     await expect(page.getByText(/Você precisa de 70% de acerto/)).toBeVisible();
     await expect(page.locator(".dstat").first()).toContainText("+0");
     await expect(page.getByRole("button", { name: "Tentar de novo" })).toBeVisible();
-    await page.getByRole("button", { name: "Voltar ao início" }).click();
+    await page.getByRole("button", { name: "Voltar à trilha" }).click();
   } else {
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
   }
+  await expect(page).toHaveURL(/\/trail\/.+\?season=1$/);
   await expect(page.getByRole("button", { name: "Perfil de Matheus" })).toBeVisible();
-  await expect(page.getByText("Desafio final")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Desafio final" }).or(page.getByRole("button", { name: /Desafio final/ })),
+  ).not.toHaveCount(0);
 
   await page.getByRole("button", { name: /^Notificações/ }).click();
   const inbox = page.getByRole("dialog", { name: "Notificações" });

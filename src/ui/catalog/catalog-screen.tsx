@@ -16,9 +16,11 @@ export type CatalogTile = PosterData & {
   levelRange: string;
   originalLanguage: StudyLanguage;
 };
+export type PersonalTile = { name: string; subtitle: string; progressPercent: number; poster: PosterData };
 export type InProgressTile = {
   episodeId: string;
   mediaId: string;
+  seasonNumber: number;
   poster: PosterData;
   label: string;
   episodeTitle: string;
@@ -33,10 +35,12 @@ export const FIT_CLASS: Record<LevelFit, string> = { fit: "good", challenging: "
 export function CatalogScreen({
   tiles,
   inProgress,
+  personal,
   suggestions,
 }: {
   tiles: CatalogTile[];
   inProgress: InProgressTile[];
+  personal: PersonalTile;
   suggestions: SuggestionsView;
 }) {
   const t = useTranslations("catalog");
@@ -86,18 +90,32 @@ export function CatalogScreen({
           </button>
         ))}
       </div>
-      {inProgress.length > 0 && !needle ? (
+      {!needle ? (
         <section className="col" style={{ gap: 10 }}>
           <div className="sec-h">
             <h2 style={{ fontSize: 18 }}>{t("inProgress")}</h2>
           </div>
           <div className="hscroll">
+            <Link className="cont card" style={{ padding: 10 }} href="/trail/personal">
+              <Poster media={personal.poster} sizes="64px" />
+              <div className="col" style={{ gap: 4, minWidth: 0 }}>
+                <b className="small">{personal.name}</b>
+                <span className="small muted">{personal.subtitle}</span>
+                <div className="bar" style={{ height: 6 }}>
+                  <i style={{ width: `${personal.progressPercent}%` }} />
+                </div>
+              </div>
+            </Link>
             {inProgress.map((entry) => (
               <Link
                 key={entry.episodeId}
                 className="cont card"
                 style={{ padding: 10 }}
-                href={`/catalog/${entry.mediaId}`}
+                href={
+                  entry.poster.type === "movie"
+                    ? `/trail/${entry.mediaId}`
+                    : `/trail/${entry.mediaId}?season=${entry.seasonNumber}`
+                }
               >
                 <Poster media={entry.poster} sizes="64px" />
                 <div className="col" style={{ gap: 4, minWidth: 0 }}>

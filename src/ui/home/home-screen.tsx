@@ -2,48 +2,39 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  CardsIcon,
-  ChatIcon,
-  CheckIcon,
-  EarIcon,
-  Icon,
-  LockIcon,
-  MarkerIcon,
-  PlayIcon,
-  type IconName,
-} from "../icons";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useTransition } from "react";
-import { retryTrailAction } from "@/app/actions/study";
 import { startConversationAction } from "@/app/actions/tutor";
 import { MISSION_XP } from "@/modules/gamification";
-import type { CefrLevel } from "@/shared/levels";
+import { Poster, type PosterData } from "../catalog/poster";
+import { CardsIcon, ChatIcon, EarIcon, Icon, MarkerIcon, PlayIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
-import { useErrorText } from "../shell/use-error-text";
 
 export type HomeView = {
-  level: CefrLevel;
   current: {
-    episodeId: string;
     mediaTitle: string;
     label: string;
     episodeTitle: string;
-    line: string;
     progressPercent: number;
-    ready: boolean;
+    lessons: { done: number; total: number } | null;
+    building: boolean;
+    trailHref: string;
+    readHref: string | null;
     imageUrl: string | null;
   } | null;
   xpToday: number;
   dailyGoal: number;
   streak: number;
   dueCount: number;
-  trail: { index: number; tc: string; nm: string; ic: IconName; state: "done" | "current" | "locked" }[];
-  studyHref: string | null;
-  trailStatus: "ready" | "pending" | "failed";
-  trailByAi: boolean;
-  trailFailure: string | null;
+  others: {
+    key: string;
+    title: string;
+    subtitle: string;
+    progressPercent: number;
+    href: string;
+    poster: PosterData;
+  }[];
   missions: { icon: "cards" | "ear" | "chat"; kind: string; value: number; max: number }[];
   tutor: {
     suggestedThemeId: string;
@@ -135,28 +126,15 @@ function GoalRing({ value, max }: { value: number; max: number }) {
 
 export function HomeScreen({ view }: { view: HomeView }) {
   const t = useTranslations("home");
-  const levels = useTranslations("levels");
-  const errorText = useErrorText();
-  const toast = useToast();
   const router = useRouter();
-  const [retrying, startRetry] = useTransition();
   const goalMet = view.xpToday >= view.dailyGoal;
+  const building = view.current?.building ?? false;
 
   useEffect(() => {
-    if (view.trailStatus !== "pending") return;
+    if (!building) return;
     const timer = setInterval(() => router.refresh(), TRAIL_POLL_MS);
     return () => clearInterval(timer);
-  }, [router, view.trailStatus]);
-
-  const retryTrail = () => {
-    if (!view.current) return;
-    const episodeId = view.current.episodeId;
-    startRetry(async () => {
-      const result = await retryTrailAction(episodeId).catch(() => null);
-      if (!result?.ok) toast(result?.message ?? errorText(null));
-      router.refresh();
-    });
-  };
+  }, [router, building]);
 
   return (
     <>
@@ -179,26 +157,24 @@ export function HomeScreen({ view }: { view: HomeView }) {
             </span>
             <h1>{view.current.episodeTitle}</h1>
           </div>
-          {view.current.line ? <span className="subline">{view.current.line}</span> : null}
           <div className="row">
             <div className="bar cue" style={{ flex: 1, background: "rgba(255,255,255,.15)" }}>
               <i style={{ width: `${view.current.progressPercent}%` }} />
             </div>
             <span className="small" style={{ fontVariantNumeric: "tabular-nums" }}>
-              {view.current.progressPercent}%
+              {view.current.lessons
+                ? t("lessonOf", {
+                    number: Math.min(view.current.lessons.done + 1, view.current.lessons.total),
+                    total: view.current.lessons.total,
+                  })
+                : `${view.current.progressPercent}%`}
             </span>
           </div>
-          {view.studyHref ? (
-            <Link className="btn cue wide" href={view.studyHref}>
-              <PlayIcon width={18} height={18} /> {t("keepStudying")}
-            </Link>
-          ) : view.trailStatus === "pending" ? (
-            <button className="btn cue wide" disabled>
-              {t("buildingTrail")}
-            </button>
-          ) : null}
-          {view.current.ready ? (
-            <Link className="btn onDark wide" href={`/read/${view.current.episodeId}`}>
+          <Link className="btn cue wide" href={view.current.trailHref}>
+            <PlayIcon width={18} height={18} /> {building ? t("buildingTrail") : t("continue")}
+          </Link>
+          {view.current.readHref ? (
+            <Link className="btn onDark wide" href={view.current.readHref}>
               <MarkerIcon width={18} height={18} /> {t("readAndMark")}
             </Link>
           ) : null}
@@ -229,81 +205,45 @@ export function HomeScreen({ view }: { view: HomeView }) {
         </div>
       </section>
 
-      {view.trailStatus === "pending" ? (
-        <section className="card col" style={{ gap: 10 }}>
-          <div className="pstep run">
-            <span className="s" />
-            <b>{t("buildingTrailAi")}</b>
-            <span className="small muted mono">{view.level}</span>
-          </div>
-          <p className="small muted">{t("buildingTrailBody")}</p>
-        </section>
-      ) : null}
-      {view.trailStatus === "failed" ? (
-        <section className="card col" style={{ gap: 10 }}>
-          <b>{t("trailFailed")}</b>
-          <p className="small muted">
-            {errorText(view.trailFailure)} {t("trailFailedBody")}
-          </p>
-          <button className="btn" onClick={retryTrail} disabled={retrying}>
-            {retrying ? t("retrying") : t("retry")}
-          </button>
-        </section>
-      ) : null}
-      {view.trail.length > 0 ? (
-        <section className="col" style={{ gap: 4 }}>
+      <Link className="card row" href="/review">
+        <span className="ic" style={{ width: 44, height: 44, flex: "none", color: "var(--brand)" }}>
+          <CardsIcon />
+        </span>
+        <span className="col" style={{ gap: 2, flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: 16 }}>{t("todayReviews")}</h2>
+          <span className="small muted">
+            {view.dueCount === 0 ? t("noDueCards") : t("dueCardsCount", { count: view.dueCount })}
+          </span>
+        </span>
+        <span className="link">{t("review")}</span>
+      </Link>
+
+      {view.others.length > 0 ? (
+        <section className="col" style={{ gap: 10 }}>
           <div className="sec-h">
-            <h2>{t("episodeTrail")}</h2>
-            <span className="chip brand">
-              {view.level} · {view.trailByAi ? t("madeByAi") : levels(view.level)}
-            </span>
+            <h2 style={{ fontSize: 18 }}>{t("alsoStudying")}</h2>
           </div>
-          <p className="small muted">{t("trailBody")}</p>
-          <div className="trail">
-            {view.trail.map((node, index) => {
-              const state = node.state === "current" ? "cur" : node.state === "locked" ? "lock" : "done";
-              const href = view.current ? `/study/${view.current.episodeId}/${node.index}` : "/";
-              return (
-                <div key={node.index} className={`tnode ${index % 2 ? "r" : "l"} ${state}`}>
-                  {state === "cur" ? <span className="startpop">{t("start")}</span> : null}
-                  {state === "lock" ? (
-                    <button
-                      className="dot"
-                      aria-label={t("lockedNode", { name: node.nm })}
-                      onClick={() => toast(t("unlockHint"))}
-                    >
-                      <LockIcon />
-                    </button>
-                  ) : (
-                    <Link className="dot" href={href} aria-label={node.nm}>
-                      {state === "done" ? <CheckIcon /> : <Icon name={node.ic} />}
-                    </Link>
-                  )}
-                  <div className="lbl">
-                    <div className="tc">{node.tc}</div>
-                    <div className="nm">{node.nm}</div>
-                  </div>
+          {view.others.map((entry) => (
+            <Link
+              key={entry.key}
+              className="card cont"
+              style={{ padding: 10, width: "100%" }}
+              href={entry.href}
+            >
+              <Poster media={entry.poster} sizes="64px" />
+              <div className="col" style={{ gap: 4, minWidth: 0 }}>
+                <b className="small">{entry.title}</b>
+                <span className="small muted">{entry.subtitle}</span>
+                <div className="bar" style={{ height: 6 }}>
+                  <i style={{ width: `${entry.progressPercent}%` }} />
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </Link>
+          ))}
         </section>
       ) : null}
 
       <TutorCard tutor={view.tutor} />
-
-      <section className="card col" style={{ gap: 12 }}>
-        <div className="sec-h">
-          <h2 style={{ fontSize: 18 }}>{t("todayReviews")}</h2>
-          <Link className="link" href="/review">
-            {t("review")}
-          </Link>
-        </div>
-        <div className="row">
-          <b style={{ fontFamily: "var(--f-display)", fontSize: 34, lineHeight: 1 }}>{view.dueCount}</b>
-          <span className="small muted">{view.dueCount === 0 ? t("noDueCards") : t("dueCards")}</span>
-        </div>
-      </section>
 
       {view.missions.length > 0 ? (
         <section className="card missions">

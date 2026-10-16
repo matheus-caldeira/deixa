@@ -140,6 +140,7 @@ import {
   makeEnsurePlan,
   makeGeneratePlan,
   makeGetTrail,
+  makeGetWorkTrail,
   makeStartLesson,
   type LessonPlanner,
   type TrailLine,
@@ -1037,6 +1038,7 @@ export function buildContainer(options: ContainerOptions) {
     generatePlan,
     savePlan: (input: Parameters<typeof study.saveReady>[0]) => study.saveReady(input),
     getTrail: makeGetTrail(studyDeps),
+    getWorkTrail: makeGetWorkTrail(studyDeps),
 
     startConversation: makeStartConversation(conversationDeps),
     getConversation: makeGetConversation(conversationDeps),
