@@ -135,6 +135,7 @@ p{margin:0}
 .side{position:absolute;font-size:12px;color:var(--muted);font-weight:600;width:120px;line-height:1.25}
 .backto{white-space:nowrap;font-size:13px;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:25;display:none}
 .backto.show{display:inline-flex}
+.backto.up svg{transform:rotate(180deg)}
 .locked-themes{display:flex;flex-direction:column;gap:8px}
 .locked-themes .lt{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface);border:2px dashed var(--line);color:var(--muted);font-weight:600}
 .locked-themes svg{width:18px;height:18px}
@@ -397,7 +398,8 @@ let observer;
 function watchCurrent(){
   if(observer)observer.disconnect();const c=$('#current'),b=$('#backto');if(!b)return;
   if(!c){b.classList.toggle('show',String(S.season)!==String(WORKS[S.work].current.season));return}
-  observer=new IntersectionObserver(([e])=>b.classList.toggle('show',!e.isIntersecting));observer.observe(c);
+  const update=()=>{const r=c.getBoundingClientRect();const visible=r.bottom>0&&r.top<innerHeight;b.classList.toggle('show',!visible);b.classList.toggle('up',r.bottom<=0)};
+  observer={disconnect:()=>removeEventListener('scroll',update)};addEventListener('scroll',update,{passive:true});update();
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-go],[data-trail],[data-season],[data-guide],[data-node],[data-chest],[data-rtab],[data-recap],[data-close],[data-toast],[data-chat],[data-poc],#backto');
