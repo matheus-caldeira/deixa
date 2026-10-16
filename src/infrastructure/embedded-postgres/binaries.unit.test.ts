@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { POSTGRES_VERSION, artifactFor, artifactUrl } from "./binaries";
+import { POSTGRES_VERSION, artifactFor, artifactUrl, tarCommand } from "./binaries";
 import { connectionUrl } from "./server";
 
 describe("binários do Postgres embutido", () => {
@@ -29,5 +29,17 @@ describe("binários do Postgres embutido", () => {
         database: "deixa",
       }),
     ).toBe("postgres://deixa:a%2Fb%2Bc@127.0.0.1:1443/deixa");
+  });
+});
+
+describe("comando do tar", () => {
+  it("no Windows usa o tar.exe do System32, sem depender do PATH que a casca não repassa", () => {
+    expect(tarCommand("win32", { SystemRoot: "C:\\Windows" })).toBe("C:\\Windows\\System32\\tar.exe");
+    expect(tarCommand("win32", {})).toBe("C:\\Windows\\System32\\tar.exe");
+  });
+
+  it("no macOS e no Linux cai em /usr/bin/tar quando não há PATH", () => {
+    expect(tarCommand("darwin", {})).toBe("/usr/bin/tar");
+    expect(tarCommand("linux", { PATH: "/usr/bin" })).toBe("tar");
   });
 });

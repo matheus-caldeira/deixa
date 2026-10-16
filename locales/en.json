@@ -220,7 +220,10 @@
       "onlyTxt": "The script must be a .txt file.",
       "noLines": "We found no dialogue lines in that script.",
       "noSubtitle": "Upload the study-language subtitle before the script.",
-      "versionConflict": "This episode already has a script uploaded by someone else. Only the uploader can replace it."
+      "versionConflict": "This episode already has a script uploaded by someone else. Only the uploader can replace it.",
+      "themeRequired": "Pick a topic or write a short subject.",
+      "conversationLimit": "This conversation reached its limit. Review it and start another.",
+      "tutorInvalid": "The tutor answered in an unexpected format. Try again."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -335,7 +338,12 @@
       "tutor": "Talk {target} min with the tutor"
     },
     "finalChallenge": "Final challenge",
-    "sceneTitle": "Scene {number}"
+    "sceneTitle": "Scene {number}",
+    "tutorTitle": "Talk with the tutor",
+    "tutorBody": "Practice talking about {theme}. The tutor remembers what to improve from earlier conversations.",
+    "tutorStart": "Talk about {theme}",
+    "tutorContinue": "Continue: {theme}",
+    "tutorMore": "Other topics"
   },
   "people": {
     "home": "Home",
@@ -468,7 +476,11 @@
       "blank": "Complete the sentence",
       "typeFromHint": "Write it in English",
       "dictation": "Dictation: listen and write exactly"
-    }
+    },
+    "exitTitle": "Leave the lesson?",
+    "exitBody": "You will lose your progress in this lesson. Answered exercises are not saved.",
+    "exitStay": "Keep going",
+    "exitConfirm": "Leave and lose progress"
   },
   "chat": {
     "back": "Back",
@@ -539,6 +551,14 @@
         "title": "Opinions and debates",
         "detail": "Defending a point, agreeing and disagreeing."
       }
+    },
+    "learnerTitle": "What the tutor takes into account",
+    "learnerBody": "It comes from your reviewed conversations and from review mistakes in this language. The tutor uses it to pick words and revisit weak spots.",
+    "learnerEmpty": "Review a conversation when you finish: the tutor will remember your strengths and what to improve next time.",
+    "learner": {
+      "improvements": "To improve",
+      "strengths": "Strengths",
+      "mistakes": "Recurring review mistakes"
     }
   },
   "credentials": {
@@ -1161,7 +1181,8 @@
       "invalidUrl": "Invalid address. Use postgres://user:password@server:port/database, with a lowercase database name.",
       "fromEnvironment": "The connection comes from this server’s DATABASE_URL variable. Adjust the value there and restart.",
       "generic": "Could not connect. Check the fields and try again."
-    }
+    },
+    "confirmChoice": "Confirm"
   },
   "languages": {
     "en": "English",

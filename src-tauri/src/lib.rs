@@ -81,7 +81,8 @@ const INBOX_EMPTY: &str = "Sem notificações novas";
 const SERVER_FOLDER: &str = "server";
 const SERVER_ENTRY: &str = "server.js";
 const NODE_BINARY: &str = if cfg!(windows) { "node.exe" } else { "node" };
-const INHERITED_VARIABLES: [&str; 9] = [
+const INHERITED_VARIABLES: [&str; 10] = [
+    "PATH",
     "HOME",
     "USERPROFILE",
     "APPDATA",

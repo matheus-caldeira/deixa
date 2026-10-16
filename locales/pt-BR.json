@@ -220,7 +220,10 @@
       "onlyTxt": "O roteiro precisa ser um arquivo .txt.",
       "noLines": "Não encontramos falas nesse roteiro.",
       "noSubtitle": "Envie a legenda do idioma de estudo antes do roteiro.",
-      "versionConflict": "Este episódio já tem um roteiro enviado por outra pessoa. Só quem enviou pode trocá-lo."
+      "versionConflict": "Este episódio já tem um roteiro enviado por outra pessoa. Só quem enviou pode trocá-lo.",
+      "themeRequired": "Escolha um tema ou escreva um assunto curto.",
+      "conversationLimit": "Esta conversa chegou ao limite. Revise-a e comece outra.",
+      "tutorInvalid": "O tutor devolveu uma resposta fora do formato. Tente de novo."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -335,7 +338,12 @@
       "tutor": "Converse {target} min com o tutor"
     },
     "finalChallenge": "Desafio final",
-    "sceneTitle": "Cena {number}"
+    "sceneTitle": "Cena {number}",
+    "tutorTitle": "Converse com o tutor",
+    "tutorBody": "Pratique falando sobre {theme}. O tutor lembra dos seus pontos a melhorar das conversas anteriores.",
+    "tutorStart": "Conversar sobre {theme}",
+    "tutorContinue": "Continuar: {theme}",
+    "tutorMore": "Outros temas"
   },
   "people": {
     "home": "Início",
@@ -468,7 +476,11 @@
       "blank": "Complete a frase",
       "typeFromHint": "Escreva em inglês",
       "dictation": "Ditado: ouça e escreva exatamente"
-    }
+    },
+    "exitTitle": "Sair da lição?",
+    "exitBody": "Você vai perder o progresso desta lição. Os exercícios já respondidos não são salvos.",
+    "exitStay": "Continuar a lição",
+    "exitConfirm": "Sair e perder o progresso"
   },
   "chat": {
     "back": "Voltar",
@@ -539,6 +551,14 @@
         "title": "Opiniões e debates",
         "detail": "Defender um ponto, concordar e discordar."
       }
+    },
+    "learnerTitle": "O que o tutor leva em conta",
+    "learnerBody": "Vem das suas conversas revisadas e dos erros da revisão neste idioma. O tutor usa isso para escolher palavras e retomar pontos fracos.",
+    "learnerEmpty": "Revise uma conversa ao terminar: o tutor passa a lembrar dos seus pontos fortes e do que melhorar nas próximas.",
+    "learner": {
+      "improvements": "Para melhorar",
+      "strengths": "Pontos fortes",
+      "mistakes": "Erros recorrentes na revisão"
     }
   },
   "credentials": {
@@ -1161,7 +1181,8 @@
       "invalidUrl": "Endereço inválido. Use postgres://usuario:senha@servidor:porta/banco, com o nome do banco em minúsculas.",
       "fromEnvironment": "A conexão vem da variável DATABASE_URL deste servidor. Ajuste o valor lá e reinicie.",
       "generic": "Não foi possível conectar. Confira os dados e tente de novo."
-    }
+    },
+    "confirmChoice": "Confirmar"
   },
   "languages": {
     "en": "inglês",

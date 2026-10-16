@@ -129,6 +129,7 @@ export function SetupScreen({ view }: { view: SetupView }) {
   const [database, setDatabase] = useState(DEFAULT_DATABASE);
   const [url, setUrl] = useState("");
   const [choice, setChoice] = useState<Choice>(view.embedded === "configured" ? "embedded" : null);
+  const [selected, setSelected] = useState<Exclude<Choice, null>>("embedded");
 
   const unlock = (event: React.FormEvent) => {
     event.preventDefault();
@@ -213,9 +214,10 @@ export function SetupScreen({ view }: { view: SetupView }) {
           <span className="eyebrow">{t("howToStore")}</span>
           <button
             type="button"
-            className="result on"
+            className={`result ${selected === "embedded" ? "on" : ""}`}
             style={{ gridTemplateColumns: "1fr" }}
-            onClick={() => setChoice("embedded")}
+            onClick={() => setSelected("embedded")}
+            aria-pressed={selected === "embedded"}
           >
             <span className="col" style={{ gap: 2 }}>
               <b>{t("embeddedOption")}</b>
@@ -224,14 +226,18 @@ export function SetupScreen({ view }: { view: SetupView }) {
           </button>
           <button
             type="button"
-            className="result"
+            className={`result ${selected === "existing" ? "on" : ""}`}
             style={{ gridTemplateColumns: "1fr" }}
-            onClick={() => setChoice("existing")}
+            onClick={() => setSelected("existing")}
+            aria-pressed={selected === "existing"}
           >
             <span className="col" style={{ gap: 2 }}>
               <b>{t("existingOption")}</b>
               <span className="small muted">{t("existingOptionBody")}</span>
             </span>
+          </button>
+          <button type="button" className="btn wide" onClick={() => setChoice(selected)}>
+            {t("confirmChoice")}
           </button>
         </div>
       ) : choice === "embedded" ? (

@@ -22,6 +22,12 @@ test("sem banco configurado: código → conexão → tabelas criadas → primei
   await page.getByLabel("Código de configuração").fill(readFileSync(CODE_FILE, "utf8").trim().toLowerCase());
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByRole("button", { name: /Usar um Postgres que já existe/ }).click();
+  await expect(page.getByRole("button", { name: /Usar um Postgres que já existe/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("button", { name: "Testar e conectar" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Confirmar", exact: true }).click();
   await expect(page.getByText("Postgres encontrado neste computador")).toBeVisible();
   await page.getByRole("button", { name: `localhost:${target.port}` }).click();
   await expect(page.getByLabel("Porta")).toHaveValue(target.port);

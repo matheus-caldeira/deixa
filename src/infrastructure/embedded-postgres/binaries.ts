@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { spawn } from "node:child_process";
 import { unzipSync } from "fflate";
 
@@ -79,6 +79,19 @@ async function download(url: string, onProgress: DownloadProgress): Promise<Uint
   return Buffer.concat(chunks);
 }
 
+const UNIX_TAR = "/usr/bin/tar";
+
+export function tarCommand(
+  platform: NodeJS.Platform = process.platform,
+  env: Record<string, string | undefined> = process.env,
+): string {
+  if (platform === "win32") {
+    const systemRoot = env.SystemRoot ?? env.SYSTEMROOT ?? env.windir ?? "C:\\Windows";
+    return win32.join(systemRoot, "System32", "tar.exe");
+  }
+  return env.PATH ? "tar" : UNIX_TAR;
+}
+
 function run(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd, stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
@@ -110,7 +123,7 @@ export async function installBinaries(home: string, onProgress: DownloadProgress
   mkdirSync(directory, { recursive: true });
   const archivePath = join(directory, "postgres.txz");
   writeFileSync(archivePath, archive);
-  await run("tar", ["-xf", archivePath, "-C", directory], directory);
+  await run(tarCommand(), ["-xf", archivePath, "-C", directory], directory);
   rmSync(archivePath, { force: true });
   if (!existsSync(binaryPath(home, "postgres"))) throw new Error("Postgres package is missing the binary");
   writeFileSync(
