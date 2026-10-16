@@ -234,6 +234,22 @@ Pendente desta etapa: validar com uma legenda real em espanhol e francês no Ope
 | 114 | Tutor no idioma de estudo, com resumo do aluno e cartão na Início       | Conversa guarda o idioma (migração 0022); abertura nos 4 idiomas; prompt recebe revisões e erros         | [x]    |
 | 115 | Windows: confirmar a escolha do banco e extrair o Postgres sem o `PATH` | Botão Confirmar; `tar.exe` pelo caminho do `System32`; casca repassa o `PATH`                            | [x]    |
 
+## Etapa 17: conversa encerrada e série pessoal (detalhes em `docs/CONVERSATION-REVIEW-DRAFT.md`)
+
+Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
+
+| #   | Tarefa                                                                         | Critério de pronto                                                                                                                                | Estado |
+| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 116 | Encerrar conversa: `closed_at`, recusa de mensagem, tela só de leitura         | Migração; `sendMessage` em sessão fechada dá `conversationClosed`; compositor vira barra de leitura; teste de caso de uso e de isolamento         | [ ]    |
+| 117 | Revisão com dificuldades e escolha de cards                                    | Uma chamada em lote validada por Zod; correções param de virar card na hora; cards só dos itens marcados; encerrar duas vezes não duplica         | [ ]    |
+| 118 | Série pessoal: id fixo, nome, nível (fixo ou customizado), temporada por nível | Tabelas `personal_series`, `personal_seasons`, `personal_episodes`, `personal_episode_cards`; renomear e trocar nível; isolamento por conta e par | [ ]    |
+| 119 | Distribuição dos cards em episódios por tema                                   | Revisão mostra "Na sua série"; LLM devolve episódio existente ou novo; id inventado vira episódio novo; único por temporada, tema e parte         | [ ]    |
+| 120 | Trilha e lição de cada episódio                                                | `TrailLine` de origem `personal_card`; card novo regera a trilha em job sem apagar progresso                                                      | [ ]    |
+| 121 | Temporada seguinte pelo percentual de nível                                    | Job abre a temporada do próximo nível ao passar de 80% ou ao subir de nível; temporada travada mostra os temas previstos                          | [ ]    |
+| 122 | Descrição da série escrita pela IA                                             | Job depois de cada revisão; texto limpo e limitado; data e base da atualização na tela                                                            | [ ]    |
+| 123 | Áudio da conversa e modo escuta                                                | Falas do tutor e falas corrigidas no cache do Kokoro por job; "Ouvir tudo" e "Escutar" com texto escondido                                        | [ ]    |
+| 124 | Série pessoal no pacote pessoal (`.deixa.zip`)                                 | Exporta série, temporadas, episódios, cards e progresso; importar junta na série do par sem duplicar episódio de mesmo tema                       | [ ]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):

@@ -32,6 +32,7 @@
     "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
     "fixtures:catalog": "tsx --env-file=.env scripts/generate-catalog-fixture.ts",
     "screenshots": "node scripts/screenshots.mjs",
+    "poc": "node scripts/serve-poc.mjs",
     "desktop:check": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo check",
     "desktop:run": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo run",
     "desktop:server": "node scripts/build-desktop-server.mjs",
