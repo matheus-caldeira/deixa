@@ -1,5 +1,5 @@
-import { NO_LIMIT, type UsageLimit } from "../../domain/limits";
-import type { AiUsageEvent, KeySource, ModelPrice } from "../../domain/usage";
+import { NO_LIMIT, type LimitSlot, type UsageLimit } from "../../domain/limits";
+import type { AiUsageEvent, ModelPrice } from "../../domain/usage";
 import type {
   AiUsageMeter,
   AiUsageRepository,
@@ -59,12 +59,12 @@ export class InMemoryModelPriceRepository implements ModelPriceRepository {
 export class InMemoryUsageLimitRepository implements UsageLimitRepository {
   private readonly limits = new Map<string, UsageLimit>();
 
-  async find(userId: string, keySource: KeySource): Promise<UsageLimit | null> {
-    return this.limits.get(`${userId}/${keySource}`) ?? null;
+  async find(userId: string, slot: LimitSlot): Promise<UsageLimit | null> {
+    return this.limits.get(`${userId}/${slot}`) ?? null;
   }
 
-  async save(userId: string, keySource: KeySource, limit: UsageLimit): Promise<void> {
-    this.limits.set(`${userId}/${keySource}`, limit);
+  async save(userId: string, slot: LimitSlot, limit: UsageLimit): Promise<void> {
+    this.limits.set(`${userId}/${slot}`, limit);
   }
 }
 

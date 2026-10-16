@@ -30,6 +30,23 @@ export const SHARED_KEY_DEFAULT_LIMIT: UsageLimit = {
   tokensPerMonth: 20_000_000,
 };
 
+export const LIMIT_SLOTS = ["user", "global", "global_cap"] as const;
+export type LimitSlot = (typeof LIMIT_SLOTS)[number];
+
+function tighterValue(a: number | null, b: number | null): number | null {
+  const active = [a, b].filter((value): value is number => value !== null && value > 0);
+  return active.length > 0 ? Math.min(...active) : null;
+}
+
+export function tighterLimit(a: UsageLimit, b: UsageLimit): UsageLimit {
+  return {
+    usdPerDay: tighterValue(a.usdPerDay, b.usdPerDay),
+    usdPerMonth: tighterValue(a.usdPerMonth, b.usdPerMonth),
+    tokensPerDay: tighterValue(a.tokensPerDay, b.tokensPerDay),
+    tokensPerMonth: tighterValue(a.tokensPerMonth, b.tokensPerMonth),
+  };
+}
+
 export type PeriodTotals = { usd: number; tokens: number; unknownCostCalls: number; calls: number };
 
 export const EMPTY_TOTALS: PeriodTotals = { usd: 0, tokens: 0, unknownCostCalls: 0, calls: 0 };

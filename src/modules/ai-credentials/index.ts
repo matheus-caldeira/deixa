@@ -26,8 +26,13 @@ export {
   type ModelChoice,
 } from "./domain/model-choice";
 export {
+  makeAssignAiModel,
   makeGetAiModels,
+  makeGetAssignedModel,
+  makeListModelAssignments,
   makeSetAiModels,
+  pickAiModel,
+  type ModelAssignment,
   type ModelChoiceRepository,
 } from "./application/model-choice-use-cases";
 export type {

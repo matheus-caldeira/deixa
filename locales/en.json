@@ -737,7 +737,8 @@
       "embedding": "Used in title suggestions. Switching models recomputes only the missing vectors; old ones are kept."
     },
     "saving": "Saving…",
-    "save": "Save models"
+    "save": "Save models",
+    "assignedNote": "With the server key, the administrator picked {value} for you. Your choice applies to your own keys."
   },
   "serverSettings": {
     "saved": "Server settings saved.",
@@ -769,7 +770,6 @@
     "ofLimit": "of {limit}",
     "tokens": "{count} tokens",
     "noLimitShort": "no limit",
-    "noLimit": "No limit",
     "blockedDay": "You went past today’s limit. It comes back tomorrow{raise}. Reading, highlighting and reviewing keep working.",
     "blockedMonth": "You went past this month’s limit. It comes back on the 1st{raise}. Reading, highlighting and reviewing keep working.",
     "blockedRaise": ", or when you raise the limit",
@@ -798,12 +798,7 @@
     "yourKey": "your key",
     "globalKey": "global key",
     "yourLimit": "Your limit",
-    "noKeyInUse": "No AI key in use. The limit shows up here once there is one.",
-    "ownLimitNote": "Applies to usage with your key. Blank means no limit.",
-    "perDay": "Per day",
-    "perMonth": "Per month",
-    "adminLimit": "Set by the administrator for whoever uses the global key. With your own key, the limit becomes yours.",
-    "adminNoLimit": "No limit set by the administrator. With your own key, the limit becomes yours."
+    "editBudget": "Change the budget in AI"
   },
   "serverUsage": {
     "limitFree": "free",
@@ -823,9 +818,6 @@
     "ownKey": "own key",
     "globalKeyLimit": "global key · limit {limit}",
     "paused": "Paused",
-    "personNote": "Applies only to {name}, while using the global key.",
-    "personOwnKey": "{name} uses their own key and sets their own limit.",
-    "personNoAi": "{name} does not use AI yet.",
     "totalsOnly": "You only see totals. What each person did with the AI does not show here.",
     "sharedDefault": "Global key default limit",
     "sharedDefaultNote": "Applies to each account that uses the global key and has no limit of its own.",
@@ -1332,5 +1324,33 @@
     "emptyTrail": "This episode has no cards yet.",
     "start": "START",
     "nodeLabel": "Block {number}"
+  },
+  "budget": {
+    "title": "AI budget",
+    "spent": "Spent: {today} today · {month} this month",
+    "perDay": "Per day",
+    "perMonth": "Per month",
+    "noLimit": "No limit",
+    "tokens": "{count} tokens",
+    "adminLimit": "Administrator limit",
+    "adminLimitNote": "You use the server key. This limit belongs to the administrator and you cannot go above it.",
+    "adminNoLimitNote": "You use the server key and the administrator has not set a limit.",
+    "yourCap": "Your cap",
+    "capNote": "A cap of your own, below the administrator limit. The lower of the two always applies.",
+    "ownNote": "Applies to usage with your key. Blank means no limit.",
+    "ownNoKeyNote": "Applies once you add a key of your own. Blank means no limit."
+  },
+  "personAi": {
+    "model": "Text model on the server key",
+    "serverDefault": "Server default: {value}",
+    "modelName": "Model name",
+    "modelNote": "Applies when {name} uses the server key and overrides the person's choice. With their own key, the person's choice applies.",
+    "saveModel": "Save model",
+    "saving": "Saving…",
+    "modelSaved": "Model saved.",
+    "sharedLimit": "Limit on the server key",
+    "sharedLimitNote": "Applies only to {name}, instead of the default limit. The person can set a lower cap, never a higher one.",
+    "ownLimit": "Limit on their own key",
+    "ownLimitNote": "Applies when {name} uses their own key. The person can change this limit too."
   }
 }

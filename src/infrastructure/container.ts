@@ -4,12 +4,16 @@ import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-ci
 import {
   PROVIDERS_WITH_EMBEDDINGS,
   SECRET_KINDS,
+  makeAssignAiModel,
   makeGetAiModels,
+  makeGetAssignedModel,
+  makeListModelAssignments,
   makeGetCredentialOverview,
   makeRemoveCredential,
   makeResolveCredential,
   makeSaveCredential,
   makeSetAiModels,
+  pickAiModel,
   parseEndpoint,
   tmdbSecretKind,
   type AiService,
@@ -371,6 +375,7 @@ export function buildContainer(options: ContainerOptions) {
   type AiPurpose = "generation" | "embedding";
   const modelChoices = new DrizzleModelChoiceRepository(db);
   const getAiModels = makeGetAiModels({ choices: modelChoices });
+  const getAssignedModel = makeGetAssignedModel({ choices: modelChoices });
   async function aiCredentialFor(
     userId: string,
     service: AiService,
@@ -394,14 +399,17 @@ export function buildContainer(options: ContainerOptions) {
   ): Promise<ResolvedAiAccess | null> {
     const chosen = (await getAiModels(userId))[purpose];
     if (chosen === "local") return null;
-    const fallback = purpose === "generation" ? settings.aiGeneration : settings.aiEmbedding;
-    for (const choice of [chosen, fallback]) {
-      if (!choice) continue;
-      if (!settings.aiCustomEndpointsAllowed && SECRET_KINDS[choice.provider] === "endpoint") continue;
-      const credential = await aiCredentialFor(userId, choice.provider);
-      if (credential) return { ...credential, model: choice.model };
-    }
-    return null;
+    const picked = await pickAiModel({
+      chosen,
+      assigned: purpose === "generation" ? await getAssignedModel(userId) : null,
+      serverDefault: purpose === "generation" ? settings.aiGeneration : settings.aiEmbedding,
+      credentialFor: async (choice) =>
+        !settings.aiCustomEndpointsAllowed && SECRET_KINDS[choice.provider] === "endpoint"
+          ? null
+          : aiCredentialFor(userId, choice.provider),
+      isShared: (credential) => credential.shared,
+    });
+    return picked ? { ...picked.credential, model: picked.choice.model } : null;
   }
   const keySourceOf = async (userId: string): Promise<KeySource | null> => {
     const access = await aiAccessFor(userId);
@@ -1118,6 +1126,9 @@ export function buildContainer(options: ContainerOptions) {
     getCredentialOverview: makeGetCredentialOverview(credentialDeps),
     getAiModels,
     setAiModels: makeSetAiModels({ choices: modelChoices, clock }),
+    getAssignedModel,
+    listModelAssignments: makeListModelAssignments({ choices: modelChoices }),
+    assignAiModel: makeAssignAiModel({ choices: modelChoices, clock }),
 
     getRecommendations: makeGetRecommendations(recommendationDeps),
     refreshRecommendations,

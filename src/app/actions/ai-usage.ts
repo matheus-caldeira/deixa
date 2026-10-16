@@ -8,9 +8,10 @@ import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
 import { app, runAction, type ActionResult } from "./result";
 
+const keySchema = z.enum(["own", "shared"]);
 const targetSchema = z.union([
-  z.object({ scope: z.literal("own") }),
-  z.object({ scope: z.literal("shared"), userId: z.uuid() }),
+  z.object({ scope: z.literal("own"), key: keySchema }),
+  z.object({ scope: z.literal("person"), userId: z.uuid(), key: keySchema }),
 ]);
 
 export async function setAiUsageLimitAction(input: unknown): Promise<ActionResult<UsageLimit>> {

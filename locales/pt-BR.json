@@ -737,7 +737,8 @@
       "embedding": "Usados nas sugestões de obras. Trocar de modelo recalcula só os vetores que faltam; os antigos ficam guardados."
     },
     "saving": "Salvando…",
-    "save": "Salvar modelos"
+    "save": "Salvar modelos",
+    "assignedNote": "Com a chave do servidor, o administrador escolheu {value} para você. Sua escolha vale com as suas chaves."
   },
   "serverSettings": {
     "saved": "Configurações do servidor salvas.",
@@ -769,7 +770,6 @@
     "ofLimit": "de {limit}",
     "tokens": "{count} tokens",
     "noLimitShort": "sem limite",
-    "noLimit": "Sem limite",
     "blockedDay": "Você passou do limite de hoje. Ela volta amanhã{raise}. Ler, marcar e revisar continuam funcionando.",
     "blockedMonth": "Você passou do limite deste mês. Ela volta no dia 1º{raise}. Ler, marcar e revisar continuam funcionando.",
     "blockedRaise": ", ou quando você aumentar o limite",
@@ -798,12 +798,7 @@
     "yourKey": "sua chave",
     "globalKey": "chave global",
     "yourLimit": "Seu limite",
-    "noKeyInUse": "Nenhuma chave de IA em uso. O limite aparece aqui quando houver uma.",
-    "ownLimitNote": "Vale para o uso com a sua chave. Em branco, sem limite.",
-    "perDay": "Por dia",
-    "perMonth": "Por mês",
-    "adminLimit": "Definido pelo administrador para quem usa a chave global. Com a sua própria chave, o limite passa a ser seu.",
-    "adminNoLimit": "Sem limite definido pelo administrador. Com a sua própria chave, o limite passa a ser seu."
+    "editBudget": "Mudar o orçamento em IA"
   },
   "serverUsage": {
     "limitFree": "livre",
@@ -823,9 +818,6 @@
     "ownKey": "chave própria",
     "globalKeyLimit": "chave global · limite {limit}",
     "paused": "Pausada",
-    "personNote": "Vale só para {name}, enquanto usar a chave global.",
-    "personOwnKey": "{name} usa a própria chave e define o próprio limite.",
-    "personNoAi": "{name} ainda não usa IA.",
     "totalsOnly": "Você vê só os totais. O que cada pessoa fez com a IA não aparece aqui.",
     "sharedDefault": "Limite padrão da chave global",
     "sharedDefaultNote": "Vale para cada conta que usa a chave global e não tem limite próprio.",
@@ -1332,5 +1324,33 @@
     "emptyTrail": "Este episódio ainda não tem cards.",
     "start": "COMEÇAR",
     "nodeLabel": "Bloco {number}"
+  },
+  "budget": {
+    "title": "Orçamento de IA",
+    "spent": "Gasto: {today} hoje · {month} este mês",
+    "perDay": "Por dia",
+    "perMonth": "Por mês",
+    "noLimit": "Sem limite",
+    "tokens": "{count} tokens",
+    "adminLimit": "Limite do administrador",
+    "adminLimitNote": "Você usa a chave do servidor. Esse limite é do administrador e você não pode passar dele.",
+    "adminNoLimitNote": "Você usa a chave do servidor e o administrador não definiu limite.",
+    "yourCap": "Seu teto",
+    "capNote": "Um teto seu, abaixo do limite do administrador. Vale sempre o menor dos dois.",
+    "ownNote": "Vale para o uso com a sua chave. Em branco, sem limite.",
+    "ownNoKeyNote": "Vale quando você cadastrar uma chave própria. Em branco, sem limite."
+  },
+  "personAi": {
+    "model": "Modelo de texto na chave do servidor",
+    "serverDefault": "Padrão do servidor: {value}",
+    "modelName": "Nome do modelo",
+    "modelNote": "Vale quando {name} usa a chave do servidor e passa na frente da escolha da pessoa. Com chave própria, vale a escolha da pessoa.",
+    "saveModel": "Salvar modelo",
+    "saving": "Salvando…",
+    "modelSaved": "Modelo salvo.",
+    "sharedLimit": "Limite na chave do servidor",
+    "sharedLimitNote": "Vale só para {name}, no lugar do limite padrão. A pessoa pode pôr um teto menor, nunca maior.",
+    "ownLimit": "Limite na chave própria",
+    "ownLimitNote": "Vale quando {name} usa a própria chave. A pessoa também pode mudar esse limite."
   }
 }

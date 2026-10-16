@@ -18,7 +18,7 @@ import {
   type ModelPrice,
 } from "../domain/usage";
 import type { ModelPriceRepository, StoredModelPrice, UsagePerson } from "./ports";
-import { resolveLimit, type LimitDeps } from "./usage-limits";
+import { personLimitsOf, resolveLimit, type LimitDeps, type PersonLimits } from "./usage-limits";
 
 export type UsageSummary = {
   keySource: KeySource | null;
@@ -28,7 +28,7 @@ export type UsageSummary = {
   byOperation: { operation: AiOperation; usd: number; tokens: number }[];
   byModel: { provider: string; model: string; keySource: KeySource; usd: number; tokens: number }[];
   limit: UsageLimit;
-  ownsLimit: boolean;
+  limits: PersonLimits;
   state: LimitState;
   pricesUpdatedAt: Date;
 };
@@ -58,9 +58,7 @@ export function makeGetAiUsageSummary(deps: SummaryDeps) {
     const monthEvents = events.filter((event) => event.createdAt >= periods.monthStart);
     const today = sumEvents(events.filter((event) => event.createdAt >= periods.dayStart));
     const month = sumEvents(monthEvents);
-    const limit = keySource
-      ? await resolveLimit(deps, userId, keySource)
-      : { ...(await resolveLimit(deps, userId, "user")) };
+    const limit = await resolveLimit(deps, userId, keySource ?? "user");
     const byOperation = AI_OPERATIONS.map((operation) => {
       const totals = sumEvents(monthEvents.filter((event) => event.operation === operation));
       return { operation, usd: totals.usd, tokens: totals.tokens };
@@ -87,7 +85,7 @@ export function makeGetAiUsageSummary(deps: SummaryDeps) {
       byOperation,
       byModel: [...models.values()].sort((a, b) => b.usd - a.usd || b.tokens - a.tokens),
       limit,
-      ownsLimit: keySource !== "global",
+      limits: await personLimitsOf(deps, userId),
       state: checkLimit(limit, today, month),
       pricesUpdatedAt: await pricesUpdatedAt(deps.prices),
     };
@@ -100,6 +98,7 @@ export type PersonUsage = {
   monthUsd: number;
   monthTokens: number;
   limit: UsageLimit;
+  limits: PersonLimits;
   blocked: boolean;
 };
 
@@ -134,6 +133,7 @@ export function makeGetAiUsageOverview(deps: OverviewDeps) {
         monthUsd: month.usd,
         monthTokens: month.tokens,
         limit,
+        limits: await personLimitsOf(deps, person.id),
         blocked: keySource !== null && checkLimit(limit, today, month).blocked !== null,
       });
     }

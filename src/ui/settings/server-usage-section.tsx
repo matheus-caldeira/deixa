@@ -3,15 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import {
-  saveModelPriceAction,
-  setAiUsageLimitAction,
-  updateSharedAiLimitAction,
-} from "@/app/actions/ai-usage";
+import { saveModelPriceAction, updateSharedAiLimitAction } from "@/app/actions/ai-usage";
+import type { AiService, ModelAssignment, ModelChoice } from "@/modules/ai-credentials";
 import { hasAnyLimit, type UsageLimit, type UsageOverview } from "@/modules/ai-usage";
 import { useToast } from "../shell/toast";
 import { useUsageFormat, type UsageFormat } from "./format";
 import { LimitForm } from "./limit-form";
+import { PersonAiPanel } from "./person-ai-panel";
 
 type Translate = ReturnType<typeof useTranslations<"serverUsage">>;
 
@@ -128,7 +126,15 @@ function PriceRow({ price }: { price: UsageOverview["prices"][number] }) {
   );
 }
 
-export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
+export type ServerUsageView = {
+  overview: UsageOverview;
+  assignments: ModelAssignment[];
+  serverDefault: ModelChoice;
+  sharedServices: AiService[];
+};
+
+export function ServerUsageSection({ view }: { view: ServerUsageView }) {
+  const { overview } = view;
   const t = useTranslations("serverUsage");
   const fmt = useUsageFormat();
   const [open, setOpen] = useState<string | null>(null);
@@ -141,12 +147,15 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
         </div>
         {overview.people.map((entry) => {
           const isOpen = open === entry.person.id;
-          const status =
+          const assigned =
+            view.assignments.find((assignment) => assignment.userId === entry.person.id)?.generation ?? null;
+          const keyStatus =
             entry.keySource === null
               ? t("noKey")
               : entry.keySource === "user"
                 ? t("ownKey")
                 : t("globalKeyLimit", { limit: describeLimit(entry.limit, t, fmt) });
+          const status = assigned ? `${keyStatus} · ${assigned.model}` : keyStatus;
           return (
             <div key={entry.person.id} className="dueitem" style={{ gridTemplateColumns: "1fr" }}>
               <button
@@ -174,28 +183,15 @@ export function ServerUsageSection({ overview }: { overview: UsageOverview }) {
                 {entry.blocked ? <span className="chip bad">{t("paused")}</span> : null}
                 <b style={{ fontVariantNumeric: "tabular-nums" }}>{fmt.usd(entry.monthUsd)}</b>
               </button>
-              {isOpen && entry.keySource === "global" ? (
-                <div className="col" style={{ gap: 12, padding: "8px 0 4px" }}>
-                  <LimitForm
-                    initial={entry.limit}
-                    idPrefix={`shared-${entry.person.id}`}
-                    note={t("personNote", { name: entry.person.name })}
-                    save={async (limit) =>
-                      asResult(
-                        await setAiUsageLimitAction({
-                          target: { scope: "shared", userId: entry.person.id },
-                          limit,
-                        }),
-                      )
-                    }
-                  />
-                </div>
-              ) : isOpen ? (
-                <p className="small muted" style={{ padding: "4px 0" }}>
-                  {entry.keySource === "user"
-                    ? t("personOwnKey", { name: entry.person.name })
-                    : t("personNoAi", { name: entry.person.name })}
-                </p>
+              {isOpen ? (
+                <PersonAiPanel
+                  view={{
+                    entry,
+                    assigned,
+                    serverDefault: view.serverDefault,
+                    sharedServices: view.sharedServices,
+                  }}
+                />
               ) : null}
             </div>
           );

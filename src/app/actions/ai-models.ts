@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { refreshSettings } from "@/infrastructure/container";
-import { modelChoiceSchema, type AiModels } from "@/modules/ai-credentials";
+import { modelChoiceSchema, type AiModels, type ModelChoice } from "@/modules/ai-credentials";
 import type { AppSettings } from "@/modules/settings";
 import { AppError } from "@/shared/errors";
 import { requireUser } from "../session";
@@ -13,6 +13,21 @@ export async function setAiModelsAction(input: unknown): Promise<ActionResult<Ai
   const user = await requireUser();
   return runAction("setAiModels", async () => {
     const saved = await app().setAiModels({ userId: user.id, models: input });
+    revalidatePath("/settings");
+    return saved;
+  });
+}
+
+export async function assignAiModelAction(input: unknown): Promise<ActionResult<ModelChoice | null>> {
+  const user = await requireUser();
+  return runAction("assignAiModel", async () => {
+    const parsed = z.object({ userId: z.uuid(), generation: z.unknown() }).safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const saved = await app().assignAiModel({
+      actor: { userId: user.id, isAdmin: user.isAdmin },
+      userId: parsed.data.userId,
+      generation: parsed.data.generation,
+    });
     revalidatePath("/settings");
     return saved;
   });

@@ -3,7 +3,15 @@ import { FixedClock } from "@/shared/clock";
 import { isAppError } from "@/shared/errors";
 import { makeSaveCredential, type CredentialScope } from "../application/credential-use-cases";
 import type { CredentialRepository, KeyCipher } from "../application/ports";
-import { makeSetAiModels, type ModelChoiceRepository } from "../application/model-choice-use-cases";
+import {
+  makeAssignAiModel,
+  makeGetAssignedModel,
+  makeListModelAssignments,
+  makeSetAiModels,
+  pickAiModel,
+  type ModelChoiceRepository,
+} from "../application/model-choice-use-cases";
+import type { ModelChoice } from "./model-choice";
 import { maskSecret } from "./api-key";
 import { endpointSecret, looksLikeSecret, parseEndpoint } from "./services";
 
@@ -49,14 +57,80 @@ describe("segredos por provedor", () => {
 describe("escolha de modelos", () => {
   function setup() {
     const saved = new Map<string, unknown>();
+    const assigned = new Map<string, ModelChoice>();
     const choices: ModelChoiceRepository = {
       get: async (userId) => (saved.get(userId) as never) ?? null,
       save: async (userId, models) => {
         saved.set(userId, models);
       },
+      getAssigned: async (userId) => assigned.get(userId) ?? null,
+      listAssigned: async () => [...assigned].map(([userId, generation]) => ({ userId, generation })),
+      saveAssigned: async (userId, generation) => {
+        if (generation) assigned.set(userId, generation);
+        else assigned.delete(userId);
+      },
     };
-    return { saved, set: makeSetAiModels({ choices, clock: new FixedClock("2026-10-13T12:00:00Z") }) };
+    const deps = { choices, clock: new FixedClock("2026-10-13T12:00:00Z") };
+    return {
+      saved,
+      set: makeSetAiModels(deps),
+      assign: makeAssignAiModel(deps),
+      list: makeListModelAssignments(deps),
+      getAssigned: makeGetAssignedModel(deps),
+    };
   }
+
+  it("só o administrador define o modelo de outra pessoa; nulo volta ao padrão do servidor", async () => {
+    const app = setup();
+    const generation = { provider: "gemini", model: "gemini-2.5-flash-lite" };
+    expect(
+      await codeOf(app.assign({ actor: { userId: "ana", isAdmin: false }, userId: "ana", generation })),
+    ).toBe("FORBIDDEN");
+    expect(await codeOf(app.list({ userId: "ana", isAdmin: false }))).toBe("FORBIDDEN");
+    await app.assign({ actor: { userId: "dono", isAdmin: true }, userId: "ana", generation });
+    expect(await app.getAssigned("ana")).toEqual(generation);
+    expect(await app.getAssigned("lucas")).toBeNull();
+    expect(await app.list({ userId: "dono", isAdmin: true })).toEqual([{ userId: "ana", generation }]);
+    expect(
+      await codeOf(
+        app.assign({
+          actor: { userId: "dono", isAdmin: true },
+          userId: "ana",
+          generation: { provider: "x" },
+        }),
+      ),
+    ).toBe("INVALID_INPUT");
+    await app.assign({ actor: { userId: "dono", isAdmin: true }, userId: "ana", generation: null });
+    expect(await app.getAssigned("ana")).toBeNull();
+  });
+
+  it("com a chave do servidor, o modelo do administrador vence a escolha da pessoa; com chave própria, não", async () => {
+    const assigned = { provider: "gemini" as const, model: "gemini-2.5-flash-lite" };
+    const chosen = { provider: "gemini" as const, model: "gemini-2.5-pro" };
+    const serverDefault = { provider: "gemini" as const, model: "gemini-2.5-flash" };
+    const pick = async (origin: "user" | "global", options: { assigned?: boolean } = {}) =>
+      (
+        await pickAiModel({
+          chosen,
+          assigned: options.assigned === false ? null : assigned,
+          serverDefault,
+          credentialFor: async () => ({ origin }),
+          isShared: (credential) => credential.origin === "global",
+        })
+      )?.choice;
+    expect(await pick("global")).toEqual(assigned);
+    expect(await pick("user")).toEqual(chosen);
+    expect(await pick("global", { assigned: false })).toEqual(chosen);
+    expect(
+      await pickAiModel({
+        chosen: null,
+        assigned: null,
+        serverDefault,
+        credentialFor: async () => null,
+        isShared: () => true,
+      }),
+    ).toBeNull();
+  });
 
   it("guarda provedor e modelo por conta; embeddings aceitam cálculo local", async () => {
     const app = setup();

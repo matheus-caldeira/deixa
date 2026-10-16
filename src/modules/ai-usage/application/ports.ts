@@ -1,5 +1,5 @@
-import type { UsageLimit } from "../domain/limits";
-import type { AiOperation, AiUsageEvent, KeySource, ModelPrice } from "../domain/usage";
+import type { LimitSlot, UsageLimit } from "../domain/limits";
+import type { AiOperation, AiUsageEvent, ModelPrice } from "../domain/usage";
 
 export type StoredModelPrice = ModelPrice & { updatedAt: Date };
 
@@ -18,8 +18,8 @@ export interface ModelPriceRepository {
 }
 
 export interface UsageLimitRepository {
-  find(userId: string, keySource: KeySource): Promise<UsageLimit | null>;
-  save(userId: string, keySource: KeySource, limit: UsageLimit, updatedBy: string, now: Date): Promise<void>;
+  find(userId: string, slot: LimitSlot): Promise<UsageLimit | null>;
+  save(userId: string, slot: LimitSlot, limit: UsageLimit, updatedBy: string, now: Date): Promise<void>;
 }
 
 export type MeasuredCall = {

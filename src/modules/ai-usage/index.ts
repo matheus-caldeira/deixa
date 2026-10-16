@@ -15,10 +15,13 @@ export {
 export {
   NO_LIMIT,
   SHARED_KEY_DEFAULT_LIMIT,
+  LIMIT_SLOTS,
   checkLimit,
   hasAnyLimit,
+  tighterLimit,
   usageLimitSchema,
   type LimitPeriod,
+  type LimitSlot,
   type LimitState,
   type PeriodTotals,
   type UsageLimit,
@@ -43,7 +46,9 @@ export {
   makeEnsureAiAllowed,
   makeSetAiUsageLimit,
   type LimitDeps,
+  type LimitKey,
   type LimitTarget,
+  type PersonLimits,
 } from "./application/usage-limits";
 export {
   makeGetAiUsageOverview,

@@ -110,5 +110,7 @@ export const userAiModels = pgTable("user_ai_models", {
     .primaryKey()
     .references(() => users.id, { onDelete: "cascade" }),
   models: jsonb("models").notNull(),
+  assignedGeneration: jsonb("assigned_generation"),
+  assignedBy: uuid("assigned_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });

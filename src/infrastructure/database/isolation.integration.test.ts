@@ -11,6 +11,7 @@ import { SilentTtsProvider } from "@/modules/audio/infrastructure/silent-tts-pro
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
 import { AesGcmCipher } from "@/modules/ai-credentials/infrastructure/aes-gcm-cipher";
+import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
 import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
@@ -321,6 +322,26 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
     expect(await limits.find(ana, "user")).toEqual({ ...limit, usdPerDay: 1 });
     expect(await limits.find(ana, "global")).toBeNull();
     expect(await limits.find(lucas, "user")).toBeNull();
+    await limits.save(ana, "global_cap", { ...limit, usdPerDay: 0.1 }, ana, now);
+    expect((await limits.find(ana, "global_cap"))?.usdPerDay).toBe(0.1);
+    expect((await limits.find(ana, "user"))?.usdPerDay).toBe(1);
+    expect(await limits.find(lucas, "global_cap")).toBeNull();
+
+    const choices = new DrizzleModelChoiceRepository(handle.db);
+    const assigned = { provider: "gemini" as const, model: "gemini-2.5-flash-lite" };
+    await choices.save(
+      ana,
+      { generation: { provider: "openai", model: "gpt-4o-mini" }, embedding: null },
+      now,
+    );
+    await choices.saveAssigned(ana, assigned, lucas, now);
+    await choices.saveAssigned(lucas, assigned, ana, now);
+    expect(await choices.getAssigned(ana)).toEqual(assigned);
+    expect((await choices.get(ana))?.generation?.model).toBe("gpt-4o-mini");
+    expect(await choices.get(lucas)).toEqual({ generation: null, embedding: null });
+    await choices.saveAssigned(lucas, null, ana, now);
+    expect(await choices.getAssigned(lucas)).toBeNull();
+    expect((await choices.listAssigned()).map((entry) => entry.userId)).toEqual([ana]);
     const totals = await usage.totalsByUser(since);
     expect(totals.find((entry) => entry.userId === ana)?.tokens).toBe(240);
     expect(totals.find((entry) => entry.userId === lucas)?.tokens).toBe(120);

@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { AI_SERVICES, SECRET_KINDS, type AiModels, type ServiceOverview } from "@/modules/ai-credentials";
+import {
+  AI_SERVICES,
+  SECRET_KINDS,
+  type AiModels,
+  type ModelAssignment,
+  type ModelChoice,
+  type ServiceOverview,
+} from "@/modules/ai-credentials";
 import type { UsageOverview, UsageSummary } from "@/modules/ai-usage";
 import type { AppSettings } from "@/modules/settings";
 import { CredentialCard } from "../shell/credential-card";
 import { ServerSettingsCard } from "../shell/server-settings-card";
 import { AiUsageSection } from "./ai-usage-section";
+import { BudgetCard } from "./budget-card";
 import { ModelChoiceCard } from "./model-choice-card";
 import { ServerUsageSection } from "./server-usage-section";
 
@@ -24,6 +32,8 @@ export type SettingsView = {
   overview: UsageOverview | null;
   settings: AppSettings | null;
   aiModels: AiModels;
+  assignedModel: ModelChoice | null;
+  assignments: ModelAssignment[];
   aiDefaults: { aiGeneration: AppSettings["aiGeneration"]; aiEmbedding: AppSettings["aiEmbedding"] };
   customEndpointsAllowed: boolean;
 };
@@ -119,11 +129,13 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
               view={{
                 scope: view.scope,
                 models: view.aiModels,
+                assigned: view.assignedModel,
                 defaults: view.aiDefaults,
                 credentials: view.credentials,
                 customEndpointsAllowed: view.customEndpointsAllowed,
               }}
             />
+            {view.scope === "user" ? <BudgetCard summary={view.usage} /> : null}
             <span className="eyebrow">{t("providers")}</span>
             {view.scope === "global" ? <p className="small muted">{t("globalKeysNote")}</p> : null}
             {aiServices.map((entry) => (
@@ -135,7 +147,16 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
           <>
             <ScopeSwitch view={view} mine={t("myUsage")} server={t("server")} />
             {view.scope === "global" && view.overview ? (
-              <ServerUsageSection overview={view.overview} />
+              <ServerUsageSection
+                view={{
+                  overview: view.overview,
+                  assignments: view.assignments,
+                  serverDefault: view.aiDefaults.aiGeneration,
+                  sharedServices: AI_SERVICES.filter((service) =>
+                    aiServices.some((entry) => entry.service === service && entry.global.source !== null),
+                  ),
+                }}
+              />
             ) : (
               <AiUsageSection summary={view.usage} />
             )}

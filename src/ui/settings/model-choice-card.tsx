@@ -22,6 +22,7 @@ type Selection = ModelChoice | "local" | null;
 export type ModelChoiceView = {
   scope: "user" | "global";
   models: AiModels;
+  assigned: ModelChoice | null;
   defaults: { aiGeneration: ModelChoice; aiEmbedding: ModelChoice | null };
   credentials: ServiceOverview[];
   customEndpointsAllowed: boolean;
@@ -144,6 +145,11 @@ export function ModelChoiceCard({ view }: { view: ModelChoiceView }) {
     <form className="card col" style={{ gap: 14 }} onSubmit={save}>
       <h2 style={{ fontSize: 17 }}>{global ? t("serverTitle") : t("title")}</h2>
       {field("generation")}
+      {!global && view.assigned ? (
+        <p className="small muted">
+          {t("assignedNote", { value: `${SERVICE_LABELS[view.assigned.provider]} · ${view.assigned.model}` })}
+        </p>
+      ) : null}
       {field("embedding")}
       {error ? <p className="formerr">{error}</p> : null}
       <button className="btn" style={{ padding: 12, fontSize: 13 }} type="submit" disabled={pending}>

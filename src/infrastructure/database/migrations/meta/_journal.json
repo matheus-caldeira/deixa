@@ -176,6 +176,13 @@
       "when": 1792125663134,
       "tag": "0024_personal_series",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792161477430,
+      "tag": "0025_ai_model_assignment",
+      "breakpoints": true
     }
   ]
 }

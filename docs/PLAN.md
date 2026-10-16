@@ -250,6 +250,16 @@ Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
 | 123 | Áudio da conversa e modo escuta                                                              | Falas do tutor e falas corrigidas no cache do Kokoro por job; "Ouvir tudo" e "Escutar" com texto escondido                                                                                                                       | [x]    |
 | 124 | Série pessoal no pacote pessoal (`.deixa.zip`)                                               | Exporta série, temporadas, episódios, cards e progresso; importar junta na série do par sem duplicar episódio de mesmo tema                                                                                                      | [x]    |
 
+## Etapa 18: trilha completa, recapitulação e orçamento por pessoa (16/10/2026)
+
+| #   | Tarefa                                    | Critério de pronto                                                                                                                                                                                                                                            | Estado |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 125 | Orçamento e modelo por pessoa             | Cartão "Orçamento de IA" na aba IA, editável sem chave; teto pessoal na chave do servidor (vale o menor); administrador define limite (chave do servidor e chave própria) e modelo de texto de cada pessoa; migração 0025; testes de caso de uso e integração | [x]    |
+| 126 | POC da Início-resumo e da trilha completa | `docs/trail-poc.html` com Início-resumo, `/trail/[mediaId]` por temporada, filme numa seção e série pessoal na mesma tela; aprovado pelo usuário                                                                                                              | [ ]    |
+| 127 | Início-resumo e trilha completa por obra  | "Continuar" e o play da série levam à trilha rolada até o ponto atual; série pessoal usa a mesma tela                                                                                                                                                         | [ ]    |
+| 128 | Nó de recapitulação na Revisar            | Aba Revisar com "Cards" e "Episódios"; episódio concluído vence em 1, 7 e 30 dias; lição com resumo, falas estudadas, cards e erros do episódio                                                                                                               | [ ]    |
+| 129 | Conversa sobre o episódio, sem spoiler    | Tema do tutor por episódio com a sinopse do TMDB e o conhecimento da IA, sem texto da legenda; instrução de não passar do episódio e perguntar quando não souber                                                                                              | [ ]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):

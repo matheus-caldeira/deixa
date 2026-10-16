@@ -8,7 +8,7 @@ import type {
   UsageLimitRepository,
   UserTotals,
 } from "../application/ports";
-import type { UsageLimit } from "../domain/limits";
+import type { LimitSlot, UsageLimit } from "../domain/limits";
 import {
   AI_OPERATIONS,
   KEY_SOURCES,
@@ -101,11 +101,11 @@ export class DrizzleModelPriceRepository implements ModelPriceRepository {
 export class DrizzleUsageLimitRepository implements UsageLimitRepository {
   constructor(private readonly db: Database) {}
 
-  async find(userId: string, keySource: KeySource): Promise<UsageLimit | null> {
+  async find(userId: string, slot: LimitSlot): Promise<UsageLimit | null> {
     const [row] = await this.db
       .select()
       .from(aiUsageLimits)
-      .where(and(eq(aiUsageLimits.userId, userId), eq(aiUsageLimits.keySource, keySource)))
+      .where(and(eq(aiUsageLimits.userId, userId), eq(aiUsageLimits.keySource, slot)))
       .limit(1);
     if (!row) return null;
     return {
@@ -116,10 +116,10 @@ export class DrizzleUsageLimitRepository implements UsageLimitRepository {
     };
   }
 
-  async save(userId: string, keySource: KeySource, limit: UsageLimit, updatedBy: string, now: Date) {
+  async save(userId: string, slot: LimitSlot, limit: UsageLimit, updatedBy: string, now: Date) {
     await this.db
       .insert(aiUsageLimits)
-      .values({ userId, keySource, ...limit, updatedBy, updatedAt: now })
+      .values({ userId, keySource: slot, ...limit, updatedBy, updatedAt: now })
       .onConflictDoUpdate({
         target: [aiUsageLimits.userId, aiUsageLimits.keySource],
         set: { ...limit, updatedBy, updatedAt: now },

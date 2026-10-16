@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import { setAiUsageLimitAction } from "@/app/actions/ai-usage";
-import { hasAnyLimit, type UsageLimit, type UsageSummary } from "@/modules/ai-usage";
+import type { UsageSummary } from "@/modules/ai-usage";
+import { LimitLines } from "./budget-card";
 import { useUsageFormat } from "./format";
-import { LimitForm } from "./limit-form";
 
 const TODAY = 6;
 const BAR_SCALE = 0.82;
@@ -61,21 +61,10 @@ export function AiUsageSection({ summary }: { summary: UsageSummary }) {
   const highestOperation = Math.max(...summary.byOperation.map((entry) => entry.usd), 0.000001);
   const blocked = summary.state.blocked
     ? t(summary.state.blocked === "month" ? "blockedMonth" : "blockedDay", {
-        raise: summary.ownsLimit ? t("blockedRaise") : "",
+        raise: t("blockedRaise"),
       })
     : null;
   const limit = summary.limit;
-  const limitLine = (label: string, usd: number | null, tokens: number | null) => (
-    <>
-      <dt>{label}</dt>
-      <dd>{usd ? fmt.usd(usd) : tokens ? t("tokens", { count: fmt.tokens(tokens) }) : t("noLimit")}</dd>
-    </>
-  );
-  const saveOwn = async (next: UsageLimit) => {
-    const result = await setAiUsageLimitAction({ target: { scope: "own" }, limit: next });
-    return result.ok ? { ok: true as const } : { ok: false as const, message: result.message };
-  };
-
   return (
     <>
       {blocked ? (
@@ -175,19 +164,14 @@ export function AiUsageSection({ summary }: { summary: UsageSummary }) {
       ) : null}
       <section className="card col" style={{ gap: 12 }}>
         <h2 style={{ fontSize: 17 }}>{t("yourLimit")}</h2>
-        {summary.keySource === null ? (
-          <p className="small muted">{t("noKeyInUse")}</p>
-        ) : summary.ownsLimit ? (
-          <LimitForm initial={limit} idPrefix="own-limit" note={t("ownLimitNote")} save={saveOwn} />
-        ) : (
-          <>
-            <dl className="kv">
-              {limitLine(t("perDay"), limit.usdPerDay, limit.tokensPerDay)}
-              {limitLine(t("perMonth"), limit.usdPerMonth, limit.tokensPerMonth)}
-            </dl>
-            <p className="small muted">{hasAnyLimit(limit) ? t("adminLimit") : t("adminNoLimit")}</p>
-          </>
-        )}
+        <LimitLines limit={limit} />
+        <Link
+          className="small"
+          style={{ color: "var(--brand-deep)", fontWeight: 600 }}
+          href="/settings?tab=ai"
+        >
+          {t("editBudget")}
+        </Link>
       </section>
     </>
   );

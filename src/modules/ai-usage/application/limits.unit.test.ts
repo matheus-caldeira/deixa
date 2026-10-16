@@ -70,7 +70,7 @@ describe("limite de uso da IA", () => {
     await ana.ensureAllowed();
     await app.setLimit({
       actor: { userId: "ana", isAdmin: false },
-      target: { scope: "own" },
+      target: { scope: "own", key: "own" },
       limit: { ...NO_LIMIT, usdPerDay: 0.001 },
     });
     await ana.ensureAllowed();
@@ -85,7 +85,7 @@ describe("limite de uso da IA", () => {
     const app = setup();
     await app.setLimit({
       actor: { userId: "ana", isAdmin: false },
-      target: { scope: "own" },
+      target: { scope: "own", key: "own" },
       limit: { ...NO_LIMIT, tokensPerDay: 10 },
     });
     await app.meter("ana").record(spend(10));
@@ -99,29 +99,73 @@ describe("limite de uso da IA", () => {
     const lucas = app.meter("lucas");
     await lucas.record(spend(100));
     expect(await codeOf(lucas.ensureAllowed())).toBe("AI_LIMIT_REACHED");
-    expect((await app.summary("lucas")).ownsLimit).toBe(false);
     expect(
       await codeOf(
         app.setLimit({
           actor: { userId: "lucas", isAdmin: false },
-          target: { scope: "shared", userId: "lucas" },
+          target: { scope: "person", userId: "lucas", key: "shared" },
           limit: NO_LIMIT,
         }),
       ),
     ).toBe("FORBIDDEN");
     await app.setLimit({
       actor: { userId: "ana", isAdmin: true },
-      target: { scope: "shared", userId: "lucas" },
+      target: { scope: "person", userId: "lucas", key: "shared" },
       limit: { ...NO_LIMIT, tokensPerMonth: 1000 },
     });
     expect(await codeOf(lucas.ensureAllowed())).toBe("ok");
+  });
+
+  it("o teto pessoal na chave do servidor vale quando é menor que o do administrador, nunca acima", async () => {
+    const app = setup();
+    app.setShared({ ...NO_LIMIT, tokensPerMonth: 1000 });
+    await app.setLimit({
+      actor: { userId: "lucas", isAdmin: false },
+      target: { scope: "own", key: "shared" },
+      limit: { ...NO_LIMIT, tokensPerMonth: 50, tokensPerDay: 5000 },
+    });
+    const summary = await app.summary("lucas");
+    expect(summary.limit.tokensPerMonth).toBe(50);
+    expect(summary.limit.tokensPerDay).toBe(5000);
+    expect(summary.limits.shared.tokensPerMonth).toBe(1000);
+    expect(summary.limits.sharedCap.tokensPerMonth).toBe(50);
+    await app.meter("lucas").record(spend(50));
+    expect(await codeOf(app.meter("lucas").ensureAllowed())).toBe("AI_LIMIT_REACHED");
+    await app.setLimit({
+      actor: { userId: "lucas", isAdmin: false },
+      target: { scope: "own", key: "shared" },
+      limit: { ...NO_LIMIT, tokensPerMonth: 1_000_000 },
+    });
+    expect((await app.summary("lucas")).limit.tokensPerMonth).toBe(1000);
+  });
+
+  it("o administrador define o limite da chave própria de outra pessoa; quem não é administrador não", async () => {
+    const app = setup();
+    expect(
+      await codeOf(
+        app.setLimit({
+          actor: { userId: "lucas", isAdmin: false },
+          target: { scope: "person", userId: "ana", key: "own" },
+          limit: NO_LIMIT,
+        }),
+      ),
+    ).toBe("FORBIDDEN");
+    await app.setLimit({
+      actor: { userId: "lucas", isAdmin: true },
+      target: { scope: "person", userId: "ana", key: "own" },
+      limit: { ...NO_LIMIT, tokensPerDay: 10 },
+    });
+    await app.meter("ana").record(spend(10));
+    expect(await codeOf(app.meter("ana").ensureAllowed())).toBe("AI_LIMIT_REACHED");
+    const overview = await app.overview({ userId: "lucas", isAdmin: true });
+    expect(overview.people.find((entry) => entry.person.id === "ana")?.limits.own.tokensPerDay).toBe(10);
   });
 
   it("o limite do dia vira à meia-noite do fuso do usuário", async () => {
     const app = setup();
     await app.setLimit({
       actor: { userId: "ana", isAdmin: false },
-      target: { scope: "own" },
+      target: { scope: "own", key: "own" },
       limit: { ...NO_LIMIT, tokensPerDay: 10 },
     });
     await app.meter("ana").record(spend(10));

@@ -5,8 +5,10 @@ import {
   checkLimit,
   periodsFor,
   sumEvents,
+  tighterLimit,
   usageLimitSchema,
   type LimitPeriod,
+  type LimitSlot,
   type UsageLimit,
 } from "../domain/limits";
 import type { KeySource } from "../domain/usage";
@@ -27,9 +29,33 @@ export async function resolveLimit(
   userId: string,
   keySource: KeySource,
 ): Promise<UsageLimit> {
-  const own = await deps.limits.find(userId, keySource);
-  if (own) return own;
-  return keySource === "global" ? deps.sharedDefault() : NO_LIMIT;
+  if (keySource === "user") return (await deps.limits.find(userId, "user")) ?? NO_LIMIT;
+  const [shared, cap] = await Promise.all([
+    sharedLimitOf(deps, userId),
+    deps.limits.find(userId, "global_cap"),
+  ]);
+  return tighterLimit(shared, cap ?? NO_LIMIT);
+}
+
+export async function sharedLimitOf(
+  deps: Pick<LimitDeps, "limits" | "sharedDefault">,
+  userId: string,
+): Promise<UsageLimit> {
+  return (await deps.limits.find(userId, "global")) ?? deps.sharedDefault();
+}
+
+export type PersonLimits = { own: UsageLimit; shared: UsageLimit; sharedCap: UsageLimit };
+
+export async function personLimitsOf(
+  deps: Pick<LimitDeps, "limits" | "sharedDefault">,
+  userId: string,
+): Promise<PersonLimits> {
+  const [own, shared, sharedCap] = await Promise.all([
+    deps.limits.find(userId, "user"),
+    sharedLimitOf(deps, userId),
+    deps.limits.find(userId, "global_cap"),
+  ]);
+  return { own: own ?? NO_LIMIT, shared, sharedCap: sharedCap ?? NO_LIMIT };
 }
 
 export function makeEnsureAiAllowed(deps: LimitDeps) {
@@ -46,7 +72,12 @@ export function makeEnsureAiAllowed(deps: LimitDeps) {
 }
 
 type Actor = { userId: string; isAdmin: boolean };
-export type LimitTarget = { scope: "own" } | { scope: "shared"; userId: string };
+export type LimitKey = "own" | "shared";
+export type LimitTarget =
+  { scope: "own"; key: LimitKey } | { scope: "person"; userId: string; key: LimitKey };
+
+const OWN_SLOT: Record<LimitKey, LimitSlot> = { own: "user", shared: "global_cap" };
+const ADMIN_SLOT: Record<LimitKey, LimitSlot> = { own: "user", shared: "global" };
 
 export function makeSetAiUsageLimit(deps: Pick<LimitDeps, "limits" | "clock">) {
   return async function setAiUsageLimit(input: {
@@ -56,19 +87,24 @@ export function makeSetAiUsageLimit(deps: Pick<LimitDeps, "limits" | "clock">) {
   }): Promise<UsageLimit> {
     const parsed = usageLimitSchema.safeParse(input.limit);
     if (!parsed.success) throw new AppError("INVALID_INPUT", "limitInvalid");
-    if (input.target.scope === "shared") {
-      if (!input.actor.isAdmin) {
-        throw new AppError("FORBIDDEN", "adminOnlySharedLimit");
-      }
+    const target = input.target;
+    if (target.scope === "person") {
+      if (!input.actor.isAdmin) throw new AppError("FORBIDDEN", "adminOnlySharedLimit");
       await deps.limits.save(
-        input.target.userId,
-        "global",
+        target.userId,
+        ADMIN_SLOT[target.key],
         parsed.data,
         input.actor.userId,
         deps.clock.now(),
       );
     } else {
-      await deps.limits.save(input.actor.userId, "user", parsed.data, input.actor.userId, deps.clock.now());
+      await deps.limits.save(
+        input.actor.userId,
+        OWN_SLOT[target.key],
+        parsed.data,
+        input.actor.userId,
+        deps.clock.now(),
+      );
     }
     return parsed.data;
   };

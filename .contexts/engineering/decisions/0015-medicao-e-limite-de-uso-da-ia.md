@@ -1,6 +1,6 @@
 ---
 title: "ADR 0015: Medição e limite de uso da IA"
-updated: 2026-10-13
+updated: 2026-10-16
 source: docs/WEB-OFFLINE-PLAN.md §4 e conversa de 12/10/2026
 status: aceita
 ---
@@ -20,9 +20,12 @@ gasta e poder se proteger.
 - O valor é uma estimativa pela tabela `ai_model_prices` (dólar por milhão de tokens), com padrão no código e a
   linha do administrador vencendo. Modelo sem preço tem os tokens contados e o valor fica desconhecido, nunca
   zero.
-- Limite por dia e por mês, em dólar ou em tokens, no fuso da pessoa. Quem usa a própria chave define o seu;
-  para a chave compartilhada vale o padrão do servidor, e o administrador pode dar um limite próprio a cada
-  conta. A conferência acontece antes da chamada; passou do limite, toda a IA trava até o período virar ou o
+- Limite por dia e por mês, em dólar ou em tokens, no fuso da pessoa. Quem usa a própria chave define o seu
+  (o administrador também pode mudar); para a chave compartilhada vale o padrão do servidor, e o administrador
+  pode dar um limite próprio a cada conta. A pessoa pode pôr um teto menor na chave compartilhada
+  (`key_source = global_cap`); vale o menor dos dois em cada campo. O administrador também escolhe o modelo de
+  texto de cada conta na chave compartilhada (`user_ai_models.assigned_generation`), que passa na frente da
+  escolha da pessoa só nessa chave (atualizado em 16/10/2026). A conferência acontece antes da chamada; passou do limite, toda a IA trava até o período virar ou o
   limite subir, e ler, marcar e revisar continuam funcionando.
 - A chave compartilhada nasce com limite fechado (`SHARED_KEY_DEFAULT_LIMIT`: dólar e tokens por dia e por mês),
   porque antes havia um teto de 60 chamadas e um padrão aberto deixaria qualquer conta esgotar a chave do
