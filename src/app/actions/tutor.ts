@@ -31,6 +31,7 @@ export async function startConversationAction(input: unknown): Promise<ActionRes
     const started = await app().startConversation({
       userId: user.id,
       level: user.preferences.level,
+      language: user.preferences.targetLanguage,
       ...parsed.data,
     });
     sessionId = started.sessionId;
@@ -62,6 +63,7 @@ export async function sendMessageAction(
       userId: user.id,
       sessionId: parsed.data.sessionId,
       level: user.preferences.level,
+      language: user.preferences.targetLanguage,
       message: parsed.data.audio ? { audio: parsed.data.audio } : { text: parsed.data.text ?? "" },
     });
     const view = (turn: (typeof result)["userTurn"]): TurnView => ({
@@ -90,6 +92,7 @@ export async function reviewConversationAction(
       userId: user.id,
       sessionId: parsed.data,
       level: user.preferences.level,
+      language: user.preferences.targetLanguage,
     });
     revalidatePath("/", "layout");
     return result;

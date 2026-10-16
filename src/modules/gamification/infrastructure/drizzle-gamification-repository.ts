@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
@@ -129,6 +130,7 @@ export class DrizzleGamificationRepository implements XpRepository, ActivityCoun
     userId: string,
     since: Date,
     limit: number,
+    language?: StudyLanguage,
   ): Promise<{ term: string; count: number }[]> {
     const count = sql<number>`count(*)::int`;
     const rows = await this.db
@@ -137,7 +139,12 @@ export class DrizzleGamificationRepository implements XpRepository, ActivityCoun
       .innerJoin(userCards, eq(userCards.id, reviewLogs.userCardId))
       .innerJoin(learningItems, eq(learningItems.id, userCards.learningItemId))
       .where(
-        and(eq(userCards.userId, userId), eq(reviewLogs.rating, AGAIN), gte(reviewLogs.reviewedAt, since)),
+        and(
+          eq(userCards.userId, userId),
+          eq(reviewLogs.rating, AGAIN),
+          gte(reviewLogs.reviewedAt, since),
+          language ? eq(learningItems.language, language) : undefined,
+        ),
       )
       .groupBy(learningItems.sourceText)
       .orderBy(desc(count), learningItems.sourceText)

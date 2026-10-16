@@ -11,7 +11,7 @@ export default async function ConversationPage(props: { params: Promise<{ sessio
   const user = await requireUser();
   const { sessionId } = await props.params;
   const conversation = await getContainer()
-    .getConversation(user.id, sessionId)
+    .getConversation(user.id, sessionId, user.preferences.targetLanguage)
     .catch((error: unknown) => {
       if (isAppError(error)) notFound();
       throw error;

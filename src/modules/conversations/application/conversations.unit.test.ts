@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { SequentialIds } from "@/shared/ids";
@@ -16,6 +17,7 @@ import {
 import { FakeTutorProvider } from "../infrastructure/fake-tutor-provider";
 import {
   makeGetConversation,
+  makeGetLearnerProfile,
   makeGetTurnSpeechText,
   makeListConversations,
   makeReviewConversation,
@@ -35,10 +37,12 @@ class InMemoryConversations implements ConversationRepository {
     themeId: string;
     themeTitle: string;
     level: CefrLevel;
+    language: StudyLanguage;
     now: Date;
   }) {
     this.sessions.push({
       id: input.id,
+      language: input.language,
       userId: input.userId,
       themeId: input.themeId,
       themeTitle: input.themeTitle,
@@ -55,9 +59,9 @@ class InMemoryConversations implements ConversationRepository {
     return session;
   }
 
-  async listSessions(userId: string, limit: number) {
+  async listSessions(userId: string, language: StudyLanguage, limit: number) {
     return this.sessions
-      .filter((session) => session.userId === userId)
+      .filter((session) => session.userId === userId && session.language === language)
       .slice(-limit)
       .map(({ userId: _userId, ...session }) => ({
         ...session,
@@ -124,6 +128,7 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
   const conversations = new InMemoryConversations();
   const queued: { userId: string; corrections: Correction[]; label: string }[] = [];
   const xp: { userId: string; sourceId: string; amount: number }[] = [];
+  const mistakes: string[] = [];
   const deps = {
     conversations,
     resolveTutor: async () => tutor,
@@ -131,6 +136,7 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
       queued.push({ userId, corrections, label });
       return corrections.length;
     },
+    recentMistakes: async () => mistakes,
     awardXp: async (input: { userId: string; sourceId: string; amount: number }) => {
       if (!xp.some((event) => event.sourceId === input.sourceId))
         xp.push({ userId: input.userId, sourceId: input.sourceId, amount: input.amount });
@@ -149,19 +155,21 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
     send: makeSendMessage(deps),
     review: makeReviewConversation(deps),
     turnText: makeGetTurnSpeechText(deps),
+    profile: makeGetLearnerProfile(deps),
+    mistakes,
   };
 }
 
 describe("temas", () => {
   it("resolve tema pronto e tema livre, e recusa assunto vazio ou com marcação", () => {
-    expect(resolveTheme("travel", null)).toMatchObject({ id: "travel", title: THEMES[2]?.topic });
-    expect(resolveTheme("custom", "  futebol de domingo ")).toMatchObject({
+    expect(resolveTheme("travel", null, "en")).toMatchObject({ id: "travel", title: THEMES[2]?.topic });
+    expect(resolveTheme("custom", "  futebol de domingo ", "en")).toMatchObject({
       id: "custom",
       title: "futebol de domingo",
     });
-    expect(resolveTheme("custom", "   ")).toBeNull();
-    expect(resolveTheme("custom", "<script>")).toBeNull();
-    expect(resolveTheme("inexistente", null)).toBeNull();
+    expect(resolveTheme("custom", "   ", "en")).toBeNull();
+    expect(resolveTheme("custom", "<script>", "en")).toBeNull();
+    expect(resolveTheme("inexistente", null, "en")).toBeNull();
   });
 });
 
@@ -178,24 +186,32 @@ describe("conversa aberta com o tutor", () => {
       themeId: "shows",
       customTopic: null,
       level: "A1",
+      language: "en",
     });
-    const view = await app.get("ana", sessionId);
+    const view = await app.get("ana", sessionId, "en");
     expect(view.session).toMatchObject({ themeTitle: THEMES[3]?.topic, review: null });
     expect(view.turns.map((turn) => [turn.role, turn.text])).toEqual([
       ["tutor", "Hey! What have you been watching lately?"],
     ]);
     expect(view).toMatchObject({ simulated: true, turnsLeft: MAX_USER_TURNS });
     await expect(
-      app.start({ userId: "ana", themeId: "custom", customTopic: "", level: "A1" }),
+      app.start({ userId: "ana", themeId: "custom", customTopic: "", level: "A1", language: "en" }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 
   it("responde, corrige a frase na hora e manda a correção para a revisão", async () => {
-    const { sessionId } = await app.start({ userId: "ana", themeId: "food", customTopic: null, level: "A1" });
+    const { sessionId } = await app.start({
+      userId: "ana",
+      themeId: "food",
+      customTopic: null,
+      level: "A1",
+      language: "en",
+    });
     const result = await app.send({
       userId: "ana",
       sessionId,
       level: "A1",
+      language: "en",
       message: { text: "I want a coffee and more better bread" },
     });
     expect(result.userTurn.corrections.map((correction) => [correction.wrong, correction.right])).toEqual([
@@ -208,7 +224,7 @@ describe("conversa aberta com o tutor", () => {
     });
     expect(result.queuedForReview).toBe(2);
     expect(app.queued[0]).toMatchObject({ userId: "ana", label: THEMES[4]?.topic });
-    expect((await app.get("ana", sessionId)).turns).toHaveLength(3);
+    expect((await app.get("ana", sessionId, "en")).turns).toHaveLength(3);
   });
 
   it("aceita áudio e usa a transcrição como mensagem do usuário", async () => {
@@ -217,11 +233,13 @@ describe("conversa aberta com o tutor", () => {
       themeId: "daily",
       customTopic: null,
       level: "B1",
+      language: "en",
     });
     const result = await app.send({
       userId: "ana",
       sessionId,
       level: "B1",
+      language: "en",
       message: { audio: { mimeType: "audio/webm;codecs=opus", base64: "AAAA" } },
     });
     expect(result.userTurn.text).toBe("I recorded an audio message.");
@@ -230,6 +248,7 @@ describe("conversa aberta com o tutor", () => {
         userId: "ana",
         sessionId,
         level: "B1",
+        language: "en",
         message: { audio: { mimeType: "video/mp4", base64: "AAAA" } },
       }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
@@ -241,20 +260,27 @@ describe("conversa aberta com o tutor", () => {
       themeId: "daily",
       customTopic: null,
       level: "B1",
+      language: "en",
     });
     await expect(
-      app.send({ userId: "ana", sessionId, level: "B1", message: { text: "   " } }),
+      app.send({ userId: "ana", sessionId, level: "B1", language: "en", message: { text: "   " } }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
     await expect(
-      app.send({ userId: "ana", sessionId, level: "B1", message: { text: "x".repeat(501) } }),
+      app.send({ userId: "ana", sessionId, level: "B1", language: "en", message: { text: "x".repeat(501) } }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
     for (let turn = 0; turn < MAX_USER_TURNS; turn += 1) {
-      await app.send({ userId: "ana", sessionId, level: "B1", message: { text: `message ${turn}` } });
+      await app.send({
+        userId: "ana",
+        sessionId,
+        level: "B1",
+        language: "en",
+        message: { text: `message ${turn}` },
+      });
     }
     await expect(
-      app.send({ userId: "ana", sessionId, level: "B1", message: { text: "one more" } }),
+      app.send({ userId: "ana", sessionId, level: "B1", language: "en", message: { text: "one more" } }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
-    expect((await app.get("ana", sessionId)).turnsLeft).toBe(0);
+    expect((await app.get("ana", sessionId, "en")).turnsLeft).toBe(0);
   });
 
   it("envios simultâneos não passam do limite, e uma falha do tutor devolve a vaga", async () => {
@@ -263,11 +289,18 @@ describe("conversa aberta com o tutor", () => {
       themeId: "daily",
       customTopic: null,
       level: "B1",
+      language: "en",
     });
     app.conversations.used.set(sessionId, MAX_USER_TURNS - 1);
     const results = await Promise.allSettled(
       [1, 2, 3].map((n) =>
-        app.send({ userId: "ana", sessionId, level: "B1", message: { text: `message ${n}` } }),
+        app.send({
+          userId: "ana",
+          sessionId,
+          level: "B1",
+          language: "en",
+          message: { text: `message ${n}` },
+        }),
       ),
     );
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
@@ -280,32 +313,53 @@ describe("conversa aberta com o tutor", () => {
       review: async () => ({}),
     };
     const down = setup(failing);
-    const other = await down.start({ userId: "ana", themeId: "daily", customTopic: null, level: "B1" });
+    const other = await down.start({
+      userId: "ana",
+      themeId: "daily",
+      customTopic: null,
+      level: "B1",
+      language: "en",
+    });
     await expect(
-      down.send({ userId: "ana", sessionId: other.sessionId, level: "B1", message: { text: "hi" } }),
+      down.send({
+        userId: "ana",
+        sessionId: other.sessionId,
+        level: "B1",
+        language: "en",
+        message: { text: "hi" },
+      }),
     ).rejects.toMatchObject({ code: "LLM_FAILED" });
     expect(down.conversations.used.get(other.sessionId)).toBe(0);
   });
 
   it("um usuário não lê, não escreve, não revisa nem ouve a conversa do outro", async () => {
-    const { sessionId } = await app.start({ userId: "ana", themeId: "work", customTopic: null, level: "A1" });
+    const { sessionId } = await app.start({
+      userId: "ana",
+      themeId: "work",
+      customTopic: null,
+      level: "A1",
+      language: "en",
+    });
     const sent = await app.send({
       userId: "ana",
       sessionId,
       level: "A1",
+      language: "en",
       message: { text: "I am agree with you" },
     });
-    await expect(app.get("lucas", sessionId)).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(app.get("lucas", sessionId, "en")).rejects.toMatchObject({ code: "INVALID_INPUT" });
     await expect(
-      app.send({ userId: "lucas", sessionId, level: "C1", message: { text: "hello" } }),
+      app.send({ userId: "lucas", sessionId, level: "C1", language: "en", message: { text: "hello" } }),
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
-    await expect(app.review({ userId: "lucas", sessionId, level: "C1" })).rejects.toMatchObject({
+    await expect(
+      app.review({ userId: "lucas", sessionId, level: "C1", language: "en" }),
+    ).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
     await expect(app.turnText("lucas", sent.tutorTurn.id)).rejects.toMatchObject({ code: "ITEM_NOT_FOUND" });
     expect(await app.turnText("ana", sent.tutorTurn.id)).toBe(sent.tutorTurn.text);
-    expect(await app.list("lucas")).toEqual([]);
-    expect(await app.list("ana")).toMatchObject([{ id: sessionId, turnCount: 3 }]);
+    expect(await app.list("lucas", "en")).toEqual([]);
+    expect(await app.list("ana", "en")).toMatchObject([{ id: sessionId, turnCount: 3 }]);
   });
 
   it("revisa a conversa inteira, guarda a avaliação e paga XP uma vez, só com conversa de verdade", async () => {
@@ -314,23 +368,44 @@ describe("conversa aberta com o tutor", () => {
       themeId: "travel",
       customTopic: null,
       level: "A1",
+      language: "en",
     });
-    await expect(app.review({ userId: "ana", sessionId, level: "A1" })).rejects.toMatchObject({
-      code: "INVALID_INPUT",
+    await expect(app.review({ userId: "ana", sessionId, level: "A1", language: "en" })).rejects.toMatchObject(
+      {
+        code: "INVALID_INPUT",
+      },
+    );
+    await app.send({
+      userId: "ana",
+      sessionId,
+      level: "A1",
+      language: "en",
+      message: { text: "He go to the beach" },
     });
-    await app.send({ userId: "ana", sessionId, level: "A1", message: { text: "He go to the beach" } });
-    const short = await app.review({ userId: "ana", sessionId, level: "A1" });
+    const short = await app.review({ userId: "ana", sessionId, level: "A1", language: "en" });
     expect(short.xpAwarded).toBe(0);
-    await app.send({ userId: "ana", sessionId, level: "A1", message: { text: "Peoples are nice there" } });
-    await app.send({ userId: "ana", sessionId, level: "A1", message: { text: "I like the food" } });
+    await app.send({
+      userId: "ana",
+      sessionId,
+      level: "A1",
+      language: "en",
+      message: { text: "Peoples are nice there" },
+    });
+    await app.send({
+      userId: "ana",
+      sessionId,
+      level: "A1",
+      language: "en",
+      message: { text: "I like the food" },
+    });
 
-    const reviewed = await app.review({ userId: "ana", sessionId, level: "A1" });
+    const reviewed = await app.review({ userId: "ana", sessionId, level: "A1", language: "en" });
     expect(reviewed.review).toMatchObject({ score: 70 });
     expect(reviewed.review.phrases.map((phrase) => phrase.right)).toEqual(["he goes", "people"]);
     expect(reviewed.xpAwarded).toBe(15);
-    await app.review({ userId: "ana", sessionId, level: "A1" });
+    await app.review({ userId: "ana", sessionId, level: "A1", language: "en" });
     expect(app.xp).toEqual([{ userId: "ana", sourceId: sessionId, amount: 15 }]);
-    expect((await app.get("ana", sessionId)).session.review?.summary).toContain("3 mensagens");
+    expect((await app.get("ana", sessionId, "en")).session.review?.summary).toContain("3 mensagens");
   });
 
   it("recusa resposta do tutor fora do formato ou com link, e trata falha do provedor", async () => {
@@ -345,11 +420,12 @@ describe("conversa aberta com o tutor", () => {
       themeId: "daily",
       customTopic: null,
       level: "A1",
+      language: "en",
     });
     await expect(
-      strict.send({ userId: "ana", sessionId, level: "A1", message: { text: "hi" } }),
+      strict.send({ userId: "ana", sessionId, level: "A1", language: "en", message: { text: "hi" } }),
     ).rejects.toMatchObject({ code: "LLM_INVALID_OUTPUT" });
-    expect((await strict.get("ana", sessionId)).turns).toHaveLength(1);
+    expect((await strict.get("ana", sessionId, "en")).turns).toHaveLength(1);
 
     const offline: TutorProvider = {
       name: "gemini",
@@ -359,9 +435,21 @@ describe("conversa aberta com o tutor", () => {
       review: async () => ({}),
     };
     const down = setup(offline);
-    const other = await down.start({ userId: "ana", themeId: "daily", customTopic: null, level: "A1" });
+    const other = await down.start({
+      userId: "ana",
+      themeId: "daily",
+      customTopic: null,
+      level: "A1",
+      language: "en",
+    });
     await expect(
-      down.send({ userId: "ana", sessionId: other.sessionId, level: "A1", message: { text: "hi" } }),
+      down.send({
+        userId: "ana",
+        sessionId: other.sessionId,
+        level: "A1",
+        language: "en",
+        message: { text: "hi" },
+      }),
     ).rejects.toMatchObject({ code: "LLM_FAILED" });
   });
 
@@ -377,5 +465,82 @@ describe("conversa aberta com o tutor", () => {
       strengths: [],
       phrases: [],
     });
+  });
+
+  it("abre no idioma de estudo e não mistura conversas de idiomas diferentes", async () => {
+    const spanish = await app.start({
+      userId: "ana",
+      themeId: "travel",
+      customTopic: null,
+      level: "A2",
+      language: "es",
+    });
+    const view = await app.get("ana", spanish.sessionId, "es");
+    expect(view.turns[0]?.text).toBe("¡Hola! ¿Cuál es el mejor viaje que has hecho?");
+    await app.start({ userId: "ana", themeId: "daily", customTopic: null, level: "B1", language: "en" });
+    expect((await app.list("ana", "es")).map((session) => session.id)).toEqual([spanish.sessionId]);
+    await expect(app.get("ana", spanish.sessionId, "en")).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    expect(resolveTheme("custom", "fútbol", "es")?.opener).toBe(
+      "¡Hola! Hablemos de fútbol. ¿Qué te gustaría contar sobre eso?",
+    );
+    for (const language of ["en", "pt-BR", "es", "fr"] as const) {
+      for (const theme of THEMES) expect(resolveTheme(theme.id, null, language)?.opener).toBeTruthy();
+    }
+  });
+
+  it("o tutor recebe o resumo do aluno: revisões anteriores e erros recorrentes do mesmo idioma", async () => {
+    const seen: unknown[] = [];
+    const watcher: TutorProvider = {
+      name: "fake",
+      reply: async (input) => {
+        seen.push(input.learner);
+        return { transcript: null, reply: "Nice!", replyTranslation: null, corrections: [] };
+      },
+      review: async () => ({
+        summary: "Boa conversa.",
+        score: 70,
+        strengths: ["vocabulário de viagem"],
+        improvements: ["usar o passado simples"],
+        phrases: [],
+      }),
+    };
+    const t = setup(watcher);
+    t.mistakes.push("split the bill", "pick up the tab");
+    const first = await t.start({
+      userId: "ana",
+      themeId: "travel",
+      customTopic: null,
+      level: "B1",
+      language: "en",
+    });
+    await t.send({
+      userId: "ana",
+      sessionId: first.sessionId,
+      level: "B1",
+      language: "en",
+      message: { text: "I go to Rio last year" },
+    });
+    expect(seen[0]).toMatchObject({ improvements: [], mistakes: ["split the bill", "pick up the tab"] });
+    await t.review({ userId: "ana", sessionId: first.sessionId, level: "B1", language: "en" });
+    const second = await t.start({
+      userId: "ana",
+      themeId: "food",
+      customTopic: null,
+      level: "B1",
+      language: "en",
+    });
+    await t.send({
+      userId: "ana",
+      sessionId: second.sessionId,
+      level: "B1",
+      language: "en",
+      message: { text: "I like pasta" },
+    });
+    expect(seen[1]).toMatchObject({
+      improvements: ["usar o passado simples"],
+      strengths: ["vocabulário de viagem"],
+      averageScore: 70,
+    });
+    expect(await t.profile("lucas", "en")).toMatchObject({ improvements: [], averageScore: null });
   });
 });

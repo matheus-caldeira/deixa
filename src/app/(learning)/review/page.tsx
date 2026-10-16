@@ -14,6 +14,7 @@ export default async function ReviewPage() {
       userId: user.id,
       dailyGoal: user.preferences.dailyGoal,
       timezone: user.preferences.timezone,
+      language: pair.target,
     }),
   ]);
   return (

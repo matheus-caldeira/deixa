@@ -25,6 +25,7 @@ export async function completeLessonAction(input: unknown): Promise<ActionResult
       .object({
         episodeId: z.uuid(),
         nodeIndex: z.number().int().min(0).max(20),
+        seed: z.string().min(1).max(64),
         answers: z.array(answerSchema).max(MAX_ANSWERS),
         seconds: z.number().min(0).max(86_400),
       })

@@ -590,6 +590,7 @@ describe("sessão de estudo", () => {
     const result = await app.complete({
       ...base,
       nodeIndex: 0,
+      seed: lesson.seed,
       answers: lesson.exercises.map(rightAnswer),
       seconds: 75,
     });
@@ -612,6 +613,7 @@ describe("sessão de estudo", () => {
     const result = await app.complete({
       ...base,
       nodeIndex: 0,
+      seed: lesson.seed,
       answers: lesson.exercises.map(wrongAnswer),
       seconds: 20,
     });
@@ -641,20 +643,27 @@ describe("sessão de estudo", () => {
     const answers = lesson.exercises.map((exercise, index) =>
       index === 1 ? wrongAnswer(exercise) : rightAnswer(exercise),
     );
-    const result = await app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 });
+    const result = await app.complete({ ...base, nodeIndex: 0, seed: lesson.seed, answers, seconds: 60 });
     expect(result).toMatchObject({ passed: true, accuracy: 75, xp: 9, queuedForReview: 1 });
   });
 
   it("o desafio final revisa o episódio inteiro e só conclui o episódio com aprovação", async () => {
     for (const nodeIndex of [0, 1, 2]) {
       const lesson = await app.start({ ...base, nodeIndex });
-      await app.complete({ ...base, nodeIndex, answers: lesson.exercises.map(rightAnswer), seconds: 60 });
+      await app.complete({
+        ...base,
+        nodeIndex,
+        seed: lesson.seed,
+        answers: lesson.exercises.map(rightAnswer),
+        seconds: 60,
+      });
     }
     const final = await app.start({ ...base, nodeIndex: 3 });
     expect(final).toMatchObject({ title: "", isFinal: true });
     const failed = await app.complete({
       ...base,
       nodeIndex: 3,
+      seed: final.seed,
       answers: final.exercises.map(wrongAnswer),
       seconds: 60,
     });
@@ -662,6 +671,7 @@ describe("sessão de estudo", () => {
     const passed = await app.complete({
       ...base,
       nodeIndex: 3,
+      seed: final.seed,
       answers: final.exercises.map(rightAnswer),
       seconds: 60,
     });
@@ -673,8 +683,28 @@ describe("sessão de estudo", () => {
     });
   });
 
+  it("cada abertura embaralha exercícios e opções, e a correção usa a mesma ordem", async () => {
+    const first = await app.start({ ...base, nodeIndex: 0 });
+    const second = await app.start({ ...base, nodeIndex: 0 });
+    expect(first.seed).not.toBe(second.seed);
+    expect(first.exercises[0]?.kind).toBe("intro");
+    expect([...first.exercises].map((exercise) => exercise.id).sort()).toEqual(
+      [...second.exercises].map((exercise) => exercise.id).sort(),
+    );
+    const result = await app.complete({
+      ...base,
+      nodeIndex: 0,
+      seed: second.seed,
+      answers: second.exercises.map(rightAnswer),
+      seconds: 30,
+    });
+    expect(result.accuracy).toBe(100);
+  });
+
   it("não aceita quantidade de respostas diferente da lição", async () => {
-    await expect(app.complete({ ...base, nodeIndex: 0, answers: [], seconds: 1 })).rejects.toMatchObject({
+    await expect(
+      app.complete({ ...base, nodeIndex: 0, seed: "s", answers: [], seconds: 1 }),
+    ).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
   });
@@ -683,13 +713,15 @@ describe("sessão de estudo", () => {
     const lesson = await app.start({ ...base, nodeIndex: 0 });
     const answers = lesson.exercises.map(rightAnswer);
     const [first, second] = await Promise.all([
-      app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 }),
-      app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 }),
+      app.complete({ ...base, nodeIndex: 0, seed: lesson.seed, answers, seconds: 60 }),
+      app.complete({ ...base, nodeIndex: 0, seed: lesson.seed, answers, seconds: 60 }),
     ]);
     expect(app.xp).toEqual([{ userId: "ana", amount: Math.max(first.xp, second.xp) }]);
     const earned: number[] = [];
     for (let round = 0; round < 3; round += 1) {
-      earned.push((await app.complete({ ...base, nodeIndex: 0, answers, seconds: 60 })).xp);
+      earned.push(
+        (await app.complete({ ...base, nodeIndex: 0, seed: lesson.seed, answers, seconds: 60 })).xp,
+      );
     }
     expect(earned.at(-1)).toBe(0);
     expect(app.xp.reduce((total, event) => total + event.amount, 0)).toBeLessThanOrEqual(17 + 9);
@@ -697,7 +729,13 @@ describe("sessão de estudo", () => {
 
   it("o progresso de um usuário não mexe na trilha do outro", async () => {
     const lesson = await app.start({ ...base, nodeIndex: 0 });
-    await app.complete({ ...base, nodeIndex: 0, answers: lesson.exercises.map(rightAnswer), seconds: 60 });
+    await app.complete({
+      ...base,
+      nodeIndex: 0,
+      seed: lesson.seed,
+      answers: lesson.exercises.map(rightAnswer),
+      seconds: 60,
+    });
     const lucas = await app.trail("lucas", "ep-1", PAIR, "B1");
     expect(lucas.nodes.map((node) => node.state)).toEqual(["current", "locked", "locked", "locked"]);
     expect(lucas.progressPercent).toBe(0);

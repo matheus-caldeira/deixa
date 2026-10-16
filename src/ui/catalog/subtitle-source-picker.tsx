@@ -79,6 +79,7 @@ function Choice(props: {
             <button
               key={option.fileId}
               className={`result ${chosen?.fileId === option.fileId ? "on" : ""}`}
+              style={{ gridTemplateColumns: "1fr" }}
               onClick={() => props.onChoose(option.fileId)}
             >
               <span className="col" style={{ gap: 4, minWidth: 0, textAlign: "left" }}>
@@ -90,7 +91,11 @@ function Choice(props: {
             </button>
           ))}
           {props.optional ? (
-            <button className={`result ${chosen ? "" : "on"}`} onClick={() => props.onChoose(null)}>
+            <button
+              className={`result ${chosen ? "" : "on"}`}
+              style={{ gridTemplateColumns: "1fr" }}
+              onClick={() => props.onChoose(null)}
+            >
               <b className="small">{t("doNotUse", { name })}</b>
             </button>
           ) : null}

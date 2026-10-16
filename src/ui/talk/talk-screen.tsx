@@ -18,7 +18,42 @@ export type RecentConversation = {
   score: number | null;
 };
 
-export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversation[]; simulated: boolean }) {
+export type LearnerNotes = { improvements: string[]; strengths: string[]; mistakes: string[] };
+
+function LearnerCard({ learner }: { learner: LearnerNotes }) {
+  const t = useTranslations("talk");
+  const groups = [
+    { key: "improvements", items: learner.improvements },
+    { key: "strengths", items: learner.strengths },
+    { key: "mistakes", items: learner.mistakes },
+  ].filter((group) => group.items.length > 0);
+  if (groups.length === 0) {
+    return (
+      <div className="hint">
+        <span>{t("learnerEmpty")}</span>
+      </div>
+    );
+  }
+  return (
+    <section className="card col" style={{ gap: 8 }}>
+      <h2 style={{ fontSize: 18 }}>{t("learnerTitle")}</h2>
+      <p className="small muted">{t("learnerBody")}</p>
+      {groups.map((group) => (
+        <div key={group.key} className="col" style={{ gap: 2 }}>
+          <span className="eyebrow">{t(`learner.${group.key}`)}</span>
+          <span className="small">{group.items.join(" · ")}</span>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+export function TalkScreen(props: {
+  themes: ThemeView[];
+  recent: RecentConversation[];
+  simulated: boolean;
+  learner: LearnerNotes;
+}) {
   const t = useTranslations("talk");
   const toast = useToast();
   const [pending, startTransition] = useTransition();
@@ -43,6 +78,7 @@ export function TalkScreen(props: { themes: ThemeView[]; recent: RecentConversat
           </span>
         </div>
       ) : null}
+      <LearnerCard learner={props.learner} />
       <section className="card" style={{ padding: "4px 16px" }}>
         {props.themes.map((theme) => (
           <div className="ep" style={{ gridTemplateColumns: "1fr" }} key={theme.id}>

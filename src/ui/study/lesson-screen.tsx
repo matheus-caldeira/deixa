@@ -14,12 +14,15 @@ import {
 } from "@/modules/study";
 import { formatTimecode } from "@/shared/time";
 import { CheckIcon, SoundIcon, TurtleIcon, XIcon } from "../icons";
+import { Sheet } from "../shell/sheet";
+import { playSound } from "../shell/sounds";
 import { useToast } from "../shell/toast";
 import { useSpeech } from "../shell/use-speech";
 
 export type LessonScreenView = {
   episodeId: string;
   nodeIndex: number;
+  seed: string;
   title: string;
   level: string;
   replay: boolean;
@@ -68,6 +71,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [result, setResult] = useState<LessonResult | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [confirmingExit, setConfirmingExit] = useState(false);
   const startedAt = useRef(0);
   const speech = useSpeech({ speed: view.audioSpeed, onError: toast });
   const exercise = view.exercises[position];
@@ -76,6 +80,21 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
+
+  const inProgress =
+    result === null &&
+    (position > 0 || answers.length > 0 || selected !== null || built.length > 0 || text.trim() !== "");
+
+  useEffect(() => {
+    if (!inProgress) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [inProgress]);
+
+  const exit = () => {
+    router.push(backHref);
+  };
 
   if (view.exercises.length === 0) {
     return (
@@ -218,7 +237,9 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
     if (!ready) return;
     const answer = currentAnswer();
     setAnswers((current) => [...current, answer]);
-    setPhase(gradeAnswer(exercise, answer) ? "right" : "wrong");
+    const right = gradeAnswer(exercise, answer);
+    if (exercise.kind !== "intro") playSound(right ? "right" : "wrong");
+    setPhase(right ? "right" : "wrong");
   };
 
   const next = () => {
@@ -237,6 +258,7 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
       const outcome = await completeLessonAction({
         episodeId: view.episodeId,
         nodeIndex: view.nodeIndex,
+        seed: view.seed,
         answers,
         seconds,
       });
@@ -256,7 +278,15 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
         ? "sel"
         : "";
     return (
-      <button key={index} className={`opt ${state}`} onClick={() => setSelected(index)} disabled={locked}>
+      <button
+        key={index}
+        className={`opt ${state}`}
+        onClick={() => {
+          playSound("select");
+          setSelected(index);
+        }}
+        disabled={locked}
+      >
         <span className="k">{index + 1}</span>
         {label}
       </button>
@@ -371,7 +401,10 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
               key={bankIndex}
               className="tok in"
               disabled={locked}
-              onClick={() => setBuilt((current) => current.filter((index) => index !== bankIndex))}
+              onClick={() => {
+                playSound("select");
+                setBuilt((current) => current.filter((index) => index !== bankIndex));
+              }}
             >
               {exercise.bank[bankIndex]}
             </button>
@@ -385,7 +418,10 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
                 key={index}
                 className={`tok ${used ? "used" : ""}`}
                 disabled={used || locked}
-                onClick={() => setBuilt((current) => [...current, index])}
+                onClick={() => {
+                  playSound("select");
+                  setBuilt((current) => [...current, index]);
+                }}
               >
                 {token}
               </button>
@@ -424,14 +460,30 @@ export function LessonScreen({ view }: { view: LessonScreenView }) {
   return (
     <div className="lesson">
       <div className="lhead">
-        <Link className="iconbtn" href={backHref} aria-label={t("exit")}>
+        <button
+          className="iconbtn"
+          onClick={() => (inProgress ? setConfirmingExit(true) : exit())}
+          aria-label={t("exit")}
+        >
           <XIcon />
-        </Link>
+        </button>
         <div className="bar">
           <i style={{ width: `${(position / view.exercises.length) * 100}%` }} />
         </div>
         <span className="lvlchip">{view.level}</span>
       </div>
+      {confirmingExit ? (
+        <Sheet label={t("exitTitle")} onClose={() => setConfirmingExit(false)}>
+          <h2 style={{ fontSize: 22 }}>{t("exitTitle")}</h2>
+          <p className="muted">{t("exitBody")}</p>
+          <button className="btn wide" onClick={() => setConfirmingExit(false)}>
+            {t("exitStay")}
+          </button>
+          <button className="btn wide ghost" onClick={exit}>
+            {t("exitConfirm")}
+          </button>
+        </Sheet>
+      ) : null}
       <div className="lbody">{body}</div>
       {phase === "ask" ? (
         <div className="lfoot">

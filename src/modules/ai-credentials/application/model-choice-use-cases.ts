@@ -19,7 +19,7 @@ export function makeGetAiModels(deps: Pick<Deps, "choices">) {
 export function makeSetAiModels(deps: Deps) {
   return async function setAiModels(input: { userId: string; models: unknown }): Promise<AiModels> {
     const parsed = aiModelsSchema.safeParse(input.models);
-    if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira o provedor e o nome do modelo.");
+    if (!parsed.success) throw new AppError("INVALID_INPUT", "modelInvalid");
     const embedding = parsed.data.embedding;
     if (embedding && embedding !== "local" && !PROVIDERS_WITH_EMBEDDINGS.has(embedding.provider)) {
       throw new AppError("INVALID_INPUT", "noEmbeddings");

@@ -35,6 +35,7 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
         view={{
           episodeId,
           nodeIndex: lesson.nodeIndex,
+          seed: lesson.seed,
           title:
             lesson.title ||
             t(lesson.isFinal ? "finalChallenge" : "sceneTitle", { number: lesson.nodeIndex + 1 }),

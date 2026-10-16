@@ -1,6 +1,6 @@
 ---
 title: Testes manuais pendentes
-updated: 2026-10-15
+updated: 2026-10-16
 source: conversa de 14/10/2026
 ---
 
@@ -9,7 +9,11 @@ source: conversa de 14/10/2026
 Lista do que só pode ser conferido em aparelho externo (Windows, Linux, celular) ou à mão. Marque `[x]` ao
 validar e anote o resultado; o que falhar vira tarefa.
 
-## Windows (release v0.0.5 ou mais nova)
+## Windows (release v0.0.6 ou mais nova)
+
+A 0.0.5 falha na instalação do Postgres embutido com `spawn tar ENOENT`; a correção entra na 0.0.6.
+
+- [ ] Na tela de configuração, tocar nas duas opções só muda a seleção; o botão **Confirmar** é que segue.
 
 - [ ] Instalar pelo `.exe` ou `.msi` (SmartScreen: "Mais informações → Executar assim mesmo") e abrir como usuário
       comum, não como Administrador.
@@ -24,6 +28,17 @@ validar e anote o resultado; o que falhar vira tarefa.
 - [ ] Menu Arquivo → Importar… e Exportar… abrem a tela certa.
 - [ ] Com a conta em inglês (perfil → English), o aviso da bandeja ao chegar uma notificação sai em inglês;
       os menus nativos continuam em português (pendência conhecida).
+
+## Lição e tutor (celular)
+
+- [ ] Sons: toque neutro ao escolher opção ou palavra, som de acerto e de erro ao conferir. No iPhone, o modo
+      silencioso corta o som.
+- [ ] Tocar no X no meio da lição abre "Sair da lição?"; "Continuar a lição" volta sem perder nada.
+- [ ] Abrir o mesmo bloco duas vezes: a ordem dos exercícios e das opções muda.
+- [ ] Na Início, o cartão "Converse com o tutor" sugere um tema e, com uma conversa sem revisão, oferece
+      continuar. Depois de revisar uma conversa, a tela Conversar mostra "O que o tutor leva em conta".
+- [ ] Numa conta que estuda espanhol, o tutor abre a conversa em espanhol.
+- [ ] No seletor do OpenSubtitles, "Outras opções" lista os arquivos em uma coluna legível.
 
 ## Idiomas (qualquer máquina, com chaves reais)
 

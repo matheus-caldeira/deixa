@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { conversationSessions, conversationTurns } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
+import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import type { ConversationReview, Correction, Session, Turn, TurnRole } from "../domain/conversation";
 import type { ConversationRepository } from "../application/conversation-use-cases";
 
@@ -21,6 +22,7 @@ function toSession(row: SessionRow): Session {
   const review = row.review ? reviewSchema.safeParse(row.review) : null;
   return {
     id: row.id,
+    language: normalizeLanguageTag(row.language) ?? "en",
     themeId: row.themeId,
     themeTitle: row.themeTitle,
     level: row.level,
@@ -40,6 +42,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
     themeId: string;
     themeTitle: string;
     level: CefrLevel;
+    language: StudyLanguage;
     now: Date;
   }): Promise<void> {
     await this.db.insert(conversationSessions).values({
@@ -48,6 +51,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
       themeId: input.themeId,
       themeTitle: input.themeTitle,
       level: input.level,
+      language: input.language,
       createdAt: input.now,
       updatedAt: input.now,
     });
@@ -63,12 +67,16 @@ export class DrizzleConversationRepository implements ConversationRepository {
     return row ? toSession(row) : null;
   }
 
-  async listSessions(userId: string, limit: number): Promise<(Session & { turnCount: number })[]> {
+  async listSessions(
+    userId: string,
+    language: StudyLanguage,
+    limit: number,
+  ): Promise<(Session & { turnCount: number })[]> {
     const turnCount = sql<number>`(select count(*)::int from ${conversationTurns} where ${conversationTurns.sessionId} = ${conversationSessions.id})`;
     const rows = await this.db
       .select({ session: conversationSessions, turnCount })
       .from(conversationSessions)
-      .where(eq(conversationSessions.userId, userId))
+      .where(and(eq(conversationSessions.userId, userId), eq(conversationSessions.language, language)))
       .orderBy(desc(conversationSessions.updatedAt))
       .limit(limit);
     return rows.map((row) => ({ ...toSession(row.session), turnCount: row.turnCount }));

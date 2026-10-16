@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { DailyXp } from "../domain/activity";
 import type { KindStats } from "../domain/profile";
 
@@ -22,7 +23,12 @@ export interface ActivityCounts {
   cardsOwned(userId: string): Promise<number>;
   lessonStats(userId: string, since: Date | null): Promise<LessonStats>;
   reviewOutcomesSince(userId: string, since: Date): Promise<{ total: number; again: number }>;
-  recurringMisses(userId: string, since: Date, limit: number): Promise<{ term: string; count: number }[]>;
+  recurringMisses(
+    userId: string,
+    since: Date,
+    limit: number,
+    language?: StudyLanguage,
+  ): Promise<{ term: string; count: number }[]>;
   episodesCompleted(userId: string): Promise<number>;
   conversationScores(userId: string): Promise<number[]>;
   phrasalCards(userId: string): Promise<number>;

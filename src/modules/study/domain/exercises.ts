@@ -355,3 +355,41 @@ export function lessonXp(input: {
   const full = input.correct * XP_PER_CORRECT + (input.correct === input.total ? PERFECT_BONUS : 0);
   return input.replay ? Math.round(full / 2) : full;
 }
+
+function withShuffledOptions<Item extends { options: string[]; answer: number }>(
+  exercise: Item,
+  random: () => number,
+): Item {
+  const order = shuffled(
+    exercise.options.map((_, index) => index),
+    random,
+  );
+  return {
+    ...exercise,
+    options: order.map((index) => exercise.options[index] ?? ""),
+    answer: order.indexOf(exercise.answer),
+  };
+}
+
+function rearranged(exercise: Exercise, random: () => number): Exercise {
+  switch (exercise.kind) {
+    case "choice":
+    case "listen":
+    case "blank":
+      return withShuffledOptions(exercise, random);
+    case "order":
+      return { ...exercise, bank: shuffled(exercise.bank, random) };
+    default:
+      return exercise;
+  }
+}
+
+export function arrangeLesson(exercises: readonly Exercise[], seed: string): Exercise[] {
+  const random = createRandom(`arrange:${seed}`);
+  const intros = exercises.filter((exercise) => exercise.kind === "intro");
+  const practice = shuffled(
+    exercises.filter((exercise) => exercise.kind !== "intro"),
+    random,
+  );
+  return [...intros, ...practice].map((exercise) => rearranged(exercise, random));
+}

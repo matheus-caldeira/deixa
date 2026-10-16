@@ -6,13 +6,19 @@ import { requireUser } from "../../session";
 export default async function TutorPage() {
   const user = await requireUser();
   const container = getContainer();
-  const [recent, simulated] = await Promise.all([
-    container.listConversations(user.id),
+  const [recent, simulated, learner] = await Promise.all([
+    container.listConversations(user.id, user.preferences.targetLanguage),
     container.isTutorSimulated(user.id),
+    container.getLearnerProfile(user.id, user.preferences.targetLanguage),
   ]);
   return (
     <TalkScreen
       simulated={simulated}
+      learner={{
+        improvements: learner.improvements,
+        strengths: learner.strengths,
+        mistakes: learner.mistakes,
+      }}
       themes={THEMES.map((theme) => ({ id: theme.id, icon: theme.icon }))}
       recent={recent.map((session) => ({
         id: session.id,

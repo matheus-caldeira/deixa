@@ -267,6 +267,16 @@ export async function uploadSubtitlesAction(form: FormData): Promise<ActionResul
 const quotaView = (quota: { remaining: number; resetAt: Date | null } | null) =>
   quota ? { remaining: quota.remaining, resetAt: quota.resetAt?.toISOString() ?? null } : null;
 
+function withSuggestion<Candidate extends { fileId: string }>(
+  candidates: readonly Candidate[],
+  suggested: Candidate | null,
+): Candidate[] {
+  const ordered = suggested
+    ? [suggested, ...candidates.filter((candidate) => candidate.fileId !== suggested.fileId)]
+    : [...candidates];
+  return ordered.slice(0, MAX_OPTIONS);
+}
+
 export async function searchSubtitlesAction(input: unknown): Promise<ActionResult<SubtitleSearchView>> {
   const user = await requireUser();
   return runAction("searchSubtitles", async () => {
@@ -291,8 +301,8 @@ export async function searchSubtitlesAction(input: unknown): Promise<ActionResul
     return {
       provider: search.provider,
       pair,
-      target: search.ranking.target.slice(0, MAX_OPTIONS).map(toOption),
-      native: search.ranking.native.slice(0, MAX_OPTIONS).map(toOption),
+      target: withSuggestion(search.ranking.target, search.ranking.suggestion.target).map(toOption),
+      native: withSuggestion(search.ranking.native, search.ranking.suggestion.native).map(toOption),
       suggestion: {
         targetFileId: search.ranking.suggestion.target?.fileId ?? null,
         nativeFileId: search.ranking.suggestion.native?.fileId ?? null,

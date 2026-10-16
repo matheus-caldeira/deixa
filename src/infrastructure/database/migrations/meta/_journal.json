@@ -155,6 +155,13 @@
       "when": 1792048438203,
       "tag": "0021_orange_wendell_rand",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792115432664,
+      "tag": "0022_condemned_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

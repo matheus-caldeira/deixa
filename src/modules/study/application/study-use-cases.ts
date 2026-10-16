@@ -7,6 +7,7 @@ import { localDateKey, startOfLocalDay } from "@/shared/time";
 import {
   PASS_ACCURACY,
   accuracyOf,
+  arrangeLesson,
   gradeAnswer,
   isGradable,
   lessonXp,
@@ -141,6 +142,7 @@ export type TrailView = {
 
 export type LessonView = {
   nodeIndex: number;
+  seed: string;
   title: string;
   isFinal: boolean;
   replay: boolean;
@@ -297,7 +299,7 @@ export function makeGetTrail(deps: Pick<Deps, "plans" | "study">) {
   };
 }
 
-export function makeStartLesson(deps: Pick<Deps, "plans" | "study">) {
+export function makeStartLesson(deps: Pick<Deps, "plans" | "study" | "ids">) {
   return async function startLesson(input: {
     userId: string;
     episodeId: string;
@@ -316,12 +318,14 @@ export function makeStartLesson(deps: Pick<Deps, "plans" | "study">) {
     if (!block || states[input.nodeIndex] === "locked") {
       throw new AppError("EPISODE_NOT_READY", "previousBlock");
     }
+    const seed = deps.ids.next();
     return {
       nodeIndex: block.index,
+      seed,
       title: block.title,
       isFinal: block.isFinal,
       replay: states[input.nodeIndex] === "done",
-      exercises: block.exercises,
+      exercises: arrangeLesson(block.exercises, seed),
     };
   };
 }
@@ -334,6 +338,7 @@ export function makeCompleteLesson(deps: Deps) {
     pair: LanguagePair;
     level: CefrLevel;
     timezone: string;
+    seed: string;
     answers: Answer[];
     seconds: number;
   }): Promise<LessonResult> {
@@ -346,7 +351,7 @@ export function makeCompleteLesson(deps: Deps) {
     );
     const block = plan.blocks[input.nodeIndex];
     if (!block || states[input.nodeIndex] === "locked") throw new AppError("EPISODE_NOT_READY");
-    const { exercises } = block;
+    const exercises = arrangeLesson(block.exercises, input.seed);
     if (exercises.length === 0 || input.answers.length !== exercises.length)
       throw new AppError("INVALID_INPUT");
 

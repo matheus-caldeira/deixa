@@ -51,6 +51,7 @@ import {
 import { DrizzleCardRepository } from "@/modules/flashcards/infrastructure/drizzle-card-repository";
 import {
   makeGetConversation,
+  makeGetLearnerProfile,
   makeGetTurnSpeechText,
   makeListConversations,
   makeReviewConversation,
@@ -213,6 +214,8 @@ const DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001";
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const FINGERPRINT_CHARS = 16;
 const UNLIMITED_DOWNLOADS = Number.MAX_SAFE_INTEGER;
+const MISTAKE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const MISTAKES_FOR_TUTOR = 6;
 
 const fingerprint = (secret: string): string =>
   createHash("sha256").update(secret).digest("hex").slice(0, FINGERPRINT_CHARS);
@@ -633,7 +636,24 @@ export function buildContainer(options: ContainerOptions) {
     return itemIds.length;
   }
 
-  const conversationDeps = { conversations, resolveTutor, queueCorrections, awardXp, clock, ids };
+  const recentMistakes = async (userId: string, language: StudyLanguage) =>
+    (
+      await gamification.recurringMisses(
+        userId,
+        new Date(clock.now().getTime() - MISTAKE_WINDOW_MS),
+        MISTAKES_FOR_TUTOR,
+        language,
+      )
+    ).map((miss) => miss.term);
+  const conversationDeps = {
+    conversations,
+    resolveTutor,
+    queueCorrections,
+    recentMistakes,
+    awardXp,
+    clock,
+    ids,
+  };
   const getTurnSpeechText = makeGetTurnSpeechText(conversationDeps);
 
   const studyDeps = {
@@ -911,6 +931,7 @@ export function buildContainer(options: ContainerOptions) {
 
     startConversation: makeStartConversation(conversationDeps),
     getConversation: makeGetConversation(conversationDeps),
+    getLearnerProfile: makeGetLearnerProfile(conversationDeps),
     listConversations: makeListConversations(conversationDeps),
     sendMessage: makeSendMessage(conversationDeps),
     reviewConversation: makeReviewConversation(conversationDeps),

@@ -4,6 +4,7 @@ import { backdropUrl, episodeLabel, stillUrl } from "@/modules/catalog";
 import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { formatTimecode } from "@/shared/time";
+import { suggestTheme } from "@/modules/conversations";
 import { HomeScreen } from "@/ui/home/home-screen";
 import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
@@ -13,7 +14,7 @@ export default async function HomePage() {
   const container = getContainer();
   const currentId = user.preferences.currentEpisodeId;
   const pair = pairOf(user.preferences);
-  const [summary, dueCount, context, overview] = await Promise.all([
+  const [summary, dueCount, context, overview, conversations] = await Promise.all([
     container.getProfileSummary({
       userId: user.id,
       dailyGoal: user.preferences.dailyGoal,
@@ -22,7 +23,10 @@ export default async function HomePage() {
     container.countDueCards(user.id, pair),
     currentId ? container.getEpisodeContext(currentId) : Promise.resolve(null),
     container.getCatalogOverview(user.id),
+    container.listConversations(user.id, pair.target),
   ]);
+  const suggestedTheme = suggestTheme(conversations.map((session) => session.themeId));
+  const unfinished = conversations.find((session) => session.review === null && session.turnCount > 1);
   const script =
     context?.episode.status === "READY" ? await container.getEpisodeScript(context.episode.id, pair) : null;
   const label = context
@@ -95,6 +99,13 @@ export default async function HomePage() {
         trailByAi: trail?.generatedByAi ?? false,
         trailFailure: planStatus?.status === "FAILED" ? planStatus.reason : null,
         missions: summary.missions,
+        tutor: {
+          suggestedThemeId: suggestedTheme.id,
+          suggestedIcon: suggestedTheme.icon,
+          continueSession: unfinished
+            ? { id: unfinished.id, themeId: unfinished.themeId, title: unfinished.themeTitle }
+            : null,
+        },
       }}
     />
   );

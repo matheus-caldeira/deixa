@@ -2,6 +2,7 @@ export * from "./domain/conversation";
 export type { TurnRole } from "./domain/conversation";
 export {
   makeGetConversation,
+  makeGetLearnerProfile,
   makeGetTurnSpeechText,
   makeListConversations,
   makeReviewConversation,

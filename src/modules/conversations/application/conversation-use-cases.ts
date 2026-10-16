@@ -2,6 +2,7 @@ import { AppError, isAppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import type { CefrLevel } from "@/shared/levels";
+import type { StudyLanguage } from "@/shared/study-languages";
 import {
   CONVERSATION_XP,
   HISTORY_TURNS_SENT,
@@ -9,11 +10,13 @@ import {
   MAX_MESSAGE_LENGTH,
   MAX_USER_TURNS,
   MIN_TURNS_FOR_XP,
+  buildLearnerProfile,
   conversationReviewSchema,
   resolveTheme,
   tutorReplySchema,
   type ConversationReview,
   type Correction,
+  type LearnerProfile,
   type Session,
   type Turn,
   type TurnRole,
@@ -28,6 +31,7 @@ export interface TutorProvider {
     theme: string;
     history: { role: TurnRole; text: string }[];
     message: TutorMessage;
+    learner: LearnerProfile;
   }): Promise<unknown>;
   review(input: {
     level: CefrLevel;
@@ -43,10 +47,15 @@ export interface ConversationRepository {
     themeId: string;
     themeTitle: string;
     level: CefrLevel;
+    language: StudyLanguage;
     now: Date;
   }): Promise<void>;
   findSession(userId: string, sessionId: string): Promise<Session | null>;
-  listSessions(userId: string, limit: number): Promise<(Session & { turnCount: number })[]>;
+  listSessions(
+    userId: string,
+    language: StudyLanguage,
+    limit: number,
+  ): Promise<(Session & { turnCount: number })[]>;
   addTurn(input: {
     id: string;
     sessionId: string;
@@ -68,12 +77,35 @@ type Deps = {
   conversations: ConversationRepository;
   resolveTutor: (userId: string) => Promise<TutorProvider>;
   queueCorrections: (userId: string, corrections: Correction[], sourceLabel: string) => Promise<number>;
+  recentMistakes: (userId: string, language: StudyLanguage) => Promise<string[]>;
   awardXp: (input: { userId: string; source: string; sourceId: string; amount: number }) => Promise<void>;
   clock: Clock;
   ids: IdGenerator;
 };
 
 const RECENT_SESSIONS = 8;
+const PROFILE_SESSIONS = 12;
+
+async function findSessionIn(
+  conversations: ConversationRepository,
+  userId: string,
+  sessionId: string,
+  language: StudyLanguage,
+): Promise<Session> {
+  const session = await conversations.findSession(userId, sessionId);
+  if (!session || session.language !== language) throw new AppError("INVALID_INPUT", "conversationNotFound");
+  return session;
+}
+
+export function makeGetLearnerProfile(deps: Pick<Deps, "conversations" | "recentMistakes">) {
+  return async function getLearnerProfile(userId: string, language: StudyLanguage): Promise<LearnerProfile> {
+    const [sessions, mistakes] = await Promise.all([
+      deps.conversations.listSessions(userId, language, PROFILE_SESSIONS),
+      deps.recentMistakes(userId, language),
+    ]);
+    return buildLearnerProfile({ sessions, mistakes });
+  };
+}
 const AUDIO_TYPES = ["audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/wav", "audio/aac"];
 const BASE64_OVERHEAD = 4 / 3;
 
@@ -85,9 +117,10 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
     themeId: string;
     customTopic: string | null;
     level: CefrLevel;
+    language: StudyLanguage;
   }): Promise<{ sessionId: string }> {
-    const theme = resolveTheme(input.themeId, input.customTopic);
-    if (!theme) throw new AppError("INVALID_INPUT", "Escolha um tema ou escreva um assunto curto.");
+    const theme = resolveTheme(input.themeId, input.customTopic, input.language);
+    if (!theme) throw new AppError("INVALID_INPUT", "themeRequired");
     const now = deps.clock.now();
     const sessionId = deps.ids.next();
     await deps.conversations.createSession({
@@ -96,6 +129,7 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
       themeId: theme.id,
       themeTitle: theme.title,
       level: input.level,
+      language: input.language,
       now,
     });
     await deps.conversations.addTurn({
@@ -113,9 +147,12 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
 }
 
 export function makeGetConversation(deps: Pick<Deps, "conversations" | "resolveTutor">) {
-  return async function getConversation(userId: string, sessionId: string): Promise<ConversationView> {
-    const session = await deps.conversations.findSession(userId, sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
+  return async function getConversation(
+    userId: string,
+    sessionId: string,
+    language: StudyLanguage,
+  ): Promise<ConversationView> {
+    const session = await findSessionIn(deps.conversations, userId, sessionId, language);
     const [turns, tutor] = await Promise.all([
       deps.conversations.listTurns(sessionId),
       deps.resolveTutor(userId),
@@ -131,20 +168,21 @@ export function makeGetConversation(deps: Pick<Deps, "conversations" | "resolveT
 }
 
 export function makeListConversations(deps: Pick<Deps, "conversations">) {
-  return async function listConversations(userId: string) {
-    return deps.conversations.listSessions(userId, RECENT_SESSIONS);
+  return async function listConversations(userId: string, language: StudyLanguage) {
+    return deps.conversations.listSessions(userId, language, RECENT_SESSIONS);
   };
 }
 
 export function makeSendMessage(deps: Deps) {
+  const getLearnerProfile = makeGetLearnerProfile(deps);
   return async function sendMessage(input: {
     userId: string;
     sessionId: string;
     level: CefrLevel;
+    language: StudyLanguage;
     message: TutorMessage;
   }): Promise<{ userTurn: Turn; tutorTurn: Turn; queuedForReview: number }> {
-    const session = await deps.conversations.findSession(input.userId, input.sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
+    const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
     const isAudio = "audio" in input.message;
     if ("text" in input.message) {
       const text = input.message.text.trim();
@@ -165,14 +203,16 @@ export function makeSendMessage(deps: Deps) {
 
     const turns = await deps.conversations.listTurns(input.sessionId);
     if (!(await deps.conversations.claimUserTurn(input.userId, input.sessionId, MAX_USER_TURNS))) {
-      throw new AppError("INVALID_INPUT", "Esta conversa chegou ao limite. Revise-a e comece outra.");
+      throw new AppError("INVALID_INPUT", "conversationLimit");
     }
     const release = () => deps.conversations.releaseUserTurn(input.userId, input.sessionId);
 
     const tutor = await deps.resolveTutor(input.userId);
+    const learner = await getLearnerProfile(input.userId, input.language);
     let raw: unknown;
     try {
       raw = await tutor.reply({
+        learner,
         level: input.level,
         theme: session.themeTitle,
         history: turns.slice(-HISTORY_TURNS_SENT).map((turn) => ({ role: turn.role, text: turn.text })),
@@ -186,7 +226,7 @@ export function makeSendMessage(deps: Deps) {
     const parsed = tutorReplySchema.safeParse(raw);
     if (!parsed.success) {
       await release();
-      throw new AppError("LLM_INVALID_OUTPUT", "O tutor devolveu uma resposta fora do formato.");
+      throw new AppError("LLM_INVALID_OUTPUT", "tutorInvalid");
     }
     const userText = "text" in input.message ? input.message.text.trim() : parsed.data.transcript;
     if (!userText) {
@@ -236,9 +276,9 @@ export function makeReviewConversation(deps: Deps) {
     userId: string;
     sessionId: string;
     level: CefrLevel;
+    language: StudyLanguage;
   }): Promise<{ review: ConversationReview; xpAwarded: number; queuedForReview: number }> {
-    const session = await deps.conversations.findSession(input.userId, input.sessionId);
-    if (!session) throw new AppError("INVALID_INPUT", "conversationNotFound");
+    const session = await findSessionIn(deps.conversations, input.userId, input.sessionId, input.language);
     const turns = await deps.conversations.listTurns(input.sessionId);
     const userTurns = turns.filter((turn) => turn.role === "user");
     if (userTurns.length === 0) {

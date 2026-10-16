@@ -55,7 +55,7 @@ export function makeSetAiUsageLimit(deps: Pick<LimitDeps, "limits" | "clock">) {
     limit: unknown;
   }): Promise<UsageLimit> {
     const parsed = usageLimitSchema.safeParse(input.limit);
-    if (!parsed.success) throw new AppError("INVALID_INPUT", "Confira os valores do limite.");
+    if (!parsed.success) throw new AppError("INVALID_INPUT", "limitInvalid");
     if (input.target.scope === "shared") {
       if (!input.actor.isAdmin) {
         throw new AppError("FORBIDDEN", "adminOnlySharedLimit");

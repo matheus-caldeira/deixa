@@ -273,6 +273,7 @@ export const conversationSessions = pgTable(
     themeId: text("theme_id").notNull(),
     themeTitle: text("theme_title").notNull(),
     level: text("level").notNull(),
+    language: text("language").notNull().default("en"),
     review: jsonb("review"),
     userTurnsUsed: integer("user_turns_used").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

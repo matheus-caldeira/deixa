@@ -223,6 +223,17 @@ Pendente desta etapa: validar com uma legenda real em espanhol e francês no Ope
 | 108 | Áudio em lote do episódio depois da importação                               | Job `episode_audio` gera o que falta no cache e avisa no sino; etapa da importação diz "na fila"         | [x]    |
 | 109 | Roteiro `.txt` conferido contra a legenda e falas completadas na leitura     | `episode_scripts` e `script_lines`; e2e envia `.srt` + `.txt` e vê "Roteiro conferido" e a fala completa | [x]    |
 
+## Etapa 16: retorno do teste no celular e no Windows (16/10/2026)
+
+| #   | Tarefa                                                                  | Critério de pronto                                                                                       | Estado |
+| --- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| 110 | Sons de acerto, erro e seleção na lição                                 | Web Audio, sem arquivo; acerto e erro ao conferir, toque neutro ao escolher opção ou palavra             | [x]    |
+| 111 | Aviso ao sair da lição com progresso                                    | Folha "Sair da lição?" no X; aviso do navegador ao fechar ou recarregar                                  | [x]    |
+| 112 | Ordem dos exercícios e das opções muda a cada abertura                  | Semente nova por abertura; a correção refaz a mesma ordem no servidor; teste de domínio e de caso de uso | [x]    |
+| 113 | Seletor do OpenSubtitles: opções legíveis e sugestão sempre na lista    | Opções em uma coluna; a sugestão entra entre as 8 exibidas                                               | [x]    |
+| 114 | Tutor no idioma de estudo, com resumo do aluno e cartão na Início       | Conversa guarda o idioma (migração 0022); abertura nos 4 idiomas; prompt recebe revisões e erros         | [x]    |
+| 115 | Windows: confirmar a escolha do banco e extrair o Postgres sem o `PATH` | Botão Confirmar; `tar.exe` pelo caminho do `System32`; casca repassa o `PATH`                            | [x]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):

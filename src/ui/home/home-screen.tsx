@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useTransition } from "react";
 import { retryTrailAction } from "@/app/actions/study";
+import { startConversationAction } from "@/app/actions/tutor";
 import { MISSION_XP } from "@/modules/gamification";
 import type { CefrLevel } from "@/shared/levels";
 import { useToast } from "../shell/toast";
@@ -44,7 +45,57 @@ export type HomeView = {
   trailByAi: boolean;
   trailFailure: string | null;
   missions: { icon: "cards" | "ear" | "chat"; kind: string; value: number; max: number }[];
+  tutor: {
+    suggestedThemeId: string;
+    suggestedIcon: IconName;
+    continueSession: { id: string; themeId: string; title: string } | null;
+  };
 };
+
+function TutorCard({ tutor }: { tutor: HomeView["tutor"] }) {
+  const t = useTranslations("home");
+  const talk = useTranslations("talk");
+  const toast = useToast();
+  const [pending, startTransition] = useTransition();
+  const themeTitle = (themeId: string, fallback: string) =>
+    talk.has(`themes.${themeId}.title`) ? talk(`themes.${themeId}.title`) : fallback;
+  const suggested = themeTitle(tutor.suggestedThemeId, tutor.suggestedThemeId);
+  const start = () =>
+    startTransition(async () => {
+      const result = await startConversationAction({
+        themeId: tutor.suggestedThemeId,
+        customTopic: null,
+      }).catch(() => null);
+      if (result && !result.ok) toast(result.message);
+    });
+  return (
+    <section className="card col" style={{ gap: 12 }}>
+      <div className="sec-h">
+        <h2 style={{ fontSize: 18 }}>{t("tutorTitle")}</h2>
+        <Link className="link" href="/tutor">
+          {t("tutorMore")}
+        </Link>
+      </div>
+      <div className="row">
+        <span className="ic" style={{ width: 40, height: 40, flex: "none", color: "var(--brand)" }}>
+          <Icon name={tutor.suggestedIcon} />
+        </span>
+        <span className="small muted">{t("tutorBody", { theme: suggested })}</span>
+      </div>
+      {tutor.continueSession ? (
+        <Link className="btn ghost wide" href={`/tutor/${tutor.continueSession.id}`}>
+          <ChatIcon width={18} height={18} />{" "}
+          {t("tutorContinue", {
+            theme: themeTitle(tutor.continueSession.themeId, tutor.continueSession.title),
+          })}
+        </Link>
+      ) : null}
+      <button className="btn wide" onClick={start} disabled={pending}>
+        {t("tutorStart", { theme: suggested })}
+      </button>
+    </section>
+  );
+}
 
 const MISSION_ICONS = { cards: CardsIcon, ear: EarIcon, chat: ChatIcon };
 const TRAIL_POLL_MS = 4000;
@@ -238,6 +289,8 @@ export function HomeScreen({ view }: { view: HomeView }) {
           </div>
         </section>
       ) : null}
+
+      <TutorCard tutor={view.tutor} />
 
       <section className="card col" style={{ gap: 12 }}>
         <div className="sec-h">

@@ -1,3 +1,4 @@
+import type { StudyLanguage } from "@/shared/study-languages";
 import type { Clock } from "@/shared/clock";
 import type { IdGenerator } from "@/shared/ids";
 import { MS_PER_DAY, localDateKey, startOfLocalDay } from "@/shared/time";
@@ -60,6 +61,7 @@ export function makeGetProfileSummary(deps: Pick<Deps, "xp" | "counts" | "clock"
     userId: string;
     dailyGoal: number;
     timezone: string;
+    language?: StudyLanguage;
   }): Promise<ProfileSummary> {
     const now = deps.clock.now();
     const dayStart = startOfLocalDay(now, input.timezone);
@@ -86,7 +88,7 @@ export function makeGetProfileSummary(deps: Pick<Deps, "xp" | "counts" | "clock"
       deps.counts.lessonStats(input.userId, windowStart),
       deps.counts.lessonStats(input.userId, null),
       deps.counts.reviewOutcomesSince(input.userId, windowStart),
-      deps.counts.recurringMisses(input.userId, windowStart, RECURRING_LIMIT),
+      deps.counts.recurringMisses(input.userId, windowStart, RECURRING_LIMIT, input.language),
       deps.counts.episodesCompleted(input.userId),
       deps.counts.conversationScores(input.userId),
       deps.counts.phrasalCards(input.userId),
