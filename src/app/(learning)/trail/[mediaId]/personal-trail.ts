@@ -77,6 +77,7 @@ export async function personalTrailView(
           href: state === "locked" ? null : `/series/${episode.id}/lesson/${index}`,
         })),
         startEpisodeId: null,
+        conversation: null,
         detail: { href: `/series/${episode.id}`, kind: "cards" as const },
       };
     }),

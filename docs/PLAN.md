@@ -258,7 +258,7 @@ Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
 | 126 | POC da Início-resumo e da trilha completa | `docs/trail-poc.html` com Início-resumo, `/trail/[mediaId]` por temporada, filme numa seção e série pessoal na mesma tela; aprovado pelo usuário em 16/10/2026                                                                                                | [x]    |
 | 127 | Início-resumo e trilha completa por obra  | "Continuar" e o play da série levam à trilha rolada até o ponto atual; série pessoal usa a mesma tela e fica sempre em primeiro no Explorar; "Voltar para onde parei" com a seta apontando para a lição atual (para cima quando ela ficou acima da tela)      | [x]    |
 | 128 | Nó de recapitulação na Revisar            | Aba Revisar com "Cards" e "Episódios"; episódio concluído vence em 1, 7 e 30 dias; lição com resumo, falas estudadas, cards e erros do episódio                                                                                                               | [x]    |
-| 129 | Conversa sobre o episódio, sem spoiler    | Tema do tutor por episódio com a sinopse do TMDB e o conhecimento da IA, sem texto da legenda; instrução de não passar do episódio e perguntar quando não souber                                                                                              | [ ]    |
+| 129 | Conversa sobre o episódio, sem spoiler    | Tema do tutor por episódio com a sinopse do TMDB e o conhecimento da IA, sem texto da legenda; instrução de não passar do episódio e perguntar quando não souber                                                                                              | [x]    |
 
 ## Próximo
 

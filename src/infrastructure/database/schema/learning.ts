@@ -278,6 +278,7 @@ export const conversationSessions = pgTable(
     reviewStatus: text("review_status").notNull().default("none"),
     closedAt: timestamp("closed_at", { withTimezone: true }),
     cardsConfirmedAt: timestamp("cards_confirmed_at", { withTimezone: true }),
+    episodeContext: jsonb("episode_context"),
     userTurnsUsed: integer("user_turns_used").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),

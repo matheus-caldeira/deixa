@@ -6,8 +6,9 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { studyEpisodeAction } from "@/app/actions/catalog";
 import { retryTrailAction } from "@/app/actions/study";
+import { startEpisodeConversationAction } from "@/app/actions/tutor";
 import { Poster, type PosterData } from "../catalog/poster";
-import { BackIcon, CheckIcon, DocIcon, Icon, LockIcon, type IconName } from "../icons";
+import { BackIcon, ChatIcon, CheckIcon, DocIcon, Icon, LockIcon, type IconName } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
@@ -32,6 +33,7 @@ export type TrailSectionView = {
   nodes: TrailNodeView[];
   startEpisodeId: string | null;
   detail: { href: string; kind: "read" | "cards" } | null;
+  conversation: { episodeId: string } | null;
 };
 
 export type TrailSeasonView = {
@@ -89,6 +91,35 @@ function SectionStatusText({ section }: { section: TrailSectionView }) {
   return <>{t("status.lessons", { done, total: lessons })}</>;
 }
 
+function EpisodeConversation({ section, episodeId }: { section: TrailSectionView; episodeId: string }) {
+  const t = useTranslations("trail");
+  const toast = useToast();
+  const [pending, startTransition] = useTransition();
+  const start = () =>
+    startTransition(async () => {
+      const result = await startEpisodeConversationAction(episodeId).catch(() => null);
+      if (result && !result.ok) toast(result.message);
+    });
+  return (
+    <section className="card col" style={{ gap: 10, boxShadow: "none", border: "2px solid var(--line)" }}>
+      <div className="row">
+        <span className="ic" style={{ width: 36, height: 36, flex: "none", color: "var(--brand)" }}>
+          <ChatIcon />
+        </span>
+        <div className="col" style={{ gap: 0 }}>
+          <b>{t("talkTitle")}</b>
+          <span className="small muted">{t("talkOptional")}</span>
+        </div>
+      </div>
+      <p className="note">{t("talkNoSpoiler", { label: section.label })}</p>
+      <p className="small muted">{t("talkSource")}</p>
+      <button className="btn wide" onClick={start} disabled={pending}>
+        {t("talk")}
+      </button>
+    </section>
+  );
+}
+
 function GuideSheet({ section, onClose }: { section: TrailSectionView; onClose: () => void }) {
   const t = useTranslations("trail");
   return (
@@ -97,6 +128,9 @@ function GuideSheet({ section, onClose }: { section: TrailSectionView; onClose: 
         <span className="eyebrow">{section.label}</span>
         <h2 style={{ fontSize: 22 }}>{section.title}</h2>
         <p>{section.overview || t("noOverview")}</p>
+        {section.conversation ? (
+          <EpisodeConversation section={section} episodeId={section.conversation.episodeId} />
+        ) : null}
         {section.detail ? (
           <Link className="btn ghost wide" href={section.detail.href}>
             {t(section.detail.kind === "read" ? "readAndMark" : "cardsAndSources")}

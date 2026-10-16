@@ -13,6 +13,8 @@ import {
   buildLearnerProfile,
   conversationAnalysisSchema,
   correctedTurns,
+  episodeContextSchema,
+  episodeTheme,
   resolveTheme,
   reviewFromAnalysis,
   selectMarkedTerms,
@@ -21,6 +23,7 @@ import {
   type ConversationAnalysis,
   type ConversationReview,
   type Correction,
+  type EpisodeContext,
   type LearnerProfile,
   type ReviewStatus,
   type SeasonContext,
@@ -39,6 +42,7 @@ export interface TutorProvider {
     history: { role: TurnRole; text: string }[];
     message: TutorMessage;
     learner: LearnerProfile;
+    episode: EpisodeContext | null;
   }): Promise<unknown>;
   review(input: {
     level: CefrLevel;
@@ -83,6 +87,7 @@ export interface ConversationRepository {
     themeTitle: string;
     level: CefrLevel;
     language: StudyLanguage;
+    episode: EpisodeContext | null;
     now: Date;
   }): Promise<void>;
   findSession(userId: string, sessionId: string): Promise<Session | null>;
@@ -172,8 +177,13 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
     customTopic: string | null;
     level: CefrLevel;
     language: StudyLanguage;
+    episode?: EpisodeContext | null;
   }): Promise<{ sessionId: string }> {
-    const theme = resolveTheme(input.themeId, input.customTopic, input.language);
+    const episode = input.episode ? episodeContextSchema.safeParse(input.episode) : null;
+    if (episode && !episode.success) throw new AppError("INVALID_INPUT", "themeRequired");
+    const theme = episode?.success
+      ? episodeTheme(episode.data, input.language)
+      : resolveTheme(input.themeId, input.customTopic, input.language);
     if (!theme) throw new AppError("INVALID_INPUT", "themeRequired");
     const now = deps.clock.now();
     const sessionId = deps.ids.next();
@@ -184,6 +194,7 @@ export function makeStartConversation(deps: Pick<Deps, "conversations" | "clock"
       themeTitle: theme.title,
       level: input.level,
       language: input.language,
+      episode: episode?.success ? episode.data : null,
       now,
     });
     await deps.conversations.addTurn({
@@ -272,6 +283,7 @@ export function makeSendMessage(
         learner,
         level: input.level,
         theme: session.themeTitle,
+        episode: session.episode,
         history: turns.slice(-HISTORY_TURNS_SENT).map((turn) => ({ role: turn.role, text: turn.text })),
         message: input.message,
       });

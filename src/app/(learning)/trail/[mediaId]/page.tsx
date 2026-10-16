@@ -132,6 +132,7 @@ export default async function TrailPage(props: {
             href: section.placeholder ? null : `/study/${section.episodeId}/${node.index}`,
           })),
           startEpisodeId: section.status === "open" ? section.episodeId : null,
+          conversation: section.status === "missing" ? null : { episodeId: section.episodeId },
           detail:
             section.status === "missing"
               ? { href: catalogHref, kind: "read" }

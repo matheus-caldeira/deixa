@@ -1400,7 +1400,12 @@
     "building": "Montando a trilha com IA",
     "buildingBody": "A IA está dividindo o episódio em blocos e criando as questões para o seu nível. Leva em torno de um minuto; avisamos no sino quando terminar.",
     "personalEmpty": "Os cards das suas conversas viram episódios aqui",
-    "finalChallenge": "Desafio final"
+    "finalChallenge": "Desafio final",
+    "talkTitle": "Conversar sobre o episódio",
+    "talkOptional": "Opcional · com o tutor",
+    "talkNoSpoiler": "O tutor só conhece a história até {label}. Ele não fala do que vem depois e pergunta quando não tiver certeza de um detalhe.",
+    "talkSource": "Usa a sinopse do TMDB e o que a IA sabe da obra. Nenhuma fala da legenda é enviada.",
+    "talk": "Conversar"
   },
   "recap": {
     "tabs": "Tipo de revisão",

@@ -82,6 +82,37 @@ const CUSTOM_OPENERS: Record<StudyLanguage, (topic: string) => string> = {
 };
 
 export const CUSTOM_THEME_ID = "custom";
+export const EPISODE_THEME_ID = "episode";
+export const MAX_EPISODE_OVERVIEW = 1200;
+
+export const episodeContextSchema = z.object({
+  episodeId: z.string().min(1).max(64),
+  workTitle: z.string().min(1).max(200),
+  label: z.string().min(1).max(40),
+  title: z.string().max(200),
+  overview: z.string().max(MAX_EPISODE_OVERVIEW),
+});
+export type EpisodeContext = z.infer<typeof episodeContextSchema>;
+
+const EPISODE_OPENERS: Record<StudyLanguage, (title: string) => string> = {
+  en: (title) => `Hi! Let's talk about ${title}. What did you think of this episode?`,
+  "pt-BR": (title) => `Oi! Vamos conversar sobre ${title}. O que você achou deste episódio?`,
+  es: (title) => `¡Hola! Hablemos de ${title}. ¿Qué te pareció este episodio?`,
+  fr: (title) => `Salut ! Parlons de ${title}. Qu'est-ce que tu as pensé de cet épisode ?`,
+};
+
+export function episodeTheme(
+  context: EpisodeContext,
+  language: StudyLanguage,
+): { id: string; title: string; opener: string } {
+  const name = context.title ? `"${context.title}"` : context.label;
+  const title = `${context.workTitle} · ${context.label}`;
+  return {
+    id: EPISODE_THEME_ID,
+    title,
+    opener: EPISODE_OPENERS[language](`${context.workTitle}, ${name}`),
+  };
+}
 export const MAX_TOPIC_LENGTH = 60;
 export const MAX_MESSAGE_LENGTH = 500;
 export const MAX_USER_TURNS = 40;
@@ -146,6 +177,7 @@ export type Session = {
   reviewStatus: ReviewStatus;
   closedAt: Date | null;
   cardsConfirmedAt: Date | null;
+  episode: EpisodeContext | null;
   createdAt: Date;
 };
 

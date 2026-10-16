@@ -6,9 +6,11 @@ import type { CefrLevel } from "@/shared/levels";
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import {
   DIFFICULTY_KINDS,
+  episodeContextSchema,
   isReviewStatus,
   type ConversationReview,
   type Correction,
+  type EpisodeContext,
   type ReviewStatus,
   type Session,
   type Turn,
@@ -57,8 +59,15 @@ function toSession(row: SessionRow): Session {
     reviewStatus: isReviewStatus(row.reviewStatus) ? row.reviewStatus : "none",
     closedAt: row.closedAt,
     cardsConfirmedAt: row.cardsConfirmedAt,
+    episode: episodeOf(row.episodeContext),
     createdAt: row.createdAt,
   };
+}
+
+function episodeOf(value: unknown): EpisodeContext | null {
+  if (value === null || value === undefined) return null;
+  const parsed = episodeContextSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 const isId = (value: string): boolean => z.uuid().safeParse(value).success;
@@ -73,6 +82,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
     themeTitle: string;
     level: CefrLevel;
     language: StudyLanguage;
+    episode: EpisodeContext | null;
     now: Date;
   }): Promise<void> {
     await this.db.insert(conversationSessions).values({
@@ -82,6 +92,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
       themeTitle: input.themeTitle,
       level: input.level,
       language: input.language,
+      episodeContext: input.episode,
       createdAt: input.now,
       updatedAt: input.now,
     });

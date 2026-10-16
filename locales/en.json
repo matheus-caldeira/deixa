@@ -1400,7 +1400,12 @@
     "building": "Building the trail with AI",
     "buildingBody": "The AI is splitting the episode into blocks and writing questions for your level. It takes about a minute; we will let you know in the bell when it is done.",
     "personalEmpty": "Cards from your conversations become episodes here",
-    "finalChallenge": "Final challenge"
+    "finalChallenge": "Final challenge",
+    "talkTitle": "Talk about the episode",
+    "talkOptional": "Optional · with the tutor",
+    "talkNoSpoiler": "The tutor only knows the story up to {label}. It does not talk about what comes next and asks when it is not sure about a detail.",
+    "talkSource": "Uses the TMDB synopsis and what the AI knows about the show. No subtitle line is sent.",
+    "talk": "Talk"
   },
   "recap": {
     "tabs": "Review type",

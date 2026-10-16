@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { getContainer } from "@/infrastructure/container";
 import { voiceFor } from "@/modules/audio";
@@ -12,6 +13,7 @@ import {
   type Correction,
 } from "@/modules/conversations";
 import { pairOf } from "@/modules/identity";
+import { MAX_EPISODE_OVERVIEW } from "@/modules/conversations";
 import { AppError } from "@/shared/errors";
 import { scheduleJob } from "../schedule";
 import { requireUser } from "../session";
@@ -43,6 +45,40 @@ export async function startConversationAction(input: unknown): Promise<ActionRes
       level: user.preferences.level,
       language: user.preferences.targetLanguage,
       ...parsed.data,
+    });
+    sessionId = started.sessionId;
+    return null;
+  });
+  if (result.ok) redirect(`/tutor/${sessionId}`);
+  return result;
+}
+
+export async function startEpisodeConversationAction(episodeId: unknown): Promise<ActionResult<null>> {
+  const user = await requireUser();
+  let sessionId = "";
+  const result = await runAction("startEpisodeConversation", async () => {
+    const parsed = z.uuid().safeParse(episodeId);
+    if (!parsed.success) throw new AppError("EPISODE_NOT_FOUND");
+    const context = await app().getEpisodeContext(parsed.data);
+    if (!context) throw new AppError("EPISODE_NOT_FOUND");
+    const t = await getTranslations("trail");
+    const label =
+      context.media.type === "movie"
+        ? t("label.movie")
+        : t("label.episode", { season: context.season.seasonNumber, episode: context.episode.episodeNumber });
+    const started = await app().startConversation({
+      userId: user.id,
+      themeId: "episode",
+      customTopic: null,
+      level: user.preferences.level,
+      language: user.preferences.targetLanguage,
+      episode: {
+        episodeId: context.episode.id,
+        workTitle: context.media.title,
+        label,
+        title: context.episode.title,
+        overview: context.episode.overview.slice(0, MAX_EPISODE_OVERVIEW),
+      },
     });
     sessionId = started.sessionId;
     return null;

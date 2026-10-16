@@ -44,6 +44,10 @@ de exercícios só existia para episódios do catálogo, que é compartilhado.
 - **Pacote pessoal.** A série entra no `.deixa.zip` pessoal como progresso: temporadas, episódios, cards e blocos
   concluídos. Importar soma sem duplicar e só preenche nome e descrição quando estão vazios no destino.
 
+- **Conversa sobre o episódio (16/10/2026).** Tema `episode` aberto pela trilha da obra. O contexto (obra, rótulo,
+  título e sinopse do TMDB) é montado no servidor e guardado na sessão; o tutor só fala até aquele episódio,
+  recusa spoiler e pergunta quando não sabe. Nenhuma fala da legenda vai para a IA.
+
 ## Consequências
 
 - Migrações 0023 (colunas da conversa) e 0024 (tabelas da série).
