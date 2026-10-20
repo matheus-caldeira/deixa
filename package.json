@@ -31,6 +31,7 @@
     "db:reset": "node scripts/reset-dev-db.mjs && pnpm db:migrate && pnpm db:seed",
     "fixtures:plans": "tsx --env-file=.env scripts/generate-plan-fixtures.ts",
     "fixtures:catalog": "tsx --env-file=.env scripts/generate-catalog-fixture.ts",
+    "fixtures:levels": "tsx --env-file=.env scripts/generate-level-guide.ts",
     "screenshots": "node scripts/screenshots.mjs",
     "poc": "node scripts/serve-poc.mjs",
     "desktop:check": "cd src-tauri && PATH=\"$HOME/.cargo/bin:$PATH\" cargo check",

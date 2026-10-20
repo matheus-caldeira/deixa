@@ -260,6 +260,12 @@ Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
 | 128 | Nó de recapitulação na Revisar            | Aba Revisar com "Cards" e "Episódios"; episódio concluído vence em 1, 7 e 30 dias; lição com resumo, falas estudadas, cards e erros do episódio                                                                                                               | [x]    |
 | 129 | Conversa sobre o episódio, sem spoiler    | Tema do tutor por episódio com a sinopse do TMDB e o conhecimento da IA, sem texto da legenda; instrução de não passar do episódio e perguntar quando não souber                                                                                              | [x]    |
 
+## Etapa 19: guia de níveis das obras (20/10/2026)
+
+| #   | Tarefa                                  | Critério de pronto                                                                                                                                           | Estado |
+| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| 130 | Guia de níveis do QECR a partir do TMDB | `fixtures/level-guide.json` com pelo menos 40 obras em inglês por nível, faixa, motivos, nota e votos do TMDB; gerado por `pnpm fixtures:levels` sem sinopse | [x]    |
+
 ## Próximo
 
 Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
