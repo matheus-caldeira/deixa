@@ -2,6 +2,9 @@ export * from "./domain/catalog";
 export type {
   CatalogEntry,
   CatalogRepository,
+  DiscoverQuery,
+  DiscoverSort,
+  WorkPage,
   EpisodeMetadata,
   EpisodeProgressEntry,
   EpisodeProgressRepository,
@@ -15,6 +18,7 @@ export type {
   WorkDetails,
   WorkSummary,
 } from "./application/ports";
+export { DISCOVER_SORTS } from "./application/ports";
 export { makeRegisterWork, makeRefreshWork } from "./application/register-work";
 export { makeLoadSeasonEpisodes } from "./application/load-season-episodes";
 export { makeSearchWorks, type WorkSearchResult } from "./application/search-works";
@@ -27,8 +31,18 @@ export {
   type InProgressEntry,
   type MediaDetail,
 } from "./application/browse-catalog";
+export { makeBrowseWorks, type BrowsePage, type BrowsedWork } from "./application/browse-works";
+export {
+  MAX_LEVEL_REASON_CHARS,
+  makeRateWorkLevel,
+  type LevelRater,
+  type LevelRaterInput,
+  type RatedWork,
+} from "./application/rate-work-level";
 export {
   LEVEL_FETCH_FAILURES,
+  LEVEL_RATING_KINDS,
+  makeExportLevelRatings,
   makeAddLevelSource,
   makeGetWorkLevelRatings,
   makeListLevelSources,
@@ -39,6 +53,8 @@ export {
   makeSyncLevelSources,
   type LevelFetchFailure,
   type LevelRating,
+  type LevelRatingKind,
+  type LevelRatingsExport,
   type LevelSource,
   type WorkLevelRatings,
 } from "./application/level-sources";

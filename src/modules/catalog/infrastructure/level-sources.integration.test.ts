@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDatabase, type DatabaseHandle } from "@/infrastructure/database/client";
 import { runMigrations } from "@/infrastructure/database/migrate";
+import { DrizzleAiLevelRatingRepository } from "./drizzle-ai-level-rating-repository";
 import { DrizzleLevelSourceRepository } from "./drizzle-level-source-repository";
 
 const TEST_DATABASE = "deixa_test_level_sources";
@@ -119,5 +120,24 @@ describe.skipIf(!baseUrl)("fontes de nível no Postgres real", () => {
     await sources.remove(ROOT);
     expect((await sources.list()).map((source) => source.id)).toEqual([OTHER]);
     expect(await sources.ratingsFor(["tv:1668"])).toEqual(new Map());
+  });
+
+  it("guarda uma avaliação da IA por obra e troca ao avaliar de novo", async () => {
+    const ai = new DrizzleAiLevelRatingRepository(handle.db);
+    const base = {
+      externalId: "tv:549",
+      reason: "Jargão jurídico.",
+      model: "m1",
+      ratedBy: null,
+      ratedAt: NOW,
+    };
+    await ai.save({ ...base, range: ["B2", "C1"] });
+    await ai.save({ ...base, range: ["B1", "B2"], model: "m2" });
+    expect(await ai.listIds()).toEqual(["tv:549"]);
+    expect((await ai.ratingsFor(["tv:549", "tv:1"])).get("tv:549")).toMatchObject({
+      range: ["B1", "B2"],
+      model: "m2",
+    });
+    expect(await sources.ratedIds()).toEqual([]);
   });
 });

@@ -48,3 +48,13 @@ export const levelRatings = pgTable(
     index("level_ratings_external").on(table.externalId),
   ],
 );
+
+export const aiLevelRatings = pgTable("ai_level_ratings", {
+  externalId: text("external_id").primaryKey(),
+  levelMin: text("level_min").notNull(),
+  levelMax: text("level_max").notNull(),
+  reason: text("reason").notNull(),
+  model: text("model").notNull(),
+  ratedBy: uuid("rated_by").references(() => users.id, { onDelete: "set null" }),
+  ratedAt: timestamp("rated_at", { withTimezone: true }).notNull(),
+});

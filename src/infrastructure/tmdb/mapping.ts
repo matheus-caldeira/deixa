@@ -92,6 +92,8 @@ export function mapWorkList(
         genres: (result.genre_ids ?? []).flatMap((id) => genreNames.get(id) ?? []),
         originalLanguage: filled(result.original_language) || null,
         popularity: result.popularity ?? 0,
+        voteAverage: result.vote_average ?? null,
+        voteCount: result.vote_count ?? null,
       },
     ];
   });

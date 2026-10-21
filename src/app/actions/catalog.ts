@@ -398,3 +398,30 @@ export async function studyEpisodeAction(episodeId: unknown): Promise<ActionResu
     return null;
   });
 }
+
+const tmdbWorkSchema = z.object({ type: mediaTypeSchema, externalId: z.string().regex(/^(tv|movie):\d+$/) });
+
+export async function openTmdbWorkAction(input: unknown): Promise<ActionResult<{ mediaId: string }>> {
+  const user = await requireUser();
+  return runAction("openTmdbWork", async () => {
+    const parsed = tmdbWorkSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const { mediaId } = await app().registerWork({ userId: user.id, ...parsed.data });
+    revalidatePath("/catalog");
+    return { mediaId };
+  });
+}
+
+export async function rateWorkLevelAction(
+  input: unknown,
+): Promise<ActionResult<{ range: string; reason: string; ratings: number }>> {
+  const user = await requireUser();
+  return runAction("rateWorkLevel", async () => {
+    const parsed = tmdbWorkSchema.safeParse(input);
+    if (!parsed.success) throw new AppError("INVALID_INPUT");
+    const rated = await app().rateWorkLevel({ userId: user.id, ...parsed.data });
+    revalidatePath("/catalog", "layout");
+    const [min, max] = rated.range ?? rated.ai.range;
+    return { range: `${min}–${max}`, reason: rated.ai.reason, ratings: rated.ratings.length };
+  });
+}

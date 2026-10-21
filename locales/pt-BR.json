@@ -249,7 +249,8 @@
       "levelSourceUrlInvalid": "Use um endereço http ou https completo, sem usuário e senha.",
       "levelSourceExists": "Essa URL já está na lista.",
       "levelSourceLimit": "Limite de {limit} fontes atingido. Remova uma antes de adicionar outra.",
-      "levelSourceChild": "Esta URL vem de outra fonte. Desligue-a ou remova a fonte que a lista."
+      "levelSourceChild": "Esta URL vem de outra fonte. Desligue-a ou remova a fonte que a lista.",
+      "levelRatingNoAi": "Configure uma chave de IA em Configurações para avaliar o nível."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -327,7 +328,8 @@
       "none": "Sem legenda"
     },
     "levelRatings": "Nível pela mediana de {count, plural, one {# avaliação} other {# avaliações}}:",
-    "levelRatingBuiltin": "guia do {app}"
+    "levelRatingBuiltin": "guia do {app}",
+    "levelRatingAi": "IA"
   },
   "home": {
     "continue": "Continuar",
@@ -792,7 +794,8 @@
       "tutor": "Tutor",
       "lesson_plan": "Plano de aula",
       "suggestions": "Sugestões",
-      "embeddings": "Embeddings"
+      "embeddings": "Embeddings",
+      "level_rating": "Nível das obras"
     },
     "byModel": "Por modelo",
     "yourKey": "sua chave",
@@ -1465,5 +1468,44 @@
     "adding": "Enviando…",
     "syncAll": "Baixar todas de novo",
     "queued": "Download na fila. A lista atualiza sozinha quando terminar."
+  },
+  "tmdbBrowse": {
+    "title": "Catálogo do TMDB",
+    "intro": "Todas as séries e filmes do TMDB. O nível vem do guia, das fontes de nível e das avaliações por IA; sem nenhuma, avalie com a IA. Abrir uma obra a adiciona ao catálogo compartilhado.",
+    "back": "Voltar ao Explorar",
+    "export": "Exportar níveis",
+    "search": "Buscar no TMDB",
+    "searchingFor": "Resultados para \"{query}\".",
+    "clearSearch": "Voltar à lista",
+    "typeLabel": "Tipo",
+    "languageLabel": "Idioma original",
+    "sortLabel": "Ordem",
+    "types": {
+      "series": "Séries",
+      "movie": "Filmes"
+    },
+    "allLanguages": "Todos os idiomas",
+    "sorts": {
+      "popular": "Populares",
+      "votes": "Mais votadas",
+      "rating": "Mais bem avaliadas"
+    },
+    "vote": "★ {value}",
+    "noLevel": "Sem nível",
+    "ratings": "{count, plural, one {# avaliação de nível} other {# avaliações de nível}}",
+    "ai": "inclui IA",
+    "open": "Abrir",
+    "openInCatalog": "No catálogo",
+    "rate": "Avaliar com IA",
+    "rateAgain": "Avaliar de novo",
+    "rating": "Avaliando…",
+    "failed": "O TMDB não respondeu agora. Tente de novo em instantes.",
+    "empty": "Nada encontrado com esses filtros.",
+    "pages": "Páginas",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "pageOf": "Página {page} de {total}",
+    "attribution": "Dados de obras do TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.",
+    "seeAll": "Ver todo o catálogo do TMDB"
   }
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import type { LevelRatingKind } from "@/modules/catalog";
 import { APP_NAME } from "@/shared/app";
 import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
@@ -37,7 +38,7 @@ export type MediaDetailView = {
   overview: string;
   fit: LevelFit;
   levelRange: string;
-  levelRatings: { source: string | null; range: string }[];
+  levelRatings: { kind: LevelRatingKind; source: string | null; range: string }[];
   accent: string | null;
   uploaderName: string | null;
   canRefresh: boolean;
@@ -153,7 +154,15 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
         <p className="small muted">
           {t("levelRatings", { count: media.levelRatings.length })}{" "}
           {media.levelRatings
-            .map((rating) => `${rating.source ?? t("levelRatingBuiltin", { app: APP_NAME })} ${rating.range}`)
+            .map((rating) => {
+              const label =
+                rating.kind === "builtin"
+                  ? t("levelRatingBuiltin", { app: APP_NAME })
+                  : rating.kind === "ai"
+                    ? t("levelRatingAi")
+                    : rating.source;
+              return `${label} ${rating.range}`;
+            })
             .join(" · ")}
         </p>
       ) : null}

@@ -3,10 +3,12 @@ import { AppError } from "@/shared/errors";
 import type { CefrLevel } from "@/shared/levels";
 import type { MediaType, PosterColors } from "../domain/catalog";
 import type {
+  DiscoverQuery,
   EpisodeMetadata,
   MetadataProvider,
   WorkCandidate,
   WorkDetails,
+  WorkPage,
   WorkSummary,
 } from "../application/ports";
 
@@ -206,6 +208,8 @@ function findWork(externalId: string): FakeWork {
   return work;
 }
 
+const PAGE_SIZE = 20;
+
 export class FakeMetadataProvider implements MetadataProvider {
   readonly name = "fake" as const;
   readonly calls = { search: 0, work: 0, season: 0 };
@@ -241,6 +245,23 @@ export class FakeMetadataProvider implements MetadataProvider {
         ? [toCandidate(work, position)]
         : [],
     );
+  }
+
+  private async listPopularWorksFor(language: StudyLanguage | null): Promise<WorkCandidate[]> {
+    const all = FAKE_WORKS.map(toCandidate);
+    return language
+      ? all.filter((work) => normalizeLanguageTag(work.originalLanguage ?? "") === language)
+      : all;
+  }
+
+  async discoverWorks(query: DiscoverQuery): Promise<WorkPage> {
+    const all = (await this.listPopularWorksFor(query.language)).filter((work) => work.type === query.type);
+    const start = (Math.max(1, query.page) - 1) * PAGE_SIZE;
+    return {
+      works: all.slice(start, start + PAGE_SIZE),
+      page: Math.max(1, query.page),
+      totalPages: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
+    };
   }
 
   async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {

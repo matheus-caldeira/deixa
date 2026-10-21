@@ -1,9 +1,12 @@
 import type {
+  DiscoverQuery,
+  DiscoverSort,
   EpisodeMetadata,
   MediaType,
   MetadataProvider,
   WorkCandidate,
   WorkDetails,
+  WorkPage,
   WorkSummary,
 } from "@/modules/catalog";
 import { AppError } from "@/shared/errors";
@@ -38,6 +41,14 @@ const POPULAR_FILTERS = {
   "vote_count.gte": "400",
   include_adult: "false",
   page: "1",
+};
+
+const MAX_DISCOVER_PAGE = 500;
+const MIN_VOTES_FOR_RATING = "300";
+const DISCOVER_SORT: Record<DiscoverSort, Record<string, string>> = {
+  popular: { sort_by: "popularity.desc" },
+  votes: { sort_by: "vote_count.desc" },
+  rating: { sort_by: "vote_average.desc", "vote_count.gte": MIN_VOTES_FOR_RATING },
 };
 
 export class TmdbMetadataProvider implements MetadataProvider {
@@ -87,6 +98,29 @@ export class TmdbMetadataProvider implements MetadataProvider {
       }),
     );
     return lists.flat();
+  }
+
+  async discoverWorks(query: DiscoverQuery): Promise<WorkPage> {
+    const page = Math.min(Math.max(1, Math.trunc(query.page)), MAX_DISCOVER_PAGE);
+    const [list, genres] = await Promise.all([
+      this.client.get(
+        `discover/${TMDB_KIND[query.type]}`,
+        {
+          ...DISCOVER_SORT[query.sort],
+          include_adult: "false",
+          page: String(page),
+          language: PORTUGUESE,
+          ...(query.language ? { with_original_language: TMDB_LANGUAGE[query.language] } : {}),
+        },
+        workListSchema,
+      ),
+      this.genresFor(query.type),
+    ]);
+    return {
+      works: mapWorkList(query.type, list, genres),
+      page,
+      totalPages: Math.min(list.total_pages ?? 1, MAX_DISCOVER_PAGE),
+    };
   }
 
   async searchWorks(query: string): Promise<WorkSummary[]> {

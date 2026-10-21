@@ -7,6 +7,7 @@ export const AI_OPERATIONS = [
   "lesson_plan",
   "suggestions",
   "embeddings",
+  "level_rating",
 ] as const;
 export type AiOperation = (typeof AI_OPERATIONS)[number];
 

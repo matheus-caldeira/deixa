@@ -189,6 +189,8 @@ describe("lista de obras candidatas do TMDB", () => {
           genre_ids: [18, 999],
           original_language: "en",
           popularity: 42.5,
+          vote_average: 7.8,
+          vote_count: 1200,
         },
         { id: 11, name: "Sem sinopse", overview: "" },
         { id: 12, overview: "Sem título." },
@@ -208,6 +210,8 @@ describe("lista de obras candidatas do TMDB", () => {
         genres: ["Drama"],
         originalLanguage: "en",
         popularity: 42.5,
+        voteAverage: 7.8,
+        voteCount: 1200,
       },
     ]);
   });

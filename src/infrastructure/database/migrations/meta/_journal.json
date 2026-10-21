@@ -211,6 +211,13 @@
       "when": 1792544709823,
       "tag": "0029_level_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792548718325,
+      "tag": "0030_ai_level_ratings",
+      "breakpoints": true
     }
   ]
 }

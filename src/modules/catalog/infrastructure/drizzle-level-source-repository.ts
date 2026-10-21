@@ -146,6 +146,15 @@ export class DrizzleLevelSourceRepository implements LevelSourceRepository {
       .where(eq(levelSources.id, id));
   }
 
+  async ratedIds(): Promise<string[]> {
+    const rows = await this.db
+      .selectDistinct({ externalId: levelRatings.externalId })
+      .from(levelRatings)
+      .innerJoin(levelSources, eq(levelSources.id, levelRatings.sourceId))
+      .where(and(eq(levelSources.enabled, true), eq(levelSources.status, "READY")));
+    return rows.map((row) => row.externalId);
+  }
+
   async ratingsFor(externalIds: readonly string[]): Promise<Map<string, LevelRating[]>> {
     const ratings = new Map<string, LevelRating[]>();
     if (externalIds.length === 0) return ratings;
@@ -173,6 +182,7 @@ export class DrizzleLevelSourceRepository implements LevelSourceRepository {
       if (!isCefrLevel(row.levelMin) || !isCefrLevel(row.levelMax)) continue;
       const list = ratings.get(row.externalId) ?? [];
       list.push({
+        kind: "source",
         sourceId: row.sourceId,
         sourceName: row.sourceName ?? new URL(row.url).hostname,
         range: [row.levelMin, row.levelMax],

@@ -249,7 +249,8 @@
       "levelSourceUrlInvalid": "Use a full http or https address, without user and password.",
       "levelSourceExists": "This URL is already on the list.",
       "levelSourceLimit": "Limit of {limit} sources reached. Remove one before adding another.",
-      "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it."
+      "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it.",
+      "levelRatingNoAi": "Set up an AI key in Settings to rate the level."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -327,7 +328,8 @@
       "none": "No subtitle"
     },
     "levelRatings": "Level from the median of {count, plural, one {# rating} other {# ratings}}:",
-    "levelRatingBuiltin": "{app} guide"
+    "levelRatingBuiltin": "{app} guide",
+    "levelRatingAi": "AI"
   },
   "home": {
     "continue": "Continue",
@@ -792,7 +794,8 @@
       "tutor": "Tutor",
       "lesson_plan": "Lesson plan",
       "suggestions": "Suggestions",
-      "embeddings": "Embeddings"
+      "embeddings": "Embeddings",
+      "level_rating": "Title levels"
     },
     "byModel": "By model",
     "yourKey": "your key",
@@ -1465,5 +1468,44 @@
     "adding": "Sending…",
     "syncAll": "Download all again",
     "queued": "Download queued. The list updates by itself when it finishes."
+  },
+  "tmdbBrowse": {
+    "title": "TMDB catalog",
+    "intro": "Every show and movie on TMDB. The level comes from the guide, the level sources and AI ratings; when there is none, rate it with AI. Opening a title adds it to the shared catalog.",
+    "back": "Back to Explore",
+    "export": "Export levels",
+    "search": "Search TMDB",
+    "searchingFor": "Results for \"{query}\".",
+    "clearSearch": "Back to the list",
+    "typeLabel": "Type",
+    "languageLabel": "Original language",
+    "sortLabel": "Order",
+    "types": {
+      "series": "Shows",
+      "movie": "Movies"
+    },
+    "allLanguages": "All languages",
+    "sorts": {
+      "popular": "Popular",
+      "votes": "Most voted",
+      "rating": "Top rated"
+    },
+    "vote": "★ {value}",
+    "noLevel": "No level",
+    "ratings": "{count, plural, one {# level rating} other {# level ratings}}",
+    "ai": "includes AI",
+    "open": "Open",
+    "openInCatalog": "In catalog",
+    "rate": "Rate with AI",
+    "rateAgain": "Rate again",
+    "rating": "Rating…",
+    "failed": "TMDB did not answer right now. Try again in a moment.",
+    "empty": "Nothing found with these filters.",
+    "pages": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {total}",
+    "attribution": "Title data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+    "seeAll": "See the whole TMDB catalog"
   }
 }

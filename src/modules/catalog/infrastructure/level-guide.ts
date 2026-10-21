@@ -4,10 +4,12 @@ import type { MediaType } from "../domain/catalog";
 import { RATING_KEY_PATTERN, levelRangeTextSchema, type LevelRange } from "../domain/level-ratings";
 import type { BuiltinLevelGuide } from "../application/level-sources";
 import type {
+  DiscoverQuery,
   EpisodeMetadata,
   MetadataProvider,
   WorkCandidate,
   WorkDetails,
+  WorkPage,
   WorkSummary,
 } from "../application/ports";
 import rawGuide from "./level-guide.json";
@@ -18,6 +20,7 @@ const guide: Record<string, LevelRange> = guideSchema.parse(rawGuide);
 
 export const builtinLevelGuide: BuiltinLevelGuide = {
   count: Object.keys(guide).length,
+  ids: () => Object.keys(guide),
   rangeOf: (externalId) => guide[externalId] ?? null,
 };
 
@@ -71,5 +74,10 @@ export class LevelGuidedMetadataProvider implements MetadataProvider {
 
   async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {
     return this.guided(await this.inner.listPopularWorks(language));
+  }
+
+  async discoverWorks(query: DiscoverQuery): Promise<WorkPage> {
+    const page = await this.inner.discoverWorks(query);
+    return { ...page, works: await this.guided(page.works) };
   }
 }

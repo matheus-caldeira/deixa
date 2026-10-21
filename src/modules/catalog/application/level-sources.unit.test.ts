@@ -17,7 +17,7 @@ import {
   type LevelSource,
   type LevelSourceRepository,
 } from "./level-sources";
-import { InMemoryCatalog } from "./testing/fakes";
+import { InMemoryAiLevelRatings, InMemoryCatalog } from "./testing/fakes";
 
 const ADMIN = { userId: "admin", isAdmin: true };
 const PERSON = { userId: "ana", isAdmin: false };
@@ -97,6 +97,14 @@ class InMemoryLevelSources implements LevelSourceRepository {
     if (source)
       Object.assign(source, { status: "FAILED", lastError: failure.reason, lastStatus: failure.status });
   }
+  async ratedIds() {
+    const ids = new Set<string>();
+    for (const source of this.sources) {
+      if (!source.enabled || source.status !== "READY") continue;
+      for (const externalId of this.ratings.get(source.id)?.keys() ?? []) ids.add(externalId);
+    }
+    return [...ids];
+  }
   async ratingsFor(externalIds: readonly string[]) {
     const found = new Map<string, LevelRating[]>();
     for (const source of this.sources) {
@@ -105,7 +113,7 @@ class InMemoryLevelSources implements LevelSourceRepository {
         if (!externalIds.includes(externalId)) continue;
         found.set(externalId, [
           ...(found.get(externalId) ?? []),
-          { sourceId: source.id, sourceName: source.name, range },
+          { kind: "source" as const, sourceId: source.id, sourceName: source.name, range },
         ]);
       }
     }
@@ -124,8 +132,10 @@ function setup() {
     catalog,
     clock,
     ids: new SequentialIds("ls"),
+    aiRatings: new InMemoryAiLevelRatings(),
     builtin: {
       count: 1,
+      ids: () => ["tv:1668"],
       rangeOf: (externalId: string): LevelRange | null => (externalId === "tv:1668" ? ["B1", "B2"] : null),
     },
     fetcher: {

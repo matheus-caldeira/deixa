@@ -36,7 +36,11 @@ import {
   makeGetEpisodeContext,
   makeGetMediaDetail,
   makeAddLevelSource,
+  makeBrowseWorks,
+  makeExportLevelRatings,
   makeGetWorkLevelRatings,
+  makeRateWorkLevel,
+  type LevelRater,
   makeListLevelSources,
   makeLoadSeasonEpisodes,
   makeRefreshWork,
@@ -54,6 +58,8 @@ import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizz
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { LevelGuidedMetadataProvider, builtinLevelGuide } from "@/modules/catalog/infrastructure/level-guide";
 import { DrizzleLevelSourceRepository } from "@/modules/catalog/infrastructure/drizzle-level-source-repository";
+import { DrizzleAiLevelRatingRepository } from "@/modules/catalog/infrastructure/drizzle-ai-level-rating-repository";
+import { AiLevelRater } from "./ai/ai-level-rater";
 import { HttpLevelSourceFetcher } from "@/modules/catalog/infrastructure/http-level-source-fetcher";
 import {
   makeAddCards,
@@ -317,6 +323,7 @@ export function buildContainer(options: ContainerOptions) {
     sources: new DrizzleLevelSourceRepository(db),
     fetcher: new HttpLevelSourceFetcher({ allowPrivateNetwork: env.LEVEL_SOURCES_ALLOW_PRIVATE_NETWORK }),
     builtin: builtinLevelGuide,
+    aiRatings: new DrizzleAiLevelRatingRepository(db),
     catalog,
     clock,
     ids,
@@ -566,9 +573,19 @@ export function buildContainer(options: ContainerOptions) {
     ids,
   };
   const catalogDeps = { catalog, progress: catalog, clock, ids };
+  const resolveLevelRater = async (userId: string): Promise<LevelRater | null> => {
+    const access = await aiAccessFor(userId);
+    if (!access) return null;
+    const meter = aiMeterFor(userId, access);
+    await meter.ensureAllowed();
+    return new AiLevelRater(access, access.model, { meter, locale: await localeOf(userId) });
+  };
   const buildCatalogUseCases = (metadata: MetadataProvider) => {
     const deps = { ...catalogDeps, metadata };
+    const levelDeps = { ...levelSourceDeps, metadata, resolveRater: resolveLevelRater };
     return {
+      browseWorks: makeBrowseWorks(levelDeps),
+      rateWorkLevel: makeRateWorkLevel(levelDeps),
       searchWorks: makeSearchWorks(deps),
       registerWork: makeRegisterWork(deps),
       refreshWork: makeRefreshWork(deps),
@@ -1120,6 +1137,11 @@ export function buildContainer(options: ContainerOptions) {
 
     searchWorks: async (userId: string, query: string) => (await catalogFor(userId)).searchWorks(query),
     listLevelSources: makeListLevelSources(levelSourceDeps),
+    exportLevelRatings: makeExportLevelRatings(levelSourceDeps),
+    browseWorks: async (userId: string, input: Parameters<ReturnType<typeof makeBrowseWorks>>[0]) =>
+      (await catalogFor(userId)).browseWorks(input),
+    rateWorkLevel: async (input: { userId: string; type: MediaType; externalId: string }) =>
+      (await catalogFor(input.userId)).rateWorkLevel(input),
     addLevelSource: makeAddLevelSource(levelSourceDeps),
     removeLevelSource: makeRemoveLevelSource(levelSourceDeps),
     setLevelSourceEnabled: makeSetLevelSourceEnabled(levelSourceDeps),

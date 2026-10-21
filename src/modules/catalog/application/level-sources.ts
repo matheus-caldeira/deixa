@@ -39,7 +39,29 @@ export type LevelSource = {
   createdAt: Date;
 };
 
-export type LevelRating = { sourceId: string | null; sourceName: string | null; range: LevelRange };
+export const LEVEL_RATING_KINDS = ["builtin", "source", "ai"] as const;
+export type LevelRatingKind = (typeof LEVEL_RATING_KINDS)[number];
+export type LevelRating = {
+  kind: LevelRatingKind;
+  sourceId: string | null;
+  sourceName: string | null;
+  range: LevelRange;
+};
+
+export type AiLevelRating = {
+  externalId: string;
+  range: LevelRange;
+  reason: string;
+  model: string;
+  ratedBy: string | null;
+  ratedAt: Date;
+};
+
+export interface AiLevelRatingRepository {
+  save(rating: AiLevelRating): Promise<void>;
+  ratingsFor(externalIds: readonly string[]): Promise<Map<string, AiLevelRating>>;
+  listIds(): Promise<string[]>;
+}
 
 export interface LevelSourceRepository {
   list(): Promise<LevelSource[]>;
@@ -64,6 +86,7 @@ export interface LevelSourceRepository {
     failure: { reason: LevelFetchFailure; status: number | null; now: Date },
   ): Promise<void>;
   ratingsFor(externalIds: readonly string[]): Promise<Map<string, LevelRating[]>>;
+  ratedIds(): Promise<string[]>;
 }
 
 export type LevelFetchResult =
@@ -75,6 +98,7 @@ export interface LevelSourceFetcher {
 
 export type BuiltinLevelGuide = {
   count: number;
+  ids(): string[];
   rangeOf(externalId: string): LevelRange | null;
 };
 
@@ -84,10 +108,13 @@ type Deps = {
   sources: LevelSourceRepository;
   fetcher: LevelSourceFetcher;
   builtin: BuiltinLevelGuide;
+  aiRatings: AiLevelRatingRepository;
   catalog: CatalogRepository;
   clock: Clock;
   ids: IdGenerator;
 };
+
+type ResolveDeps = Pick<Deps, "sources" | "builtin" | "aiRatings">;
 
 const TMDB = "tmdb";
 
@@ -97,19 +124,24 @@ function requireAdmin(actor: Actor): void {
 
 export type WorkLevelRatings = { range: LevelRange | null; ratings: LevelRating[] };
 
-export function makeResolveLevelRatings(deps: Pick<Deps, "sources" | "builtin">) {
+export function makeResolveLevelRatings(deps: ResolveDeps) {
   return async function resolveLevelRatings(
     externalIds: readonly string[],
   ): Promise<Map<string, WorkLevelRatings>> {
     const unique = [...new Set(externalIds)];
-    const stored =
-      unique.length > 0 ? await deps.sources.ratingsFor(unique) : new Map<string, LevelRating[]>();
     const resolved = new Map<string, WorkLevelRatings>();
+    if (unique.length === 0) return resolved;
+    const [stored, fromAi] = await Promise.all([
+      deps.sources.ratingsFor(unique),
+      deps.aiRatings.ratingsFor(unique),
+    ]);
     for (const externalId of unique) {
       const builtin = deps.builtin.rangeOf(externalId);
-      const ratings = [
-        ...(builtin ? [{ sourceId: null, sourceName: null, range: builtin }] : []),
+      const ai = fromAi.get(externalId);
+      const ratings: LevelRating[] = [
+        ...(builtin ? [{ kind: "builtin" as const, sourceId: null, sourceName: null, range: builtin }] : []),
         ...(stored.get(externalId) ?? []),
+        ...(ai ? [{ kind: "ai" as const, sourceId: null, sourceName: ai.model, range: ai.range }] : []),
       ];
       if (ratings.length === 0) continue;
       resolved.set(externalId, {
@@ -155,7 +187,9 @@ async function findOwned(deps: Pick<Deps, "sources">, sourceId: string): Promise
   return source;
 }
 
-export function makeRecomputeCatalogLevels(deps: Pick<Deps, "sources" | "builtin" | "catalog">) {
+export function makeRecomputeCatalogLevels(
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">,
+) {
   const resolve = makeResolveLevelRatings(deps);
   return async function recomputeCatalogLevels(): Promise<{ updated: number }> {
     const media = (await deps.catalog.listCatalog())
@@ -173,7 +207,7 @@ export function makeRecomputeCatalogLevels(deps: Pick<Deps, "sources" | "builtin
   };
 }
 
-export function makeRemoveLevelSource(deps: Pick<Deps, "sources" | "builtin" | "catalog">) {
+export function makeRemoveLevelSource(deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">) {
   const recompute = makeRecomputeCatalogLevels(deps);
   return async function removeLevelSource(input: { actor: Actor; sourceId: string }): Promise<void> {
     requireAdmin(input.actor);
@@ -184,7 +218,9 @@ export function makeRemoveLevelSource(deps: Pick<Deps, "sources" | "builtin" | "
   };
 }
 
-export function makeSetLevelSourceEnabled(deps: Pick<Deps, "sources" | "builtin" | "catalog" | "clock">) {
+export function makeSetLevelSourceEnabled(
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog" | "clock">,
+) {
   const recompute = makeRecomputeCatalogLevels(deps);
   return async function setLevelSourceEnabled(input: {
     actor: Actor;
@@ -262,12 +298,56 @@ export function makeSyncLevelSources(deps: Deps) {
   };
 }
 
-export function makeGetWorkLevelRatings(deps: Pick<Deps, "sources" | "builtin" | "catalog">) {
+export function makeGetWorkLevelRatings(deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">) {
   const resolve = makeResolveLevelRatings(deps);
   return async function getWorkLevelRatings(input: { mediaId: string }): Promise<WorkLevelRatings> {
     const media = await deps.catalog.findMediaById(input.mediaId);
     if (!media) throw new AppError("MEDIA_NOT_FOUND");
     if (media.metadataProvider !== TMDB) return { range: null, ratings: [] };
     return (await resolve([media.externalId])).get(media.externalId) ?? { range: null, ratings: [] };
+  };
+}
+
+export type LevelRatingsExport = {
+  name: string;
+  exportedAt: string;
+  count: number;
+  ratings: Record<string, string>;
+  ai: Record<string, { range: string; reason: string; model: string; ratedAt: string }>;
+};
+
+const rangeText = ([min, max]: LevelRange) => (min === max ? min : `${min}-${max}`);
+
+export function makeExportLevelRatings(deps: ResolveDeps & Pick<Deps, "clock">) {
+  const resolve = makeResolveLevelRatings(deps);
+  return async function exportLevelRatings(input: { name: string }): Promise<LevelRatingsExport> {
+    const [fromSources, fromAi] = await Promise.all([deps.sources.ratedIds(), deps.aiRatings.listIds()]);
+    const ids = [...new Set([...deps.builtin.ids(), ...fromSources, ...fromAi])].sort();
+    const resolved = await resolve(ids);
+    const aiRatings = await deps.aiRatings.ratingsFor(fromAi);
+    const ratings: Record<string, string> = {};
+    for (const id of ids) {
+      const range = resolved.get(id)?.range;
+      if (range) ratings[id] = rangeText(range);
+    }
+    const ai: LevelRatingsExport["ai"] = {};
+    for (const id of [...fromAi].sort()) {
+      const rating = aiRatings.get(id);
+      if (rating) {
+        ai[id] = {
+          range: rangeText(rating.range),
+          reason: rating.reason,
+          model: rating.model,
+          ratedAt: rating.ratedAt.toISOString(),
+        };
+      }
+    }
+    return {
+      name: input.name,
+      exportedAt: deps.clock.now().toISOString(),
+      count: Object.keys(ratings).length,
+      ratings,
+      ai,
+    };
   };
 }

@@ -69,6 +69,7 @@ export default async function MediaDetailPage(props: {
         fit: fitFor(user.preferences.level, media.levelMin, media.levelMax),
         levelRange: `${media.levelMin}–${media.levelMax}`,
         levelRatings: levelRatings.ratings.map((rating) => ({
+          kind: rating.kind,
           source: rating.sourceName,
           range: `${rating.range[0]}–${rating.range[1]}`,
         })),

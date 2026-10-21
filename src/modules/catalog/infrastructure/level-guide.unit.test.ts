@@ -39,6 +39,7 @@ const inner: MetadataProvider = {
   getSeasonEpisodes: async () => [],
   listRelatedWorks: async () => [candidate(FRIENDS_TMDB_ID), candidate(UNKNOWN_TMDB_ID)],
   listPopularWorks: async () => [],
+  discoverWorks: async () => ({ works: [candidate(FRIENDS_TMDB_ID)], page: 1, totalPages: 1 }),
 };
 
 describe("guia de níveis", () => {
@@ -74,5 +75,7 @@ describe("guia de níveis", () => {
     expect(related.map((work) => work.levelRange)).toEqual([["B1", "B2"], undefined]);
     expect((await provider.searchWorks("friends"))[0]?.levelRange).toEqual(["B1", "B2"]);
     expect(asked).toContainEqual([FRIENDS_TMDB_ID, UNKNOWN_TMDB_ID]);
+    const page = await provider.discoverWorks({ type: "series", language: null, sort: "popular", page: 1 });
+    expect(page.works[0]?.levelRange).toEqual(["B1", "B2"]);
   });
 });

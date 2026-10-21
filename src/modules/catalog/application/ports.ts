@@ -30,7 +30,19 @@ export type WorkCandidate = WorkSummary & {
   genres: string[];
   originalLanguage: string | null;
   popularity: number;
+  voteAverage?: number | null;
+  voteCount?: number | null;
 };
+
+export const DISCOVER_SORTS = ["popular", "votes", "rating"] as const;
+export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
+export type DiscoverQuery = {
+  type: MediaType;
+  language: StudyLanguage | null;
+  sort: DiscoverSort;
+  page: number;
+};
+export type WorkPage = { works: WorkCandidate[]; page: number; totalPages: number };
 
 export type SeasonSummary = { seasonNumber: number; title: string; episodeCount: number | null };
 
@@ -55,6 +67,7 @@ export interface MetadataProvider {
   getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]>;
   listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]>;
   listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]>;
+  discoverWorks(query: DiscoverQuery): Promise<WorkPage>;
 }
 
 export type MediaUpsert = {

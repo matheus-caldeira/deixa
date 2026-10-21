@@ -3,10 +3,12 @@ import { z } from "zod";
 import { AppError } from "@/shared/errors";
 import type { MediaType } from "../domain/catalog";
 import type {
+  DiscoverQuery,
   EpisodeMetadata,
   MetadataProvider,
   WorkCandidate,
   WorkDetails,
+  WorkPage,
   WorkSummary,
 } from "../application/ports";
 
@@ -62,6 +64,8 @@ function toSummary(work: StaticWork): WorkSummary {
     backdropPath: work.backdropPath,
   };
 }
+
+const PAGE_SIZE = 20;
 
 export class StaticMetadataProvider implements MetadataProvider {
   readonly name = "tmdb" as const;
@@ -122,6 +126,23 @@ export class StaticMetadataProvider implements MetadataProvider {
         ? [this.toCandidate(work, position)]
         : [],
     );
+  }
+
+  private async listPopularWorksFor(language: StudyLanguage | null): Promise<WorkCandidate[]> {
+    const all = this.works.map((work, position) => this.toCandidate(work, position));
+    return language
+      ? all.filter((work) => normalizeLanguageTag(work.originalLanguage ?? "") === language)
+      : all;
+  }
+
+  async discoverWorks(query: DiscoverQuery): Promise<WorkPage> {
+    const all = (await this.listPopularWorksFor(query.language)).filter((work) => work.type === query.type);
+    const start = (Math.max(1, query.page) - 1) * PAGE_SIZE;
+    return {
+      works: all.slice(start, start + PAGE_SIZE),
+      page: Math.max(1, query.page),
+      totalPages: Math.max(1, Math.ceil(all.length / PAGE_SIZE)),
+    };
   }
 
   async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {

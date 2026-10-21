@@ -45,6 +45,7 @@ export function CatalogScreen({
 }) {
   const t = useTranslations("catalog");
   const fits = useTranslations("fit");
+  const browse = useTranslations("tmdbBrowse");
   const { openCatalogOptions } = useShell();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -138,6 +139,12 @@ export function CatalogScreen({
           <h2 style={{ fontSize: 18 }}>{t("catalog")}</h2>
           <span className="small muted">{t("titles", { count: visible.length })}</span>
         </div>
+        <Link
+          className="link small"
+          href={needle ? `/catalog/tmdb?q=${encodeURIComponent(query.trim())}` : "/catalog/tmdb"}
+        >
+          {browse("seeAll")}
+        </Link>
         {visible.length > 0 ? (
           <div className="pgrid">
             {visible.map((tile) => (

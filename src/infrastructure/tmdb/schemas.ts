@@ -84,9 +84,13 @@ export const workListSchema = z.object({
         genre_ids: z.array(z.number()).nullish(),
         original_language: text,
         popularity: z.number().nullish(),
+        vote_average: z.number().nullish(),
+        vote_count: z.number().nullish(),
       }),
     )
     .default([]),
+  page: z.number().nullish(),
+  total_pages: z.number().nullish(),
 });
 
 export const genreListSchema = z.object({

@@ -7,6 +7,7 @@ import type {
   MetadataSource,
   Season,
 } from "../../domain/catalog";
+import type { AiLevelRating, AiLevelRatingRepository } from "../level-sources";
 import type {
   CatalogEntry,
   CatalogRepository,
@@ -168,5 +169,18 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
   setEpisodeStatus(episodeId: string, status: EpisodeStatus): void {
     const episode = this.episodes.get(episodeId);
     if (episode) this.episodes.set(episodeId, { ...episode, status });
+  }
+}
+
+export class InMemoryAiLevelRatings implements AiLevelRatingRepository {
+  readonly rows = new Map<string, AiLevelRating>();
+  async save(rating: AiLevelRating) {
+    this.rows.set(rating.externalId, rating);
+  }
+  async ratingsFor(externalIds: readonly string[]) {
+    return new Map([...this.rows].filter(([externalId]) => externalIds.includes(externalId)));
+  }
+  async listIds() {
+    return [...this.rows.keys()];
   }
 }
