@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { APP_NAME } from "@/shared/app";
 import { useState, useTransition } from "react";
 import { refreshWorkAction, studyEpisodeAction } from "@/app/actions/catalog";
 import type { EpisodeStatus } from "@/modules/catalog";
@@ -36,6 +37,7 @@ export type MediaDetailView = {
   overview: string;
   fit: LevelFit;
   levelRange: string;
+  levelRatings: { source: string | null; range: string }[];
   accent: string | null;
   uploaderName: string | null;
   canRefresh: boolean;
@@ -147,6 +149,14 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
         </div>
       </div>
       {media.overview ? <p className="muted">{media.overview}</p> : null}
+      {media.levelRatings.length > 0 ? (
+        <p className="small muted">
+          {t("levelRatings", { count: media.levelRatings.length })}{" "}
+          {media.levelRatings
+            .map((rating) => `${rating.source ?? t("levelRatingBuiltin", { app: APP_NAME })} ${rating.range}`)
+            .join(" · ")}
+        </p>
+      ) : null}
       <p className="note">
         {media.uploaderName ? t("sharedBy", { name: media.uploaderName }) : t("shared")}
         {media.canRefresh ? (

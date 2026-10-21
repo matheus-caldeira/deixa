@@ -244,7 +244,12 @@
       "termsMalformed": "A explicação dos termos veio fora do formato. Tente de novo.",
       "seriesNameInvalid": "Use um nome de até 40 caracteres, sem links.",
       "seriesLevelInvalid": "Escolha o nível, ou uma faixa em que o primeiro não passe do segundo.",
-      "seriesDescriptionMalformed": "A descrição da série veio fora do formato."
+      "seriesDescriptionMalformed": "A descrição da série veio fora do formato.",
+      "adminOnlyLevelSources": "Só o administrador altera as fontes de nível.",
+      "levelSourceUrlInvalid": "Use um endereço http ou https completo, sem usuário e senha.",
+      "levelSourceExists": "Essa URL já está na lista.",
+      "levelSourceLimit": "Limite de {limit} fontes atingido. Remova uma antes de adicionar outra.",
+      "levelSourceChild": "Esta URL vem de outra fonte. Desligue-a ou remova a fonte que a lista."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -320,7 +325,9 @@
       "needsReview": "Em revisão",
       "failed": "Falhou · envie de novo",
       "none": "Sem legenda"
-    }
+    },
+    "levelRatings": "Nível pela mediana de {count, plural, one {# avaliação} other {# avaliações}}:",
+    "levelRatingBuiltin": "guia do {app}"
   },
   "home": {
     "continue": "Continuar",
@@ -1426,5 +1433,36 @@
     "notDue": "Ainda não venceu: dá para treinar, mas a etapa só avança no vencimento.",
     "start": "Começar",
     "noExercises": "A trilha deste episódio não está pronta no seu nível atual. Abra o episódio na trilha para montá-la."
+  },
+  "levelSources": {
+    "title": "Fontes de nível",
+    "intro": "URLs com avaliações de nível do QECR por obra do TMDB. Cada obra junta as avaliações de todas as fontes ligadas, mais o guia embutido, e fica com a mediana. Uma URL também pode listar outras URLs, que são baixadas junto.",
+    "builtin": "Guia do {app} (embutido)",
+    "builtinCount": "{count, plural, =0 { nenhuma obra} one {# obra} other {# obras}} · sempre ligado",
+    "ready": "{count, plural, =0 { nenhuma obra avaliada} one {# obra avaliada} other {# obras avaliadas}} · baixada em {date}",
+    "pending": "Baixando…",
+    "failed": {
+      "unreachable": "Falhou: endereço fora do ar.",
+      "timeout": "Falhou: a URL demorou demais para responder.",
+      "status": "Falhou: a URL respondeu {status}.",
+      "tooLarge": "Falhou: arquivo maior que 5 MB.",
+      "notJson": "Falhou: o arquivo não é JSON.",
+      "invalid": "Falhou: o JSON não tem o formato esperado."
+    },
+    "rejected": "{count, plural, one {# entrada ignorada} other {# entradas ignoradas}}",
+    "off": "Desligada",
+    "listed": "listada pela fonte acima",
+    "enable": "Ligar",
+    "disable": "Desligar",
+    "remove": "Remover",
+    "confirmRemove": "Confirmar remoção",
+    "cancel": "Cancelar",
+    "empty": "Nenhuma URL cadastrada. Por enquanto vale só o guia embutido.",
+    "urlLabel": "Nova URL",
+    "format": "Formato do arquivo abaixo. Os campos name e sources são opcionais, e também vale só o mapa de avaliações. Até 50 URLs, dois níveis de URLs listadas e 5 MB por arquivo.",
+    "add": "Adicionar e baixar",
+    "adding": "Enviando…",
+    "syncAll": "Baixar todas de novo",
+    "queued": "Download na fila. A lista atualiza sozinha quando terminar."
   }
 }

@@ -35,6 +35,7 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Nível                | `level`                     | Nível do QECR: A1, A2, B1, B2, C1, C2                                                 |
 | Faixa de nível       | `level_min`, `level_max`    | Níveis para os quais a obra é adequada                                                |
 | Guia de níveis       | `level_guide`               | Faixa de nível de cada obra do TMDB classificada pelo projeto, sem IA                 |
+| Fonte de nível       | `level_sources`             | URL com avaliações de nível por obra; a faixa da obra é a mediana das avaliações      |
 | Adequação            | `fit`                       | "No seu nível", "Desafiador" ou "Tranquilo"                                           |
 | Trilha               | `trail`                     | Sequência de cenas do episódio a estudar                                              |
 | Trilha da obra       | `work_trail`                | Todas as trilhas de uma obra numa tela, uma seção por episódio e seletor de temporada |

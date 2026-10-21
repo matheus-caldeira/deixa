@@ -59,6 +59,9 @@ function setup() {
     personal_series_description: async (payload) => {
       calls.push(`series:${payload.userId}`);
     },
+    level_sources_sync: async (payload) => {
+      calls.push(`levels:${payload.sourceId ?? "all"}`);
+    },
   };
   const run = makeRunClaimedJob({ jobs, handlers, clock });
   return {

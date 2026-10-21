@@ -35,17 +35,26 @@ import {
   makeGetCatalogOverview,
   makeGetEpisodeContext,
   makeGetMediaDetail,
+  makeAddLevelSource,
+  makeGetWorkLevelRatings,
+  makeListLevelSources,
   makeLoadSeasonEpisodes,
   makeRefreshWork,
   makeRegisterWork,
+  makeRemoveLevelSource,
+  makeResolveLevelRatings,
   makeSearchWorks,
+  makeSetLevelSourceEnabled,
   makeStartEpisode,
+  makeSyncLevelSources,
   type MediaType,
   type MetadataProvider,
 } from "@/modules/catalog";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
-import { LevelGuidedMetadataProvider } from "@/modules/catalog/infrastructure/level-guide";
+import { LevelGuidedMetadataProvider, builtinLevelGuide } from "@/modules/catalog/infrastructure/level-guide";
+import { DrizzleLevelSourceRepository } from "@/modules/catalog/infrastructure/drizzle-level-source-repository";
+import { HttpLevelSourceFetcher } from "@/modules/catalog/infrastructure/http-level-source-fetcher";
 import {
   makeAddCards,
   makeAnticipateReview,
@@ -304,6 +313,22 @@ export function buildContainer(options: ContainerOptions) {
 
   const identity = new DrizzleIdentityRepository(db);
   const catalog = new DrizzleCatalogRepository(db);
+  const levelSourceDeps = {
+    sources: new DrizzleLevelSourceRepository(db),
+    fetcher: new HttpLevelSourceFetcher(),
+    builtin: builtinLevelGuide,
+    catalog,
+    clock,
+    ids,
+  };
+  const resolveLevelRatings = makeResolveLevelRatings(levelSourceDeps);
+  const syncLevelSources = makeSyncLevelSources(levelSourceDeps);
+  const resolveLevelRanges = async (externalIds: readonly string[]) =>
+    new Map(
+      [...(await resolveLevelRatings(externalIds))].flatMap(([externalId, entry]) =>
+        entry.range ? [[externalId, entry.range] as const] : [],
+      ),
+    );
   const subtitles = new DrizzleSubtitleRepository(db);
   const highlights = new DrizzleHighlightRepository(db);
   const learning = new DrizzleLearningRepository(db);
@@ -340,6 +365,7 @@ export function buildContainer(options: ContainerOptions) {
         new TmdbMetadataProvider(
           new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
         ),
+        resolveLevelRanges,
       )
     : null;
   const defaultMetadata: MetadataProvider = options.metadata ?? environmentMetadata ?? fakeMetadata;
@@ -359,6 +385,7 @@ export function buildContainer(options: ContainerOptions) {
             : { readAccessToken: stored.secret },
         ),
       ),
+      resolveLevelRanges,
     );
     metadataBySecret.set(key, created);
     return created;
@@ -1046,6 +1073,10 @@ export function buildContainer(options: ContainerOptions) {
         userLevel: payload.level,
       });
     },
+    level_sources_sync: async (payload) => {
+      const result = await syncLevelSources(payload);
+      log.info("level_sources.synced", result);
+    },
   };
   const runClaimedJob = makeRunClaimedJob({ jobs, handlers: jobHandlers, clock });
   const runJobInline = makeRunJobInline({ jobs, run: runClaimedJob, clock });
@@ -1088,6 +1119,11 @@ export function buildContainer(options: ContainerOptions) {
     listPeople: () => identity.listByEmailSuffix(""),
 
     searchWorks: async (userId: string, query: string) => (await catalogFor(userId)).searchWorks(query),
+    listLevelSources: makeListLevelSources(levelSourceDeps),
+    addLevelSource: makeAddLevelSource(levelSourceDeps),
+    removeLevelSource: makeRemoveLevelSource(levelSourceDeps),
+    setLevelSourceEnabled: makeSetLevelSourceEnabled(levelSourceDeps),
+    getWorkLevelRatings: makeGetWorkLevelRatings(levelSourceDeps),
     registerWork: async (input: {
       userId: string | null;
       type: MediaType;

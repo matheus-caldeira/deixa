@@ -27,3 +27,25 @@ export {
   type InProgressEntry,
   type MediaDetail,
 } from "./application/browse-catalog";
+export {
+  LEVEL_FETCH_FAILURES,
+  makeAddLevelSource,
+  makeGetWorkLevelRatings,
+  makeListLevelSources,
+  makeRecomputeCatalogLevels,
+  makeRemoveLevelSource,
+  makeResolveLevelRatings,
+  makeSetLevelSourceEnabled,
+  makeSyncLevelSources,
+  type LevelFetchFailure,
+  type LevelRating,
+  type LevelSource,
+  type WorkLevelRatings,
+} from "./application/level-sources";
+export {
+  LEVEL_SOURCE_STATUSES,
+  MAX_LEVEL_SOURCES,
+  aggregateLevelRanges,
+  type LevelRange,
+  type LevelSourceStatus,
+} from "./domain/level-ratings";

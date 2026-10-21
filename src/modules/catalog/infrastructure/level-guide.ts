@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { StudyLanguage } from "@/shared/study-languages";
-import { CEFR_LEVELS, levelIndex, type CefrLevel } from "@/shared/levels";
 import type { MediaType } from "../domain/catalog";
+import { RATING_KEY_PATTERN, levelRangeTextSchema, type LevelRange } from "../domain/level-ratings";
+import type { BuiltinLevelGuide } from "../application/level-sources";
 import type {
   EpisodeMetadata,
   MetadataProvider,
@@ -11,45 +12,53 @@ import type {
 } from "../application/ports";
 import rawGuide from "./level-guide.json";
 
-export type LevelRange = readonly [CefrLevel, CefrLevel];
-
-const levelSchema = z.enum(CEFR_LEVELS);
-const rangeSchema = z
-  .string()
-  .transform((value) => value.split("-"))
-  .pipe(z.tuple([levelSchema, levelSchema]))
-  .refine(([min, max]) => levelIndex(min) <= levelIndex(max));
-const KIND_BY_TYPE: Record<MediaType, string> = { series: "tv", movie: "movie" };
-const guideSchema = z.record(z.string().regex(/^(tv|movie):\d+$/), rangeSchema);
+const guideSchema = z.record(z.string().regex(RATING_KEY_PATTERN), levelRangeTextSchema);
 
 const guide: Record<string, LevelRange> = guideSchema.parse(rawGuide);
+
+export const builtinLevelGuide: BuiltinLevelGuide = {
+  count: Object.keys(guide).length,
+  rangeOf: (externalId) => guide[externalId] ?? null,
+};
 
 export function levelGuideEntries(): { externalId: string; range: LevelRange }[] {
   return Object.entries(guide).map(([externalId, range]) => ({ externalId, range }));
 }
 
-export function levelRangeOf(type: MediaType, externalId: string): LevelRange | null {
-  return externalId.startsWith(`${KIND_BY_TYPE[type]}:`) ? (guide[externalId] ?? null) : null;
-}
+export type LevelRangeResolver = (externalIds: readonly string[]) => Promise<ReadonlyMap<string, LevelRange>>;
 
-function guided<Work extends WorkSummary>(work: Work): Work {
-  const range = levelRangeOf(work.type, work.externalId);
-  return range ? { ...work, levelRange: range } : work;
-}
+const KIND_BY_TYPE: Record<MediaType, string> = { series: "tv", movie: "movie" };
+
+const belongs = (work: WorkSummary) => work.externalId.startsWith(`${KIND_BY_TYPE[work.type]}:`);
 
 export class LevelGuidedMetadataProvider implements MetadataProvider {
-  constructor(private readonly inner: MetadataProvider) {}
+  constructor(
+    private readonly inner: MetadataProvider,
+    private readonly resolve: LevelRangeResolver,
+  ) {}
 
   get name() {
     return this.inner.name;
   }
 
+  private async guided<Work extends WorkSummary>(works: Work[]): Promise<Work[]> {
+    const ranges = await this.resolve(works.filter(belongs).map((work) => work.externalId));
+    return works.map((work) => {
+      const range = belongs(work) ? ranges.get(work.externalId) : undefined;
+      return range ? { ...work, levelRange: range } : work;
+    });
+  }
+
   async searchWorks(query: string): Promise<WorkSummary[]> {
-    return (await this.inner.searchWorks(query)).map(guided);
+    return this.guided(await this.inner.searchWorks(query));
   }
 
   async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
-    return guided(await this.inner.getWork(type, externalId));
+    const details = await this.inner.getWork(type, externalId);
+    const range = belongs(details)
+      ? (await this.resolve([details.externalId])).get(details.externalId)
+      : undefined;
+    return range ? { ...details, levelRange: range } : details;
   }
 
   getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]> {
@@ -57,10 +66,10 @@ export class LevelGuidedMetadataProvider implements MetadataProvider {
   }
 
   async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
-    return (await this.inner.listRelatedWorks(type, externalId)).map(guided);
+    return this.guided(await this.inner.listRelatedWorks(type, externalId));
   }
 
   async listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]> {
-    return (await this.inner.listPopularWorks(language)).map(guided);
+    return this.guided(await this.inner.listPopularWorks(language));
   }
 }

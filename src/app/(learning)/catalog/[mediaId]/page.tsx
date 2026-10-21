@@ -32,6 +32,7 @@ export default async function MediaDetailPage(props: {
     throw error;
   });
   const { media } = detail;
+  const levelRatings = await container.getWorkLevelRatings({ mediaId });
   const allSeasons = (await container.listSeasons(mediaId)).filter(
     (entry) => media.type === "movie" || entry.seasonNumber >= 1,
   );
@@ -67,6 +68,10 @@ export default async function MediaDetailPage(props: {
         overview: media.overview,
         fit: fitFor(user.preferences.level, media.levelMin, media.levelMax),
         levelRange: `${media.levelMin}–${media.levelMax}`,
+        levelRatings: levelRatings.ratings.map((rating) => ({
+          source: rating.sourceName,
+          range: `${rating.range[0]}–${rating.range[1]}`,
+        })),
         accent: media.accent,
         uploaderName: media.uploaderName,
         canRefresh: media.metadataProvider === (await container.metadataNameFor(user.id)),

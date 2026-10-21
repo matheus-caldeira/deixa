@@ -16,6 +16,7 @@ import { CredentialCard } from "../shell/credential-card";
 import { ServerSettingsCard } from "../shell/server-settings-card";
 import { AiUsageSection } from "./ai-usage-section";
 import { BudgetCard } from "./budget-card";
+import { LevelSourcesCard, type LevelSourcesView } from "./level-sources-card";
 import { ModelChoiceCard } from "./model-choice-card";
 import { ServerUsageSection } from "./server-usage-section";
 
@@ -36,6 +37,7 @@ export type SettingsView = {
   assignments: ModelAssignment[];
   aiDefaults: { aiGeneration: AppSettings["aiGeneration"]; aiEmbedding: AppSettings["aiEmbedding"] };
   customEndpointsAllowed: boolean;
+  levelSources: LevelSourcesView | null;
 };
 
 const TABS: { key: SettingsTab; adminOnly?: boolean }[] = [
@@ -163,7 +165,10 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
           </>
         ) : null}
         {view.tab === "catalog" ? (
-          <KeysTab view={view} services={catalogServices} intro={t("catalogIntro")} />
+          <>
+            <KeysTab view={view} services={catalogServices} intro={t("catalogIntro")} />
+            {view.levelSources ? <LevelSourcesCard view={view.levelSources} /> : null}
+          </>
         ) : null}
         {view.tab === "server" && view.settings ? (
           <>

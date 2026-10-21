@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CEFR_LEVELS } from "@/shared/levels";
 import type { MetadataProvider, WorkCandidate, WorkDetails } from "../application/ports";
-import { LevelGuidedMetadataProvider, levelGuideEntries, levelRangeOf } from "./level-guide";
+import { LevelGuidedMetadataProvider, builtinLevelGuide, levelGuideEntries } from "./level-guide";
 
 const MIN_WORKS = 1000;
 const MIN_PER_LEVEL = 40;
@@ -50,18 +50,29 @@ describe("guia de níveis", () => {
         MIN_PER_LEVEL,
       );
     }
-    expect(levelRangeOf("series", FRIENDS_TMDB_ID)).toEqual(["B1", "B2"]);
-    expect(levelRangeOf("movie", FRIENDS_TMDB_ID)).toBeNull();
-    expect(levelRangeOf("movie", "movie:550")).toEqual(["C1", "C1"]);
+    expect(builtinLevelGuide.count).toBe(entries.length);
+    expect(builtinLevelGuide.rangeOf(FRIENDS_TMDB_ID)).toEqual(["B1", "B2"]);
+    expect(builtinLevelGuide.rangeOf("movie:1668")).toBeNull();
+    expect(builtinLevelGuide.rangeOf("movie:550")).toEqual(["C1", "C1"]);
   });
 
   it("preenche a faixa das obras conhecidas e mantém a do provider nas outras", async () => {
-    const provider = new LevelGuidedMetadataProvider(inner);
+    const asked: string[][] = [];
+    const provider = new LevelGuidedMetadataProvider(inner, async (externalIds) => {
+      asked.push([...externalIds]);
+      return new Map(
+        externalIds.flatMap((externalId) => {
+          const range = builtinLevelGuide.rangeOf(externalId);
+          return range ? [[externalId, range] as const] : [];
+        }),
+      );
+    });
     expect(provider.name).toBe("tmdb");
     expect((await provider.getWork("series", FRIENDS_TMDB_ID)).levelRange).toEqual(["B1", "B2"]);
     expect((await provider.getWork("series", UNKNOWN_TMDB_ID)).levelRange).toEqual(["C2", "C2"]);
     const related = await provider.listRelatedWorks("series", FRIENDS_TMDB_ID);
     expect(related.map((work) => work.levelRange)).toEqual([["B1", "B2"], undefined]);
     expect((await provider.searchWorks("friends"))[0]?.levelRange).toEqual(["B1", "B2"]);
+    expect(asked).toContainEqual([FRIENDS_TMDB_ID, UNKNOWN_TMDB_ID]);
   });
 });

@@ -15,15 +15,18 @@ export default async function SettingsPage(props: {
   const scope: SettingsScope = user.isAdmin && params.scope === "global" ? "global" : "user";
   const actor = { userId: user.id, isAdmin: user.isAdmin };
   const serverUsage = user.isAdmin && tab === "usage" && scope === "global";
-  const [credentials, usage, overview, settings, aiModels, assignedModel, assignments] = await Promise.all([
-    container.getCredentialOverview(actor),
-    container.getAiUsageSummary(user.id),
-    serverUsage ? container.getAiUsageOverview(actor) : null,
-    container.getSettings(),
-    container.getAiModels(user.id),
-    container.getAssignedModel(user.id),
-    serverUsage ? container.listModelAssignments(actor) : [],
-  ]);
+  const levelSourcesWanted = user.isAdmin && tab === "catalog";
+  const [credentials, usage, overview, settings, aiModels, assignedModel, assignments, levelSources] =
+    await Promise.all([
+      container.getCredentialOverview(actor),
+      container.getAiUsageSummary(user.id),
+      serverUsage ? container.getAiUsageOverview(actor) : null,
+      container.getSettings(),
+      container.getAiModels(user.id),
+      container.getAssignedModel(user.id),
+      serverUsage ? container.listModelAssignments(actor) : [],
+      levelSourcesWanted ? container.listLevelSources({ actor }) : null,
+    ]);
   return (
     <SettingsScreen
       view={{
@@ -40,6 +43,24 @@ export default async function SettingsPage(props: {
         assignments,
         aiDefaults: { aiGeneration: settings.aiGeneration, aiEmbedding: settings.aiEmbedding },
         customEndpointsAllowed: settings.aiCustomEndpointsAllowed,
+        levelSources: levelSources
+          ? {
+              builtinCount: levelSources.builtinCount,
+              sources: levelSources.sources.map((source) => ({
+                id: source.id,
+                url: source.url,
+                name: source.name,
+                parentId: source.parentId,
+                enabled: source.enabled,
+                status: source.status,
+                ratingCount: source.ratingCount,
+                rejectedCount: source.rejectedCount,
+                lastError: source.lastError,
+                lastStatus: source.lastStatus,
+                fetchedAt: source.fetchedAt?.toISOString() ?? null,
+              })),
+            }
+          : null,
       }}
     />
   );

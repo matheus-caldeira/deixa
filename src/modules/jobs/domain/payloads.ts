@@ -66,6 +66,10 @@ export const personalSeriesDescriptionPayloadSchema = z.object({
   level,
 });
 
+export const levelSourcesSyncPayloadSchema = z.object({
+  sourceId: z.uuid().nullable(),
+});
+
 export const PAYLOAD_SCHEMAS = {
   generate_plan: generatePlanPayloadSchema,
   card_batch: cardBatchPayloadSchema,
@@ -75,6 +79,7 @@ export const PAYLOAD_SCHEMAS = {
   conversation_terms: conversationTermsPayloadSchema,
   conversation_audio: conversationAudioPayloadSchema,
   personal_series_description: personalSeriesDescriptionPayloadSchema,
+  level_sources_sync: levelSourcesSyncPayloadSchema,
 } satisfies Record<JobKind, z.ZodType>;
 
 export type JobPayloads = { [K in JobKind]: z.infer<(typeof PAYLOAD_SCHEMAS)[K]> };

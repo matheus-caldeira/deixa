@@ -244,7 +244,12 @@
       "termsMalformed": "The term explanations came back in the wrong format. Try again.",
       "seriesNameInvalid": "Use a name of up to 40 characters, without links.",
       "seriesLevelInvalid": "Pick a level, or a range where the first doesn't go past the second.",
-      "seriesDescriptionMalformed": "The series description came back in the wrong format."
+      "seriesDescriptionMalformed": "The series description came back in the wrong format.",
+      "adminOnlyLevelSources": "Only the administrator changes level sources.",
+      "levelSourceUrlInvalid": "Use a full http or https address, without user and password.",
+      "levelSourceExists": "This URL is already on the list.",
+      "levelSourceLimit": "Limit of {limit} sources reached. Remove one before adding another.",
+      "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -320,7 +325,9 @@
       "needsReview": "In review",
       "failed": "Failed · upload again",
       "none": "No subtitle"
-    }
+    },
+    "levelRatings": "Level from the median of {count, plural, one {# rating} other {# ratings}}:",
+    "levelRatingBuiltin": "{app} guide"
   },
   "home": {
     "continue": "Continue",
@@ -1426,5 +1433,36 @@
     "notDue": "Not due yet: you can practice, but the step only moves forward when it is due.",
     "start": "Start",
     "noExercises": "This episode trail is not ready at your current level. Open the episode in the trail to build it."
+  },
+  "levelSources": {
+    "title": "Level sources",
+    "intro": "URLs with CEFR level ratings for TMDB titles. Each title combines the ratings from every enabled source, plus the built-in guide, and takes the median. A URL can also list other URLs, which are downloaded too.",
+    "builtin": "{app} guide (built-in)",
+    "builtinCount": "{count, plural, =0 { no titles} one {# title} other {# titles}} · always on",
+    "ready": "{count, plural, =0 { no rated titles} one {# rated title} other {# rated titles}} · downloaded on {date}",
+    "pending": "Downloading…",
+    "failed": {
+      "unreachable": "Failed: the address is down.",
+      "timeout": "Failed: the URL took too long to answer.",
+      "status": "Failed: the URL answered {status}.",
+      "tooLarge": "Failed: the file is larger than 5 MB.",
+      "notJson": "Failed: the file is not JSON.",
+      "invalid": "Failed: the JSON is not in the expected format."
+    },
+    "rejected": "{count, plural, one {# entry ignored} other {# entries ignored}}",
+    "off": "Off",
+    "listed": "listed by the source above",
+    "enable": "Turn on",
+    "disable": "Turn off",
+    "remove": "Remove",
+    "confirmRemove": "Confirm removal",
+    "cancel": "Cancel",
+    "empty": "No URLs yet. For now only the built-in guide applies.",
+    "urlLabel": "New URL",
+    "format": "File format below. The name and sources fields are optional, and a plain ratings map also works. Up to 50 URLs, two levels of listed URLs and 5 MB per file.",
+    "add": "Add and download",
+    "adding": "Sending…",
+    "syncAll": "Download all again",
+    "queued": "Download queued. The list updates by itself when it finishes."
   }
 }
