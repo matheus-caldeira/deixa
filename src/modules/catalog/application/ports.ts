@@ -23,6 +23,7 @@ export type WorkSummary = {
   backdropPath?: string | null;
   posterColors?: PosterColors;
   originalLanguage?: string | null;
+  levelRange?: readonly [CefrLevel, CefrLevel];
 };
 
 export type WorkCandidate = WorkSummary & {
@@ -36,7 +37,6 @@ export type SeasonSummary = { seasonNumber: number; title: string; episodeCount:
 export type WorkDetails = WorkSummary & {
   seasons: SeasonSummary[];
   runtimeMinutes: number | null;
-  levelRange?: readonly [CefrLevel, CefrLevel];
   accent?: string;
 };
 
@@ -95,6 +95,7 @@ export interface CatalogRepository {
   findMediaById(id: string): Promise<MediaItem | null>;
   findMediaByExternal(provider: MetadataSource, externalId: string): Promise<MediaItem | null>;
   upsertMedia(input: MediaUpsert): Promise<string>;
+  updateLevelRange(mediaId: string, range: readonly [CefrLevel, CefrLevel]): Promise<void>;
   upsertSeasons(mediaItemId: string, seasons: SeasonUpsert[]): Promise<void>;
   listSeasons(mediaItemId: string): Promise<Season[]>;
   upsertEpisodes(seasonId: string, episodes: EpisodeUpsert[], syncedAt: Date | null): Promise<void>;

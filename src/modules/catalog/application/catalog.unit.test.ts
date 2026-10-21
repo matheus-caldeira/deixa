@@ -91,6 +91,17 @@ describe("catálogo", () => {
     expect(app.catalog.media.size).toBe(1);
   });
 
+  it("a faixa de nível que vem do provider corrige a obra já cadastrada", async () => {
+    const { mediaId } = await app.registerWork({
+      userId: "u1",
+      type: "series",
+      externalId: fakeExternalId("himym"),
+    });
+    await app.catalog.updateLevelRange(mediaId, ["C1", "C2"]);
+    await app.refreshWork({ mediaId, force: true });
+    expect(await app.catalog.findMediaById(mediaId)).toMatchObject({ levelMin: "A2", levelMax: "B2" });
+  });
+
   it("carrega os episódios da temporada uma vez e depois lê do banco", async () => {
     const { mediaId } = await app.registerWork({
       userId: "u1",

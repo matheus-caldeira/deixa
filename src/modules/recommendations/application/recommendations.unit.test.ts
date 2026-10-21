@@ -248,6 +248,42 @@ describe("sugestões para o usuário", () => {
     expect(linked?.reason).not.toContain("http");
   });
 
+  it("obra com faixa do guia de níveis mantém a faixa mesmo que a IA diga outra", async () => {
+    const source = new FakeMetadataProvider();
+    const guided = {
+      name: source.name,
+      listRelatedWorks: async (...args: Parameters<FakeMetadataProvider["listRelatedWorks"]>) =>
+        (await source.listRelatedWorks(...args)).map((work) => ({
+          ...work,
+          levelRange: ["A2", "B1"] as const,
+        })),
+      listPopularWorks: async (...args: Parameters<FakeMetadataProvider["listPopularWorks"]>) =>
+        (await source.listPopularWorks(...args)).map((work) => ({
+          ...work,
+          levelRange: ["A2", "B1"] as const,
+        })),
+    };
+    writer = {
+      name: "gemini",
+      write: async (input) => ({
+        items: input.candidates.map((item) => ({
+          key: item.key,
+          reason: "Combina com o que você estuda.",
+          levelMin: "C1",
+          levelMax: "C2",
+        })),
+      }),
+    };
+    await makeRefreshRecommendations({ ...deps(), resolveCandidates: async () => guided })({
+      userId: "ana",
+      level: "B2",
+      language: "en",
+    });
+    const { items } = await view();
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((item) => item.levelMin === "A2" && item.levelMax === "B1")).toBe(true);
+  });
+
   it("texto que vai para a IA sai sem marcação, link nem caracteres de controle", async () => {
     repository.signals.set("ana", {
       ...EMPTY_SIGNALS,

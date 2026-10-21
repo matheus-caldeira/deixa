@@ -42,17 +42,3 @@ das credenciais do TMDB) e versionado, para que `pnpm db:seed` rode sem rede e s
 
 O arquivo guarda só dados de identificação. As sinopses são textos curtos escritos para este projeto, não as
 do TMDB, e as legendas dos episódios continuam sendo os diálogos fictícios acima.
-
-
-## Guia de níveis (`level-guide.json`)
-
-355 séries e filmes com o nível do QECR em que cada obra passa a ser estudável, a faixa (`levelMin`, `levelMax`)
-e os motivos (`traits`, com a legenda em português no próprio arquivo). Pelo menos 45 obras em inglês por nível,
-mais algumas em espanhol, francês e português.
-
-- O nível e os motivos são uma estimativa editorial deste projeto (velocidade da fala, gíria, sotaque, jargão,
-  registro), não um dado do TMDB. A lista fica em `scripts/level-guide-titles.ts`.
-- Do TMDB vêm o identificador, os títulos, o ano, os gêneros em português, a nota (`voteAverage`), os votos,
-  a popularidade e o pôster. As sinopses não entram, pelo mesmo motivo do catálogo fixo.
-- Gerado com `pnpm fixtures:levels` (precisa das credenciais do TMDB). Quando o TMDB registra a obra com outro
-  idioma original (Caillou, Fireman Sam, Club de Cuervos), a lista fixa o identificador.

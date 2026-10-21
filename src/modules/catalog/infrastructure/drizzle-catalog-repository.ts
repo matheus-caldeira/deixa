@@ -9,7 +9,7 @@ import {
   subtitleFiles,
   users,
 } from "@/infrastructure/database/schema";
-import { isCefrLevel } from "@/shared/levels";
+import { isCefrLevel, type CefrLevel } from "@/shared/levels";
 import {
   posterColorsFor,
   type Episode,
@@ -136,6 +136,13 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
       .where(and(eq(mediaItems.metadataProvider, provider), eq(mediaItems.externalId, externalId)))
       .limit(1);
     return row ? toMedia(row.media, row.uploaderName) : null;
+  }
+
+  async updateLevelRange(mediaId: string, range: readonly [CefrLevel, CefrLevel]): Promise<void> {
+    await this.db
+      .update(mediaItems)
+      .set({ levelMin: range[0], levelMax: range[1] })
+      .where(eq(mediaItems.id, mediaId));
   }
 
   async upsertMedia(input: MediaUpsert): Promise<string> {

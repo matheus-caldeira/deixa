@@ -262,9 +262,10 @@ Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
 
 ## Etapa 19: guia de níveis das obras (20/10/2026)
 
-| #   | Tarefa                                  | Critério de pronto                                                                                                                                           | Estado |
-| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| 130 | Guia de níveis do QECR a partir do TMDB | `fixtures/level-guide.json` com pelo menos 40 obras em inglês por nível, faixa, motivos, nota e votos do TMDB; gerado por `pnpm fixtures:levels` sem sinopse | [x]    |
+| #   | Tarefa                                     | Critério de pronto                                                                                                                                                                           | Estado |
+| --- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 130 | Guia de níveis do QECR a partir do TMDB    | `src/modules/catalog/infrastructure/level-guide.json` com 1.385 obras (id do TMDB → faixa), pelo menos 40 por nível inicial; `pnpm levels:review` confere os ids no TMDB                     | [x]    |
+| 131 | Guia de níveis no cadastro e nas sugestões | Provider do TMDB envolvido pelo guia: cadastro e atualização gravam a faixa do guia; sugestões ranqueiam pela faixa do guia e ignoram a da IA; migração 0028 corrige as obras já cadastradas | [x]    |
 
 ## Próximo
 

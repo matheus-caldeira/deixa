@@ -295,7 +295,10 @@ function readWriterOutput(output: unknown, shortlist: Draft[]): Written[] {
     if (!draft || !reason) continue;
     byKey.delete(item.key);
     const ordered =
-      item.levelMin && item.levelMax && levelIndex(item.levelMin) <= levelIndex(item.levelMax)
+      !draft.work.levelRange &&
+      item.levelMin &&
+      item.levelMax &&
+      levelIndex(item.levelMin) <= levelIndex(item.levelMax)
         ? ([item.levelMin, item.levelMax] as const)
         : draft.levels;
     written.push({ draft, reason, levels: ordered });
@@ -399,7 +402,9 @@ export function makeRefreshRecommendations(deps: Deps) {
       ]);
 
       const levelsByKey = new Map(
-        candidates.map((work) => [workKeyOf(work), estimateLevelRange(work.genres)] as const),
+        candidates.map(
+          (work) => [workKeyOf(work), work.levelRange ?? estimateLevelRange(work.genres)] as const,
+        ),
       );
       const ranked = rankWorks({
         taste,

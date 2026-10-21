@@ -26,7 +26,9 @@ async function storeWork(
   userId: string | null,
 ) {
   const now = deps.clock.now();
-  const [levelMin, levelMax] = details.levelRange ?? DEFAULT_LEVEL_RANGE;
+  const known = details.levelRange ?? null;
+  const [levelMin, levelMax] =
+    known ?? (existing ? ([existing.levelMin, existing.levelMax] as const) : DEFAULT_LEVEL_RANGE);
   const mediaId = await deps.catalog.upsertMedia({
     id: existing?.id ?? deps.ids.next(),
     type: details.type,
@@ -39,8 +41,8 @@ async function storeWork(
     posterPath: details.posterPath,
     backdropPath: details.backdropPath ?? null,
     posterColors: details.posterColors ?? posterColorsFor(details.title),
-    levelMin: existing?.levelMin ?? levelMin,
-    levelMax: existing?.levelMax ?? levelMax,
+    levelMin,
+    levelMax,
     accent: existing?.accent ?? details.accent ?? null,
     originalLanguage:
       existing?.originalLanguage ??
@@ -50,6 +52,9 @@ async function storeWork(
     syncedAt: now,
     createdAt: now,
   });
+  if (existing && known && (existing.levelMin !== levelMin || existing.levelMax !== levelMax)) {
+    await deps.catalog.updateLevelRange(mediaId, known);
+  }
 
   if (details.type === "movie") {
     await deps.catalog.upsertSeasons(mediaId, [

@@ -34,6 +34,7 @@ Vocabulário único. Na interface, o termo em português (referência em `locale
 | Recapitulação        | `episode_recaps`            | Lição de um episódio concluído que volta em 1, 7 e 30 dias, na aba Revisar            |
 | Nível                | `level`                     | Nível do QECR: A1, A2, B1, B2, C1, C2                                                 |
 | Faixa de nível       | `level_min`, `level_max`    | Níveis para os quais a obra é adequada                                                |
+| Guia de níveis       | `level_guide`               | Faixa de nível de cada obra do TMDB classificada pelo projeto, sem IA                 |
 | Adequação            | `fit`                       | "No seu nível", "Desafiador" ou "Tranquilo"                                           |
 | Trilha               | `trail`                     | Sequência de cenas do episódio a estudar                                              |
 | Trilha da obra       | `work_trail`                | Todas as trilhas de uma obra numa tela, uma seção por episódio e seletor de temporada |

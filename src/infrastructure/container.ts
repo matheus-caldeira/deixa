@@ -45,6 +45,7 @@ import {
 } from "@/modules/catalog";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
+import { LevelGuidedMetadataProvider } from "@/modules/catalog/infrastructure/level-guide";
 import {
   makeAddCards,
   makeAnticipateReview,
@@ -335,8 +336,10 @@ export function buildContainer(options: ContainerOptions) {
 
   const fakeMetadata = new FakeMetadataProvider();
   const environmentMetadata = hasTmdbCredentials(env)
-    ? new TmdbMetadataProvider(
-        new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
+    ? new LevelGuidedMetadataProvider(
+        new TmdbMetadataProvider(
+          new TmdbClient({ readAccessToken: env.TMDB_READ_ACCESS_TOKEN, apiKey: env.TMDB_API_KEY }),
+        ),
       )
     : null;
   const defaultMetadata: MetadataProvider = options.metadata ?? environmentMetadata ?? fakeMetadata;
@@ -348,11 +351,13 @@ export function buildContainer(options: ContainerOptions) {
     const key = fingerprint(stored.secret);
     const known = metadataBySecret.get(key);
     if (known) return known;
-    const created = new TmdbMetadataProvider(
-      new TmdbClient(
-        tmdbSecretKind(stored.secret) === "apiKey"
-          ? { apiKey: stored.secret }
-          : { readAccessToken: stored.secret },
+    const created = new LevelGuidedMetadataProvider(
+      new TmdbMetadataProvider(
+        new TmdbClient(
+          tmdbSecretKind(stored.secret) === "apiKey"
+            ? { apiKey: stored.secret }
+            : { readAccessToken: stored.secret },
+        ),
       ),
     );
     metadataBySecret.set(key, created);

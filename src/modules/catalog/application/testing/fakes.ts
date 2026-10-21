@@ -1,3 +1,4 @@
+import type { CefrLevel } from "@/shared/levels";
 import type {
   Episode,
   EpisodeContext,
@@ -33,6 +34,11 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
         (item) => item.metadataProvider === provider && item.externalId === externalId,
       ) ?? null
     );
+  }
+
+  async updateLevelRange(mediaId: string, range: readonly [CefrLevel, CefrLevel]): Promise<void> {
+    const media = this.media.get(mediaId);
+    if (media) this.media.set(mediaId, { ...media, levelMin: range[0], levelMax: range[1] });
   }
 
   async upsertMedia(input: MediaUpsert): Promise<string> {
