@@ -250,7 +250,8 @@
       "levelSourceExists": "This URL is already on the list.",
       "levelSourceLimit": "Limit of {limit} sources reached. Remove one before adding another.",
       "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it.",
-      "levelRatingNoAi": "Set up an AI key in Settings to rate the level."
+      "levelRatingNoAi": "Set up an AI key in Settings to rate the level.",
+      "adminOnlyLevelRating": "Only the administrator rates title levels with AI, because the rating applies to everyone's catalog."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -1471,7 +1472,7 @@
   },
   "tmdbBrowse": {
     "title": "TMDB catalog",
-    "intro": "Every show and movie on TMDB. The level comes from the guide, the level sources and AI ratings; when there is none, rate it with AI. Opening a title adds it to the shared catalog.",
+    "intro": "Every show and movie on TMDB. The level comes from the guide, the level sources and AI ratings, which only the administrator requests. Opening a title adds it to the shared catalog.",
     "back": "Back to Explore",
     "export": "Export levels",
     "search": "Search TMDB",

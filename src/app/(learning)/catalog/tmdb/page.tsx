@@ -41,6 +41,7 @@ export default async function TmdbBrowsePage(props: {
   return (
     <TmdbBrowseScreen
       filters={filters}
+      canRate={user.isAdmin}
       failed={result === null}
       page={result?.page ?? filters.page}
       totalPages={result?.totalPages ?? 1}

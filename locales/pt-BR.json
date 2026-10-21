@@ -250,7 +250,8 @@
       "levelSourceExists": "Essa URL já está na lista.",
       "levelSourceLimit": "Limite de {limit} fontes atingido. Remova uma antes de adicionar outra.",
       "levelSourceChild": "Esta URL vem de outra fonte. Desligue-a ou remova a fonte que a lista.",
-      "levelRatingNoAi": "Configure uma chave de IA em Configurações para avaliar o nível."
+      "levelRatingNoAi": "Configure uma chave de IA em Configurações para avaliar o nível.",
+      "adminOnlyLevelRating": "Só o administrador avalia o nível das obras com IA, porque a avaliação vale para o catálogo de todos."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -1471,7 +1472,7 @@
   },
   "tmdbBrowse": {
     "title": "Catálogo do TMDB",
-    "intro": "Todas as séries e filmes do TMDB. O nível vem do guia, das fontes de nível e das avaliações por IA; sem nenhuma, avalie com a IA. Abrir uma obra a adiciona ao catálogo compartilhado.",
+    "intro": "Todas as séries e filmes do TMDB. O nível vem do guia, das fontes de nível e das avaliações por IA, que só o administrador pede. Abrir uma obra a adiciona ao catálogo compartilhado.",
     "back": "Voltar ao Explorar",
     "export": "Exportar níveis",
     "search": "Buscar no TMDB",

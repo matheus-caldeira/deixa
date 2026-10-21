@@ -1140,8 +1140,11 @@ export function buildContainer(options: ContainerOptions) {
     exportLevelRatings: makeExportLevelRatings(levelSourceDeps),
     browseWorks: async (userId: string, input: Parameters<ReturnType<typeof makeBrowseWorks>>[0]) =>
       (await catalogFor(userId)).browseWorks(input),
-    rateWorkLevel: async (input: { userId: string; type: MediaType; externalId: string }) =>
-      (await catalogFor(input.userId)).rateWorkLevel(input),
+    rateWorkLevel: async (input: {
+      actor: { userId: string; isAdmin: boolean };
+      type: MediaType;
+      externalId: string;
+    }) => (await catalogFor(input.actor.userId)).rateWorkLevel(input),
     addLevelSource: makeAddLevelSource(levelSourceDeps),
     removeLevelSource: makeRemoveLevelSource(levelSourceDeps),
     setLevelSourceEnabled: makeSetLevelSourceEnabled(levelSourceDeps),

@@ -10,6 +10,8 @@ import { makeRateWorkLevel, type LevelRater, type LevelRaterInput } from "./rate
 import { InMemoryAiLevelRatings, InMemoryCatalog } from "./testing/fakes";
 
 const FRIENDS = "tv:1668";
+const ADMIN = { userId: "admin", isAdmin: true };
+const PERSON = { userId: "ana", isAdmin: false };
 const UNKNOWN = "tv:42";
 
 const details = (externalId: string): WorkDetails => ({
@@ -124,12 +126,12 @@ describe("avaliação de nível por IA e catálogo do TMDB", () => {
   });
 
   it("avalia com os dados do TMDB vindos do servidor, guarda e junta às outras avaliações", async () => {
-    const rated = await app.rate({ userId: "ana", type: "series", externalId: FRIENDS });
+    const rated = await app.rate({ actor: ADMIN, type: "series", externalId: FRIENDS });
     expect(app.asked[0]).toMatchObject({ title: "Friends", originalLanguage: "en", year: 2001 });
     expect(rated.ai).toEqual({ range: ["A2", "B1"], reason: "Fala lenta e vocabulário do dia a dia." });
     expect(rated.ratings.map((rating) => rating.kind)).toEqual(["builtin", "ai"]);
     expect(rated.range).toEqual(["A2", "B2"]);
-    expect(app.aiRatings.rows.get(FRIENDS)).toMatchObject({ model: "modelo-teste", ratedBy: "ana" });
+    expect(app.aiRatings.rows.get(FRIENDS)).toMatchObject({ model: "modelo-teste", ratedBy: "admin" });
   });
 
   it("atualiza a faixa da obra que já está no catálogo", async () => {
@@ -153,31 +155,39 @@ describe("avaliação de nível por IA e catálogo do TMDB", () => {
       syncedAt: null,
       createdAt: new Date("2026-10-01T00:00:00Z"),
     });
-    await app.rate({ userId: "ana", type: "series", externalId: FRIENDS });
+    await app.rate({ actor: ADMIN, type: "series", externalId: FRIENDS });
     expect(await app.catalog.findMediaById("m-friends")).toMatchObject({ levelMin: "A2", levelMax: "B2" });
+  });
+
+  it("só o administrador avalia, porque a avaliação muda o catálogo de todos", async () => {
+    expect(await codeOf(app.rate({ actor: PERSON, type: "series", externalId: UNKNOWN }))).toBe(
+      "FORBIDDEN:adminOnlyLevelRating",
+    );
+    expect(app.asked).toEqual([]);
+    expect(app.aiRatings.rows.size).toBe(0);
   });
 
   it("recusa resposta fora do formato, falta de IA e id que não é do TMDB", async () => {
     app.answer({ levelMin: "C2", levelMax: "A1", reason: "invertido" });
-    expect(await codeOf(app.rate({ userId: "ana", type: "series", externalId: UNKNOWN }))).toBe(
+    expect(await codeOf(app.rate({ actor: ADMIN, type: "series", externalId: UNKNOWN }))).toBe(
       "LLM_INVALID_OUTPUT:",
     );
     app.answer({ levelMin: "B1", levelMax: "B2", reason: "   " });
-    expect(await codeOf(app.rate({ userId: "ana", type: "series", externalId: UNKNOWN }))).toBe(
+    expect(await codeOf(app.rate({ actor: ADMIN, type: "series", externalId: UNKNOWN }))).toBe(
       "LLM_INVALID_OUTPUT:",
     );
     expect(app.aiRatings.rows.size).toBe(0);
-    expect(await codeOf(app.rate({ userId: "ana", type: "series", externalId: "fake-friends" }))).toBe(
+    expect(await codeOf(app.rate({ actor: ADMIN, type: "series", externalId: "fake-friends" }))).toBe(
       "INVALID_INPUT:",
     );
     app.noAi();
-    expect(await codeOf(app.rate({ userId: "ana", type: "series", externalId: UNKNOWN }))).toBe(
+    expect(await codeOf(app.rate({ actor: ADMIN, type: "series", externalId: UNKNOWN }))).toBe(
       "LLM_FAILED:levelRatingNoAi",
     );
   });
 
   it("lista a página do TMDB com nível, avaliações, nota e se já está no catálogo", async () => {
-    await app.rate({ userId: "ana", type: "series", externalId: UNKNOWN });
+    await app.rate({ actor: ADMIN, type: "series", externalId: UNKNOWN });
     const page = await app.browse({ query: "", type: "series", language: "en", sort: "popular", page: 2 });
     expect(page).toMatchObject({ page: 2, totalPages: 3, searching: false });
     expect(
@@ -204,7 +214,7 @@ describe("avaliação de nível por IA e catálogo do TMDB", () => {
   });
 
   it("exporta tudo no formato de fonte de nível, com as avaliações da IA à parte", async () => {
-    await app.rate({ userId: "ana", type: "series", externalId: UNKNOWN });
+    await app.rate({ actor: ADMIN, type: "series", externalId: UNKNOWN });
     const exported = await app.exportAll({ name: "Deixa" });
     expect(exported).toMatchObject({
       name: "Deixa",

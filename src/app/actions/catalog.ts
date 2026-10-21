@@ -419,7 +419,10 @@ export async function rateWorkLevelAction(
   return runAction("rateWorkLevel", async () => {
     const parsed = tmdbWorkSchema.safeParse(input);
     if (!parsed.success) throw new AppError("INVALID_INPUT");
-    const rated = await app().rateWorkLevel({ userId: user.id, ...parsed.data });
+    const rated = await app().rateWorkLevel({
+      actor: { userId: user.id, isAdmin: user.isAdmin },
+      ...parsed.data,
+    });
     revalidatePath("/catalog", "layout");
     const [min, max] = rated.range ?? rated.ai.range;
     return { range: `${min}–${max}`, reason: rated.ai.reason, ratings: rated.ratings.length };

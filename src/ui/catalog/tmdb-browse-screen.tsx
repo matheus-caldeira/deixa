@@ -48,7 +48,7 @@ function hrefFor(filters: TmdbBrowseFilters, change: Partial<TmdbBrowseFilters>)
   return `/catalog/tmdb?${params.toString()}`;
 }
 
-function WorkTile({ work }: { work: TmdbWorkView }) {
+function WorkTile({ work, canRate }: { work: TmdbWorkView; canRate: boolean }) {
   const t = useTranslations("tmdbBrowse");
   const fits = useTranslations("fit");
   const format = useFormatter();
@@ -129,9 +129,11 @@ function WorkTile({ work }: { work: TmdbWorkView }) {
         <button type="button" className="btn sm" onClick={open} disabled={pending}>
           {work.catalogMediaId ? t("openInCatalog") : t("open")}
         </button>
-        <button type="button" className="btn ghost sm" onClick={rate} disabled={pending}>
-          {pending ? t("rating") : work.hasAi || rated ? t("rateAgain") : t("rate")}
-        </button>
+        {canRate ? (
+          <button type="button" className="btn ghost sm" onClick={rate} disabled={pending}>
+            {pending ? t("rating") : work.hasAi || rated ? t("rateAgain") : t("rate")}
+          </button>
+        ) : null}
       </div>
       {error ? <p className="formerr small">{error}</p> : null}
     </article>
@@ -145,8 +147,10 @@ export function TmdbBrowseScreen({
   totalPages,
   searching,
   failed,
+  canRate,
 }: {
   filters: TmdbBrowseFilters;
+  canRate: boolean;
   works: TmdbWorkView[];
   page: number;
   totalPages: number;
@@ -237,7 +241,7 @@ export function TmdbBrowseScreen({
       {works.length > 0 ? (
         <div className="pgrid">
           {works.map((work) => (
-            <WorkTile key={work.externalId} work={work} />
+            <WorkTile key={work.externalId} work={work} canRate={canRate} />
           ))}
         </div>
       ) : null}

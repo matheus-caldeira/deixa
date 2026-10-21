@@ -51,10 +51,11 @@ export type RatedWork = WorkLevelRatings & { ai: { range: LevelRange; reason: st
 export function makeRateWorkLevel(deps: Deps) {
   const resolve = makeResolveLevelRatings(deps);
   return async function rateWorkLevel(input: {
-    userId: string;
+    actor: { userId: string; isAdmin: boolean };
     type: MediaType;
     externalId: string;
   }): Promise<RatedWork> {
+    if (!input.actor.isAdmin) throw new AppError("FORBIDDEN", "adminOnlyLevelRating");
     if (deps.metadata.name !== "tmdb" || !RATING_KEY_PATTERN.test(input.externalId)) {
       throw new AppError("INVALID_INPUT");
     }
@@ -62,7 +63,7 @@ export function makeRateWorkLevel(deps: Deps) {
     if (details.type !== input.type || details.externalId !== input.externalId) {
       throw new AppError("METADATA_NOT_FOUND");
     }
-    const rater = await deps.resolveRater(input.userId);
+    const rater = await deps.resolveRater(input.actor.userId);
     if (!rater) throw new AppError("LLM_FAILED", "levelRatingNoAi");
     const raw = await rater.rate({
       type: details.type,
@@ -81,7 +82,7 @@ export function makeRateWorkLevel(deps: Deps) {
       range,
       reason,
       model: rater.model,
-      ratedBy: input.userId,
+      ratedBy: input.actor.userId,
       ratedAt: deps.clock.now(),
     });
     const resolved = (await resolve([input.externalId])).get(input.externalId) ?? {
