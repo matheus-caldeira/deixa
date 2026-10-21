@@ -43,6 +43,13 @@ const envSchema = z.object({
       .default("false")
       .transform((value) => value === "true" || value === "1"),
   ),
+  LEVEL_SOURCES_ALLOW_PRIVATE_NETWORK: z.preprocess(
+    blankAsUndefined,
+    z
+      .enum(["true", "false", "1", "0"])
+      .default("false")
+      .transform((value) => value === "true" || value === "1"),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

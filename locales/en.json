@@ -1443,6 +1443,7 @@
     "pending": "Downloading…",
     "failed": {
       "unreachable": "Failed: the address is down.",
+      "blocked": "Failed: the address points to the internal network, which is blocked.",
       "timeout": "Failed: the URL took too long to answer.",
       "status": "Failed: the URL answered {status}.",
       "tooLarge": "Failed: the file is larger than 5 MB.",

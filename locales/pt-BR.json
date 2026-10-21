@@ -1443,6 +1443,7 @@
     "pending": "Baixando…",
     "failed": {
       "unreachable": "Falhou: endereço fora do ar.",
+      "blocked": "Falhou: o endereço aponta para a rede interna, que está bloqueada.",
       "timeout": "Falhou: a URL demorou demais para responder.",
       "status": "Falhou: a URL respondeu {status}.",
       "tooLarge": "Falhou: arquivo maior que 5 MB.",

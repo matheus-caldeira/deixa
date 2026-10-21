@@ -315,7 +315,7 @@ export function buildContainer(options: ContainerOptions) {
   const catalog = new DrizzleCatalogRepository(db);
   const levelSourceDeps = {
     sources: new DrizzleLevelSourceRepository(db),
-    fetcher: new HttpLevelSourceFetcher(),
+    fetcher: new HttpLevelSourceFetcher({ allowPrivateNetwork: env.LEVEL_SOURCES_ALLOW_PRIVATE_NETWORK }),
     builtin: builtinLevelGuide,
     catalog,
     clock,

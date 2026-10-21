@@ -15,6 +15,7 @@ import type { CatalogRepository } from "./ports";
 
 export const LEVEL_FETCH_FAILURES = [
   "unreachable",
+  "blocked",
   "timeout",
   "status",
   "tooLarge",
