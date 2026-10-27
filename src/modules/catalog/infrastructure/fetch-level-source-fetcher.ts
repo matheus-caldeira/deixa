@@ -39,9 +39,8 @@ export class FetchLevelSourceFetcher implements LevelSourceFetcher {
     if (!response.ok) return { ok: false, reason: "status", status: response.status };
     const declared = Number(response.headers.get("content-length") ?? 0);
     if (declared > MAX_LEVEL_SOURCE_BYTES) return { ok: false, reason: "tooLarge", status: response.status };
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (bytes.byteLength > MAX_LEVEL_SOURCE_BYTES)
-      return { ok: false, reason: "tooLarge", status: response.status };
+    const bytes = await readCapped(response);
+    if (!bytes) return { ok: false, reason: "tooLarge", status: response.status };
     try {
       return { ok: true, data: JSON.parse(new TextDecoder().decode(bytes)) };
     } catch {
