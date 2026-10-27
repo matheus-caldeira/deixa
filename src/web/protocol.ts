@@ -13,19 +13,28 @@ export type RuntimeStatus = z.infer<typeof runtimeStatusSchema>;
 
 export const runtimeRequestSchema = z.object({
   id: z.number().int(),
-  operation: z.string(),
+  operation: z.string().max(80),
   input: z.unknown(),
 });
 export type RuntimeRequest = z.infer<typeof runtimeRequestSchema>;
 
+export const runtimeErrorSchema = z.object({
+  code: z.string(),
+  detail: z
+    .object({ key: z.string(), params: z.record(z.string(), z.union([z.string(), z.number()])).optional() })
+    .nullable(),
+});
+export type RuntimeError = z.infer<typeof runtimeErrorSchema>;
+
 export const runtimeMessageSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("status"), status: runtimeStatusSchema }),
+  z.object({ kind: z.literal("changed") }),
   z.object({
     kind: z.literal("result"),
     id: z.number().int(),
     outcome: z.discriminatedUnion("ok", [
       z.object({ ok: z.literal(true), data: z.unknown() }),
-      z.object({ ok: z.literal(false), code: z.string() }),
+      z.object({ ok: z.literal(false), error: runtimeErrorSchema }),
     ]),
   }),
 ]);

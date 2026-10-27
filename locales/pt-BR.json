@@ -1518,7 +1518,7 @@
       "failed": "O banco não abriu."
     },
     "timing": "Abriu em {open} ms; migrações em {migrate} ms.",
-    "probe": "{users, plural, one {# conta} other {# contas}} no banco; {usage} MB usados de {quota} MB.",
+    "probe": "Conta: {name}; {usage} MB usados de {quota} MB.",
     "add": "Criar conta de prova",
     "detailLink": "Tela {id}",
     "detail": "Tela {id}",

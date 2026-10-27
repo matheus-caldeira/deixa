@@ -8,27 +8,23 @@ async function waitForReady(page: Page) {
   });
 }
 
-async function accounts(page: Page): Promise<number> {
-  const text = (await page.getByTestId("lab-probe").textContent()) ?? "";
-  return Number(text.split(" ")[0]);
-}
-
-test("banco no navegador grava, reabre, trava a segunda aba e navega sem rede", async ({ context, page }) => {
+test("conta criada no navegador sobrevive à recarga, trava a segunda aba e abre sem rede", async ({
+  context,
+  page,
+}) => {
   await page.goto("/lab/");
   await waitForReady(page);
-  const before = await accounts(page);
   await page.getByRole("button", { name: "Criar conta de prova" }).click();
-  await expect.poll(() => accounts(page)).toBe(before + 1);
+  await expect(page.getByTestId("lab-probe")).toContainText("Conta: Prova", { timeout: 30_000 });
 
   const second = await context.newPage();
   await second.goto("/lab/");
   await expect(second.getByTestId("lab-status")).toHaveText(
     "Esperando o banco: ele está aberto em outra aba.",
   );
-
   await page.close();
   await waitForReady(second);
-  await expect.poll(() => accounts(second)).toBe(before + 1);
+  await expect(second.getByTestId("lab-probe")).toContainText("Conta: Prova");
 
   const timing = await second.getByTestId("lab-timing").textContent();
   const memory = await second.evaluate(async () => {
@@ -39,7 +35,7 @@ test("banco no navegador grava, reabre, trava a segunda aba e navega sem rede", 
   });
   const storage = await second.evaluate(async () => (await navigator.storage.estimate()).usage ?? 0);
   console.info(
-    `prova: ${timing}; memória ${memory === null ? "indisponível" : Math.round(memory / BYTES_PER_MB)} MB; espaço ${Math.round(storage / BYTES_PER_MB)} MB`,
+    `prova: ${timing} memória ${memory === null ? "indisponível" : Math.round(memory / BYTES_PER_MB)} MB; espaço ${Math.round(storage / BYTES_PER_MB)} MB`,
   );
 
   await second.evaluate(() => navigator.serviceWorker.ready);
@@ -54,6 +50,6 @@ test("banco no navegador grava, reabre, trava a segunda aba e navega sem rede", 
   await expect(second.getByTestId("lab-detail")).toHaveText("Tela c");
   await second.goto("/lab/");
   await waitForReady(second);
-  await expect.poll(() => accounts(second)).toBe(before + 1);
+  await expect(second.getByTestId("lab-probe")).toContainText("Conta: Prova");
   await context.setOffline(false);
 });

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { RuntimeStatus } from "@/web/protocol";
 import { runtime } from "@/web/runtime-client";
 
-type Probe = { users: number; usage: number; quota: number };
+type Probe = { name: string | null; usage: number; quota: number };
 const BYTES_PER_MB = 1_048_576;
 
 export function LabScreen() {
@@ -18,7 +18,9 @@ export function LabScreen() {
 
   const refresh = useCallback(async () => {
     try {
-      setProbe((await runtime().call("lab.probe")) as Probe);
+      const status = (await runtime().call("auth.status")) as { user: { name: string } | null };
+      const estimate = await navigator.storage.estimate();
+      setProbe({ name: status.user?.name ?? null, usage: estimate.usage ?? 0, quota: estimate.quota ?? 0 });
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "");
     }
@@ -34,8 +36,20 @@ export function LabScreen() {
   );
 
   const add = async () => {
-    await runtime().call("lab.addUser");
-    await refresh();
+    try {
+      await runtime().call("auth.signUp", {
+        name: "Prova",
+        email: `prova-${Date.now()}@deixa.local`,
+        password: "segredo123",
+        level: "A2",
+        nativeLanguage: "pt-BR",
+        targetLanguage: "en",
+        locale: "pt-BR",
+      });
+      await refresh();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "");
+    }
   };
 
   return (
@@ -51,7 +65,7 @@ export function LabScreen() {
       {probe ? (
         <p data-testid="lab-probe">
           {t("probe", {
-            users: probe.users,
+            name: probe.name ?? "-",
             usage: Math.round(probe.usage / BYTES_PER_MB),
             quota: Math.round(probe.quota / BYTES_PER_MB),
           })}

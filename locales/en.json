@@ -1518,7 +1518,7 @@
       "failed": "The database did not open."
     },
     "timing": "Opened in {open} ms; migrations in {migrate} ms.",
-    "probe": "{users, plural, one {# account} other {# accounts}} in the database; {usage} MB used of {quota} MB.",
+    "probe": "Account: {name}; {usage} MB used of {quota} MB.",
     "add": "Create probe account",
     "detailLink": "Screen {id}",
     "detail": "Screen {id}",

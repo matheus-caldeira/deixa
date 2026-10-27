@@ -1,8 +1,8 @@
-import { runtimeMessageSchema, type RuntimeStatus } from "./protocol";
+import { runtimeMessageSchema, type RuntimeError, type RuntimeStatus } from "./protocol";
 
 export class RuntimeCallError extends Error {
-  constructor(readonly code: string) {
-    super(code);
+  constructor(readonly error: RuntimeError) {
+    super(error.code);
   }
 }
 
@@ -11,7 +11,8 @@ type Pending = { resolve: (data: unknown) => void; reject: (error: RuntimeCallEr
 export class RuntimeClient {
   private readonly worker: Worker;
   private readonly pending = new Map<number, Pending>();
-  private readonly listeners = new Set<(status: RuntimeStatus) => void>();
+  private readonly statusListeners = new Set<(status: RuntimeStatus) => void>();
+  private readonly changeListeners = new Set<() => void>();
   private nextId = 1;
   status: RuntimeStatus = { state: "waiting" };
 
@@ -26,20 +27,33 @@ export class RuntimeClient {
     const message = parsed.data;
     if (message.kind === "status") {
       this.status = message.status;
-      for (const listener of this.listeners) listener(message.status);
+      for (const listener of this.statusListeners) listener(message.status);
+      return;
+    }
+    if (message.kind === "changed") {
+      for (const listener of this.changeListeners) listener();
       return;
     }
     const waiting = this.pending.get(message.id);
     if (!waiting) return;
     this.pending.delete(message.id);
     if (message.outcome.ok) waiting.resolve(message.outcome.data);
-    else waiting.reject(new RuntimeCallError(message.outcome.code));
+    else waiting.reject(new RuntimeCallError(message.outcome.error));
   }
 
   onStatus(listener: (status: RuntimeStatus) => void): () => void {
-    this.listeners.add(listener);
+    this.statusListeners.add(listener);
     listener(this.status);
-    return () => this.listeners.delete(listener);
+    return () => this.statusListeners.delete(listener);
+  }
+
+  onChange(listener: () => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.changeListeners.delete(listener);
+  }
+
+  notifyChange() {
+    for (const listener of this.changeListeners) listener();
   }
 
   call(operation: string, input?: unknown): Promise<unknown> {
