@@ -364,9 +364,7 @@
   },
   {
     "tag": "0022_condemned_lady_deathstrike",
-    "sql": [
-      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"
-    ],
+    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"],
     "bps": true,
     "folderMillis": 1792115432664,
     "hash": "616a1ee9b6d0f6e1b2fb18e47b091784456904267b48abc42e8cadabc71a18fa"
@@ -435,9 +433,7 @@
   },
   {
     "tag": "0027_conversation_episode",
-    "sql": [
-      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"
-    ],
+    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"],
     "bps": true,
     "folderMillis": 1792166687587,
     "hash": "332f14f21dd4df88cfb91e26a858672361aa1b6b073a7210cb5304c2c82d990c"

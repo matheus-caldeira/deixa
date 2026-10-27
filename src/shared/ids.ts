@@ -1,10 +1,8 @@
-import { randomUUID } from "node:crypto";
-
 export interface IdGenerator {
   next(): string;
 }
 
-export const uuidGenerator: IdGenerator = { next: () => randomUUID() };
+export const uuidGenerator: IdGenerator = { next: () => globalThis.crypto.randomUUID() };
 
 export class SequentialIds implements IdGenerator {
   private counter = 0;

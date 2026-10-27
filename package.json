@@ -49,6 +49,8 @@
     "@ai-sdk/openai": "^4.0.91",
     "@ai-sdk/openai-compatible": "^3.0.67",
     "@electric-sql/pglite": "^0.5.12",
+    "@noble/ciphers": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
     "ai": "^7.0.137",
     "drizzle-orm": "^0.45.4",
     "fflate": "^0.8.3",

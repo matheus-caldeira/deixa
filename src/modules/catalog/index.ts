@@ -56,6 +56,7 @@ export {
   type LevelRatingKind,
   type LevelRatingsExport,
   type LevelSource,
+  type LevelSourceFetcher,
   type WorkLevelRatings,
 } from "./application/level-sources";
 export {

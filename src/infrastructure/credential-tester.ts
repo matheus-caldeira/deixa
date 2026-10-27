@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { isAiService, parseEndpoint, tmdbSecretKind, type CredentialService } from "@/modules/ai-credentials";
 import { testAiApiKey } from "./ai/test-api-key";
@@ -22,7 +21,7 @@ async function testTmdb(secret: string): Promise<boolean> {
 
 async function testOpenSubtitles(secret: string): Promise<boolean> {
   try {
-    const uncached = `${OPENSUBTITLES_CHECK_URL}?filename=${randomUUID()}.s01e01.mkv`;
+    const uncached = `${OPENSUBTITLES_CHECK_URL}?filename=${globalThis.crypto.randomUUID()}.s01e01.mkv`;
     const response = await fetch(uncached, {
       headers: { "api-key": secret, "user-agent": OPENSUBTITLES_USER_AGENT, accept: "application/json" },
       signal: AbortSignal.timeout(TIMEOUT_MS),

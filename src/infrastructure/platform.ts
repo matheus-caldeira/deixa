@@ -1,0 +1,19 @@
+import type { KeyCipher } from "@/modules/ai-credentials";
+import type { TtsProvider } from "@/modules/audio";
+import type { LevelSourceFetcher } from "@/modules/catalog";
+import type { PasswordHasher, SessionTokens } from "@/modules/identity";
+import type { PersonalCipher } from "@/modules/packages";
+import type { SubtitleSourceProvider } from "@/modules/subtitle-sources";
+import type { FileStorage } from "@/shared/storage";
+import type { Env } from "./config/env";
+
+export type Platform = {
+  storage: (env: Env) => FileStorage;
+  passwords: PasswordHasher;
+  tokens: SessionTokens;
+  cipher: (masterKey: string) => KeyCipher;
+  personalCipher: PersonalCipher;
+  levelSourceFetcher: (env: Env) => LevelSourceFetcher;
+  tts: (url: string) => TtsProvider;
+  fakeSubtitleSource: () => SubtitleSourceProvider;
+};
