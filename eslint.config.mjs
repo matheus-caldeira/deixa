@@ -55,6 +55,22 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: ["src/operations/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [...ADAPTERS, "next", "next/**", "next-intl/server", "node:*"],
+              message: "Operações rodam no servidor e no navegador: só casos de uso pelo contexto.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["src/modules/*/domain/**/*.ts", "src/modules/*/application/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: {

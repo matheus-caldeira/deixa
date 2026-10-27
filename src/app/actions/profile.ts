@@ -1,106 +1,32 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { CREDENTIAL_SERVICES, type StoredState } from "@/modules/ai-credentials";
-import { refreshSettings } from "@/infrastructure/container";
-import type { AppSettings } from "@/modules/settings";
-import { AppError } from "@/shared/errors";
-import { localeSchema } from "@/shared/locales";
-import { CEFR_LEVELS } from "@/shared/levels";
-import { studyLanguageSchema } from "@/shared/study-languages";
+import { preferencesSchema } from "@/operations/profile";
+import { runOperation } from "../operations";
 import { rememberLocale } from "./locale";
-import { requireUser } from "../session";
-import { app, runAction, type ActionResult } from "./result";
 
-const MAX_SECRET_CHARS = 1000;
-
-const preferencesSchema = z
-  .object({
-    dailyGoal: z.number().int().optional(),
-    preferredAccent: z.enum(["US", "UK"]).optional(),
-    audioSpeed: z.number().optional(),
-    locale: localeSchema.optional(),
-  })
-  .strict();
-
-export async function updatePreferencesAction(input: unknown): Promise<ActionResult<null>> {
-  const user = await requireUser();
-  return runAction("updatePreferences", async () => {
-    const parsed = preferencesSchema.safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT");
-    await app().updatePreferences(user.id, parsed.data);
-    if (parsed.data.locale) await rememberLocale(parsed.data.locale);
-    revalidatePath("/", "layout");
-    return null;
-  });
+export async function updatePreferencesAction(input: unknown) {
+  const result = await runOperation("profile.updatePreferences", input);
+  const locale = preferencesSchema.safeParse(input).data?.locale;
+  if (result.ok && locale) await rememberLocale(locale);
+  return result;
 }
 
-const credentialTarget = z.object({
-  service: z.enum(CREDENTIAL_SERVICES),
-  scope: z.enum(["user", "global"]),
-});
-
-export async function saveCredentialAction(input: unknown): Promise<ActionResult<StoredState>> {
-  const user = await requireUser();
-  return runAction("saveCredential", async () => {
-    const parsed = credentialTarget
-      .extend({ secret: z.string().min(1).max(MAX_SECRET_CHARS) })
-      .safeParse(input);
-    if (!parsed.success) throw new AppError("AI_KEY_INVALID");
-    const state = await app().saveCredential({
-      actor: { userId: user.id, isAdmin: user.isAdmin },
-      ...parsed.data,
-    });
-    revalidatePath("/", "layout");
-    return state;
-  });
+export async function saveCredentialAction(input: unknown) {
+  return runOperation("profile.saveCredential", input);
 }
 
-export async function removeCredentialAction(input: unknown): Promise<ActionResult<null>> {
-  const user = await requireUser();
-  return runAction("removeCredential", async () => {
-    const parsed = credentialTarget.safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT");
-    await app().removeCredential({ actor: { userId: user.id, isAdmin: user.isAdmin }, ...parsed.data });
-    revalidatePath("/", "layout");
-    return null;
-  });
+export async function removeCredentialAction(input: unknown) {
+  return runOperation("profile.removeCredential", input);
 }
 
-export async function updateSettingsAction(input: unknown): Promise<ActionResult<AppSettings>> {
-  const user = await requireUser();
-  return runAction("updateSettings", async () => {
-    const saved = await app().updateSettings({
-      actor: { userId: user.id, isAdmin: user.isAdmin },
-      values: input,
-    });
-    await refreshSettings();
-    revalidatePath("/", "layout");
-    return saved;
-  });
+export async function updateSettingsAction(input: unknown) {
+  return runOperation("profile.updateSettings", input);
 }
 
-const pairSchema = z.object({ target: studyLanguageSchema, native: studyLanguageSchema });
-
-export async function switchLanguagePairAction(input: unknown): Promise<ActionResult<null>> {
-  const user = await requireUser();
-  return runAction("switchLanguagePair", async () => {
-    const parsed = pairSchema.safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT");
-    await app().switchLanguagePair(user.id, parsed.data);
-    revalidatePath("/", "layout");
-    return null;
-  });
+export async function switchLanguagePairAction(input: unknown) {
+  return runOperation("profile.switchPair", input);
 }
 
-export async function addLanguagePairAction(input: unknown): Promise<ActionResult<null>> {
-  const user = await requireUser();
-  return runAction("addLanguagePair", async () => {
-    const parsed = pairSchema.extend({ level: z.enum(CEFR_LEVELS) }).safeParse(input);
-    if (!parsed.success) throw new AppError("INVALID_INPUT");
-    await app().addLanguagePair(user.id, parsed.data);
-    revalidatePath("/", "layout");
-    return null;
-  });
+export async function addLanguagePairAction(input: unknown) {
+  return runOperation("profile.addPair", input);
 }

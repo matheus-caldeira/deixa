@@ -10,5 +10,6 @@ Checklist:
 - [ ] Sem `Date.now()` nem `crypto.randomUUID()` direto no caso de uso: `Clock` e `IdGenerator`.
 - [ ] Erro esperado é `AppError` com `code`; exceção genérica só para bug ou falha de infraestrutura.
 - [ ] Sem regra de negócio em `page.tsx`, server action, `route.ts` ou componente.
+- [ ] Server action é invólucro de `runOperation`; a operação mora em `src/operations/` (ADR 0023).
 
 Profundidade: @.contexts/engineering/rules/use-cases.md

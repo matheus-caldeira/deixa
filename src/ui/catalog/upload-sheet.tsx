@@ -10,7 +10,7 @@ import {
   selectWorkAction,
   uploadSubtitlesAction,
 } from "@/app/actions/catalog";
-import type { ImportView, SearchResultView, UploadEpisodeView, UploadTargetView } from "@/app/actions/views";
+import type { ImportView, SearchResultView, UploadEpisodeView, UploadTargetView } from "@/operations/views";
 import { posterColorsFor } from "@/modules/catalog";
 import { LANGUAGE_TAGS, type LanguagePair } from "@/shared/study-languages";
 import { CheckIcon, SearchIcon } from "../icons";

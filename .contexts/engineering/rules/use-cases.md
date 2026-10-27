@@ -36,3 +36,7 @@ export function makeImportEpisodeSubtitles(deps: {
 ## Chamadores
 
 Page, server action, route handler, seed e, na fase 03, worker e workflows. Todos pelo container.
+
+Server action e tela do modo pessoal não chamam o caso de uso direto: passam por uma operação de
+`src/operations/` (ADR 0023), que valida a entrada com Zod e recebe usuário, container e fila pelo contexto. A
+server action é um invólucro de uma linha sobre `runOperation`.

@@ -3,7 +3,7 @@
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { importFromSourceAction, searchSubtitlesAction } from "@/app/actions/catalog";
-import type { SourceImportView, SubtitleOptionView, SubtitleSearchView } from "@/app/actions/views";
+import type { SourceImportView, SubtitleOptionView, SubtitleSearchView } from "@/operations/views";
 import { LANGUAGE_TAGS, type LanguagePair, type StudyLanguage } from "@/shared/study-languages";
 import { CheckIcon, SearchIcon } from "../icons";
 

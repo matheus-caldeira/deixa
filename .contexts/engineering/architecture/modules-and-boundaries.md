@@ -11,6 +11,8 @@ source: PROJETO.md §14
 ```
 src/app/              Next.js: (auth), (learning) com as cinco abas, read/[episodeId], api/
 src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
+src/operations/       registro de operações (ADR 0023): borda comum à família e ao modo pessoal
+src/web/              worker e cliente do modo pessoal no navegador (PGlite, operações)
 src/modules/<m>/      domain/ · application/ (casos de uso e ports) · infrastructure/ · index.ts
 src/infrastructure/   config/ database/ storage/ tmdb/ ai/ kokoro/ logger/ container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, clock, ids
@@ -55,6 +57,8 @@ chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão e
 - `src/infrastructure/container.ts` é o único lugar que monta casos de uso com implementações concretas.
 - `src/app` importa o container e tipos públicos dos módulos; nunca adapters (`tmdb`, `kokoro`, `ai`,
   `database`) nem `modules/**/infrastructure`.
+- `src/operations` não importa `next`, `next-intl/server`, `node:*` nem adapters; recebe tudo pelo
+  `OperationContext`. Server action é invólucro de uma linha sobre `runOperation`.
 - `src/ui` não importa `src/infrastructure/**` nem `modules/**/infrastructure/**`. Componente cliente chama
   server action.
 
