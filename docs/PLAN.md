@@ -138,7 +138,7 @@ Branch `feat/desktop-shell`. Detalhes e pendências em [HANDOFF.md](HANDOFF.md),
 | --- | ------------------------------------------------------ | -------------------------------------------------------- | ------ |
 | 69  | Projeto Tauri com bandeja, janela, navegador e QR code | Compila; sobe e fica residente no macOS; instância única | [x]    |
 | 70  | Teste manual do menu e das janelas                     | Conferido pelo autor                                     | [ ]    |
-| 71  | Servidor embutido como sidecar                         | App instalável sobe sem `pnpm dev`                       | [ ]    |
+| 71  | Servidor embutido como sidecar                         | App instalável sobe sem `pnpm dev`                       | [x]    |
 
 ## Etapa 9: sessão do dono na casca
 
@@ -268,6 +268,32 @@ Protótipo: `docs/conversation-review-poc.html` (`pnpm poc`).
 | 131 | Guia de níveis no cadastro e nas sugestões              | Provider do TMDB envolvido pelo guia: cadastro e atualização gravam a faixa do guia; sugestões ranqueiam pela faixa do guia e ignoram a da IA; migração 0028 corrige as obras já cadastradas                                                                                                                          | [x]    |
 | 132 | Fontes de nível por URL, com N avaliações por obra      | Administrador cadastra URLs na aba Catálogo; cada URL traz avaliações e pode listar outras URLs (até dois níveis, 50 fontes, 5 MB); job `level_sources_sync`; faixa da obra pela mediana de todas as avaliações mais o guia embutido; desligar ou remover recalcula; tela da obra mostra as avaliações; migração 0029 | [x]    |
 | 133 | Catálogo completo do TMDB com avaliação de nível por IA | `/catalog/tmdb` com tipo, idioma original, ordem, busca e páginas do TMDB; cada obra mostra a faixa e quantas avaliações tem; "Avaliar com IA" grava em `ai_level_ratings` (migração 0030) e entra na mediana; "Exportar níveis" baixa tudo no formato de fonte de nível                                              | [x]    |
+
+## Etapa 20: versão web offline (27/10/2026)
+
+Plano mestre em `docs/WEB-OFFLINE-PLAN.md` (etapas 0, 1, 6, 8 e 9). Branch `feat/web-offline`.
+
+| #   | Tarefa                                  | Critério de pronto                                                                                                         | Estado |
+| --- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 134 | Provas A e C: PGlite em worker          | Página de prova grava no aparelho, reabre com os dados e trava a segunda aba; memória e espaço medidos no Chrome           | [ ]    |
+| 135 | Prova B: Next em export estático        | Telas navegam sem rede depois da primeira visita, com o identificador na query string                                      | [ ]    |
+| 136 | Prova D: serviços chamados do navegador | TMDB, OpenSubtitles e provedores de IA conferidos quanto a CORS; resultado em `docs/DECISIONS.md`                          | [ ]    |
+| 137 | Banco com dois drivers                  | Tipo `Database` comum a `postgres` e PGlite; migrações embutidas; integração e isolamento passam nos dois drivers          | [ ]    |
+| 138 | Borda única: registro de operações      | Operações com nome, schema Zod e caso de uso; handler no modo família resolve a sessão; cliente `operation(nome, dados)`   | [ ]    |
+| 139 | Rotas sem identificador no caminho      | `read`, `tutor`, `catalog`, `study` e `trail` com o id na query string; links antigos redirecionam                         | [ ]    |
+| 140 | Telas cliente sobre o registro          | Nenhuma server action restante; e2e passa no modo família                                                                  | [ ]    |
+| 141 | Modo pessoal no navegador               | Container de navegador (senha, cifra pela senha, sessão local, arquivos no OPFS, voz do navegador); fila retomada ao abrir | [ ]    |
+| 142 | PWA e publicação                        | Alvo web em export estático; app abre sem rede; aviso de versão nova; cópia antes de migrar; teste de bundle do alvo web   | [ ]    |
+
+## Etapa 21: voz e publicação (fase 06)
+
+| #   | Tarefa                           | Critério de pronto                                                                                         | Estado |
+| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------ |
+| 143 | HTTPS local para microfone e PWA | `pnpm dev:https` com certificado gerado pelo `openssl` em `data/certs`; celular na rede abre com microfone | [ ]    |
+| 144 | Fala para texto atrás de um port | `SpeechToText` com provedor de IA (transcrição) e reserva fake; medidor de uso; testes sem chamada real    | [ ]    |
+| 145 | Chamada de voz com o tutor       | Microfone, fim de fala por silêncio, transcrição, resposta falada pelo Kokoro e interrupção                | [ ]    |
+| 146 | Avaliação de pronúncia           | Exercício "fale a frase" compara a transcrição com a fala, palavra por palavra, e mostra o que faltou      | [ ]    |
+| 147 | Privacidade e direitos           | Página de privacidade e de direitos de legendas; limites de uso e retenção de áudio documentados           | [ ]    |
 
 ## Próximo
 
