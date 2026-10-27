@@ -10,13 +10,17 @@ const localAddresses = Object.values(networkInterfaces())
   .map((entry) => entry.address);
 
 const forDesktop = process.env.DEIXA_STANDALONE === "1";
+const forWeb = process.env.DEIXA_TARGET === "web";
 
 const nextConfig: NextConfig = {
-  output: forDesktop ? "standalone" : undefined,
+  output: forWeb ? "export" : forDesktop ? "standalone" : undefined,
+  distDir: forWeb ? ".next-web" : undefined,
+  pageExtensions: forWeb ? ["web.tsx", "web.ts"] : ["tsx", "ts"],
+  trailingSlash: forWeb,
   allowedDevOrigins: [...localAddresses, LOOPBACK_ADDRESS],
   logging: { serverFunctions: false },
   images: {
-    unoptimized: forDesktop,
+    unoptimized: forDesktop || forWeb,
     remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
   },
   experimental: {

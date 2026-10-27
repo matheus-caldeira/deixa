@@ -30,3 +30,11 @@ PostgreSQL em WASM para o modo pessoal no navegador e para rodar a integração 
 Abrir um PGlite em Node leva o processo de cerca de 140 MB para 1,2 GB de memória residente (medido em
 27/10/2026, versão 0.5.12). Por isso o modo família continua no Postgres externo (ADR 0017) e o PGlite nunca
 abre no processo do servidor.
+
+## Navegador
+
+- `src/web/runtime.worker.ts`: worker dedicado que abre o PGlite em `idb://deixa`, aplica as migrações e
+  atende operações por mensagem (`src/web/protocol.ts`). `src/web/runtime-client.ts` é o lado da tela.
+- Uma aba por vez: a trava `deixa-database` (Web Locks) decide quem abre o banco.
+- Medido no Chrome em 27/10/2026: abrir em cerca de 190 ms, 62 MB de memória, 29 MB de espaço com o app em
+  cache. Safari e iPhone em `docs/TESTES-MANUAIS.md`.

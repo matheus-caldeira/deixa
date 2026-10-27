@@ -1508,5 +1508,20 @@
     "pageOf": "Página {page} de {total}",
     "attribution": "Dados de obras do TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.",
     "seeAll": "Ver todo o catálogo do TMDB"
+  },
+  "webLab": {
+    "title": "Prova do modo pessoal",
+    "status": {
+      "waiting": "Esperando o banco: ele está aberto em outra aba.",
+      "opening": "Abrindo o banco neste aparelho…",
+      "ready": "Banco aberto neste aparelho.",
+      "failed": "O banco não abriu."
+    },
+    "timing": "Abriu em {open} ms; migrações em {migrate} ms.",
+    "probe": "{users, plural, one {# conta} other {# contas}} no banco; {usage} MB usados de {quota} MB.",
+    "add": "Criar conta de prova",
+    "detailLink": "Tela {id}",
+    "detail": "Tela {id}",
+    "back": "Voltar"
   }
 }

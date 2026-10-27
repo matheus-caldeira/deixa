@@ -75,3 +75,13 @@ A 0.0.5 falha na instalação do Postgres embutido com `spawn tar ENOENT`; a cor
 
 - [ ] Abrir pelo QR code da bandeja e instalar como PWA.
 - [ ] Ditado do teclado funciona no Conversar (microfone direto só com HTTPS).
+
+## Versão web offline (Safari e iPhone)
+
+`pnpm build:web && node scripts/serve-web.mjs` publica o alvo web em `http://127.0.0.1:1320`. No iPhone, o
+banco e o service worker pedem HTTPS (ver `pnpm dev:https` quando existir).
+
+- [ ] Safari no Mac: `/lab/` abre o banco, "Criar conta de prova" soma uma conta, recarregar mantém a contagem.
+- [ ] Safari no Mac: segunda aba mostra "Esperando o banco" e abre quando a primeira fecha.
+- [ ] Safari no Mac: depois da primeira visita, sem rede, `/lab/detail/?id=b` abre.
+- [ ] iPhone: os três itens acima, e anotar o espaço mostrado na prova.

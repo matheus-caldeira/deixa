@@ -275,8 +275,8 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md` (etapas 0, 1, 6, 8 e 9). Branch `feat
 
 | #   | Tarefa                                  | Critério de pronto                                                                                                         | Estado |
 | --- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 134 | Provas A e C: PGlite em worker          | Página de prova grava no aparelho, reabre com os dados e trava a segunda aba; memória e espaço medidos no Chrome           | [ ]    |
-| 135 | Prova B: Next em export estático        | Telas navegam sem rede depois da primeira visita, com o identificador na query string                                      | [ ]    |
+| 134 | Provas A e C: PGlite em worker          | Página de prova grava no aparelho, reabre com os dados e trava a segunda aba; memória e espaço medidos no Chrome           | [x]    |
+| 135 | Prova B: Next em export estático        | Telas navegam sem rede depois da primeira visita, com o identificador na query string                                      | [x]    |
 | 136 | Prova D: serviços chamados do navegador | TMDB, OpenSubtitles e provedores de IA conferidos quanto a CORS; resultado em `docs/DECISIONS.md`                          | [x]    |
 | 137 | Banco com dois drivers                  | Tipo `Database` comum a `postgres` e PGlite; migrações embutidas; integração e isolamento passam nos dois drivers          | [x]    |
 | 138 | Borda única: registro de operações      | Operações com nome, schema Zod e caso de uso; handler no modo família resolve a sessão; cliente `operation(nome, dados)`   | [ ]    |

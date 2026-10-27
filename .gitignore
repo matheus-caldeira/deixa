@@ -5,6 +5,7 @@
 node_modules/
 /.next/
 /out/
+/.next-web/
 /build
 /coverage
 next-env.d.ts

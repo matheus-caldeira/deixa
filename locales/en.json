@@ -1508,5 +1508,20 @@
     "pageOf": "Page {page} of {total}",
     "attribution": "Title data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
     "seeAll": "See the whole TMDB catalog"
+  },
+  "webLab": {
+    "title": "Personal mode probe",
+    "status": {
+      "waiting": "Waiting for the database: it is open in another tab.",
+      "opening": "Opening the database on this device…",
+      "ready": "Database open on this device.",
+      "failed": "The database did not open."
+    },
+    "timing": "Opened in {open} ms; migrations in {migrate} ms.",
+    "probe": "{users, plural, one {# account} other {# accounts}} in the database; {usage} MB used of {quota} MB.",
+    "add": "Create probe account",
+    "detailLink": "Screen {id}",
+    "detail": "Screen {id}",
+    "back": "Back"
   }
 }
