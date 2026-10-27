@@ -280,7 +280,7 @@ Plano mestre em `docs/WEB-OFFLINE-PLAN.md` (etapas 0, 1, 6, 8 e 9). Branch `feat
 | 136 | Prova D: serviços chamados do navegador | TMDB, OpenSubtitles e provedores de IA conferidos quanto a CORS; resultado em `docs/DECISIONS.md`                          | [x]    |
 | 137 | Banco com dois drivers                  | Tipo `Database` comum a `postgres` e PGlite; migrações embutidas; integração e isolamento passam nos dois drivers          | [x]    |
 | 138 | Borda única: registro de operações      | Operações com nome, schema Zod e caso de uso; handler no modo família resolve a sessão; cliente `operation(nome, dados)`   | [x]    |
-| 139 | Rotas sem identificador no caminho      | `read`, `tutor`, `catalog`, `study` e `trail` com o id na query string; links antigos redirecionam                         | [ ]    |
+| 139 | Rotas sem identificador no caminho      | `read`, `tutor`, `catalog`, `study` e `trail` com o id na query string; links antigos redirecionam                         | [x]    |
 | 140 | Telas do alvo web sobre o registro      | Cada tela tem `page.web.tsx` que lê os dados por operação e chama o worker nas ações; e2e da família segue passando        | [ ]    |
 | 141 | Modo pessoal no navegador               | Container de navegador (senha, cifra pela senha, sessão local, arquivos no OPFS, voz do navegador); fila retomada ao abrir | [ ]    |
 | 142 | PWA e publicação                        | Alvo web em export estático; app abre sem rede; aviso de versão nova; cópia antes de migrar; teste de bundle do alvo web   | [ ]    |

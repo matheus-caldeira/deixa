@@ -9,7 +9,7 @@ source: PROJETO.md §14
 ## Estrutura de `src/`
 
 ```
-src/app/              Next.js: (auth), (learning) com as cinco abas, read/[episodeId], api/
+src/app/              Next.js: (auth), (learning) com as cinco abas, read (id na query), api/
 src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do protótipo)
 src/operations/       registro de operações (ADR 0023): borda comum à família e ao modo pessoal
 src/web/              worker e cliente do modo pessoal no navegador (PGlite, operações)

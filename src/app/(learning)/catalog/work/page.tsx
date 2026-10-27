@@ -7,17 +7,15 @@ import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { fitFor } from "@/shared/levels";
 import { MediaDetailScreen } from "@/ui/catalog/media-detail-screen";
-import { requireUser } from "../../../session";
+import { requireUser } from "@/app/session";
 
 const SECONDS_PER_MINUTE = 60;
 
 export default async function MediaDetailPage(props: {
-  params: Promise<{ mediaId: string }>;
-  searchParams: Promise<{ season?: string }>;
+  searchParams: Promise<{ id?: string; season?: string }>;
 }) {
   const user = await requireUser();
-  const { mediaId } = await props.params;
-  const { season } = await props.searchParams;
+  const { id: mediaId = "", season } = await props.searchParams;
   if (!z.uuid().safeParse(mediaId).success) notFound();
   const container = getContainer();
 

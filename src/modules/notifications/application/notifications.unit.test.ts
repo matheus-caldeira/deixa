@@ -44,14 +44,14 @@ describe("notificações", () => {
       userId: "ana",
       kind: "cards_ready",
       params: { episode: "S01E01", count: 4 },
-      href: "/read/e1?batch=b1",
+      href: "/read?id=e1&batch=b1",
     });
     await app.notify({ userId: "ana", kind: "trail_ready", params: { episode: "S01E01" }, href: "/" });
     await app.notify({
       userId: "lucas",
       kind: "cards_ready",
       params: { episode: "S01E02", count: 2 },
-      href: "/read/e2?batch=b2",
+      href: "/read?id=e2&batch=b2",
     });
 
     const ana = await app.inbox("ana");

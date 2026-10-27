@@ -2,18 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { runOperation } from "../operations";
+import { routes } from "@/shared/routes";
 
 export type { TurnView } from "@/operations/tutor";
 
 export async function startConversationAction(input: unknown) {
   const result = await runOperation("tutor.start", input);
-  if (result.ok) redirect(`/tutor/${result.data.sessionId}`);
+  if (result.ok) redirect(routes.conversation(result.data.sessionId));
   return result;
 }
 
 export async function startEpisodeConversationAction(episodeId: unknown) {
   const result = await runOperation("tutor.startEpisode", episodeId);
-  if (result.ok) redirect(`/tutor/${result.data.sessionId}`);
+  if (result.ok) redirect(routes.conversation(result.data.sessionId));
   return result;
 }
 

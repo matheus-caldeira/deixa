@@ -4,13 +4,13 @@ import { CONVERSATION_XP, MIN_TURNS_FOR_XP } from "@/modules/conversations";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { ChatScreen } from "@/ui/talk/chat-screen";
-import { requireUser } from "../../session";
+import { requireUser } from "@/app/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function ConversationPage(props: { params: Promise<{ sessionId: string }> }) {
+export default async function ConversationPage(props: { searchParams: Promise<{ id?: string }> }) {
   const user = await requireUser();
-  const { sessionId } = await props.params;
+  const { id: sessionId = "" } = await props.searchParams;
   const conversation = await getContainer()
     .getConversation(user.id, sessionId, user.preferences.targetLanguage)
     .catch((error: unknown) => {

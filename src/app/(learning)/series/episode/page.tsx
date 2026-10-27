@@ -3,11 +3,11 @@ import { getContainer } from "@/infrastructure/container";
 import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { EpisodeTrailScreen } from "@/ui/series/episode-trail-screen";
-import { requireUser } from "../../../session";
+import { requireUser } from "@/app/session";
 
-export default async function PersonalEpisodePage(props: { params: Promise<{ episodeId: string }> }) {
+export default async function PersonalEpisodePage(props: { searchParams: Promise<{ id?: string }> }) {
   const user = await requireUser();
-  const { episodeId } = await props.params;
+  const { id: episodeId = "" } = await props.searchParams;
   const trail = await getContainer()
     .getPersonalEpisodeTrail({ userId: user.id, pair: pairOf(user.preferences), episodeId })
     .catch((error: unknown) => {

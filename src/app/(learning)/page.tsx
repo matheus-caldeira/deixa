@@ -7,6 +7,7 @@ import { suggestTheme } from "@/modules/conversations";
 import { HomeScreen, type HomeView } from "@/ui/home/home-screen";
 import { requireUser } from "../session";
 import { ensureCurrentPlan } from "./current-plan";
+import { routes } from "@/shared/routes";
 
 export default async function HomePage() {
   const user = await requireUser();
@@ -54,7 +55,7 @@ export default async function HomePage() {
       : null;
   const progress = overview.inProgress.find((entry) => entry.episodeId === currentId)?.progressPercent ?? 0;
   const trailHref = (mediaId: string, type: "series" | "movie", season: number) =>
-    type === "movie" ? `/trail/${mediaId}` : `/trail/${mediaId}?season=${season}`;
+    type === "movie" ? routes.trail(mediaId) : routes.trail(mediaId, season);
 
   const seen = new Set(context ? [context.media.id] : []);
   const others: HomeView["others"] = overview.inProgress.flatMap((entry) => {
@@ -87,7 +88,7 @@ export default async function HomePage() {
       title: name,
       subtitle: `${t("label.personal", { level: activeSeason.level, episode: nextPersonal.number })} · ${nextPersonal.title}`,
       progressPercent: nextPersonal.progress,
-      href: "/trail/personal",
+      href: routes.personalTrail(),
       poster: {
         title: name,
         type: "series",
@@ -115,7 +116,7 @@ export default async function HomePage() {
                 : null,
               building: plan?.status === "PENDING",
               trailHref: trailHref(context.media.id, context.media.type, context.season.seasonNumber),
-              readHref: context.episode.status === "READY" ? `/read/${context.episode.id}` : null,
+              readHref: context.episode.status === "READY" ? routes.read(context.episode.id) : null,
               imageUrl:
                 stillUrl(context.episode.stillPath)?.replace("/w300/", "/w780/") ??
                 backdropUrl(context.media.backdropPath),

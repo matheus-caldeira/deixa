@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import type { EpisodeNode } from "@/modules/personal-series";
 import { BackIcon, CheckIcon, EarIcon, LockIcon, PenIcon, QuoteIcon } from "../icons";
+import { routes } from "@/shared/routes";
 
 export type EpisodeTrailView = {
   id: string;
@@ -56,7 +57,7 @@ export function EpisodeTrailScreen({ view }: { view: EpisodeTrailView }) {
                   ? ` · ${format.dateTime(new Date(source.closedAt), { day: "2-digit", month: "2-digit" })}`
                   : ""}
               </span>
-              <Link className="link small" href={`/tutor/${source.sessionId}`}>
+              <Link className="link small" href={routes.conversation(source.sessionId)}>
                 {t("reread")}
               </Link>
             </div>
@@ -83,7 +84,7 @@ export function EpisodeTrailScreen({ view }: { view: EpisodeTrailView }) {
                 ) : (
                   <Link
                     className="dot"
-                    href={`/series/${view.id}/lesson/${node.index}`}
+                    href={routes.personalLesson(view.id, node.index)}
                     aria-label={t("nodeLabel", { number: node.index + 1 })}
                   >
                     {icon}

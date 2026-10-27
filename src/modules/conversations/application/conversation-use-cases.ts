@@ -31,6 +31,7 @@ import {
   type Turn,
   type TurnRole,
 } from "../domain/conversation";
+import { routes } from "@/shared/routes";
 
 export type TutorMessage = { text: string } | { audio: { mimeType: string; base64: string } };
 
@@ -400,7 +401,7 @@ export function makeRunConversationReview(
     const session = await deps.conversations.findSession(input.userId, input.sessionId);
     if (!session?.closedAt) return;
     if (!(await deps.conversations.markReviewRunning(input.userId, input.sessionId))) return;
-    const href = `/tutor/${input.sessionId}`;
+    const href = routes.conversation(input.sessionId);
     const fail = async (reason: string) => {
       await deps.conversations.markReviewFailed(input.userId, input.sessionId, deps.clock.now());
       await deps.notify({
@@ -573,7 +574,7 @@ export function makeRunTermCards(
       userId: input.userId,
       kind: "conversation_terms_ready",
       params: { theme: session.themeTitle, themeId: session.themeId, count: explained.length },
-      href: `/tutor/${input.sessionId}`,
+      href: routes.conversation(input.sessionId),
     });
   };
 }

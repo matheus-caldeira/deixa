@@ -263,6 +263,7 @@ import { OpenSubtitlesProvider } from "./opensubtitles/opensubtitles-provider";
 import { TmdbClient } from "./tmdb/client";
 import { tmdbNumericId } from "./tmdb/mapping";
 import { TmdbMetadataProvider } from "./tmdb/tmdb-metadata-provider";
+import { routes } from "@/shared/routes";
 
 const MAX_AUDIO_GENERATIONS_PER_USER = 2;
 const MAX_LOGIN_FAILURES = 8;
@@ -1044,7 +1045,7 @@ export function buildContainer(options: ContainerOptions) {
       userId: input.userId,
       kind: "audio_ready",
       params: { episode: input.episodeLabel, count: result.generated + result.cached },
-      href: `/read/${input.episodeId}`,
+      href: routes.read(input.episodeId),
     });
   };
   const synthesizeConversationAudio = async (input: {

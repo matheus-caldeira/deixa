@@ -9,6 +9,7 @@ import { PlusIcon, SearchIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
 import { SuggestionsSection, type SuggestionsView } from "./suggestions-section";
+import { routes } from "@/shared/routes";
 
 export type CatalogTile = PosterData & {
   id: string;
@@ -97,7 +98,7 @@ export function CatalogScreen({
             <h2 style={{ fontSize: 18 }}>{t("inProgress")}</h2>
           </div>
           <div className="hscroll">
-            <Link className="cont card" style={{ padding: 10 }} href="/trail/personal">
+            <Link className="cont card" style={{ padding: 10 }} href={routes.personalTrail()}>
               <Poster media={personal.poster} sizes="64px" />
               <div className="col" style={{ gap: 4, minWidth: 0 }}>
                 <b className="small">{personal.name}</b>
@@ -114,8 +115,8 @@ export function CatalogScreen({
                 style={{ padding: 10 }}
                 href={
                   entry.poster.type === "movie"
-                    ? `/trail/${entry.mediaId}`
-                    : `/trail/${entry.mediaId}?season=${entry.seasonNumber}`
+                    ? routes.trail(entry.mediaId)
+                    : routes.trail(entry.mediaId, entry.seasonNumber)
                 }
               >
                 <Poster media={entry.poster} sizes="64px" />
@@ -148,7 +149,7 @@ export function CatalogScreen({
         {visible.length > 0 ? (
           <div className="pgrid">
             {visible.map((tile) => (
-              <Link key={tile.id} className="ptile" href={`/catalog/${tile.id}`} aria-label={tile.title}>
+              <Link key={tile.id} className="ptile" href={routes.work(tile.id)} aria-label={tile.title}>
                 <Poster media={tile} />
                 <div className="meta">
                   <span className={`chip ${FIT_CLASS[tile.fit]}`}>{fits(tile.fit)}</span>

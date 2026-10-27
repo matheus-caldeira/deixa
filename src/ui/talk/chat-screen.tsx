@@ -17,6 +17,7 @@ import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
+import { routes } from "@/shared/routes";
 
 export type ChatView = {
   sessionId: string;
@@ -170,7 +171,7 @@ function ClosedBanner(props: { view: ChatView; onRequestReview: () => void; requ
               {view.cardsConfirmed ? t("cardsDone") : t("reviewReadyBody", { count: view.difficultyCount })}
             </span>
             <div className="row" style={{ gap: 14, marginTop: 4, flexWrap: "wrap" }}>
-              <Link className="btn sm" href={`/tutor/${view.sessionId}/review`}>
+              <Link className="btn sm" href={routes.conversationReview(view.sessionId)}>
                 {t("openReview")}
               </Link>
               <Link className="link" href="/series">

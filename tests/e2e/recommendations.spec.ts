@@ -32,7 +32,7 @@ test("Explorar → Para você → recusar uma sugestão → adicionar outra ao c
   const addedTitle = ((await cards.first().getAttribute("aria-label")) ?? "").replace(LABEL_PREFIX, "");
   await cards.first().click();
   await sheet.getByRole("button", { name: "Adicionar ao catálogo" }).click();
-  await expect(page).toHaveURL(/\/catalog\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/catalog\/work\?id=[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { level: 1, name: addedTitle })).toBeVisible();
 
   await page.getByRole("link", { name: "Explorar" }).first().click();

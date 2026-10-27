@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckIcon, RedoIcon } from "../icons";
 import { RecapLabelText, type RecapLabelView } from "./recap-label";
+import { routes } from "@/shared/routes";
 
 export type RecapListItem = {
   id: string;
@@ -34,7 +35,7 @@ export function RecapList({ items }: { items: RecapListItem[] }) {
       ) : (
         <div className="col" style={{ gap: 10 }}>
           {items.map((item) => (
-            <Link key={item.id} className={`recapitem ${item.due ? "due" : ""}`} href={`/recap/${item.id}`}>
+            <Link key={item.id} className={`recapitem ${item.due ? "due" : ""}`} href={routes.recap(item.id)}>
               <span className="rn">
                 <RedoIcon />
               </span>

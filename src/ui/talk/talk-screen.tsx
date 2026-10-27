@@ -7,6 +7,7 @@ import { startConversationAction } from "@/app/actions/tutor";
 import { CUSTOM_THEME_ID, MAX_TOPIC_LENGTH } from "@/modules/conversations";
 import { BackIcon, FilmIcon, Icon, SparkIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
+import { routes } from "@/shared/routes";
 
 export type ThemeView = { id: string; icon: IconName };
 export type RecentConversation = {
@@ -153,7 +154,7 @@ export function TalkScreen(props: {
                 className="ep"
                 style={{ gridTemplateColumns: "1fr auto" }}
                 key={conversation.id}
-                href={`/tutor/${conversation.id}`}
+                href={routes.conversation(conversation.id)}
               >
                 <div style={{ minWidth: 0 }}>
                   <div className="t">{themeTitle(conversation.themeId, conversation.title)}</div>

@@ -11,6 +11,7 @@ import { STUDY_LANGUAGES, type StudyLanguage } from "@/shared/study-languages";
 import { BackIcon, SearchIcon } from "../icons";
 import { FIT_CLASS } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
+import { routes } from "@/shared/routes";
 
 export type TmdbBrowseFilters = {
   query: string;
@@ -65,11 +66,11 @@ function WorkTile({ work, canRate }: { work: TmdbWorkView; canRate: boolean }) {
     startTransition(async () => {
       setError("");
       if (work.catalogMediaId) {
-        router.push(`/catalog/${work.catalogMediaId}`);
+        router.push(routes.work(work.catalogMediaId));
         return;
       }
       const result = await openTmdbWorkAction({ type, externalId: work.externalId });
-      if (result.ok) router.push(`/catalog/${result.data.mediaId}`);
+      if (result.ok) router.push(routes.work(result.data.mediaId));
       else setError(result.message);
     });
 

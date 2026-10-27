@@ -11,6 +11,7 @@ import { BackIcon, LockIcon, PenIcon, PlayIcon, SparkIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
+import { routes } from "@/shared/routes";
 
 export type SeriesEpisodeView = {
   id: string;
@@ -211,7 +212,7 @@ export function SeriesScreen({ view }: { view: SeriesScreenView }) {
           </span>
         ) : null}
       </div>
-      <Link className="btn cue wide" href="/trail/personal">
+      <Link className="btn cue wide" href={routes.personalTrail()}>
         <PlayIcon width={18} height={18} /> {t("openTrail")}
       </Link>
       <div className="seg">
@@ -264,7 +265,7 @@ export function SeriesScreen({ view }: { view: SeriesScreenView }) {
                     </div>
                     <Link
                       className="playbtn"
-                      href={`/series/${episode.id}`}
+                      href={routes.personalEpisode(episode.id)}
                       aria-label={t("open", { title: episode.title })}
                     >
                       <PlayIcon />

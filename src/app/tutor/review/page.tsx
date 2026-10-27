@@ -3,13 +3,14 @@ import { getContainer } from "@/infrastructure/container";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { ConversationReviewScreen } from "@/ui/talk/conversation-review-screen";
-import { requireUser } from "../../../session";
+import { requireUser } from "@/app/session";
+import { routes } from "@/shared/routes";
 
 export const dynamic = "force-dynamic";
 
-export default async function ConversationReviewPage(props: { params: Promise<{ sessionId: string }> }) {
+export default async function ConversationReviewPage(props: { searchParams: Promise<{ id?: string }> }) {
   const user = await requireUser();
-  const { sessionId } = await props.params;
+  const { id: sessionId = "" } = await props.searchParams;
   const conversation = await getContainer()
     .getConversation(user.id, sessionId, user.preferences.targetLanguage)
     .catch((error: unknown) => {
@@ -17,7 +18,7 @@ export default async function ConversationReviewPage(props: { params: Promise<{ 
       throw error;
     });
   const { session } = conversation;
-  if (session.reviewStatus !== "ready" || !session.review) redirect(`/tutor/${sessionId}`);
+  if (session.reviewStatus !== "ready" || !session.review) redirect(routes.conversation(sessionId));
   return (
     <ToastProvider>
       <ConversationReviewScreen

@@ -47,7 +47,7 @@ test("roteiro .txt conferido contra a legenda e falas completadas na leitura", a
   await expect(page.getByRole("heading", { level: 1, name: "Suits" })).toBeVisible();
 
   await page.getByRole("link", { name: `Ler e marcar a legenda: ${episodeTitle}` }).click();
-  await expect(page).toHaveURL(/\/read\//);
+  await expect(page).toHaveURL(/\/read\?id=/);
   await expect(page.getByText("Roteiro conferido: 23 de 23 falas batem")).toBeVisible();
   const completions = page.getByTestId("script-line");
   await expect(completions).toHaveCount(2);

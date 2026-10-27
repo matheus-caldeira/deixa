@@ -14,6 +14,7 @@ import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { FIT_CLASS } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
+import { routes } from "@/shared/routes";
 
 export type SuggestionTile = {
   workKey: string;
@@ -75,7 +76,7 @@ export function SuggestionsSection({ view }: { view: SuggestionsView }) {
       }
       setOpenKey(null);
       toast(t("added", { title: item.poster.title }));
-      router.push(`/catalog/${result.data.mediaId}`);
+      router.push(routes.work(result.data.mediaId));
     });
 
   const dismiss = (item: SuggestionTile) =>

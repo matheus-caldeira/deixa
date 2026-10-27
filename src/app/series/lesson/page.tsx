@@ -5,15 +5,16 @@ import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { LessonScreen } from "@/ui/study/lesson-screen";
-import { requireUser } from "../../../../session";
+import { requireUser } from "@/app/session";
+import { routes } from "@/shared/routes";
 
 export const dynamic = "force-dynamic";
 
 export default async function PersonalLessonPage(props: {
-  params: Promise<{ episodeId: string; node: string }>;
+  searchParams: Promise<{ id?: string; node?: string }>;
 }) {
   const user = await requireUser();
-  const { episodeId, node } = await props.params;
+  const { id: episodeId = "", node = "" } = await props.searchParams;
   const nodeIndex = Number(node);
   if (!z.uuid().safeParse(episodeId).success || !Number.isInteger(nodeIndex) || nodeIndex < 0) notFound();
   const lesson = await getContainer()
@@ -25,7 +26,7 @@ export default async function PersonalLessonPage(props: {
       nodeIndex,
     })
     .catch((error: unknown) => {
-      if (isAppError(error)) redirect(`/series/${episodeId}`);
+      if (isAppError(error)) redirect(routes.personalEpisode(episodeId));
       throw error;
     });
   return (
@@ -42,7 +43,7 @@ export default async function PersonalLessonPage(props: {
           audioSpeed: user.preferences.audioSpeed,
           exercises: lesson.exercises,
           source: "personal",
-          backHref: "/trail/personal",
+          backHref: routes.personalTrail(),
         }}
       />
     </ToastProvider>

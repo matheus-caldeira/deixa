@@ -6,13 +6,13 @@ import { RECAP_STEPS } from "@/modules/study";
 import { isAppError } from "@/shared/errors";
 import { RecapScreen } from "@/ui/review/recap-screen";
 import { ToastProvider } from "@/ui/shell/toast";
-import { requireUser } from "../../session";
+import { requireUser } from "@/app/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function RecapPage(props: { params: Promise<{ recapId: string }> }) {
+export default async function RecapPage(props: { searchParams: Promise<{ id?: string }> }) {
   const user = await requireUser();
-  const { recapId } = await props.params;
+  const { id: recapId = "" } = await props.searchParams;
   if (!z.uuid().safeParse(recapId).success) notFound();
   const lesson = await getContainer()
     .startRecap({ userId: user.id, pair: pairOf(user.preferences), level: user.preferences.level, recapId })

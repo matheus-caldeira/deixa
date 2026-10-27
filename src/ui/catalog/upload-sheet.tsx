@@ -17,6 +17,7 @@ import { CheckIcon, SearchIcon } from "../icons";
 import { Sheet } from "../shell/sheet";
 import { Poster } from "./poster";
 import { SubtitleSourcePicker } from "./subtitle-source-picker";
+import { routes } from "@/shared/routes";
 
 const SEARCH_DEBOUNCE_MS = 350;
 const STEP_REVEAL_MS = 420;
@@ -472,7 +473,7 @@ export function UploadSheet(props: {
                 className="btn wide"
                 onClick={() => {
                   props.onClose();
-                  router.push(`/catalog/${outcome.mediaId}?season=${outcome.seasonNumber}`);
+                  router.push(routes.work(outcome.mediaId, outcome.seasonNumber));
                   router.refresh();
                 }}
               >

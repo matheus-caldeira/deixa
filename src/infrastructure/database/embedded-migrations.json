@@ -364,7 +364,9 @@
   },
   {
     "tag": "0022_condemned_lady_deathstrike",
-    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"],
+    "sql": [
+      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"
+    ],
     "bps": true,
     "folderMillis": 1792115432664,
     "hash": "616a1ee9b6d0f6e1b2fb18e47b091784456904267b48abc42e8cadabc71a18fa"
@@ -433,7 +435,9 @@
   },
   {
     "tag": "0027_conversation_episode",
-    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"],
+    "sql": [
+      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"
+    ],
     "bps": true,
     "folderMillis": 1792166687587,
     "hash": "332f14f21dd4df88cfb91e26a858672361aa1b6b073a7210cb5304c2c82d990c"
@@ -471,5 +475,16 @@
     "bps": true,
     "folderMillis": 1792548718325,
     "hash": "39cb445ab12ed250f0c8615d6e8e882bab2140fd5fe089e219212c450eb15b7b"
+  },
+  {
+    "tag": "0031_query_string_routes",
+    "sql": [
+      "UPDATE \"notifications\" SET \"href\" = regexp_replace(\"href\", '^/read/([^/?]+)\\?(.*)$', '/read?id=\\1&\\2') WHERE \"href\" ~ '^/read/[^/?]+\\?';",
+      "\nUPDATE \"notifications\" SET \"href\" = regexp_replace(\"href\", '^/read/([^/?]+)$', '/read?id=\\1') WHERE \"href\" ~ '^/read/[^/?]+$';",
+      "\nUPDATE \"notifications\" SET \"href\" = regexp_replace(\"href\", '^/tutor/([^/?]+)$', '/tutor/chat?id=\\1') WHERE \"href\" ~ '^/tutor/[^/?]+$';\n"
+    ],
+    "bps": true,
+    "folderMillis": 1793141954178,
+    "hash": "b883d8856be670d6dc52dce4f0e6eb33ec8fc1ad67319d89d7f679babbc3c2d2"
   }
 ]

@@ -9,6 +9,7 @@ import { DIFFICULTY_KINDS, type ConversationReview, type Difficulty } from "@/mo
 import { CheckIcon, FilmIcon, SparkIcon, XIcon } from "../icons";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
+import { routes } from "@/shared/routes";
 
 export type ConversationReviewView = {
   sessionId: string;
@@ -150,13 +151,13 @@ export function ConversationReviewScreen({ view }: { view: ConversationReviewVie
         return;
       }
       toast(t("confirmedToast", { cards: result.data.cards, episodes: result.data.newEpisodes }));
-      router.push(result.data.cards > 0 ? "/series" : `/tutor/${view.sessionId}`);
+      router.push(result.data.cards > 0 ? "/series" : routes.conversation(view.sessionId));
     });
 
   return (
     <div className="lesson">
       <div className="lhead">
-        <Link className="iconbtn" href={`/tutor/${view.sessionId}`} aria-label={t("back")}>
+        <Link className="iconbtn" href={routes.conversation(view.sessionId)} aria-label={t("back")}>
           <XIcon />
         </Link>
         <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
@@ -280,7 +281,11 @@ export function ConversationReviewScreen({ view }: { view: ConversationReviewVie
             {selected.size === 0 ? t("confirmNone") : t("confirm", { count: selected.size })}
           </button>
         )}
-        <Link className="btn ghost block" style={{ marginTop: 10 }} href={`/tutor/${view.sessionId}`}>
+        <Link
+          className="btn ghost block"
+          style={{ marginTop: 10 }}
+          href={routes.conversation(view.sessionId)}
+        >
           {t("reread")}
         </Link>
       </div>

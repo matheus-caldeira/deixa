@@ -53,7 +53,7 @@ test("escolher episódio → buscar legendas → confirmar → processar → ler
     .getByRole("link", { name: /Ler e marcar a legenda/ })
     .first()
     .click();
-  await expect(page).toHaveURL(/\/read\//);
+  await expect(page).toHaveURL(/\/read\?id=/);
   await expect(page.getByTestId("line")).toHaveCount(23);
   await expect(page.getByText("legenda EN + PT alinhada")).toBeVisible();
   await expect(page.getByText(`Legenda EN: OpenSubtitles · ${RELEASE} · demo`)).toBeVisible();

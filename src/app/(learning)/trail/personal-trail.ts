@@ -4,6 +4,7 @@ import { posterColorsFor } from "@/modules/catalog";
 import { pairOf, type SessionUser } from "@/modules/identity";
 import { nextEpisodeId } from "@/modules/personal-series";
 import type { WorkTrailView } from "@/ui/trail/work-trail-screen";
+import { routes } from "@/shared/routes";
 
 const COMPLETE = 100;
 const NODE_ICONS = ["quote", "ear", "pen"] as const;
@@ -38,7 +39,7 @@ export async function personalTrailView(
         done: candidate.episodes.filter((episode) => episode.progress >= COMPLETE).length,
         total: candidate.episodes.length,
         locked: false,
-        href: `/trail/personal?season=${candidate.level}`,
+        href: routes.personalTrail(candidate.level),
         selected: candidate.level === selected,
       })),
       ...(upcoming
@@ -49,7 +50,7 @@ export async function personalTrailView(
               done: 0,
               total: 0,
               locked: true,
-              href: `/trail/personal?season=${upcoming.level}`,
+              href: routes.personalTrail(upcoming.level),
               selected: upcoming.level === selected,
             },
           ]
@@ -74,18 +75,18 @@ export async function personalTrailView(
           state,
           icon: NODE_ICONS[index % NODE_ICONS.length] ?? "quote",
           title: "",
-          href: state === "locked" ? null : `/series/${episode.id}/lesson/${index}`,
+          href: state === "locked" ? null : routes.personalLesson(episode.id, index),
         })),
         startEpisodeId: null,
         conversation: null,
-        detail: { href: `/series/${episode.id}`, kind: "cards" as const },
+        detail: { href: routes.personalEpisode(episode.id), kind: "cards" as const },
       };
     }),
     lockedSeason:
       upcoming && upcoming.level === selected
         ? { level: upcoming.level, unlockAt: upcoming.unlockAt, themes: upcoming.themes }
         : null,
-    currentHref: selected !== active ? `/trail/personal?season=${active}` : null,
+    currentHref: selected !== active ? routes.personalTrail(active) : null,
     failure: null,
   };
 }

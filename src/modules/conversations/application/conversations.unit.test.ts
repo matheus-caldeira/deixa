@@ -37,6 +37,7 @@ import {
   type NewCard,
   type TutorProvider,
 } from "./conversation-use-cases";
+import { routes } from "@/shared/routes";
 
 class InMemoryConversations implements ConversationRepository {
   readonly sessions: (Session & { userId: string })[] = [];
@@ -534,7 +535,7 @@ describe("conversa aberta com o tutor", () => {
         userId: "ana",
         kind: "conversation_review_ready",
         params: { theme: THEMES[2]?.topic, themeId: "travel", count: 2 },
-        href: `/tutor/${sessionId}`,
+        href: routes.conversation(sessionId),
       },
     ]);
     await app.runReview({ userId: "ana", sessionId, level: "A1" });

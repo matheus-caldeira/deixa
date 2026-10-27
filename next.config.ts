@@ -1,6 +1,7 @@
 import { networkInterfaces } from "node:os";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { LEGACY_ROUTES } from "./src/shared/routes";
 
 const LOOPBACK_ADDRESS = "127.0.0.1";
 
@@ -23,6 +24,7 @@ const nextConfig: NextConfig = {
     unoptimized: forDesktop || forWeb,
     remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
   },
+  redirects: forWeb ? undefined : async () => LEGACY_ROUTES.map((route) => ({ ...route, permanent: false })),
   experimental: {
     serverActions: { bodySizeLimit: "12mb" },
   },

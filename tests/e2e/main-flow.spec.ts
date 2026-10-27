@@ -91,7 +91,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await expect(page.getByText("Pronto · 23 falas")).toHaveCount(1);
 
   await page.getByRole("link", { name: "Ler e marcar a legenda: Pilot" }).click();
-  await expect(page).toHaveURL(/\/read\//);
+  await expect(page).toHaveURL(/\/read\?id=/);
   const readUrl = page.url();
   const lines = page.getByTestId("line");
   await expect(lines).toHaveCount(23);
@@ -164,11 +164,11 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.goto("/");
   await expect(page.getByText(/lição 3 de \d+/)).toBeVisible();
   await page.getByRole("link", { name: "Continuar", exact: true }).click();
-  await expect(page).toHaveURL(/\/trail\/.+\?season=1$/);
+  await expect(page).toHaveURL(/\/trail\?id=.+&season=1$/);
   await expect(page.getByText("COMEÇAR")).toBeVisible();
   await expect(page.getByText(/T1 · E\d+ · 2 de \d+ lições/)).toBeVisible();
   await page.locator(".wt-node.current").click();
-  await expect(page).toHaveURL(/\/study\/.+\/2$/);
+  await expect(page).toHaveURL(/\/study\?id=.+&node=2$/);
   const finished = page.getByRole("heading", { name: /Ainda não foi desta vez|Bloco (perfeito|concluído)!/ });
   for (let step = 0; step < 12; step += 1) {
     await expect(finished.or(page.getByRole("button", { name: /^(Verificar|Entendi)$/ }))).toBeVisible();
@@ -191,7 +191,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   } else {
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
   }
-  await expect(page).toHaveURL(/\/trail\/.+\?season=1$/);
+  await expect(page).toHaveURL(/\/trail\?id=.+&season=1$/);
   await expect(page.getByRole("button", { name: "Perfil de Matheus" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Desafio final" }).or(page.getByRole("button", { name: /Desafio final/ })),
@@ -206,7 +206,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Conversar" }).click();
   await expect(page.getByText(/Tutor simulado/)).toBeVisible();
   await page.getByRole("button", { name: /^Comida/ }).click();
-  await expect(page).toHaveURL(/\/tutor\/.+/);
+  await expect(page).toHaveURL(/\/tutor\/chat\?id=.+/);
   await expect(page.getByText("What's your favorite thing to eat when you go out?")).toBeVisible();
   await page.getByLabel("Sua mensagem").fill("I want a pizza and more better fries");
   await page.getByRole("button", { name: "Enviar" }).click();

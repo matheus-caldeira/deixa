@@ -17,6 +17,7 @@ import { Sheet } from "../shell/sheet";
 import { useToast } from "../shell/toast";
 import { FIT_CLASS } from "./catalog-screen";
 import { Poster, type PosterData } from "./poster";
+import { routes } from "@/shared/routes";
 
 export type EpisodeRow = {
   id: string;
@@ -100,7 +101,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
             : t("seasonEpisode", { season: seasonNumber ?? 0, episode: episode.episodeNumber }),
         }),
       );
-      router.push(isMovie ? `/trail/${media.id}` : `/trail/${media.id}?season=${seasonNumber ?? ""}`);
+      router.push(isMovie ? routes.trail(media.id) : routes.trail(media.id, seasonNumber));
       router.refresh();
     });
 
@@ -202,7 +203,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                 className={`result ${option.seasonNumber === seasonNumber ? "on" : ""}`}
                 onClick={() => {
                   setPickingSeason(false);
-                  router.push(`/catalog/${media.id}?season=${option.seasonNumber}`);
+                  router.push(routes.work(media.id, option.seasonNumber));
                 }}
               >
                 <span className="lvlchip" style={{ textAlign: "center" }}>
@@ -258,7 +259,7 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                         color: "var(--cue-ink)",
                         boxShadow: "0 3px 0 var(--cue-deep)",
                       }}
-                      href={`/read/${episode.id}`}
+                      href={routes.read(episode.id)}
                       aria-label={t("readAndMarkTitle", { title: episode.title })}
                     >
                       <MarkerIcon />

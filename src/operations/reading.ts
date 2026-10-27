@@ -5,6 +5,7 @@ import { pairOf } from "@/modules/identity";
 import { AppError } from "@/shared/errors";
 import type { LanguagePair } from "@/shared/study-languages";
 import { operation } from "./operation";
+import { routes } from "@/shared/routes";
 
 const MAX_MARKED_CUES = 2000;
 const MAX_TOKENS_PER_CUE = 200;
@@ -74,7 +75,7 @@ export const readingOperations = {
       if (!parsed.success) throw new AppError("BATCH_NOT_FOUND");
       const state = await app.getCardBatch(user.id, parsed.data);
       if (state.status === "DRAFT" || state.status === "SAVED") {
-        await app.markNotificationsRead(user.id, { href: `/read/${state.episodeId}?batch=${state.batchId}` });
+        await app.markNotificationsRead(user.id, { href: routes.read(state.episodeId, state.batchId) });
       }
       return state;
     },
@@ -93,7 +94,7 @@ export const readingOperations = {
         pair: pairOf(user.preferences),
         ...input,
       });
-      await app.markNotificationsRead(user.id, { href: `/read/${batch.episodeId}?batch=${batch.batchId}` });
+      await app.markNotificationsRead(user.id, { href: routes.read(batch.episodeId, batch.batchId) });
       return result;
     },
   }),

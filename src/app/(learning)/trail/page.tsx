@@ -7,19 +7,16 @@ import { posterUrl } from "@/modules/catalog";
 import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { WorkTrailScreen } from "@/ui/trail/work-trail-screen";
-import { requireUser } from "../../../session";
-import { ensureCurrentPlan } from "../../current-plan";
+import { requireUser } from "@/app/session";
+import { ensureCurrentPlan } from "../current-plan";
 import { personalTrailView } from "./personal-trail";
+import { routes } from "@/shared/routes";
 
 const COMPLETE = 100;
 
-export default async function TrailPage(props: {
-  params: Promise<{ mediaId: string }>;
-  searchParams: Promise<{ season?: string }>;
-}) {
+export default async function TrailPage(props: { searchParams: Promise<{ id?: string; season?: string }> }) {
   const user = await requireUser();
-  const { mediaId } = await props.params;
-  const { season } = await props.searchParams;
+  const { id: mediaId = "", season } = await props.searchParams;
   if (mediaId === "personal") return <WorkTrailScreen view={await personalTrailView(user, season)} />;
   if (!z.uuid().safeParse(mediaId).success) notFound();
 
@@ -85,7 +82,7 @@ export default async function TrailPage(props: {
       progressPercent: episode.progressPercent,
     })),
   });
-  const catalogHref = `/catalog/${mediaId}${seasonNumber !== null && !isMovie ? `?season=${seasonNumber}` : ""}`;
+  const catalogHref = routes.work(mediaId, isMovie ? null : seasonNumber);
 
   return (
     <WorkTrailScreen
@@ -113,7 +110,7 @@ export default async function TrailPage(props: {
                   .length,
                 total: entry.episodeCount ?? loaded?.episodes.length ?? 0,
                 locked: false,
-                href: `/trail/${mediaId}?season=${entry.seasonNumber}`,
+                href: routes.trail(mediaId, entry.seasonNumber),
                 selected: entry.seasonNumber === seasonNumber,
               };
             }),
@@ -129,20 +126,20 @@ export default async function TrailPage(props: {
             state: node.state,
             icon: node.icon,
             title: node.title,
-            href: section.placeholder ? null : `/study/${section.episodeId}/${node.index}`,
+            href: section.placeholder ? null : routes.study(section.episodeId, node.index),
           })),
           startEpisodeId: section.status === "open" ? section.episodeId : null,
           conversation: section.status === "missing" ? null : { episodeId: section.episodeId },
           detail:
             section.status === "missing"
               ? { href: catalogHref, kind: "read" }
-              : { href: `/read/${section.episodeId}`, kind: "read" },
+              : { href: routes.read(section.episodeId), kind: "read" },
         })),
         lockedSeason: null,
         failure: current && plan?.status === "FAILED" ? { episodeId: current.id, reason: plan.reason } : null,
         currentHref:
           currentSeason !== null && currentSeason !== seasonNumber
-            ? `/trail/${mediaId}?season=${currentSeason}`
+            ? routes.trail(mediaId, currentSeason)
             : null,
       }}
     />

@@ -455,7 +455,7 @@ describe("geração em segundo plano", () => {
         userId: "ana",
         kind: "cards_ready",
         params: { episode: "Friends · T1 · E1", count: 2 },
-        href: `/read/ep-1?batch=${batchId}`,
+        href: `/read?id=ep-1&batch=${batchId}`,
       }),
     ]);
     await app.confirm({ userId: "ana", pair: PAIR, batchId, keepKeys: ["h-phrase"], scope: "private" });
@@ -478,7 +478,7 @@ describe("geração em segundo plano", () => {
       status: "FAILED",
       reason: "LLM_FAILED",
     });
-    expect(app.sent[0]).toMatchObject({ kind: "cards_failed", href: "/read/ep-1" });
+    expect(app.sent[0]).toMatchObject({ kind: "cards_failed", href: "/read?id=ep-1" });
   });
 
   it("considera falho o lote que ficou pendente além do limite e esconde lotes de outro usuário", async () => {

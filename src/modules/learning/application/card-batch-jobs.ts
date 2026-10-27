@@ -6,6 +6,7 @@ import type { LanguagePair } from "@/shared/study-languages";
 import type { CardDraft } from "../domain/learning";
 import type { GeneratedDrafts } from "./generate-card-drafts";
 import type { LearningRepository } from "./ports";
+import { routes } from "@/shared/routes";
 
 export const CARD_BATCH_TIMEOUT_MS = 4 * 60 * 1000;
 const GENERIC_FAILURE = "CARDS_FAILED";
@@ -72,7 +73,7 @@ export function makeProcessCardBatch(deps: {
     pair: LanguagePair;
     episodeLabel: string;
   }): Promise<void> {
-    const href = `/read/${input.episodeId}?batch=${input.batchId}`;
+    const href = routes.read(input.episodeId, input.batchId);
     try {
       const generated = await deps.generate(input);
       await deps.notify({
@@ -88,7 +89,7 @@ export function makeProcessCardBatch(deps: {
         userId: input.userId,
         kind: "cards_failed",
         params: { episode: input.episodeLabel, reason },
-        href: `/read/${input.episodeId}`,
+        href: routes.read(input.episodeId),
       });
     }
   };

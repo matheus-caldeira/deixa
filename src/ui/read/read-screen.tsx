@@ -21,6 +21,7 @@ import { BackIcon, CheckIcon, MarkerIcon, SearchIcon, SoundIcon, SparkIcon, XIco
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
+import { routes } from "@/shared/routes";
 
 export type ReadLine = {
   cueId: string;
@@ -243,7 +244,7 @@ export function ReadScreen({ view }: { view: ReadView }) {
       }
       if (result?.ok && result.data.status === "SAVED") {
         setStage("read");
-        router.replace(`/read/${view.episodeId}`);
+        router.replace(routes.read(view.episodeId));
         return;
       }
       if (result && !result.ok) {

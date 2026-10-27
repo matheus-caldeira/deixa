@@ -9,17 +9,14 @@ import { LANGUAGE_TAGS } from "@/shared/study-languages";
 import { defaultDisplayMode } from "@/shared/levels";
 import { ReadScreen } from "@/ui/read/read-screen";
 import { ToastProvider } from "@/ui/shell/toast";
-import { requireUser } from "../../session";
+import { requireUser } from "@/app/session";
+import { routes } from "@/shared/routes";
 
 export const dynamic = "force-dynamic";
 
-export default async function ReadPage(props: {
-  params: Promise<{ episodeId: string }>;
-  searchParams: Promise<{ batch?: string }>;
-}) {
+export default async function ReadPage(props: { searchParams: Promise<{ id?: string; batch?: string }> }) {
   const user = await requireUser();
-  const { episodeId } = await props.params;
-  const { batch } = await props.searchParams;
+  const { id: episodeId = "", batch } = await props.searchParams;
   if (!z.uuid().safeParse(episodeId).success) notFound();
   const container = getContainer();
   const context = await container.getEpisodeContext(episodeId);
@@ -63,7 +60,7 @@ export default async function ReadPage(props: {
         key={`${episodeId}:${batch ?? ""}`}
         view={{
           episodeId,
-          backHref: `/catalog/${context.media.id}?season=${context.season.seasonNumber}`,
+          backHref: routes.work(context.media.id, context.season.seasonNumber),
           mediaTitle: context.media.title,
           label: episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber),
           episodeTitle: context.episode.title,

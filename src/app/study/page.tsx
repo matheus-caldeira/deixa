@@ -6,13 +6,14 @@ import { pairOf } from "@/modules/identity";
 import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { LessonScreen } from "@/ui/study/lesson-screen";
-import { requireUser } from "../../../session";
+import { requireUser } from "@/app/session";
+import { routes } from "@/shared/routes";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudyPage(props: { params: Promise<{ episodeId: string; node: string }> }) {
+export default async function StudyPage(props: { searchParams: Promise<{ id?: string; node?: string }> }) {
   const user = await requireUser();
-  const { episodeId, node } = await props.params;
+  const { id: episodeId = "", node = "" } = await props.searchParams;
   const nodeIndex = Number(node);
   if (!z.uuid().safeParse(episodeId).success || !Number.isInteger(nodeIndex) || nodeIndex < 0) notFound();
   const lesson = await getContainer()
@@ -32,8 +33,8 @@ export default async function StudyPage(props: { params: Promise<{ episodeId: st
   const backHref = !context
     ? "/"
     : context.media.type === "movie"
-      ? `/trail/${context.media.id}`
-      : `/trail/${context.media.id}?season=${context.season.seasonNumber}`;
+      ? routes.trail(context.media.id)
+      : routes.trail(context.media.id, context.season.seasonNumber);
   return (
     <ToastProvider>
       <LessonScreen

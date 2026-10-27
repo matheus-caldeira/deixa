@@ -10,6 +10,7 @@ import { MISSION_XP } from "@/modules/gamification";
 import { Poster, type PosterData } from "../catalog/poster";
 import { CardsIcon, ChatIcon, EarIcon, Icon, MarkerIcon, PlayIcon, type IconName } from "../icons";
 import { useToast } from "../shell/toast";
+import { routes } from "@/shared/routes";
 
 export type HomeView = {
   current: {
@@ -75,7 +76,7 @@ function TutorCard({ tutor }: { tutor: HomeView["tutor"] }) {
         <span className="small muted">{t("tutorBody", { theme: suggested })}</span>
       </div>
       {tutor.continueSession ? (
-        <Link className="btn ghost wide" href={`/tutor/${tutor.continueSession.id}`}>
+        <Link className="btn ghost wide" href={routes.conversation(tutor.continueSession.id)}>
           <ChatIcon width={18} height={18} />{" "}
           {t("tutorContinue", {
             theme: themeTitle(tutor.continueSession.themeId, tutor.continueSession.title),
