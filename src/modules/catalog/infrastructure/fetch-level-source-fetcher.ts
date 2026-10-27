@@ -3,6 +3,30 @@ import type { LevelFetchResult, LevelSourceFetcher } from "../application/level-
 
 const TIMEOUT_MS = 15_000;
 
+async function readCapped(response: Response): Promise<Uint8Array | null> {
+  const reader = response.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_LEVEL_SOURCE_BYTES) {
+      void reader.cancel().catch(() => undefined);
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
 export class FetchLevelSourceFetcher implements LevelSourceFetcher {
   async fetchJson(url: string): Promise<LevelFetchResult> {
     let response: Response;
