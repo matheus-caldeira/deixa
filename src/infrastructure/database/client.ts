@@ -1,8 +1,9 @@
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-export type Database = PostgresJsDatabase<typeof schema>;
+export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 export type DatabaseHandle = { db: Database; close: () => Promise<void> };
 
 const MAX_CONNECTIONS = 10;

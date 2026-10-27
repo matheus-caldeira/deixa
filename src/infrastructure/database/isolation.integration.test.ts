@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { count, eq } from "drizzle-orm";
-import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   FakeMetadataProvider,
@@ -27,8 +26,8 @@ import { InMemoryFileStorage } from "@/shared/storage";
 import { parseEnv } from "../config/env";
 import { buildContainer, type Container } from "../container";
 import { silentLogger } from "../logger/logger";
-import { openDatabase, type DatabaseHandle } from "./client";
-import { runMigrations } from "./migrate";
+import type { DatabaseHandle } from "./client";
+import { openTestDatabase, testDatabaseAvailable } from "./test-database";
 import {
   highlightStats,
   learningItems,
@@ -44,32 +43,13 @@ import {
 const TEST_DATABASE = "deixa_test";
 const tutor = new FakeTutorProvider();
 const PAIR = { target: "en", native: "pt-BR" } as const;
-const baseUrl = process.env.DATABASE_URL;
 const fixture = (name: string) => ({
   filename: name,
   bytes: new Uint8Array(readFileSync(`fixtures/${name}`)),
 });
 
-function testDatabaseUrl(): string {
-  const url = new URL(baseUrl ?? "postgres://deixa:deixa@localhost:1442/deixa");
-  url.pathname = `/${TEST_DATABASE}`;
-  return url.toString();
-}
-
-async function recreateDatabase(url: string): Promise<void> {
-  const admin = new URL(url);
-  admin.pathname = "/postgres";
-  const client = postgres(admin.toString(), { max: 1, onnotice: () => undefined });
-  try {
-    await client.unsafe(`DROP DATABASE IF EXISTS ${TEST_DATABASE} WITH (FORCE)`);
-  } finally {
-    await client.end({ timeout: 5 });
-  }
-  await runMigrations(url);
-}
-
-describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
-  let handle: DatabaseHandle;
+describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => {
+  let handle: DatabaseHandle & { url: string };
   let app: Container;
   let llm: FakeLlmProvider;
   let ana: string;
@@ -78,9 +58,8 @@ describe.skipIf(!baseUrl)("repositórios no Postgres real", () => {
   let mediaId: string;
 
   beforeAll(async () => {
-    const url = testDatabaseUrl();
-    await recreateDatabase(url);
-    handle = openDatabase(url);
+    handle = await openTestDatabase(TEST_DATABASE);
+    const url = handle.url;
     llm = new FakeLlmProvider();
     app = buildContainer({
       env: parseEnv({ DATABASE_URL: url, AI_CREDENTIALS_MASTER_KEY: Buffer.alloc(32, 5).toString("base64") }),

@@ -1,9 +1,7 @@
-import { join } from "node:path";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { openDatabase } from "./client";
+import { applyMigrations } from "./apply-migrations";
 
-const MIGRATIONS_FOLDER = join(process.cwd(), "src", "infrastructure", "database", "migrations");
 const DUPLICATE_DATABASE = "42P04";
 const MISSING_DATABASE = "3D000";
 const CONNECT_TIMEOUT_SECONDS = 5;
@@ -32,10 +30,14 @@ export async function ensureDatabaseExists(url: string): Promise<void> {
 
 export async function runMigrations(url: string): Promise<void> {
   await ensureDatabaseExists(url);
-  const handle = openDatabase(url);
+  const client = postgres(url, {
+    max: 1,
+    connect_timeout: CONNECT_TIMEOUT_SECONDS,
+    onnotice: () => undefined,
+  });
   try {
-    await migrate(handle.db, { migrationsFolder: MIGRATIONS_FOLDER });
+    await applyMigrations(drizzle(client));
   } finally {
-    await handle.close();
+    await client.end({ timeout: 5 });
   }
 }

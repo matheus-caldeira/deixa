@@ -1,43 +1,21 @@
-import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openDatabase, type DatabaseHandle } from "@/infrastructure/database/client";
-import { runMigrations } from "@/infrastructure/database/migrate";
+import type { DatabaseHandle } from "@/infrastructure/database/client";
+import { openTestDatabase, testDatabaseAvailable } from "@/infrastructure/database/test-database";
 import { DrizzleAiLevelRatingRepository } from "./drizzle-ai-level-rating-repository";
 import { DrizzleLevelSourceRepository } from "./drizzle-level-source-repository";
 
 const TEST_DATABASE = "deixa_test_level_sources";
-const baseUrl = process.env.DATABASE_URL;
 const NOW = new Date("2026-10-20T12:00:00Z");
 const ROOT = "11111111-1111-4111-8111-111111111111";
 const CHILD = "22222222-2222-4222-8222-222222222222";
 const OTHER = "33333333-3333-4333-8333-333333333333";
 
-function testDatabaseUrl(): string {
-  const url = new URL(baseUrl ?? "postgres://deixa:deixa@localhost:1442/deixa");
-  url.pathname = `/${TEST_DATABASE}`;
-  return url.toString();
-}
-
-async function recreateDatabase(url: string): Promise<void> {
-  const admin = new URL(url);
-  admin.pathname = "/postgres";
-  const client = postgres(admin.toString(), { max: 1, onnotice: () => undefined });
-  try {
-    await client.unsafe(`DROP DATABASE IF EXISTS ${TEST_DATABASE} WITH (FORCE)`);
-  } finally {
-    await client.end({ timeout: 5 });
-  }
-  await runMigrations(url);
-}
-
-describe.skipIf(!baseUrl)("fontes de nível no Postgres real", () => {
+describe.skipIf(!testDatabaseAvailable)("fontes de nível no Postgres real", () => {
   let handle: DatabaseHandle;
   let sources: DrizzleLevelSourceRepository;
 
   beforeAll(async () => {
-    const url = testDatabaseUrl();
-    await recreateDatabase(url);
-    handle = openDatabase(url);
+    handle = await openTestDatabase(TEST_DATABASE);
     sources = new DrizzleLevelSourceRepository(handle.db);
   });
 

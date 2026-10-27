@@ -1,0 +1,475 @@
+[
+  {
+    "tag": "0000_lying_logan",
+    "sql": [
+      "CREATE TABLE \"progress_snapshots\" (\n\t\"user_id\" uuid PRIMARY KEY NOT NULL,\n\t\"data\" jsonb NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"sessions\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"token_hash\" text NOT NULL,\n\t\"expires_at\" timestamp with time zone NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"sessions_token_hash_unique\" UNIQUE(\"token_hash\")\n);\n",
+      "\nCREATE TABLE \"user_ai_credentials\" (\n\t\"user_id\" uuid PRIMARY KEY NOT NULL,\n\t\"provider\" text NOT NULL,\n\t\"encrypted_api_key\" text NOT NULL,\n\t\"key_version\" integer NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"user_preferences\" (\n\t\"user_id\" uuid PRIMARY KEY NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"native_language\" text NOT NULL,\n\t\"daily_goal\" integer NOT NULL,\n\t\"preferred_accent\" text NOT NULL,\n\t\"audio_speed\" double precision NOT NULL,\n\t\"timezone\" text NOT NULL,\n\t\"current_episode_id\" uuid\n);\n",
+      "\nCREATE TABLE \"users\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"email\" text NOT NULL,\n\t\"password_hash\" text NOT NULL,\n\t\"avatar_color\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"users_email_unique\" UNIQUE(\"email\")\n);\n",
+      "\nCREATE TABLE \"audio_assets\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"text_hash\" text NOT NULL,\n\t\"voice_id\" text NOT NULL,\n\t\"language\" text NOT NULL,\n\t\"model_version\" text NOT NULL,\n\t\"format\" text NOT NULL,\n\t\"storage_path\" text NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"cue_alignments\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"en_cue_id\" uuid NOT NULL,\n\t\"pt_cue_ids\" jsonb NOT NULL,\n\t\"overlap_score\" double precision NOT NULL,\n\t\"offset_ms\" integer NOT NULL,\n\t\"status\" text NOT NULL\n);\n",
+      "\nCREATE TABLE \"cue_translations\" (\n\t\"cue_id\" uuid PRIMARY KEY NOT NULL,\n\t\"locale\" text NOT NULL,\n\t\"text\" text NOT NULL,\n\t\"source\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"episodes\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"season_id\" uuid NOT NULL,\n\t\"episode_number\" integer NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"overview\" text NOT NULL,\n\t\"duration_seconds\" integer,\n\t\"status\" text NOT NULL,\n\t\"failure_reason\" text,\n\t\"cue_count\" integer NOT NULL,\n\t\"alignment_pairs\" integer,\n\t\"alignment_rate\" double precision,\n\t\"uploaded_by\" uuid,\n\t\"ready_at\" timestamp with time zone\n);\n",
+      "\nCREATE TABLE \"media_items\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"type\" text NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"original_title\" text NOT NULL,\n\t\"overview\" text NOT NULL,\n\t\"year\" integer,\n\t\"metadata_provider\" text NOT NULL,\n\t\"external_id\" text NOT NULL,\n\t\"poster_path\" text,\n\t\"poster_colors\" jsonb,\n\t\"level_min\" text NOT NULL,\n\t\"level_max\" text NOT NULL,\n\t\"accent\" text,\n\t\"created_by\" uuid,\n\t\"metadata_synced_at\" timestamp with time zone,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"processing_jobs\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"kind\" text NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"attempts\" integer NOT NULL,\n\t\"steps\" jsonb NOT NULL,\n\t\"failure_reason\" text,\n\t\"created_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"seasons\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"media_item_id\" uuid NOT NULL,\n\t\"season_number\" integer NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"episode_count\" integer,\n\t\"episodes_synced_at\" timestamp with time zone\n);\n",
+      "\nCREATE TABLE \"subtitle_cues\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"subtitle_file_id\" uuid NOT NULL,\n\t\"sequence\" integer NOT NULL,\n\t\"start_ms\" integer NOT NULL,\n\t\"end_ms\" integer NOT NULL,\n\t\"text\" text NOT NULL\n);\n",
+      "\nCREATE TABLE \"subtitle_files\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"language\" text NOT NULL,\n\t\"format\" text NOT NULL,\n\t\"storage_path\" text NOT NULL,\n\t\"sha256\" text NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"processing_version\" integer NOT NULL,\n\t\"original_filename\" text NOT NULL,\n\t\"size_bytes\" integer NOT NULL,\n\t\"uploaded_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"episode_progress\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"progress_percent\" integer NOT NULL,\n\t\"last_position_ms\" integer,\n\t\"completed_at\" timestamp with time zone,\n\t\"updated_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"episode_progress_user_id_episode_id_pk\" PRIMARY KEY(\"user_id\",\"episode_id\")\n);\n",
+      "\nCREATE TABLE \"highlight_card_batches\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"share_scope\" text,\n\t\"highlights_count\" integer NOT NULL,\n\t\"cards_created\" integer NOT NULL,\n\t\"llm_calls\" integer NOT NULL,\n\t\"llm_provider\" text NOT NULL,\n\t\"draft\" jsonb NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"highlight_stats\" (\n\t\"episode_id\" uuid NOT NULL,\n\t\"cue_id\" uuid NOT NULL,\n\t\"start_token\" integer NOT NULL,\n\t\"end_token\" integer NOT NULL,\n\t\"user_count\" integer NOT NULL,\n\tCONSTRAINT \"highlight_stats_cue_id_start_token_end_token_pk\" PRIMARY KEY(\"cue_id\",\"start_token\",\"end_token\")\n);\n",
+      "\nCREATE TABLE \"learning_item_explanations\" (\n\t\"learning_item_id\" uuid NOT NULL,\n\t\"locale\" text NOT NULL,\n\t\"translation\" text NOT NULL,\n\t\"translation_source\" text NOT NULL,\n\t\"context_translation\" text,\n\t\"context_translation_source\" text,\n\t\"pronunciation_guide\" text,\n\t\"ipa\" text,\n\t\"grammar_note\" text,\n\t\"context_note\" text,\n\t\"example_english\" text,\n\t\"example_portuguese\" text,\n\tCONSTRAINT \"learning_item_explanations_learning_item_id_locale_pk\" PRIMARY KEY(\"learning_item_id\",\"locale\")\n);\n",
+      "\nCREATE TABLE \"learning_items\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid,\n\t\"subtitle_file_id\" uuid,\n\t\"cue_id\" uuid,\n\t\"start_token\" integer,\n\t\"end_token\" integer,\n\t\"start_ms\" integer,\n\t\"end_ms\" integer,\n\t\"source_text\" text NOT NULL,\n\t\"normalized_text\" text NOT NULL,\n\t\"context_text\" text,\n\t\"difficulty\" text NOT NULL,\n\t\"item_type\" text NOT NULL,\n\t\"origin\" text NOT NULL,\n\t\"visibility\" text NOT NULL,\n\t\"owner_user_id\" uuid,\n\t\"status\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"review_logs\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_card_id\" uuid NOT NULL,\n\t\"rating\" text NOT NULL,\n\t\"response_time_ms\" integer,\n\t\"reviewed_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"user_cards\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"learning_item_id\" uuid NOT NULL,\n\t\"source_kind\" text NOT NULL,\n\t\"due_at\" timestamp with time zone NOT NULL,\n\t\"interval_days\" double precision NOT NULL,\n\t\"repetitions\" integer NOT NULL,\n\t\"lapses\" integer NOT NULL,\n\t\"stability\" double precision NOT NULL,\n\t\"difficulty\" double precision NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"user_highlights\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"cue_id\" uuid NOT NULL,\n\t\"start_token\" integer NOT NULL,\n\t\"end_token\" integer NOT NULL,\n\t\"kind\" text NOT NULL,\n\t\"share_scope\" text NOT NULL,\n\t\"card_batch_id\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"xp_events\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"source\" text NOT NULL,\n\t\"source_id\" text NOT NULL,\n\t\"amount\" integer NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"progress_snapshots\" ADD CONSTRAINT \"progress_snapshots_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"sessions\" ADD CONSTRAINT \"sessions_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_ai_credentials\" ADD CONSTRAINT \"user_ai_credentials_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_preferences\" ADD CONSTRAINT \"user_preferences_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"cue_alignments\" ADD CONSTRAINT \"cue_alignments_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"cue_alignments\" ADD CONSTRAINT \"cue_alignments_en_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"en_cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"cue_translations\" ADD CONSTRAINT \"cue_translations_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"episodes\" ADD CONSTRAINT \"episodes_season_id_seasons_id_fk\" FOREIGN KEY (\"season_id\") REFERENCES \"public\".\"seasons\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"episodes\" ADD CONSTRAINT \"episodes_uploaded_by_users_id_fk\" FOREIGN KEY (\"uploaded_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"media_items\" ADD CONSTRAINT \"media_items_created_by_users_id_fk\" FOREIGN KEY (\"created_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"processing_jobs\" ADD CONSTRAINT \"processing_jobs_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"processing_jobs\" ADD CONSTRAINT \"processing_jobs_created_by_users_id_fk\" FOREIGN KEY (\"created_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"seasons\" ADD CONSTRAINT \"seasons_media_item_id_media_items_id_fk\" FOREIGN KEY (\"media_item_id\") REFERENCES \"public\".\"media_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"subtitle_cues\" ADD CONSTRAINT \"subtitle_cues_subtitle_file_id_subtitle_files_id_fk\" FOREIGN KEY (\"subtitle_file_id\") REFERENCES \"public\".\"subtitle_files\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"subtitle_files\" ADD CONSTRAINT \"subtitle_files_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"subtitle_files\" ADD CONSTRAINT \"subtitle_files_uploaded_by_users_id_fk\" FOREIGN KEY (\"uploaded_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"episode_progress\" ADD CONSTRAINT \"episode_progress_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"episode_progress\" ADD CONSTRAINT \"episode_progress_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"highlight_card_batches\" ADD CONSTRAINT \"highlight_card_batches_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"highlight_card_batches\" ADD CONSTRAINT \"highlight_card_batches_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"highlight_stats\" ADD CONSTRAINT \"highlight_stats_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"highlight_stats\" ADD CONSTRAINT \"highlight_stats_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"learning_item_explanations\" ADD CONSTRAINT \"learning_item_explanations_learning_item_id_learning_items_id_fk\" FOREIGN KEY (\"learning_item_id\") REFERENCES \"public\".\"learning_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"learning_items\" ADD CONSTRAINT \"learning_items_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"learning_items\" ADD CONSTRAINT \"learning_items_subtitle_file_id_subtitle_files_id_fk\" FOREIGN KEY (\"subtitle_file_id\") REFERENCES \"public\".\"subtitle_files\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"learning_items\" ADD CONSTRAINT \"learning_items_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"learning_items\" ADD CONSTRAINT \"learning_items_owner_user_id_users_id_fk\" FOREIGN KEY (\"owner_user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"review_logs\" ADD CONSTRAINT \"review_logs_user_card_id_user_cards_id_fk\" FOREIGN KEY (\"user_card_id\") REFERENCES \"public\".\"user_cards\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_cards\" ADD CONSTRAINT \"user_cards_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_cards\" ADD CONSTRAINT \"user_cards_learning_item_id_learning_items_id_fk\" FOREIGN KEY (\"learning_item_id\") REFERENCES \"public\".\"learning_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_highlights\" ADD CONSTRAINT \"user_highlights_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_highlights\" ADD CONSTRAINT \"user_highlights_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_highlights\" ADD CONSTRAINT \"user_highlights_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_highlights\" ADD CONSTRAINT \"user_highlights_card_batch_id_highlight_card_batches_id_fk\" FOREIGN KEY (\"card_batch_id\") REFERENCES \"public\".\"highlight_card_batches\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"xp_events\" ADD CONSTRAINT \"xp_events_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"audio_assets_hash_voice\" ON \"audio_assets\" USING btree (\"text_hash\",\"voice_id\");",
+      "\nCREATE UNIQUE INDEX \"cue_alignments_en_cue\" ON \"cue_alignments\" USING btree (\"en_cue_id\");",
+      "\nCREATE INDEX \"cue_alignments_episode\" ON \"cue_alignments\" USING btree (\"episode_id\");",
+      "\nCREATE UNIQUE INDEX \"episodes_season_number\" ON \"episodes\" USING btree (\"season_id\",\"episode_number\");",
+      "\nCREATE UNIQUE INDEX \"media_items_provider_external\" ON \"media_items\" USING btree (\"metadata_provider\",\"external_id\");",
+      "\nCREATE INDEX \"processing_jobs_episode\" ON \"processing_jobs\" USING btree (\"episode_id\");",
+      "\nCREATE UNIQUE INDEX \"seasons_media_number\" ON \"seasons\" USING btree (\"media_item_id\",\"season_number\");",
+      "\nCREATE UNIQUE INDEX \"subtitle_cues_file_sequence\" ON \"subtitle_cues\" USING btree (\"subtitle_file_id\",\"sequence\");",
+      "\nCREATE UNIQUE INDEX \"subtitle_files_dedupe\" ON \"subtitle_files\" USING btree (\"episode_id\",\"language\",\"processing_version\",\"sha256\");",
+      "\nCREATE UNIQUE INDEX \"subtitle_files_episode_language\" ON \"subtitle_files\" USING btree (\"episode_id\",\"language\");",
+      "\nCREATE INDEX \"highlight_card_batches_user\" ON \"highlight_card_batches\" USING btree (\"user_id\");",
+      "\nCREATE INDEX \"learning_items_episode\" ON \"learning_items\" USING btree (\"episode_id\");",
+      "\nCREATE UNIQUE INDEX \"user_cards_user_item\" ON \"user_cards\" USING btree (\"user_id\",\"learning_item_id\");",
+      "\nCREATE INDEX \"user_cards_due\" ON \"user_cards\" USING btree (\"user_id\",\"due_at\");",
+      "\nCREATE UNIQUE INDEX \"user_highlights_unique\" ON \"user_highlights\" USING btree (\"user_id\",\"cue_id\",\"start_token\",\"end_token\",\"kind\");",
+      "\nCREATE INDEX \"user_highlights_user_episode\" ON \"user_highlights\" USING btree (\"user_id\",\"episode_id\");",
+      "\nCREATE UNIQUE INDEX \"xp_events_dedupe\" ON \"xp_events\" USING btree (\"user_id\",\"source\",\"source_id\");",
+      "\nCREATE INDEX \"xp_events_user_created\" ON \"xp_events\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791673551939,
+    "hash": "6ab2b0318a1a7d3b72fe287a903812c4438a5eb417085dacab6c7e1ab331df50"
+  },
+  {
+    "tag": "0001_smart_masque",
+    "sql": [
+      "ALTER TABLE \"episodes\" ADD COLUMN \"still_path\" text;",
+      "\nALTER TABLE \"media_items\" ADD COLUMN \"backdrop_path\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1791683508275,
+    "hash": "728cd8e3a4bd6befca768b5f8a964a18eeb39cf1d97d5e74c9347752858369db"
+  },
+  {
+    "tag": "0002_whole_killraven",
+    "sql": [
+      "CREATE TABLE \"lesson_attempts\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"node_index\" integer NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"correct\" integer NOT NULL,\n\t\"total\" integer NOT NULL,\n\t\"xp\" integer NOT NULL,\n\t\"seconds\" integer NOT NULL,\n\t\"replay\" boolean NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"lesson_attempts\" ADD CONSTRAINT \"lesson_attempts_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"lesson_attempts\" ADD CONSTRAINT \"lesson_attempts_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"lesson_attempts_user_episode\" ON \"lesson_attempts\" USING btree (\"user_id\",\"episode_id\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791683828220,
+    "hash": "b379a9bd674ab8fca3e36567a86a68749b2c5de03e67dc5fe485891223c53069"
+  },
+  {
+    "tag": "0003_clumsy_patch",
+    "sql": [
+      "CREATE TABLE \"notifications\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"kind\" text NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"body\" text NOT NULL,\n\t\"href\" text NOT NULL,\n\t\"read_at\" timestamp with time zone,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"highlight_card_batches\" ADD COLUMN \"failure_reason\" text;",
+      "\nALTER TABLE \"notifications\" ADD CONSTRAINT \"notifications_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"notifications_user_created\" ON \"notifications\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791687123974,
+    "hash": "d4c545d97be2ca0833ffedbcd09f66ab8283de8782d041920613f9d12386c0c6"
+  },
+  {
+    "tag": "0004_black_maestro",
+    "sql": [
+      "CREATE TABLE \"lesson_plans\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"provider\" text,\n\t\"plan\" jsonb,\n\t\"failure_reason\" text,\n\t\"requested_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"lesson_attempts\" ADD COLUMN \"passed\" boolean DEFAULT true NOT NULL;",
+      "\nALTER TABLE \"lesson_plans\" ADD CONSTRAINT \"lesson_plans_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"lesson_plans\" ADD CONSTRAINT \"lesson_plans_requested_by_users_id_fk\" FOREIGN KEY (\"requested_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"lesson_plans_episode_level\" ON \"lesson_plans\" USING btree (\"episode_id\",\"level\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791687920036,
+    "hash": "af18e86db6eb04d79c0c3e2635aa173823774fb8ad64ef167f61220e4ec63af8"
+  },
+  {
+    "tag": "0005_silent_chamber",
+    "sql": [
+      "CREATE TABLE \"review_anticipations\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"cards_moved\" integer NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"review_anticipations\" ADD CONSTRAINT \"review_anticipations_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"review_anticipations_user_created\" ON \"review_anticipations\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791688177485,
+    "hash": "6607505aba2716dc315bf821601e79078c8fa867448125eb465be7378a92e09c"
+  },
+  {
+    "tag": "0006_redundant_nightshade",
+    "sql": [
+      "ALTER TABLE \"review_anticipations\" ADD COLUMN \"day\" text NOT NULL;",
+      "\nALTER TABLE \"review_anticipations\" ADD COLUMN \"ordinal\" integer NOT NULL;",
+      "\nCREATE UNIQUE INDEX \"review_anticipations_slot\" ON \"review_anticipations\" USING btree (\"user_id\",\"day\",\"ordinal\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791688374643,
+    "hash": "dbcf942b8f530a604303547ae1e32c5c4939527d6fd4a94699d695bb523e6d77"
+  },
+  {
+    "tag": "0007_colossal_iron_patriot",
+    "sql": [
+      "CREATE TABLE \"conversation_sessions\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"theme_id\" text NOT NULL,\n\t\"theme_title\" text NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"review\" jsonb,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"conversation_turns\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"session_id\" uuid NOT NULL,\n\t\"role\" text NOT NULL,\n\t\"text\" text NOT NULL,\n\t\"translation\" text,\n\t\"corrections\" jsonb NOT NULL,\n\t\"input_kind\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"conversation_sessions\" ADD CONSTRAINT \"conversation_sessions_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"conversation_turns\" ADD CONSTRAINT \"conversation_turns_session_id_conversation_sessions_id_fk\" FOREIGN KEY (\"session_id\") REFERENCES \"public\".\"conversation_sessions\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"conversation_sessions_user\" ON \"conversation_sessions\" USING btree (\"user_id\",\"created_at\");",
+      "\nCREATE INDEX \"conversation_turns_session\" ON \"conversation_turns\" USING btree (\"session_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791688686276,
+    "hash": "2754ce2d9317afc3aa6337a62ad5af67b4ad249ee37e2d42be1694637a58b467"
+  },
+  {
+    "tag": "0008_fair_nocturne",
+    "sql": [
+      "CREATE TABLE \"ai_usage\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"day\" text NOT NULL,\n\t\"calls\" integer NOT NULL,\n\tCONSTRAINT \"ai_usage_user_id_day_pk\" PRIMARY KEY(\"user_id\",\"day\")\n);\n",
+      "\nALTER TABLE \"conversation_sessions\" ADD COLUMN \"user_turns_used\" integer DEFAULT 0 NOT NULL;",
+      "\nALTER TABLE \"ai_usage\" ADD CONSTRAINT \"ai_usage_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1791689319970,
+    "hash": "aacde154faeba0959830c1155dca9d3cf476c1f98fa4d2d9e03e6ff7d6682bc1"
+  },
+  {
+    "tag": "0009_lazy_kinsey_walden",
+    "sql": [
+      "DROP INDEX \"review_anticipations_slot\";",
+      "\nALTER TABLE \"review_anticipations\" DROP COLUMN \"day\";",
+      "\nALTER TABLE \"review_anticipations\" DROP COLUMN \"ordinal\";"
+    ],
+    "bps": true,
+    "folderMillis": 1791690202745,
+    "hash": "eafa194b0bd8b95733c073a7b83e832d637b9cae582c2d6d0dce27a54ef987cb"
+  },
+  {
+    "tag": "0010_brief_cerebro",
+    "sql": [
+      "CREATE TABLE \"external_api_quota\" (\n\t\"provider\" text PRIMARY KEY NOT NULL,\n\t\"remaining\" integer NOT NULL,\n\t\"reset_at\" timestamp with time zone,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"subtitle_search_cache\" (\n\t\"episode_id\" uuid PRIMARY KEY NOT NULL,\n\t\"provider\" text NOT NULL,\n\t\"languages\" text NOT NULL,\n\t\"results_json\" jsonb NOT NULL,\n\t\"fetched_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"source\" text DEFAULT 'upload' NOT NULL;",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"external_file_id\" text;",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"release_name\" text;",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"source_author\" text;",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"hearing_impaired\" boolean;",
+      "\nALTER TABLE \"subtitle_files\" ADD COLUMN \"fps\" double precision;",
+      "\nALTER TABLE \"subtitle_search_cache\" ADD CONSTRAINT \"subtitle_search_cache_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"subtitle_files_external\" ON \"subtitle_files\" USING btree (\"source\",\"external_file_id\") WHERE \"subtitle_files\".\"external_file_id\" is not null;"
+    ],
+    "bps": true,
+    "folderMillis": 1791690903375,
+    "hash": "462428b57f73df0d469ec9370a22f95d1c3ce21d75f1524abbdf9f23e31c46e5"
+  },
+  {
+    "tag": "0011_lucky_payback",
+    "sql": [
+      "CREATE TABLE \"subtitle_downloads\" (\n\t\"id\" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"provider\" text NOT NULL,\n\t\"external_file_id\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"subtitle_downloads\" ADD CONSTRAINT \"subtitle_downloads_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"subtitle_downloads_user_time\" ON \"subtitle_downloads\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791691721180,
+    "hash": "4ceafe90a7011e882a28e3e1cfb897616a39fbfc138d22af99c09fc38d353d87"
+  },
+  {
+    "tag": "0012_new_outlaw_kid",
+    "sql": [
+      "CREATE TABLE \"recommendation_feedback\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"work_key\" text NOT NULL,\n\t\"verdict\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"recommendation_feedback_user_id_work_key_pk\" PRIMARY KEY(\"user_id\",\"work_key\")\n);\n",
+      "\nCREATE TABLE \"recommendation_runs\" (\n\t\"user_id\" uuid PRIMARY KEY NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"fingerprint\" text,\n\t\"writer\" text,\n\t\"embedding\" text,\n\t\"insight\" text,\n\t\"failure_reason\" text,\n\t\"started_at\" timestamp with time zone NOT NULL,\n\t\"finished_at\" timestamp with time zone\n);\n",
+      "\nCREATE TABLE \"user_recommendations\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"work_key\" text NOT NULL,\n\t\"provider\" text NOT NULL,\n\t\"external_id\" text NOT NULL,\n\t\"type\" text NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"original_title\" text NOT NULL,\n\t\"overview\" text NOT NULL,\n\t\"year\" integer,\n\t\"poster_path\" text,\n\t\"genres\" jsonb NOT NULL,\n\t\"level_min\" text NOT NULL,\n\t\"level_max\" text NOT NULL,\n\t\"score\" double precision NOT NULL,\n\t\"reason\" text NOT NULL,\n\t\"position\" integer NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"user_recommendations_user_id_work_key_pk\" PRIMARY KEY(\"user_id\",\"work_key\")\n);\n",
+      "\nCREATE TABLE \"work_embeddings\" (\n\t\"work_key\" text NOT NULL,\n\t\"model\" text NOT NULL,\n\t\"vector\" jsonb NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"work_embeddings_work_key_model_pk\" PRIMARY KEY(\"work_key\",\"model\")\n);\n",
+      "\nALTER TABLE \"recommendation_feedback\" ADD CONSTRAINT \"recommendation_feedback_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"recommendation_runs\" ADD CONSTRAINT \"recommendation_runs_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"user_recommendations\" ADD CONSTRAINT \"user_recommendations_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1791836060435,
+    "hash": "3c35d3f09bf6010fe48e86f51d57b80ea2e32f4fbbab89590db4283932e6a0ad"
+  },
+  {
+    "tag": "0013_handy_banshee",
+    "sql": [
+      "CREATE TABLE \"app_credentials\" (\n\t\"provider\" text PRIMARY KEY NOT NULL,\n\t\"encrypted_api_key\" text NOT NULL,\n\t\"key_version\" integer NOT NULL,\n\t\"updated_by\" uuid,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"user_ai_credentials\" DROP CONSTRAINT \"user_ai_credentials_pkey\";",
+      "\nUPDATE \"user_ai_credentials\" SET \"provider\" = 'gemini' WHERE \"provider\" = 'google-gemini';",
+      "\nALTER TABLE \"user_ai_credentials\" ADD CONSTRAINT \"user_ai_credentials_user_id_provider_pk\" PRIMARY KEY(\"user_id\",\"provider\");",
+      "\nALTER TABLE \"users\" ADD COLUMN \"is_admin\" boolean DEFAULT false NOT NULL;",
+      "\nUPDATE \"users\" SET \"is_admin\" = true WHERE \"id\" = (SELECT \"id\" FROM \"users\" ORDER BY \"created_at\", \"email\" LIMIT 1);",
+      "\nALTER TABLE \"app_credentials\" ADD CONSTRAINT \"app_credentials_updated_by_users_id_fk\" FOREIGN KEY (\"updated_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;\n"
+    ],
+    "bps": true,
+    "folderMillis": 1791838165480,
+    "hash": "8024b6933a80dff11362b0fcff005d927ffd82a44aff492ed0c6f2700301a29d"
+  },
+  {
+    "tag": "0014_talented_roughhouse",
+    "sql": [
+      "CREATE TABLE \"app_settings\" (\n\t\"key\" text PRIMARY KEY NOT NULL,\n\t\"value\" jsonb NOT NULL,\n\t\"updated_by\" uuid,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"app_settings\" ADD CONSTRAINT \"app_settings_updated_by_users_id_fk\" FOREIGN KEY (\"updated_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1791844418213,
+    "hash": "1fc4e7284cccaaeafb2931eeb6b03d04071dfc366f083c0255748fcc65c9b0ff"
+  },
+  {
+    "tag": "0015_pink_mindworm",
+    "sql": [
+      "CREATE TABLE \"ai_model_prices\" (\n\t\"provider\" text NOT NULL,\n\t\"model\" text NOT NULL,\n\t\"input_usd_per_million\" double precision NOT NULL,\n\t\"output_usd_per_million\" double precision NOT NULL,\n\t\"updated_by\" uuid,\n\t\"updated_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"ai_model_prices_provider_model_pk\" PRIMARY KEY(\"provider\",\"model\")\n);\n",
+      "\nCREATE TABLE \"ai_usage_events\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"provider\" text NOT NULL,\n\t\"model\" text NOT NULL,\n\t\"operation\" text NOT NULL,\n\t\"key_source\" text NOT NULL,\n\t\"input_tokens\" integer NOT NULL,\n\t\"output_tokens\" integer NOT NULL,\n\t\"estimated_cost_usd\" double precision,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"ai_model_prices\" ADD CONSTRAINT \"ai_model_prices_updated_by_users_id_fk\" FOREIGN KEY (\"updated_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"ai_usage_events\" ADD CONSTRAINT \"ai_usage_events_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"ai_usage_events_user_created\" ON \"ai_usage_events\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1791861826141,
+    "hash": "450df40aeae2e623eedcdf49c19526188ec7d9caa1704c6ae2e1e25ca52aa603"
+  },
+  {
+    "tag": "0016_workable_randall",
+    "sql": [
+      "CREATE TABLE \"ai_usage_limits\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"key_source\" text NOT NULL,\n\t\"usd_per_day\" double precision,\n\t\"usd_per_month\" double precision,\n\t\"tokens_per_day\" bigint,\n\t\"tokens_per_month\" bigint,\n\t\"updated_by\" uuid,\n\t\"updated_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"ai_usage_limits_user_id_key_source_pk\" PRIMARY KEY(\"user_id\",\"key_source\")\n);\n",
+      "\nDROP TABLE \"ai_usage\" CASCADE;",
+      "\nALTER TABLE \"ai_usage_limits\" ADD CONSTRAINT \"ai_usage_limits_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"ai_usage_limits\" ADD CONSTRAINT \"ai_usage_limits_updated_by_users_id_fk\" FOREIGN KEY (\"updated_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1791862466150,
+    "hash": "e830059c60c6f03569b83d7fb91ef1b00591717dabbc5e9f3b0a0fb0d126ae1a"
+  },
+  {
+    "tag": "0017_brown_jamie_braddock",
+    "sql": [
+      "CREATE TABLE \"user_ai_models\" (\n\t\"user_id\" uuid PRIMARY KEY NOT NULL,\n\t\"models\" jsonb NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"user_ai_models\" ADD CONSTRAINT \"user_ai_models_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1791863664299,
+    "hash": "bf4fa212e6a7f917bfcc755f008170734c6e26d551f967fcb26fd813d3b497ca"
+  },
+  {
+    "tag": "0018_simple_post",
+    "sql": [
+      "ALTER TABLE \"notifications\" ADD COLUMN \"params\" jsonb DEFAULT '{}'::jsonb NOT NULL;",
+      "\nALTER TABLE \"user_preferences\" ADD COLUMN \"locale\" text DEFAULT 'pt-BR' NOT NULL;",
+      "\nALTER TABLE \"notifications\" DROP COLUMN \"title\";",
+      "\nALTER TABLE \"notifications\" DROP COLUMN \"body\";"
+    ],
+    "bps": true,
+    "folderMillis": 1792043498296,
+    "hash": "2b9cc56da5f50e816232d17aaa5d546b97a25cbbe9202a70931b56a40deadecf"
+  },
+  {
+    "tag": "0019_cooing_mathemanic",
+    "sql": [
+      "CREATE TABLE \"user_language_pairs\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"target_language\" text NOT NULL,\n\t\"native_language\" text NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"user_language_pairs_user_id_target_language_native_language_pk\" PRIMARY KEY(\"user_id\",\"target_language\",\"native_language\")\n);\n",
+      "\nALTER TABLE \"cue_alignments\" DROP CONSTRAINT \"cue_alignments_en_cue_id_subtitle_cues_id_fk\";\n",
+      "\nDROP INDEX \"cue_alignments_en_cue\";",
+      "\nDROP INDEX \"lesson_plans_episode_level\";",
+      "\nALTER TABLE \"cue_translations\" DROP CONSTRAINT \"cue_translations_pkey\";",
+      "\nALTER TABLE \"cue_translations\" ADD CONSTRAINT \"cue_translations_cue_id_locale_pk\" PRIMARY KEY(\"cue_id\",\"locale\");",
+      "\nALTER TABLE \"user_preferences\" ADD COLUMN \"target_language\" text DEFAULT 'en' NOT NULL;",
+      "\nALTER TABLE \"cue_alignments\" RENAME COLUMN \"en_cue_id\" TO \"source_cue_id\";",
+      "\nALTER TABLE \"cue_alignments\" RENAME COLUMN \"pt_cue_ids\" TO \"aligned_cue_ids\";",
+      "\nALTER TABLE \"cue_alignments\" ADD COLUMN \"target_language\" text DEFAULT 'pt-BR' NOT NULL;",
+      "\nALTER TABLE \"media_items\" ADD COLUMN \"original_language\" text DEFAULT 'en' NOT NULL;",
+      "\nALTER TABLE \"learning_items\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;",
+      "\nALTER TABLE \"lesson_attempts\" ADD COLUMN \"language_pair\" text DEFAULT 'en>pt-BR' NOT NULL;",
+      "\nALTER TABLE \"lesson_plans\" ADD COLUMN \"language_pair\" text DEFAULT 'en>pt-BR' NOT NULL;",
+      "\nALTER TABLE \"user_language_pairs\" ADD CONSTRAINT \"user_language_pairs_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"cue_alignments\" ADD CONSTRAINT \"cue_alignments_source_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"source_cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"cue_alignments_source_language\" ON \"cue_alignments\" USING btree (\"source_cue_id\",\"target_language\");",
+      "\nCREATE UNIQUE INDEX \"lesson_plans_episode_pair_level\" ON \"lesson_plans\" USING btree (\"episode_id\",\"language_pair\",\"level\");",
+      "\nINSERT INTO \"user_language_pairs\" (\"user_id\", \"target_language\", \"native_language\", \"level\", \"created_at\")\nSELECT \"user_id\", 'en', \"native_language\", \"level\", now() FROM \"user_preferences\" ON CONFLICT DO NOTHING;\n"
+    ],
+    "bps": true,
+    "folderMillis": 1792044693928,
+    "hash": "f9ee790523d330dbc49e76e8436162aaa0f736588fda9b44d30a0aa078ca8b32"
+  },
+  {
+    "tag": "0020_happy_lester",
+    "sql": [
+      "DROP TABLE \"progress_snapshots\" CASCADE;",
+      "\nALTER TABLE \"lesson_attempts\" ADD COLUMN \"kinds\" jsonb DEFAULT '{}'::jsonb NOT NULL;"
+    ],
+    "bps": true,
+    "folderMillis": 1792047362031,
+    "hash": "372ee10e053cb308a3edf27bc65eb454aaeeb27460fdff9306cabce2176e81c0"
+  },
+  {
+    "tag": "0021_orange_wendell_rand",
+    "sql": [
+      "CREATE TABLE \"episode_scripts\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"language\" text NOT NULL,\n\t\"source\" text NOT NULL,\n\t\"source_url\" text,\n\t\"storage_path\" text NOT NULL,\n\t\"sha256\" text NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"line_count\" integer NOT NULL,\n\t\"matched_count\" integer NOT NULL,\n\t\"cue_count\" integer NOT NULL,\n\t\"uploaded_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"script_lines\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"script_id\" uuid NOT NULL,\n\t\"sequence\" integer NOT NULL,\n\t\"text\" text NOT NULL,\n\t\"matched_cue_id\" uuid,\n\t\"verified\" boolean NOT NULL\n);\n",
+      "\nCREATE TABLE \"job_queue\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"kind\" text NOT NULL,\n\t\"payload\" jsonb NOT NULL,\n\t\"status\" text NOT NULL,\n\t\"attempts\" integer NOT NULL,\n\t\"max_attempts\" integer NOT NULL,\n\t\"run_after\" timestamp with time zone NOT NULL,\n\t\"locked_until\" timestamp with time zone,\n\t\"failure_reason\" text,\n\t\"created_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"episode_scripts\" ADD CONSTRAINT \"episode_scripts_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"episode_scripts\" ADD CONSTRAINT \"episode_scripts_uploaded_by_users_id_fk\" FOREIGN KEY (\"uploaded_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"script_lines\" ADD CONSTRAINT \"script_lines_script_id_episode_scripts_id_fk\" FOREIGN KEY (\"script_id\") REFERENCES \"public\".\"episode_scripts\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"script_lines\" ADD CONSTRAINT \"script_lines_matched_cue_id_subtitle_cues_id_fk\" FOREIGN KEY (\"matched_cue_id\") REFERENCES \"public\".\"subtitle_cues\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"job_queue\" ADD CONSTRAINT \"job_queue_created_by_users_id_fk\" FOREIGN KEY (\"created_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"episode_scripts_episode_language\" ON \"episode_scripts\" USING btree (\"episode_id\",\"language\");",
+      "\nCREATE INDEX \"script_lines_script_sequence\" ON \"script_lines\" USING btree (\"script_id\",\"sequence\");",
+      "\nCREATE INDEX \"script_lines_cue\" ON \"script_lines\" USING btree (\"matched_cue_id\");",
+      "\nCREATE INDEX \"job_queue_status_run_after\" ON \"job_queue\" USING btree (\"status\",\"run_after\");",
+      "\nCREATE INDEX \"job_queue_kind_status\" ON \"job_queue\" USING btree (\"kind\",\"status\");"
+    ],
+    "bps": true,
+    "folderMillis": 1792048438203,
+    "hash": "7b2cfbf255716084c3c8b99cd970813042549b48582836e31e1d1b06ad11981c"
+  },
+  {
+    "tag": "0022_condemned_lady_deathstrike",
+    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"],
+    "bps": true,
+    "folderMillis": 1792115432664,
+    "hash": "616a1ee9b6d0f6e1b2fb18e47b091784456904267b48abc42e8cadabc71a18fa"
+  },
+  {
+    "tag": "0023_conversation_close",
+    "sql": [
+      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"review_status\" text DEFAULT 'none' NOT NULL;",
+      "\nALTER TABLE \"conversation_sessions\" ADD COLUMN \"closed_at\" timestamp with time zone;",
+      "\nALTER TABLE \"conversation_sessions\" ADD COLUMN \"cards_confirmed_at\" timestamp with time zone;",
+      "\nALTER TABLE \"conversation_turns\" ADD COLUMN \"corrected_text\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1792125416438,
+    "hash": "01f047ec9cc1173b8da23a823806a2c2e08715a0b50134fee4be545c50ee211f"
+  },
+  {
+    "tag": "0024_personal_series",
+    "sql": [
+      "CREATE TABLE \"personal_episode_cards\" (\n\t\"series_id\" uuid NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"learning_item_id\" uuid NOT NULL,\n\t\"session_id\" uuid,\n\t\"position\" integer NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"personal_episode_cards_episode_id_learning_item_id_pk\" PRIMARY KEY(\"episode_id\",\"learning_item_id\")\n);\n",
+      "\nCREATE TABLE \"personal_episodes\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"series_id\" uuid NOT NULL,\n\t\"season_id\" uuid NOT NULL,\n\t\"number\" integer NOT NULL,\n\t\"title\" text NOT NULL,\n\t\"theme\" text NOT NULL,\n\t\"part\" integer NOT NULL,\n\t\"completed_nodes\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"personal_seasons\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"series_id\" uuid NOT NULL,\n\t\"number\" integer NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nCREATE TABLE \"personal_series\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"target_language\" text NOT NULL,\n\t\"native_language\" text NOT NULL,\n\t\"name\" text,\n\t\"description\" text,\n\t\"description_updated_at\" timestamp with time zone,\n\t\"description_basis\" jsonb,\n\t\"level_mode\" text DEFAULT 'auto' NOT NULL,\n\t\"level_min\" text,\n\t\"level_max\" text,\n\t\"start_level\" text NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"personal_episode_cards\" ADD CONSTRAINT \"personal_episode_cards_series_id_personal_series_id_fk\" FOREIGN KEY (\"series_id\") REFERENCES \"public\".\"personal_series\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_episode_cards\" ADD CONSTRAINT \"personal_episode_cards_episode_id_personal_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"personal_episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_episode_cards\" ADD CONSTRAINT \"personal_episode_cards_learning_item_id_learning_items_id_fk\" FOREIGN KEY (\"learning_item_id\") REFERENCES \"public\".\"learning_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_episode_cards\" ADD CONSTRAINT \"personal_episode_cards_session_id_conversation_sessions_id_fk\" FOREIGN KEY (\"session_id\") REFERENCES \"public\".\"conversation_sessions\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nALTER TABLE \"personal_episodes\" ADD CONSTRAINT \"personal_episodes_series_id_personal_series_id_fk\" FOREIGN KEY (\"series_id\") REFERENCES \"public\".\"personal_series\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_episodes\" ADD CONSTRAINT \"personal_episodes_season_id_personal_seasons_id_fk\" FOREIGN KEY (\"season_id\") REFERENCES \"public\".\"personal_seasons\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_seasons\" ADD CONSTRAINT \"personal_seasons_series_id_personal_series_id_fk\" FOREIGN KEY (\"series_id\") REFERENCES \"public\".\"personal_series\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"personal_series\" ADD CONSTRAINT \"personal_series_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"personal_episode_cards_series_item\" ON \"personal_episode_cards\" USING btree (\"series_id\",\"learning_item_id\");",
+      "\nCREATE INDEX \"personal_episode_cards_episode_position\" ON \"personal_episode_cards\" USING btree (\"episode_id\",\"position\");",
+      "\nCREATE UNIQUE INDEX \"personal_episodes_season_theme_part\" ON \"personal_episodes\" USING btree (\"season_id\",\"theme\",\"part\");",
+      "\nCREATE UNIQUE INDEX \"personal_episodes_season_number\" ON \"personal_episodes\" USING btree (\"season_id\",\"number\");",
+      "\nCREATE UNIQUE INDEX \"personal_seasons_series_level\" ON \"personal_seasons\" USING btree (\"series_id\",\"level\");",
+      "\nCREATE UNIQUE INDEX \"personal_seasons_series_number\" ON \"personal_seasons\" USING btree (\"series_id\",\"number\");",
+      "\nCREATE UNIQUE INDEX \"personal_series_user_pair\" ON \"personal_series\" USING btree (\"user_id\",\"target_language\",\"native_language\");"
+    ],
+    "bps": true,
+    "folderMillis": 1792125663134,
+    "hash": "5d38dca420d288a017dc38f44a0b9b6dda6b32d4b2246d177f937e74e2c3e901"
+  },
+  {
+    "tag": "0025_ai_model_assignment",
+    "sql": [
+      "ALTER TABLE \"user_ai_models\" ADD COLUMN \"assigned_generation\" jsonb;",
+      "\nALTER TABLE \"user_ai_models\" ADD COLUMN \"assigned_by\" uuid;",
+      "\nALTER TABLE \"user_ai_models\" ADD CONSTRAINT \"user_ai_models_assigned_by_users_id_fk\" FOREIGN KEY (\"assigned_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1792161477430,
+    "hash": "a6c0679777ee3641d6d75e61a9eff3a2cd5f3654d2506737e08faba4e29a7a11"
+  },
+  {
+    "tag": "0026_episode_recaps",
+    "sql": [
+      "CREATE TABLE \"episode_recaps\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"user_id\" uuid NOT NULL,\n\t\"source\" text NOT NULL,\n\t\"episode_id\" uuid NOT NULL,\n\t\"language_pair\" text NOT NULL,\n\t\"step\" integer DEFAULT 0 NOT NULL,\n\t\"due_at\" timestamp with time zone,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"episode_recaps\" ADD CONSTRAINT \"episode_recaps_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"episode_recaps_unique\" ON \"episode_recaps\" USING btree (\"user_id\",\"source\",\"episode_id\",\"language_pair\");",
+      "\nCREATE INDEX \"episode_recaps_user_due\" ON \"episode_recaps\" USING btree (\"user_id\",\"due_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1792165814606,
+    "hash": "536351ca2ebd5c311abcfa6861ed420f932e782b7d20a936acfc0d5bd32d9e5b"
+  },
+  {
+    "tag": "0027_conversation_episode",
+    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"],
+    "bps": true,
+    "folderMillis": 1792166687587,
+    "hash": "332f14f21dd4df88cfb91e26a858672361aa1b6b073a7210cb5304c2c82d990c"
+  },
+  {
+    "tag": "0028_level_guide",
+    "sql": [
+      "UPDATE \"media_items\" AS m\nSET \"level_min\" = g.level_min, \"level_max\" = g.level_max\nFROM (VALUES\n  ('movie:11', 'B1', 'B1'),\n  ('movie:12', 'A2', 'B1'),\n  ('movie:13', 'B1', 'B1'),\n  ('movie:14', 'B2', 'C1'),\n  ('movie:18', 'B1', 'B2'),\n  ('movie:22', 'B2', 'C1'),\n  ('movie:24', 'B2', 'B2'),\n  ('movie:28', 'C1', 'C1'),\n  ('movie:35', 'B1', 'B2'),\n  ('movie:38', 'C1', 'C1'),\n  ('movie:55', 'C1', 'C2'),\n  ('movie:58', 'B2', 'C1'),\n  ('movie:62', 'B2', 'C1'),\n  ('movie:63', 'C1', 'C1'),\n  ('movie:64', 'C1', 'C1'),\n  ('movie:70', 'B2', 'B2'),\n  ('movie:73', 'C1', 'C1'),\n  ('movie:74', 'B1', 'B1'),\n  ('movie:77', 'B2', 'C1'),\n  ('movie:78', 'B2', 'B2'),\n  ('movie:85', 'B1', 'B1'),\n  ('movie:87', 'B1', 'B1'),\n  ('movie:89', 'B1', 'B1'),\n  ('movie:98', 'B2', 'B2'),\n  ('movie:99', 'C1', 'C1'),\n  ('movie:100', 'C2', 'C2'),\n  ('movie:101', 'B2', 'B2'),\n  ('movie:103', 'C1', 'C1'),\n  ('movie:105', 'B1', 'B1'),\n  ('movie:106', 'A2', 'B1'),\n  ('movie:107', 'C2', 'C2'),\n  ('movie:111', 'C1', 'C1'),\n  ('movie:114', 'B1', 'B2'),\n  ('movie:115', 'C1', 'C2'),\n  ('movie:118', 'A2', 'B1'),\n  ('movie:120', 'B2', 'C1'),\n  ('movie:121', 'B2', 'C1'),\n  ('movie:122', 'B2', 'C1'),\n  ('movie:137', 'B2', 'B2'),\n  ('movie:141', 'B2', 'C1'),\n  ('movie:147', 'B2', 'C1'),\n  ('movie:155', 'B2', 'B2'),\n  ('movie:161', 'B2', 'C1'),\n  ('movie:162', 'A2', 'B1'),\n  ('movie:165', 'B1', 'B1'),\n  ('movie:176', 'B1', 'B2'),\n  ('movie:180', 'B2', 'B2'),\n  ('movie:185', 'C2', 'C2'),\n  ('movie:187', 'B2', 'C1'),\n  ('movie:194', 'B2', 'C1'),\n  ('movie:196', 'B1', 'B1'),\n  ('movie:197', 'B2', 'C1'),\n  ('movie:207', 'B2', 'C1'),\n  ('movie:217', 'B1', 'B1'),\n  ('movie:218', 'B1', 'B1'),\n  ('movie:219', 'C1', 'C1'),\n  ('movie:238', 'B2', 'C1'),\n  ('movie:240', 'C1', 'C1'),\n  ('movie:269', 'C1', 'C1'),\n  ('movie:272', 'B2', 'B2'),\n  ('movie:274', 'B2', 'C1'),\n  ('movie:275', 'C1', 'C1'),\n  ('movie:278', 'B2', 'B2'),\n  ('movie:280', 'B1', 'B1'),\n  ('movie:285', 'B2', 'C1'),\n  ('movie:310', 'B1', 'B1'),\n  ('movie:329', 'B1', 'B2'),\n  ('movie:330', 'B1', 'B1'),\n  ('movie:348', 'B2', 'B2'),\n  ('movie:350', 'B2', 'B2'),\n  ('movie:389', 'B2', 'C1'),\n  ('movie:393', 'B2', 'C1'),\n  ('movie:406', 'C2', 'C2'),\n  ('movie:408', 'A1', 'A2'),\n  ('movie:411', 'A2', 'B1'),\n  ('movie:423', 'B1', 'B2'),\n  ('movie:424', 'B2', 'C1'),\n  ('movie:425', 'A2', 'B1'),\n  ('movie:435', 'B1', 'B1'),\n  ('movie:453', 'B2', 'C1'),\n  ('movie:454', 'C2', 'C2'),\n  ('movie:489', 'C1', 'C1'),\n  ('movie:497', 'B2', 'C1'),\n  ('movie:500', 'C1', 'C2'),\n  ('movie:508', 'B2', 'B2'),\n  ('movie:509', 'B2', 'B2'),\n  ('movie:510', 'C1', 'C1'),\n  ('movie:539', 'B2', 'B2'),\n  ('movie:550', 'C1', 'C1'),\n  ('movie:557', 'B1', 'B1'),\n  ('movie:558', 'B1', 'B1'),\n  ('movie:559', 'B1', 'B1'),\n  ('movie:562', 'B2', 'C1'),\n  ('movie:564', 'B1', 'B2'),\n  ('movie:578', 'B1', 'B2'),\n  ('movie:583', 'C2', 'C2'),\n  ('movie:585', 'A2', 'B1'),\n  ('movie:591', 'B2', 'B2'),\n  ('movie:597', 'B1', 'B1'),\n  ('movie:598', 'C2', 'C2'),\n  ('movie:600', 'C1', 'C2'),\n  ('movie:601', 'A2', 'B1'),\n  ('movie:602', 'B1', 'B2'),\n  ('movie:603', 'B1', 'B2'),\n  ('movie:604', 'B2', 'C1'),\n  ('movie:605', 'B2', 'C1'),\n  ('movie:607', 'B1', 'B2'),\n  ('movie:608', 'B1', 'B2'),\n  ('movie:620', 'B2', 'C1'),\n  ('movie:627', 'C2', 'C2'),\n  ('movie:629', 'C1', 'C1'),\n  ('movie:640', 'B2', 'B2'),\n  ('movie:641', 'B2', 'B2'),\n  ('movie:652', 'B2', 'B2'),\n  ('movie:666', 'B1', 'B2'),\n  ('movie:671', 'B1', 'B2'),\n  ('movie:672', 'B1', 'B2'),\n  ('movie:673', 'B1', 'B2'),\n  ('movie:674', 'B1', 'B2'),\n  ('movie:675', 'B1', 'B2'),\n  ('movie:679', 'B1', 'B2'),\n  ('movie:680', 'C1', 'C2'),\n  ('movie:694', 'B2', 'B2'),\n  ('movie:744', 'B1', 'B2'),\n  ('movie:745', 'B1', 'B2'),\n  ('movie:747', 'C1', 'C2'),\n  ('movie:752', 'C1', 'C1'),\n  ('movie:762', 'C2', 'C2'),\n  ('movie:767', 'B1', 'B2'),\n  ('movie:769', 'C1', 'C2'),\n  ('movie:771', 'A2', 'B1'),\n  ('movie:772', 'A2', 'B1'),\n  ('movie:787', 'B1', 'B2'),\n  ('movie:788', 'B1', 'B2'),\n  ('movie:807', 'B2', 'C1'),\n  ('movie:808', 'A2', 'B1'),\n  ('movie:809', 'A2', 'B1'),\n  ('movie:810', 'A2', 'B1'),\n  ('movie:812', 'A2', 'B1'),\n  ('movie:854', 'B1', 'B1'),\n  ('movie:857', 'B2', 'C1'),\n  ('movie:862', 'A2', 'B1'),\n  ('movie:863', 'A2', 'B1'),\n  ('movie:892', 'B2', 'B2'),\n  ('movie:920', 'A2', 'B1'),\n  ('movie:950', 'A2', 'B1'),\n  ('movie:953', 'A2', 'B1'),\n  ('movie:954', 'B1', 'B2'),\n  ('movie:1124', 'B2', 'C1'),\n  ('movie:1271', 'B1', 'B2'),\n  ('movie:1359', 'C1', 'C1'),\n  ('movie:1391', 'C2', 'C2'),\n  ('movie:1402', 'B2', 'B2'),\n  ('movie:1407', 'B2', 'C1'),\n  ('movie:1417', 'B2', 'C1'),\n  ('movie:1422', 'C1', 'C2'),\n  ('movie:1433', 'B2', 'B2'),\n  ('movie:1584', 'B1', 'B2'),\n  ('movie:1593', 'B1', 'B1'),\n  ('movie:1653', 'B2', 'C1'),\n  ('movie:1724', 'B1', 'B1'),\n  ('movie:1726', 'B1', 'B2'),\n  ('movie:1771', 'B1', 'B1'),\n  ('movie:1858', 'B1', 'B2'),\n  ('movie:1865', 'B2', 'C1'),\n  ('movie:1885', 'B1', 'B1'),\n  ('movie:1891', 'B1', 'B1'),\n  ('movie:1892', 'B1', 'B1'),\n  ('movie:1893', 'B1', 'B2'),\n  ('movie:1894', 'B1', 'B2'),\n  ('movie:1895', 'B1', 'B2'),\n  ('movie:1913', 'B2', 'C1'),\n  ('movie:1930', 'B1', 'B1'),\n  ('movie:1949', 'C1', 'C1'),\n  ('movie:2011', 'B2', 'C1'),\n  ('movie:2048', 'B1', 'B2'),\n  ('movie:2062', 'A2', 'B1'),\n  ('movie:2080', 'B1', 'B1'),\n  ('movie:2330', 'B2', 'C1'),\n  ('movie:2454', 'A2', 'B1'),\n  ('movie:2501', 'B1', 'B1'),\n  ('movie:2899', 'C1', 'C2'),\n  ('movie:3175', 'C2', 'C2'),\n  ('movie:3933', 'B1', 'B1'),\n  ('movie:4203', 'C1', 'C2'),\n  ('movie:4348', 'C1', 'C1'),\n  ('movie:4922', 'B2', 'B2'),\n  ('movie:4951', 'B1', 'B2'),\n  ('movie:5255', 'A2', 'A2'),\n  ('movie:5528', 'B1', 'B2'),\n  ('movie:5915', 'B2', 'B2'),\n  ('movie:6312', 'B2', 'C1'),\n  ('movie:6479', 'B1', 'B1'),\n  ('movie:6537', 'B1', 'B2'),\n  ('movie:6977', 'C1', 'C2'),\n  ('movie:7326', 'B2', 'C1'),\n  ('movie:7343', 'C2', 'C2'),\n  ('movie:7347', 'C2', 'C2'),\n  ('movie:8265', 'C2', 'C2'),\n  ('movie:8321', 'C1', 'C2'),\n  ('movie:8329', 'B1', 'B1'),\n  ('movie:8355', 'A2', 'B1'),\n  ('movie:8358', 'A2', 'B1'),\n  ('movie:8373', 'B1', 'B1'),\n  ('movie:8440', 'C2', 'C2'),\n  ('movie:8587', 'A2', 'B1'),\n  ('movie:8681', 'B1', 'B1'),\n  ('movie:8835', 'B1', 'B2'),\n  ('movie:8844', 'A2', 'B1'),\n  ('movie:8871', 'B1', 'B1'),\n  ('movie:8960', 'B1', 'B1'),\n  ('movie:8966', 'B1', 'B1'),\n  ('movie:9322', 'B2', 'B2'),\n  ('movie:9325', 'A2', 'A2'),\n  ('movie:9367', 'B1', 'B2'),\n  ('movie:9421', 'B2', 'C1'),\n  ('movie:9479', 'A2', 'B1'),\n  ('movie:9487', 'A2', 'B1'),\n  ('movie:9502', 'A2', 'B1'),\n  ('movie:9504', 'C2', 'C2'),\n  ('movie:9564', 'B2', 'C1'),\n  ('movie:9598', 'A2', 'B1'),\n  ('movie:9738', 'B1', 'B1'),\n  ('movie:9741', 'B1', 'B2'),\n  ('movie:9799', 'B1', 'B2'),\n  ('movie:9806', 'A2', 'B1'),\n  ('movie:9880', 'B1', 'B1'),\n  ('movie:9975', 'A1', 'A2'),\n  ('movie:9986', 'A2', 'B1'),\n  ('movie:9992', 'A2', 'B1'),\n  ('movie:10020', 'A2', 'B1'),\n  ('movie:10045', 'B2', 'C1'),\n  ('movie:10096', 'B1', 'B1'),\n  ('movie:10137', 'A2', 'B1'),\n  ('movie:10138', 'B1', 'B2'),\n  ('movie:10144', 'A2', 'A2'),\n  ('movie:10191', 'A2', 'B1'),\n  ('movie:10192', 'A2', 'B1'),\n  ('movie:10193', 'A2', 'B1'),\n  ('movie:10195', 'B1', 'B2'),\n  ('movie:10330', 'B1', 'B1'),\n  ('movie:10386', 'A2', 'B1'),\n  ('movie:10527', 'A2', 'B1'),\n  ('movie:10528', 'C1', 'C1'),\n  ('movie:10549', 'C2', 'C2'),\n  ('movie:10555', 'A2', 'B1'),\n  ('movie:10625', 'B1', 'B2'),\n  ('movie:10674', 'A2', 'B1'),\n  ('movie:10681', 'A2', 'A2'),\n  ('movie:11036', 'B1', 'B1'),\n  ('movie:11224', 'A1', 'A2'),\n  ('movie:11324', 'B2', 'C1'),\n  ('movie:11544', 'A2', 'A2'),\n  ('movie:11687', 'C1', 'C2'),\n  ('movie:11688', 'B1', 'B1'),\n  ('movie:11970', 'A2', 'B1'),\n  ('movie:11971', 'C2', 'C2'),\n  ('movie:12155', 'B1', 'B2'),\n  ('movie:12230', 'A2', 'A2'),\n  ('movie:12405', 'B1', 'B2'),\n  ('movie:12444', 'B1', 'B2'),\n  ('movie:12445', 'B1', 'B2'),\n  ('movie:13053', 'A2', 'A2'),\n  ('movie:13183', 'B2', 'C1'),\n  ('movie:13223', 'B2', 'C1'),\n  ('movie:13446', 'C2', 'C2'),\n  ('movie:13475', 'B1', 'B2'),\n  ('movie:13691', 'A1', 'A2'),\n  ('movie:14139', 'B1', 'B1'),\n  ('movie:14160', 'A2', 'A2'),\n  ('movie:14161', 'B1', 'B1'),\n  ('movie:14836', 'A2', 'B1'),\n  ('movie:15152', 'C1', 'C1'),\n  ('movie:15655', 'A1', 'A2'),\n  ('movie:16869', 'C1', 'C2'),\n  ('movie:17358', 'B2', 'C1'),\n  ('movie:17654', 'B2', 'C1'),\n  ('movie:18239', 'B1', 'B1'),\n  ('movie:18360', 'B1', 'B1'),\n  ('movie:18785', 'B2', 'C1'),\n  ('movie:19833', 'C2', 'C2'),\n  ('movie:19908', 'B2', 'B2'),\n  ('movie:19913', 'B1', 'B2'),\n  ('movie:19995', 'B1', 'B1'),\n  ('movie:20352', 'A2', 'B1'),\n  ('movie:21575', 'C1', 'C2'),\n  ('movie:22794', 'A2', 'B1'),\n  ('movie:23483', 'B2', 'C1'),\n  ('movie:24021', 'B1', 'B1'),\n  ('movie:24428', 'B1', 'B2'),\n  ('movie:25376', 'C1', 'C1'),\n  ('movie:26505', 'A2', 'B1'),\n  ('movie:27205', 'B2', 'C1'),\n  ('movie:28178', 'A2', 'A2'),\n  ('movie:31203', 'A2', 'B1'),\n  ('movie:32657', 'B1', 'B1'),\n  ('movie:33273', 'C1', 'C2'),\n  ('movie:34588', 'B1', 'B2'),\n  ('movie:36557', 'B2', 'B2'),\n  ('movie:36657', 'B1', 'B1'),\n  ('movie:36658', 'B1', 'B1'),\n  ('movie:36668', 'B1', 'B1'),\n  ('movie:37135', 'A2', 'A2'),\n  ('movie:37165', 'B2', 'B2'),\n  ('movie:37724', 'B2', 'C1'),\n  ('movie:37799', 'C1', 'C2'),\n  ('movie:38055', 'A2', 'B1'),\n  ('movie:38356', 'B1', 'B1'),\n  ('movie:38575', 'A2', 'B1'),\n  ('movie:38757', 'A2', 'B1'),\n  ('movie:39254', 'B1', 'B1'),\n  ('movie:40096', 'C1', 'C2'),\n  ('movie:40423', 'B2', 'C1'),\n  ('movie:40823', 'C1', 'C1'),\n  ('movie:41154', 'B1', 'B2'),\n  ('movie:42148', 'C2', 'C2'),\n  ('movie:44214', 'B2', 'B2'),\n  ('movie:44826', 'A2', 'B1'),\n  ('movie:44896', 'B1', 'B2'),\n  ('movie:45243', 'B2', 'C1'),\n  ('movie:45269', 'B2', 'C1'),\n  ('movie:45612', 'B1', 'B2'),\n  ('movie:46195', 'A2', 'B1'),\n  ('movie:46738', 'B2', 'C1'),\n  ('movie:47931', 'C2', 'C2'),\n  ('movie:47971', 'B1', 'B1'),\n  ('movie:48034', 'C1', 'C1'),\n  ('movie:49013', 'A2', 'B1'),\n  ('movie:49026', 'B2', 'B2'),\n  ('movie:49047', 'B1', 'B1'),\n  ('movie:49051', 'B1', 'B2'),\n  ('movie:49367', 'B1', 'B2'),\n  ('movie:49444', 'A2', 'B1'),\n  ('movie:49519', 'A2', 'A2'),\n  ('movie:49521', 'B1', 'B2'),\n  ('movie:49530', 'B1', 'B2'),\n  ('movie:49538', 'B1', 'B2'),\n  ('movie:50014', 'B2', 'C1'),\n  ('movie:50619', 'B1', 'B1'),\n  ('movie:50620', 'B1', 'B1'),\n  ('movie:50646', 'B2', 'B2'),\n  ('movie:50839', 'C1', 'C2'),\n  ('movie:51162', 'A1', 'A2'),\n  ('movie:51497', 'B1', 'B2'),\n  ('movie:51876', 'B2', 'B2'),\n  ('movie:52333', 'B1', 'B1'),\n  ('movie:52345', 'C1', 'C2'),\n  ('movie:53961', 'B2', 'C1'),\n  ('movie:54138', 'B1', 'B2'),\n  ('movie:56292', 'B1', 'B2'),\n  ('movie:57158', 'B1', 'B2'),\n  ('movie:57800', 'A2', 'B1'),\n  ('movie:58574', 'C1', 'C1'),\n  ('movie:59474', 'B2', 'C1'),\n  ('movie:59967', 'B2', 'B2'),\n  ('movie:60308', 'C1', 'C1'),\n  ('movie:61791', 'B1', 'B1'),\n  ('movie:61979', 'B1', 'B2'),\n  ('movie:62156', 'B1', 'B2'),\n  ('movie:62177', 'A2', 'B1'),\n  ('movie:62211', 'A2', 'B1'),\n  ('movie:63311', 'C1', 'C1'),\n  ('movie:64682', 'B2', 'C1'),\n  ('movie:64688', 'B2', 'C1'),\n  ('movie:64690', 'B1', 'B1'),\n  ('movie:67913', 'C2', 'C2'),\n  ('movie:68718', 'C1', 'C1'),\n  ('movie:68721', 'B1', 'B2'),\n  ('movie:68724', 'B1', 'B2'),\n  ('movie:68726', 'B1', 'B1'),\n  ('movie:68728', 'B1', 'B1'),\n  ('movie:68734', 'B2', 'C1'),\n  ('movie:69335', 'C1', 'C1'),\n  ('movie:70160', 'B1', 'B1'),\n  ('movie:70981', 'B2', 'B2'),\n  ('movie:72105', 'B2', 'C1'),\n  ('movie:72190', 'B1', 'B2'),\n  ('movie:72660', 'B1', 'B1'),\n  ('movie:73624', 'B1', 'B2'),\n  ('movie:75612', 'B1', 'B1'),\n  ('movie:75656', 'B2', 'B2'),\n  ('movie:76170', 'B1', 'B1'),\n  ('movie:76203', 'C1', 'C1'),\n  ('movie:76338', 'B1', 'B2'),\n  ('movie:76341', 'B1', 'B2'),\n  ('movie:76492', 'A2', 'B1'),\n  ('movie:76600', 'B1', 'B1'),\n  ('movie:77338', 'B2', 'C1'),\n  ('movie:80321', 'A2', 'B1'),\n  ('movie:81188', 'A2', 'B1'),\n  ('movie:82690', 'A2', 'B1'),\n  ('movie:82693', 'C1', 'C1'),\n  ('movie:82702', 'A2', 'B1'),\n  ('movie:82992', 'B1', 'B1'),\n  ('movie:84892', 'B1', 'B2'),\n  ('movie:86837', 'B2', 'B2'),\n  ('movie:87101', 'B1', 'B1'),\n  ('movie:87827', 'B2', 'B2'),\n  ('movie:93456', 'A2', 'A2'),\n  ('movie:97989', 'C1', 'C1'),\n  ('movie:99861', 'B1', 'B2'),\n  ('movie:100402', 'B1', 'B2'),\n  ('movie:101299', 'B1', 'B1'),\n  ('movie:102382', 'B1', 'B1'),\n  ('movie:102651', 'B1', 'B1'),\n  ('movie:102899', 'B1', 'B2'),\n  ('movie:106646', 'C1', 'C2'),\n  ('movie:109439', 'B2', 'C1'),\n  ('movie:109445', 'A2', 'B1'),\n  ('movie:112198', 'C1', 'C2'),\n  ('movie:116149', 'A2', 'B1'),\n  ('movie:118340', 'B1', 'B2'),\n  ('movie:119450', 'A2', 'B1'),\n  ('movie:120467', 'C1', 'C1'),\n  ('movie:122906', 'B1', 'B2'),\n  ('movie:122917', 'B1', 'B2'),\n  ('movie:124905', 'B1', 'B1'),\n  ('movie:126889', 'B1', 'B2'),\n  ('movie:127380', 'A2', 'A2'),\n  ('movie:127585', 'B1', 'B2'),\n  ('movie:131631', 'B1', 'B1'),\n  ('movie:131634', 'B1', 'B1'),\n  ('movie:135397', 'B1', 'B1'),\n  ('movie:137106', 'B1', 'B1'),\n  ('movie:137113', 'B1', 'B2'),\n  ('movie:138832', 'B2', 'C1'),\n  ('movie:138843', 'B1', 'B2'),\n  ('movie:140300', 'A2', 'B1'),\n  ('movie:140607', 'B1', 'B1'),\n  ('movie:141052', 'B1', 'B2'),\n  ('movie:146233', 'B2', 'C1'),\n  ('movie:150540', 'A2', 'B1'),\n  ('movie:150689', 'A2', 'A2'),\n  ('movie:152532', 'C1', 'C1'),\n  ('movie:152584', 'C1', 'C1'),\n  ('movie:152601', 'B2', 'B2'),\n  ('movie:156022', 'B1', 'B1'),\n  ('movie:157336', 'B2', 'C1'),\n  ('movie:157350', 'B1', 'B1'),\n  ('movie:158852', 'B1', 'B1'),\n  ('movie:166426', 'B2', 'B2'),\n  ('movie:166428', 'A2', 'B1'),\n  ('movie:168259', 'B1', 'B1'),\n  ('movie:171274', 'C2', 'C2'),\n  ('movie:177572', 'A2', 'B1'),\n  ('movie:177677', 'B1', 'B2'),\n  ('movie:180863', 'C2', 'C2'),\n  ('movie:181808', 'B1', 'B1'),\n  ('movie:181812', 'B1', 'B1'),\n  ('movie:190859', 'B2', 'C1'),\n  ('movie:194662', 'C1', 'C1'),\n  ('movie:197796', 'B1', 'B2'),\n  ('movie:198663', 'B1', 'B1'),\n  ('movie:203217', 'C1', 'C1'),\n  ('movie:205596', 'B2', 'C1'),\n  ('movie:206647', 'B2', 'B2'),\n  ('movie:207703', 'B2', 'C1'),\n  ('movie:209112', 'B1', 'B2'),\n  ('movie:210577', 'B2', 'C1'),\n  ('movie:211954', 'A2', 'B1'),\n  ('movie:216015', 'B1', 'B2'),\n  ('movie:222935', 'B1', 'B2'),\n  ('movie:227932', 'C1', 'C1'),\n  ('movie:228150', 'B2', 'C1'),\n  ('movie:236735', 'C1', 'C1'),\n  ('movie:237791', 'B1', 'B1'),\n  ('movie:240832', 'B1', 'B2'),\n  ('movie:241259', 'B1', 'B1'),\n  ('movie:242582', 'B2', 'C1'),\n  ('movie:244786', 'B2', 'B2'),\n  ('movie:245891', 'B1', 'B1'),\n  ('movie:246655', 'B1', 'B2'),\n  ('movie:254128', 'B1', 'B1'),\n  ('movie:259316', 'B1', 'B2'),\n  ('movie:259693', 'B1', 'B2'),\n  ('movie:260513', 'A2', 'B1'),\n  ('movie:260514', 'A2', 'B1'),\n  ('movie:262391', 'B2', 'C1'),\n  ('movie:262500', 'B1', 'B1'),\n  ('movie:262551', 'C1', 'C1'),\n  ('movie:263115', 'B2', 'B2'),\n  ('movie:264644', 'B1', 'B1'),\n  ('movie:264660', 'B2', 'B2'),\n  ('movie:265195', 'C1', 'C1'),\n  ('movie:266856', 'B2', 'C1'),\n  ('movie:269149', 'B1', 'B1'),\n  ('movie:271110', 'B1', 'B2'),\n  ('movie:273248', 'C1', 'C2'),\n  ('movie:273481', 'B2', 'C1'),\n  ('movie:274870', 'B1', 'B1'),\n  ('movie:277834', 'A2', 'B1'),\n  ('movie:278927', 'A2', 'B1'),\n  ('movie:281338', 'A2', 'B1'),\n  ('movie:281957', 'B2', 'C1'),\n  ('movie:283366', 'B1', 'B2'),\n  ('movie:283995', 'B1', 'B2'),\n  ('movie:284052', 'B2', 'B2'),\n  ('movie:284053', 'B1', 'B2'),\n  ('movie:284054', 'B1', 'B2'),\n  ('movie:286217', 'B2', 'C1'),\n  ('movie:287947', 'A2', 'B1'),\n  ('movie:291805', 'B2', 'B2'),\n  ('movie:293167', 'B1', 'B1'),\n  ('movie:293660', 'B2', 'C1'),\n  ('movie:294254', 'B1', 'B1'),\n  ('movie:295693', 'A2', 'B1'),\n  ('movie:296096', 'B1', 'B2'),\n  ('movie:297761', 'B1', 'B2'),\n  ('movie:297762', 'B1', 'B2'),\n  ('movie:297802', 'B1', 'B1'),\n  ('movie:299534', 'B1', 'B2'),\n  ('movie:299536', 'B1', 'B2'),\n  ('movie:299537', 'B1', 'B1'),\n  ('movie:300668', 'B2', 'B2'),\n  ('movie:301528', 'A2', 'B1'),\n  ('movie:304410', 'B1', 'B2'),\n  ('movie:310569', 'B2', 'B2'),\n  ('movie:313369', 'B2', 'B2'),\n  ('movie:314365', 'C1', 'C1'),\n  ('movie:315162', 'A2', 'B1'),\n  ('movie:315635', 'B1', 'B2'),\n  ('movie:316029', 'B1', 'B1'),\n  ('movie:318846', 'C1', 'C2'),\n  ('movie:321612', 'A2', 'B1'),\n  ('movie:321697', 'C2', 'C2'),\n  ('movie:324552', 'B1', 'B1'),\n  ('movie:324786', 'B2', 'B2'),\n  ('movie:324852', 'A2', 'A2'),\n  ('movie:324857', 'B1', 'B2'),\n  ('movie:328111', 'A2', 'B1'),\n  ('movie:329865', 'B2', 'C1'),\n  ('movie:330457', 'A2', 'B1'),\n  ('movie:330459', 'B1', 'B2'),\n  ('movie:330764', 'B2', 'C1'),\n  ('movie:331482', 'B2', 'C1'),\n  ('movie:332562', 'B2', 'B2'),\n  ('movie:333339', 'B1', 'B2'),\n  ('movie:335797', 'A2', 'B1'),\n  ('movie:335983', 'B1', 'B2'),\n  ('movie:335984', 'B2', 'B2'),\n  ('movie:337339', 'B1', 'B1'),\n  ('movie:337404', 'B1', 'B2'),\n  ('movie:338952', 'B1', 'B2'),\n  ('movie:339403', 'B2', 'C1'),\n  ('movie:343668', 'B2', 'C1'),\n  ('movie:346364', 'B1', 'B2'),\n  ('movie:346648', 'A2', 'B1'),\n  ('movie:346698', 'B1', 'B2'),\n  ('movie:348350', 'B1', 'B1'),\n  ('movie:351286', 'B1', 'B1'),\n  ('movie:353081', 'B1', 'B2'),\n  ('movie:353486', 'B1', 'B2'),\n  ('movie:354912', 'A2', 'B1'),\n  ('movie:359724', 'B2', 'C1'),\n  ('movie:359940', 'C1', 'C1'),\n  ('movie:361743', 'B1', 'B2'),\n  ('movie:363088', 'B1', 'B2'),\n  ('movie:374720', 'B1', 'B2'),\n  ('movie:375262', 'C2', 'C2'),\n  ('movie:375794', 'C1', 'C2'),\n  ('movie:377273', 'B2', 'C1'),\n  ('movie:381284', 'B2', 'B2'),\n  ('movie:381288', 'B2', 'B2'),\n  ('movie:383498', 'B2', 'C1'),\n  ('movie:391713', 'B2', 'B2'),\n  ('movie:392044', 'B2', 'C1'),\n  ('movie:396371', 'C2', 'C2'),\n  ('movie:398818', 'B2', 'B2'),\n  ('movie:398929', 'C1', 'C1'),\n  ('movie:399055', 'B1', 'B1'),\n  ('movie:399566', 'A2', 'B1'),\n  ('movie:399579', 'B1', 'B1'),\n  ('movie:404368', 'A2', 'B1'),\n  ('movie:405774', 'B1', 'B1'),\n  ('movie:406997', 'B1', 'B1'),\n  ('movie:411088', 'B2', 'B2'),\n  ('movie:414906', 'B2', 'B2'),\n  ('movie:419430', 'B2', 'B2'),\n  ('movie:420648', 'B2', 'C1'),\n  ('movie:420809', 'B1', 'B1'),\n  ('movie:420817', 'A2', 'B1'),\n  ('movie:420818', 'A2', 'B1'),\n  ('movie:424694', 'B2', 'B2'),\n  ('movie:426426', 'C1', 'C2'),\n  ('movie:429210', 'C1', 'C1'),\n  ('movie:429617', 'B1', 'B2'),\n  ('movie:436969', 'B2', 'C1'),\n  ('movie:438631', 'B2', 'C1'),\n  ('movie:441701', 'B1', 'B1'),\n  ('movie:446159', 'C1', 'C2'),\n  ('movie:450465', 'B1', 'B2'),\n  ('movie:453395', 'B1', 'B2'),\n  ('movie:454626', 'A2', 'B1'),\n  ('movie:458156', 'B1', 'B1'),\n  ('movie:459670', 'A2', 'A2'),\n  ('movie:464052', 'B1', 'B1'),\n  ('movie:466272', 'C1', 'C1'),\n  ('movie:474350', 'B1', 'B2'),\n  ('movie:475557', 'B2', 'B2'),\n  ('movie:487491', 'B1', 'B1'),\n  ('movie:490132', 'B2', 'B2'),\n  ('movie:495764', 'B2', 'C1'),\n  ('movie:497582', 'B1', 'B2'),\n  ('movie:497698', 'B1', 'B2'),\n  ('movie:499701', 'A2', 'A2'),\n  ('movie:502356', 'A2', 'A2'),\n  ('movie:508439', 'A2', 'B1'),\n  ('movie:508442', 'B1', 'B1'),\n  ('movie:508943', 'A2', 'A2'),\n  ('movie:512200', 'B1', 'B2'),\n  ('movie:515001', 'B1', 'B2'),\n  ('movie:519010', 'C1', 'C1'),\n  ('movie:524434', 'B1', 'B2'),\n  ('movie:527774', 'A2', 'B1'),\n  ('movie:530915', 'B2', 'C1'),\n  ('movie:533535', 'B2', 'C1'),\n  ('movie:546554', 'C1', 'C1'),\n  ('movie:550988', 'B1', 'B2'),\n  ('movie:553608', 'A2', 'B1'),\n  ('movie:556984', 'C2', 'C2'),\n  ('movie:566525', 'B1', 'B1'),\n  ('movie:568124', 'A2', 'B1'),\n  ('movie:569094', 'B1', 'B2'),\n  ('movie:577922', 'C1', 'C1'),\n  ('movie:580489', 'B1', 'B1'),\n  ('movie:591538', 'C2', 'C2'),\n  ('movie:619264', 'B1', 'B2'),\n  ('movie:634649', 'B1', 'B2'),\n  ('movie:646380', 'B2', 'C1'),\n  ('movie:652483', 'B1', 'B1'),\n  ('movie:674324', 'C2', 'C2'),\n  ('movie:675445', 'A1', 'A2'),\n  ('movie:766798', 'C1', 'C1'),\n  ('movie:791373', 'B1', 'B2'),\n  ('movie:872585', 'C1', 'C2'),\n  ('movie:906126', 'B2', 'C1'),\n  ('movie:915935', 'C1', 'C1'),\n  ('movie:976573', 'A2', 'B1'),\n  ('movie:1000837', 'B2', 'C1'),\n  ('movie:1022789', 'A2', 'B1'),\n  ('movie:1184918', 'A2', 'B1'),\n  ('tv:15', 'A1', 'A2'),\n  ('tv:43', 'B1', 'B2'),\n  ('tv:47', 'A2', 'B1'),\n  ('tv:52', 'B1', 'B2'),\n  ('tv:79', 'A1', 'A1'),\n  ('tv:82', 'B1', 'B2'),\n  ('tv:95', 'B2', 'C1'),\n  ('tv:105', 'B2', 'C1'),\n  ('tv:160', 'A2', 'B1'),\n  ('tv:186', 'B2', 'C1'),\n  ('tv:207', 'A1', 'A1'),\n  ('tv:240', 'A2', 'B1'),\n  ('tv:246', 'B1', 'B1'),\n  ('tv:252', 'B1', 'B2'),\n  ('tv:253', 'B1', 'B2'),\n  ('tv:384', 'A2', 'B1'),\n  ('tv:387', 'B1', 'B1'),\n  ('tv:418', 'A2', 'B1'),\n  ('tv:433', 'B1', 'B2'),\n  ('tv:436', 'C2', 'C2'),\n  ('tv:456', 'B1', 'B2'),\n  ('tv:502', 'A1', 'A1'),\n  ('tv:537', 'A2', 'B1'),\n  ('tv:553', 'A2', 'B1'),\n  ('tv:580', 'B2', 'C1'),\n  ('tv:604', 'A2', 'B1'),\n  ('tv:605', 'B1', 'B1'),\n  ('tv:606', 'B1', 'B1'),\n  ('tv:607', 'A2', 'A2'),\n  ('tv:615', 'B2', 'C1'),\n  ('tv:655', 'B2', 'C1'),\n  ('tv:656', 'A1', 'A1'),\n  ('tv:657', 'B1', 'B1'),\n  ('tv:668', 'A2', 'B1'),\n  ('tv:670', 'A1', 'A1'),\n  ('tv:688', 'C2', 'C2'),\n  ('tv:693', 'B2', 'B2'),\n  ('tv:720', 'A2', 'B1'),\n  ('tv:799', 'C1', 'C2'),\n  ('tv:815', 'C2', 'C2'),\n  ('tv:849', 'C2', 'C2'),\n  ('tv:888', 'A2', 'B1'),\n  ('tv:897', 'A2', 'B1'),\n  ('tv:900', 'C1', 'C2'),\n  ('tv:903', 'C1', 'C2'),\n  ('tv:926', 'A2', 'A2'),\n  ('tv:931', 'A2', 'A2'),\n  ('tv:958', 'B1', 'B1'),\n  ('tv:1044', 'B1', 'B2'),\n  ('tv:1068', 'A2', 'A2'),\n  ('tv:1100', 'B1', 'B2'),\n  ('tv:1104', 'B2', 'C1'),\n  ('tv:1215', 'C1', 'C1'),\n  ('tv:1269', 'A2', 'B1'),\n  ('tv:1274', 'C1', 'C1'),\n  ('tv:1395', 'B1', 'B2'),\n  ('tv:1396', 'B2', 'C1'),\n  ('tv:1398', 'C1', 'C2'),\n  ('tv:1399', 'B2', 'C1'),\n  ('tv:1400', 'B2', 'C1'),\n  ('tv:1402', 'B2', 'B2'),\n  ('tv:1403', 'B1', 'B2'),\n  ('tv:1404', 'B1', 'B2'),\n  ('tv:1405', 'B2', 'B2'),\n  ('tv:1406', 'C2', 'C2'),\n  ('tv:1407', 'B2', 'C1'),\n  ('tv:1408', 'B2', 'C1'),\n  ('tv:1409', 'C1', 'C1'),\n  ('tv:1411', 'B2', 'B2'),\n  ('tv:1412', 'B1', 'B2'),\n  ('tv:1413', 'B2', 'C1'),\n  ('tv:1415', 'B2', 'C1'),\n  ('tv:1416', 'B2', 'C1'),\n  ('tv:1417', 'B1', 'B2'),\n  ('tv:1418', 'B2', 'B2'),\n  ('tv:1419', 'B1', 'B2'),\n  ('tv:1420', 'B2', 'B2'),\n  ('tv:1421', 'B1', 'B2'),\n  ('tv:1422', 'B1', 'B1'),\n  ('tv:1424', 'B2', 'C1'),\n  ('tv:1425', 'C1', 'C1'),\n  ('tv:1426', 'C1', 'C1'),\n  ('tv:1427', 'C1', 'C1'),\n  ('tv:1431', 'B2', 'C1'),\n  ('tv:1433', 'B2', 'C1'),\n  ('tv:1434', 'B2', 'C1'),\n  ('tv:1436', 'C1', 'C2'),\n  ('tv:1437', 'B2', 'C1'),\n  ('tv:1438', 'C2', 'C2'),\n  ('tv:1447', 'B2', 'C1'),\n  ('tv:1458', 'A1', 'A2'),\n  ('tv:1516', 'B1', 'B1'),\n  ('tv:1546', 'A2', 'B1'),\n  ('tv:1554', 'C2', 'C2'),\n  ('tv:1567', 'A2', 'A2'),\n  ('tv:1570', 'A2', 'B1'),\n  ('tv:1585', 'A2', 'A2'),\n  ('tv:1588', 'A1', 'A2'),\n  ('tv:1600', 'A2', 'B1'),\n  ('tv:1606', 'B1', 'B1'),\n  ('tv:1615', 'A2', 'B1'),\n  ('tv:1620', 'B2', 'B2'),\n  ('tv:1621', 'C1', 'C2'),\n  ('tv:1622', 'B1', 'B2'),\n  ('tv:1639', 'B1', 'B2'),\n  ('tv:1647', 'A1', 'A1'),\n  ('tv:1668', 'B1', 'B2'),\n  ('tv:1682', 'A1', 'A1'),\n  ('tv:1695', 'B1', 'B2'),\n  ('tv:1705', 'B2', 'C1'),\n  ('tv:1720', 'A2', 'B1'),\n  ('tv:1778', 'A2', 'B1'),\n  ('tv:1781', 'A2', 'B1'),\n  ('tv:1812', 'A1', 'A2'),\n  ('tv:1813', 'C2', 'C2'),\n  ('tv:1830', 'B1', 'B1'),\n  ('tv:1835', 'B1', 'B1'),\n  ('tv:1855', 'B2', 'C1'),\n  ('tv:1877', 'B1', 'B1'),\n  ('tv:1891', 'C1', 'C2'),\n  ('tv:1892', 'B1', 'B2'),\n  ('tv:1894', 'A2', 'A2'),\n  ('tv:1911', 'B2', 'C1'),\n  ('tv:1920', 'B2', 'C1'),\n  ('tv:1931', 'A2', 'A2'),\n  ('tv:1972', 'B2', 'C1'),\n  ('tv:1973', 'B2', 'B2'),\n  ('tv:1981', 'B1', 'B1'),\n  ('tv:1988', 'A2', 'B1'),\n  ('tv:1996', 'A2', 'B1'),\n  ('tv:2004', 'B1', 'B2'),\n  ('tv:2005', 'A1', 'A2'),\n  ('tv:2009', 'A2', 'B1'),\n  ('tv:2022', 'A2', 'B1'),\n  ('tv:2038', 'A2', 'B1'),\n  ('tv:2085', 'A2', 'A2'),\n  ('tv:2098', 'B1', 'B1'),\n  ('tv:2129', 'A2', 'B1'),\n  ('tv:2140', 'B1', 'B1'),\n  ('tv:2153', 'A2', 'B1'),\n  ('tv:2190', 'B2', 'C1'),\n  ('tv:2207', 'C1', 'C2'),\n  ('tv:2228', 'B1', 'B2'),\n  ('tv:2286', 'B1', 'B1'),\n  ('tv:2288', 'B1', 'B2'),\n  ('tv:2290', 'B1', 'B2'),\n  ('tv:2304', 'A1', 'A2'),\n  ('tv:2309', 'A2', 'B1'),\n  ('tv:2316', 'B2', 'C1'),\n  ('tv:2317', 'B1', 'B2'),\n  ('tv:2328', 'A2', 'B1'),\n  ('tv:2345', 'A2', 'B1'),\n  ('tv:2349', 'C2', 'C2'),\n  ('tv:2352', 'B1', 'B2'),\n  ('tv:2355', 'A2', 'A2'),\n  ('tv:2362', 'A2', 'A2'),\n  ('tv:2384', 'B1', 'B1'),\n  ('tv:2391', 'B2', 'C1'),\n  ('tv:2408', 'A2', 'B1'),\n  ('tv:2426', 'B2', 'B2'),\n  ('tv:2429', 'B1', 'B1'),\n  ('tv:2437', 'A1', 'A1'),\n  ('tv:2490', 'B2', 'C1'),\n  ('tv:2567', 'A2', 'B1'),\n  ('tv:2632', 'A2', 'B1'),\n  ('tv:2660', 'B1', 'B1'),\n  ('tv:2675', 'A2', 'A2'),\n  ('tv:2691', 'B1', 'B2'),\n  ('tv:2710', 'C1', 'C2'),\n  ('tv:2723', 'A2', 'A2'),\n  ('tv:2734', 'B2', 'C1'),\n  ('tv:2745', 'A2', 'A2'),\n  ('tv:2808', 'A2', 'B1'),\n  ('tv:2913', 'B1', 'B1'),\n  ('tv:2947', 'C1', 'C2'),\n  ('tv:2996', 'C1', 'C2'),\n  ('tv:3022', 'A2', 'B1'),\n  ('tv:3090', 'A1', 'A1'),\n  ('tv:3218', 'A1', 'A1'),\n  ('tv:3322', 'C2', 'C2'),\n  ('tv:3498', 'A2', 'B1'),\n  ('tv:3518', 'A2', 'A2'),\n  ('tv:3611', 'A2', 'B1'),\n  ('tv:3696', 'C1', 'C2'),\n  ('tv:3763', 'B1', 'B1'),\n  ('tv:3796', 'C2', 'C2'),\n  ('tv:3854', 'B1', 'B1'),\n  ('tv:3934', 'A1', 'A1'),\n  ('tv:4025', 'A2', 'B1'),\n  ('tv:4035', 'A2', 'A2'),\n  ('tv:4057', 'B2', 'C1'),\n  ('tv:4087', 'B2', 'C1'),\n  ('tv:4194', 'B1', 'B1'),\n  ('tv:4229', 'A2', 'B1'),\n  ('tv:4232', 'A2', 'B1'),\n  ('tv:4239', 'B1', 'B2'),\n  ('tv:4269', 'A2', 'B1'),\n  ('tv:4302', 'A2', 'A2'),\n  ('tv:4303', 'A2', 'B1'),\n  ('tv:4313', 'B1', 'B1'),\n  ('tv:4336', 'C1', 'C1'),\n  ('tv:4429', 'A2', 'B1'),\n  ('tv:4500', 'B1', 'B1'),\n  ('tv:4507', 'C2', 'C2'),\n  ('tv:4549', 'C2', 'C2'),\n  ('tv:4574', 'B1', 'B1'),\n  ('tv:4575', 'A2', 'B1'),\n  ('tv:4586', 'B2', 'C1'),\n  ('tv:4589', 'C1', 'C2'),\n  ('tv:4604', 'B1', 'B2'),\n  ('tv:4605', 'A2', 'B1'),\n  ('tv:4606', 'A2', 'A2'),\n  ('tv:4607', 'B1', 'B2'),\n  ('tv:4608', 'C1', 'C2'),\n  ('tv:4610', 'B1', 'B1'),\n  ('tv:4613', 'B2', 'C1'),\n  ('tv:4614', 'B2', 'B2'),\n  ('tv:4616', 'B1', 'B2'),\n  ('tv:4622', 'A2', 'B1'),\n  ('tv:4629', 'B1', 'B2'),\n  ('tv:4630', 'A2', 'B1'),\n  ('tv:4658', 'B1', 'B1'),\n  ('tv:4686', 'A2', 'B1'),\n  ('tv:4727', 'A2', 'B1'),\n  ('tv:4743', 'B1', 'B2'),\n  ('tv:4775', 'C2', 'C2'),\n  ('tv:4887', 'A1', 'A1'),\n  ('tv:5150', 'A2', 'B1'),\n  ('tv:5200', 'A1', 'A2'),\n  ('tv:5371', 'B1', 'B1'),\n  ('tv:5687', 'A1', 'A2'),\n  ('tv:5835', 'A2', 'B1'),\n  ('tv:5920', 'B2', 'B2'),\n  ('tv:6005', 'A2', 'A2'),\n  ('tv:6040', 'A2', 'B1'),\n  ('tv:6080', 'A2', 'B1'),\n  ('tv:6357', 'B2', 'C1'),\n  ('tv:6673', 'A2', 'B1'),\n  ('tv:7225', 'B1', 'B2'),\n  ('tv:7246', 'C2', 'C2'),\n  ('tv:7248', 'A2', 'B1'),\n  ('tv:7736', 'A2', 'B1'),\n  ('tv:7744', 'A2', 'A2'),\n  ('tv:7821', 'A2', 'A2'),\n  ('tv:7869', 'A2', 'B1'),\n  ('tv:8358', 'B2', 'C1'),\n  ('tv:8379', 'A1', 'A2'),\n  ('tv:8392', 'A2', 'A2'),\n  ('tv:8592', 'B2', 'C1'),\n  ('tv:9834', 'A1', 'A2'),\n  ('tv:9907', 'A2', 'B1'),\n  ('tv:10283', 'C1', 'C2'),\n  ('tv:10545', 'B2', 'C1'),\n  ('tv:10821', 'A1', 'A1'),\n  ('tv:10938', 'A1', 'A2'),\n  ('tv:11250', 'B1', 'B1'),\n  ('tv:11466', 'C2', 'C2'),\n  ('tv:11726', 'C1', 'C1'),\n  ('tv:11982', 'A1', 'A1'),\n  ('tv:12225', 'A1', 'A2'),\n  ('tv:12504', 'A2', 'A2'),\n  ('tv:12597', 'C2', 'C2'),\n  ('tv:12637', 'B1', 'B1'),\n  ('tv:12782', 'A2', 'B1'),\n  ('tv:12926', 'B1', 'B1'),\n  ('tv:12974', 'A2', 'B1'),\n  ('tv:12994', 'A2', 'A2'),\n  ('tv:13023', 'A2', 'B1'),\n  ('tv:13027', 'B1', 'B1'),\n  ('tv:13179', 'B1', 'B1'),\n  ('tv:13246', 'A1', 'A1'),\n  ('tv:14298', 'A1', 'A1'),\n  ('tv:14396', 'A2', 'A2'),\n  ('tv:14766', 'A1', 'A1'),\n  ('tv:14853', 'B1', 'B1'),\n  ('tv:15079', 'A2', 'B1'),\n  ('tv:15260', 'B1', 'B2'),\n  ('tv:15621', 'C2', 'C2'),\n  ('tv:16286', 'B1', 'B2'),\n  ('tv:16997', 'B2', 'C1'),\n  ('tv:17463', 'A2', 'A2'),\n  ('tv:17572', 'A2', 'B1'),\n  ('tv:17610', 'B2', 'B2'),\n  ('tv:17967', 'C2', 'C2'),\n  ('tv:18011', 'B1', 'B2'),\n  ('tv:18123', 'A2', 'B1'),\n  ('tv:18165', 'B1', 'B2'),\n  ('tv:18347', 'B2', 'C1'),\n  ('tv:19614', 'B1', 'B2'),\n  ('tv:19885', 'B2', 'C1'),\n  ('tv:20153', 'A1', 'A1'),\n  ('tv:20993', 'A2', 'B1'),\n  ('tv:21510', 'B2', 'B2'),\n  ('tv:21641', 'A2', 'B1'),\n  ('tv:25985', 'A1', 'A1'),\n  ('tv:26440', 'A2', 'A2'),\n  ('tv:30778', 'A2', 'A2'),\n  ('tv:30958', 'A1', 'A2'),\n  ('tv:31109', 'A2', 'B1'),\n  ('tv:31132', 'B1', 'B2'),\n  ('tv:31251', 'A2', 'B1'),\n  ('tv:31295', 'C1', 'C2'),\n  ('tv:31356', 'A2', 'B1'),\n  ('tv:31586', 'B2', 'C1'),\n  ('tv:31623', 'A1', 'A1'),\n  ('tv:31917', 'B1', 'B2'),\n  ('tv:32037', 'A1', 'A1'),\n  ('tv:32118', 'A2', 'B1'),\n  ('tv:32166', 'B2', 'C1'),\n  ('tv:32388', 'A1', 'A2'),\n  ('tv:32605', 'B1', 'B1'),\n  ('tv:32692', 'B2', 'B2'),\n  ('tv:32726', 'B2', 'C1'),\n  ('tv:32798', 'B1', 'B2'),\n  ('tv:32896', 'A2', 'A2'),\n  ('tv:32910', 'B1', 'B1'),\n  ('tv:33213', 'A2', 'B1'),\n  ('tv:33217', 'B1', 'B2'),\n  ('tv:33765', 'A2', 'A2'),\n  ('tv:33880', 'B1', 'B1'),\n  ('tv:33907', 'B2', 'C1'),\n  ('tv:34307', 'C1', 'C2'),\n  ('tv:34391', 'A2', 'B1'),\n  ('tv:34524', 'B1', 'B2'),\n  ('tv:34921', 'A1', 'A1'),\n  ('tv:34967', 'B1', 'B2'),\n  ('tv:35094', 'A2', 'B1'),\n  ('tv:35254', 'A2', 'A2'),\n  ('tv:37472', 'A1', 'A2'),\n  ('tv:37606', 'B1', 'B2'),\n  ('tv:37680', 'B2', 'C1'),\n  ('tv:38472', 'B2', 'B2'),\n  ('tv:38693', 'A2', 'B1'),\n  ('tv:38974', 'A2', 'B1'),\n  ('tv:39107', 'A1', 'A1'),\n  ('tv:39272', 'B1', 'B1'),\n  ('tv:39340', 'B1', 'B2'),\n  ('tv:39351', 'B1', 'B2'),\n  ('tv:39518', 'A2', 'B1'),\n  ('tv:39852', 'B2', 'B2'),\n  ('tv:40008', 'C1', 'C2'),\n  ('tv:40050', 'A1', 'A1'),\n  ('tv:40075', 'B1', 'B2'),\n  ('tv:41727', 'B2', 'C1'),\n  ('tv:41889', 'C2', 'C2'),\n  ('tv:42009', 'B2', 'C1'),\n  ('tv:42035', 'B1', 'B2'),\n  ('tv:42680', 'A2', 'A2'),\n  ('tv:43348', 'B2', 'C1'),\n  ('tv:43512', 'B2', 'C1'),\n  ('tv:43982', 'C1', 'C2'),\n  ('tv:44006', 'B1', 'B2'),\n  ('tv:44095', 'A1', 'A1'),\n  ('tv:44217', 'B2', 'C1'),\n  ('tv:44953', 'B2', 'C1'),\n  ('tv:45666', 'A2', 'B1'),\n  ('tv:46162', 'B2', 'C1'),\n  ('tv:46262', 'A1', 'A2'),\n  ('tv:46296', 'B2', 'C1'),\n  ('tv:46331', 'B1', 'B2'),\n  ('tv:46533', 'C1', 'C1'),\n  ('tv:46616', 'B2', 'B2'),\n  ('tv:46639', 'C1', 'C1'),\n  ('tv:46648', 'C1', 'C2'),\n  ('tv:46786', 'B1', 'B2'),\n  ('tv:46866', 'A1', 'A1'),\n  ('tv:46896', 'B1', 'B2'),\n  ('tv:46922', 'A2', 'B1'),\n  ('tv:46923', 'C1', 'C2'),\n  ('tv:46928', 'A2', 'A2'),\n  ('tv:46952', 'B2', 'C1'),\n  ('tv:46994', 'A2', 'B1'),\n  ('tv:47640', 'B2', 'B2'),\n  ('tv:47665', 'C1', 'C1'),\n  ('tv:48866', 'B1', 'B2'),\n  ('tv:48891', 'B1', 'B2'),\n  ('tv:50825', 'B1', 'B2'),\n  ('tv:51817', 'A2', 'B1'),\n  ('tv:52814', 'B1', 'B2'),\n  ('tv:54344', 'B2', 'C1'),\n  ('tv:54650', 'C1', 'C1'),\n  ('tv:54671', 'C1', 'C2'),\n  ('tv:56296', 'B2', 'C1'),\n  ('tv:56570', 'B2', 'C1'),\n  ('tv:57243', 'B2', 'C1'),\n  ('tv:57532', 'A1', 'A2'),\n  ('tv:58474', 'B2', 'C1'),\n  ('tv:58566', 'A2', 'A2'),\n  ('tv:58710', 'A2', 'B1'),\n  ('tv:58841', 'B2', 'B2'),\n  ('tv:60059', 'B2', 'C1'),\n  ('tv:60554', 'B1', 'B1'),\n  ('tv:60573', 'C1', 'C1'),\n  ('tv:60574', 'C1', 'C2'),\n  ('tv:60622', 'C1', 'C1'),\n  ('tv:60625', 'C1', 'C2'),\n  ('tv:60708', 'B1', 'B2'),\n  ('tv:60715', 'C1', 'C2'),\n  ('tv:60735', 'B1', 'B2'),\n  ('tv:60743', 'B2', 'C1'),\n  ('tv:60797', 'B2', 'C1'),\n  ('tv:60802', 'B2', 'B2'),\n  ('tv:60866', 'B2', 'B2'),\n  ('tv:60948', 'B2', 'C1'),\n  ('tv:61056', 'B2', 'C1'),\n  ('tv:61175', 'A2', 'B1'),\n  ('tv:61222', 'C1', 'C2'),\n  ('tv:61244', 'C1', 'C2'),\n  ('tv:61483', 'A2', 'B1'),\n  ('tv:61550', 'B1', 'B2'),\n  ('tv:61617', 'B1', 'B2'),\n  ('tv:61662', 'B1', 'B2'),\n  ('tv:61664', 'B2', 'B2'),\n  ('tv:61697', 'C2', 'C2'),\n  ('tv:61852', 'A2', 'B1'),\n  ('tv:61859', 'C1', 'C1'),\n  ('tv:61889', 'B2', 'B2'),\n  ('tv:61923', 'B1', 'B1'),\n  ('tv:62017', 'B2', 'C1'),\n  ('tv:62046', 'B1', 'B2'),\n  ('tv:62099', 'B2', 'C1'),\n  ('tv:62126', 'B2', 'B2'),\n  ('tv:62127', 'B1', 'B2'),\n  ('tv:62264', 'B2', 'C1'),\n  ('tv:62285', 'B1', 'B2'),\n  ('tv:62286', 'B1', 'B2'),\n  ('tv:62455', 'B2', 'C1'),\n  ('tv:62476', 'C1', 'C2'),\n  ('tv:62560', 'C1', 'C1'),\n  ('tv:62643', 'B1', 'B2'),\n  ('tv:62649', 'B1', 'B2'),\n  ('tv:62650', 'B2', 'C1'),\n  ('tv:62688', 'B1', 'B1'),\n  ('tv:62694', 'A2', 'A2'),\n  ('tv:62710', 'B1', 'B2'),\n  ('tv:62823', 'B1', 'B2'),\n  ('tv:62852', 'C1', 'C2'),\n  ('tv:62917', 'B2', 'C1'),\n  ('tv:63174', 'B1', 'B2'),\n  ('tv:63210', 'B1', 'B2'),\n  ('tv:63247', 'C1', 'C1'),\n  ('tv:63301', 'A1', 'A2'),\n  ('tv:63314', 'C1', 'C2'),\n  ('tv:63333', 'B2', 'C1'),\n  ('tv:63401', 'A2', 'B1'),\n  ('tv:63404', 'C2', 'C2'),\n  ('tv:63623', 'B1', 'B1'),\n  ('tv:63639', 'B2', 'C1'),\n  ('tv:64122', 'B1', 'B2'),\n  ('tv:64165', 'C1', 'C2'),\n  ('tv:64198', 'A2', 'A2'),\n  ('tv:64230', 'C1', 'C1'),\n  ('tv:64432', 'B2', 'C1'),\n  ('tv:64464', 'B1', 'B2'),\n  ('tv:64513', 'C1', 'C1'),\n  ('tv:64752', 'A2', 'B1'),\n  ('tv:65294', 'B2', 'C1'),\n  ('tv:65302', 'A2', 'B1'),\n  ('tv:65334', 'A2', 'A2'),\n  ('tv:65417', 'A1', 'A2'),\n  ('tv:65494', 'B2', 'C1'),\n  ('tv:65495', 'C1', 'C2'),\n  ('tv:65708', 'C1', 'C2'),\n  ('tv:66203', 'A2', 'B1'),\n  ('tv:66276', 'C1', 'C1'),\n  ('tv:66292', 'B2', 'C1'),\n  ('tv:66573', 'B1', 'B2'),\n  ('tv:66732', 'B1', 'B2'),\n  ('tv:66788', 'B1', 'B2'),\n  ('tv:67026', 'B2', 'C1'),\n  ('tv:67070', 'C1', 'C2'),\n  ('tv:67136', 'B2', 'B2'),\n  ('tv:67175', 'A2', 'A2'),\n  ('tv:67178', 'B2', 'B2'),\n  ('tv:67195', 'C1', 'C1'),\n  ('tv:67198', 'B2', 'B2'),\n  ('tv:67431', 'A1', 'A2'),\n  ('tv:67576', 'B2', 'C1'),\n  ('tv:67744', 'C1', 'C1'),\n  ('tv:68073', 'A2', 'B1'),\n  ('tv:68106', 'B1', 'B1'),\n  ('tv:68267', 'B1', 'B1'),\n  ('tv:68421', 'B2', 'C1'),\n  ('tv:68467', 'B1', 'B2'),\n  ('tv:68507', 'B2', 'C1'),\n  ('tv:69050', 'B1', 'B2'),\n  ('tv:69061', 'B2', 'B2'),\n  ('tv:69478', 'B2', 'B2'),\n  ('tv:69629', 'B1', 'B2'),\n  ('tv:69740', 'B2', 'C1'),\n  ('tv:69926', 'A1', 'A1'),\n  ('tv:70437', 'A2', 'B1'),\n  ('tv:70453', 'C1', 'C1'),\n  ('tv:70785', 'B2', 'C1'),\n  ('tv:70796', 'C1', 'C2'),\n  ('tv:71024', 'B2', 'C1'),\n  ('tv:71171', 'A2', 'B1'),\n  ('tv:71225', 'B1', 'B2'),\n  ('tv:71365', 'B2', 'C1'),\n  ('tv:71411', 'B2', 'C1'),\n  ('tv:71446', 'B2', 'C1'),\n  ('tv:71578', 'B1', 'B2'),\n  ('tv:71712', 'B2', 'C1'),\n  ('tv:71728', 'B1', 'B1'),\n  ('tv:71738', 'B1', 'B2'),\n  ('tv:71789', 'B2', 'C1'),\n  ('tv:71790', 'B1', 'B2'),\n  ('tv:71886', 'B1', 'B2'),\n  ('tv:71912', 'B2', 'C1'),\n  ('tv:71914', 'B2', 'B2'),\n  ('tv:71915', 'B2', 'C1'),\n  ('tv:72089', 'A1', 'A2'),\n  ('tv:72750', 'C1', 'C1'),\n  ('tv:72844', 'B2', 'C1'),\n  ('tv:73021', 'B2', 'C1'),\n  ('tv:73107', 'B2', 'C1'),\n  ('tv:73375', 'B2', 'C1'),\n  ('tv:73411', 'B2', 'C1'),\n  ('tv:73481', 'B1', 'B2'),\n  ('tv:73488', 'A2', 'B1'),\n  ('tv:73549', 'A2', 'B1'),\n  ('tv:73586', 'B2', 'C1'),\n  ('tv:73667', 'B1', 'B1'),\n  ('tv:74016', 'B2', 'C1'),\n  ('tv:74204', 'B2', 'C1'),\n  ('tv:74280', 'A1', 'A2'),\n  ('tv:74323', 'A2', 'A2'),\n  ('tv:74387', 'B1', 'B2'),\n  ('tv:74440', 'B2', 'C1'),\n  ('tv:74577', 'B2', 'C1'),\n  ('tv:74606', 'A2', 'B1'),\n  ('tv:75006', 'B2', 'B2'),\n  ('tv:75191', 'C1', 'C2'),\n  ('tv:75219', 'B1', 'B2'),\n  ('tv:75450', 'B1', 'B2'),\n  ('tv:75758', 'B1', 'B1'),\n  ('tv:76148', 'C2', 'C2'),\n  ('tv:76331', 'C1', 'C2'),\n  ('tv:76479', 'B2', 'C1'),\n  ('tv:76669', 'B1', 'B2'),\n  ('tv:76773', 'B1', 'B2'),\n  ('tv:76954', 'B2', 'C1'),\n  ('tv:77169', 'B1', 'B2'),\n  ('tv:77410', 'A2', 'A2'),\n  ('tv:77606', 'A2', 'B1'),\n  ('tv:78074', 'C1', 'C2'),\n  ('tv:78191', 'B2', 'B2'),\n  ('tv:79061', 'A2', 'B1'),\n  ('tv:79240', 'B2', 'B2'),\n  ('tv:79242', 'B1', 'B2'),\n  ('tv:79410', 'B2', 'C1'),\n  ('tv:79460', 'B1', 'B2'),\n  ('tv:79501', 'B2', 'B2'),\n  ('tv:79525', 'B2', 'C1'),\n  ('tv:79649', 'B2', 'B2'),\n  ('tv:79680', 'B2', 'B2'),\n  ('tv:79696', 'B1', 'B2'),\n  ('tv:79732', 'A2', 'B1'),\n  ('tv:79744', 'B1', 'B2'),\n  ('tv:79788', 'C1', 'C1'),\n  ('tv:80169', 'B2', 'C1'),\n  ('tv:80213', 'B1', 'B2'),\n  ('tv:80307', 'C1', 'C1'),\n  ('tv:80350', 'B2', 'C1'),\n  ('tv:80743', 'B1', 'B2'),\n  ('tv:80752', 'B1', 'B2'),\n  ('tv:80968', 'B2', 'C1'),\n  ('tv:80986', 'B1', 'B1'),\n  ('tv:81354', 'B2', 'B2'),\n  ('tv:81355', 'B2', 'C1'),\n  ('tv:81356', 'B2', 'C1'),\n  ('tv:82452', 'B1', 'B1'),\n  ('tv:82456', 'A2', 'B1'),\n  ('tv:82596', 'B1', 'B1'),\n  ('tv:82728', 'A1', 'A2'),\n  ('tv:82747', 'A2', 'A2'),\n  ('tv:82791', 'B1', 'B1'),\n  ('tv:82856', 'B2', 'B2'),\n  ('tv:82883', 'B2', 'B2'),\n  ('tv:83631', 'C1', 'C2'),\n  ('tv:83659', 'B2', 'C1'),\n  ('tv:83867', 'B2', 'C1'),\n  ('tv:84200', 'B1', 'B1'),\n  ('tv:84234', 'B2', 'B2'),\n  ('tv:84383', 'B1', 'B1'),\n  ('tv:84661', 'B2', 'C1'),\n  ('tv:84773', 'B2', 'C1'),\n  ('tv:84958', 'B2', 'B2'),\n  ('tv:84977', 'C1', 'C1'),\n  ('tv:85021', 'C2', 'C2'),\n  ('tv:85077', 'B1', 'B2'),\n  ('tv:85271', 'B1', 'B2'),\n  ('tv:85552', 'B2', 'C1'),\n  ('tv:85720', 'B1', 'B2'),\n  ('tv:85723', 'B2', 'B2'),\n  ('tv:85949', 'B2', 'C1'),\n  ('tv:86248', 'B1', 'B2'),\n  ('tv:86423', 'B1', 'B1'),\n  ('tv:86430', 'B2', 'C1'),\n  ('tv:86831', 'B2', 'C1'),\n  ('tv:86848', 'B2', 'C1'),\n  ('tv:86943', 'B2', 'B2'),\n  ('tv:87108', 'B2', 'C1'),\n  ('tv:87689', 'B1', 'B2'),\n  ('tv:87739', 'B2', 'B2'),\n  ('tv:87784', 'B2', 'B2'),\n  ('tv:87917', 'B2', 'C1'),\n  ('tv:88329', 'B1', 'B2'),\n  ('tv:88396', 'B1', 'B2'),\n  ('tv:88910', 'A2', 'A2'),\n  ('tv:89247', 'B1', 'B2'),\n  ('tv:89393', 'B1', 'B2'),\n  ('tv:89785', 'C1', 'C1'),\n  ('tv:89844', 'B2', 'B2'),\n  ('tv:89905', 'C1', 'C1'),\n  ('tv:90027', 'B2', 'C1'),\n  ('tv:90260', 'B1', 'B2'),\n  ('tv:90281', 'A2', 'B1'),\n  ('tv:90461', 'A2', 'B1'),\n  ('tv:90462', 'B1', 'B2'),\n  ('tv:90802', 'B2', 'C1'),\n  ('tv:91239', 'B2', 'C1'),\n  ('tv:91363', 'B1', 'B2'),\n  ('tv:91630', 'C1', 'C2'),\n  ('tv:92685', 'B1', 'B1'),\n  ('tv:92749', 'B1', 'B2'),\n  ('tv:92782', 'B1', 'B1'),\n  ('tv:92783', 'B1', 'B2'),\n  ('tv:92830', 'B1', 'B2'),\n  ('tv:92885', 'A1', 'A1'),\n  ('tv:92916', 'B2', 'C1'),\n  ('tv:93548', 'A2', 'A2'),\n  ('tv:93740', 'B2', 'C1'),\n  ('tv:93741', 'A2', 'B1'),\n  ('tv:93812', 'C1', 'C2'),\n  ('tv:94041', 'A2', 'A2'),\n  ('tv:94305', 'B1', 'B2'),\n  ('tv:94605', 'B1', 'B2'),\n  ('tv:94696', 'C1', 'C1'),\n  ('tv:94954', 'B2', 'C1'),\n  ('tv:94997', 'B2', 'C1'),\n  ('tv:95057', 'B1', 'B1'),\n  ('tv:95184', 'A2', 'B1'),\n  ('tv:95396', 'C1', 'C1'),\n  ('tv:95403', 'B2', 'C1'),\n  ('tv:95480', 'C1', 'C2'),\n  ('tv:95532', 'A2', 'A2'),\n  ('tv:95557', 'B1', 'B2'),\n  ('tv:95594', 'A2', 'B1'),\n  ('tv:96580', 'B2', 'B2'),\n  ('tv:96650', 'A2', 'A2'),\n  ('tv:96677', 'B2', 'C1'),\n  ('tv:96815', 'B2', 'B2'),\n  ('tv:97175', 'B1', 'B2'),\n  ('tv:97180', 'B1', 'B1'),\n  ('tv:97186', 'B1', 'B1'),\n  ('tv:97400', 'C1', 'C1'),\n  ('tv:97513', 'B1', 'B2'),\n  ('tv:97546', 'B2', 'C1'),\n  ('tv:97727', 'B2', 'C1'),\n  ('tv:99935', 'B2', 'C1'),\n  ('tv:100088', 'B2', 'B2'),\n  ('tv:100412', 'A2', 'A2'),\n  ('tv:100757', 'B1', 'B2'),\n  ('tv:100883', 'B1', 'B2'),\n  ('tv:100963', 'A2', 'B1'),\n  ('tv:102903', 'B1', 'B2'),\n  ('tv:103768', 'B1', 'B1'),\n  ('tv:104108', 'B1', 'B2'),\n  ('tv:105971', 'B1', 'B1'),\n  ('tv:106009', 'A1', 'A1'),\n  ('tv:106154', 'A1', 'A1'),\n  ('tv:106379', 'B2', 'B2'),\n  ('tv:107113', 'B2', 'C1'),\n  ('tv:108545', 'B2', 'C1'),\n  ('tv:108978', 'B1', 'B2'),\n  ('tv:109958', 'B2', 'C1'),\n  ('tv:110115', 'B2', 'C1'),\n  ('tv:110492', 'B2', 'C1'),\n  ('tv:110529', 'B1', 'B2'),\n  ('tv:111110', 'B1', 'B1'),\n  ('tv:111803', 'C1', 'C1'),\n  ('tv:112738', 'B2', 'C1'),\n  ('tv:113962', 'B2', 'C1'),\n  ('tv:113988', 'B2', 'B2'),\n  ('tv:114461', 'B1', 'B2'),\n  ('tv:114472', 'B2', 'B2'),\n  ('tv:114502', 'A2', 'A2'),\n  ('tv:115004', 'C1', 'C1'),\n  ('tv:115036', 'B1', 'B2'),\n  ('tv:115577', 'A2', 'A2'),\n  ('tv:115857', 'B1', 'B1'),\n  ('tv:116135', 'B2', 'C1'),\n  ('tv:117030', 'A1', 'A2'),\n  ('tv:117488', 'B2', 'C1'),\n  ('tv:117581', 'B1', 'B2'),\n  ('tv:118357', 'B2', 'C1'),\n  ('tv:119051', 'B1', 'B2'),\n  ('tv:120168', 'B1', 'B2'),\n  ('tv:120911', 'B2', 'C1'),\n  ('tv:123591', 'A1', 'A2'),\n  ('tv:124364', 'B1', 'B2'),\n  ('tv:124834', 'B1', 'B1'),\n  ('tv:125935', 'B1', 'B2'),\n  ('tv:125988', 'B2', 'B2'),\n  ('tv:126280', 'B1', 'B2'),\n  ('tv:127235', 'B1', 'B2'),\n  ('tv:127635', 'A1', 'A2'),\n  ('tv:128839', 'B1', 'B2'),\n  ('tv:129552', 'B1', 'B2'),\n  ('tv:131927', 'B2', 'B2'),\n  ('tv:132009', 'B1', 'B1'),\n  ('tv:132559', 'A2', 'A2'),\n  ('tv:136315', 'C1', 'C2'),\n  ('tv:136322', 'A2', 'B1'),\n  ('tv:137883', 'C1', 'C2'),\n  ('tv:138501', 'B1', 'B2'),\n  ('tv:138502', 'B1', 'B2'),\n  ('tv:146176', 'B2', 'C1'),\n  ('tv:153312', 'B2', 'C1'),\n  ('tv:154385', 'B2', 'C1'),\n  ('tv:154521', 'B1', 'B2'),\n  ('tv:155537', 'C1', 'C1'),\n  ('tv:157239', 'B2', 'C1'),\n  ('tv:157485', 'A2', 'A2'),\n  ('tv:158415', 'B2', 'C1'),\n  ('tv:194764', 'B2', 'C1'),\n  ('tv:194766', 'B1', 'B1'),\n  ('tv:200875', 'B1', 'B2'),\n  ('tv:202411', 'B1', 'B2'),\n  ('tv:202555', 'B2', 'B2'),\n  ('tv:205715', 'B2', 'C1'),\n  ('tv:209117', 'B1', 'B2'),\n  ('tv:210834', 'A2', 'A2'),\n  ('tv:222766', 'B2', 'C1'),\n  ('tv:223397', 'C2', 'C2'),\n  ('tv:225171', 'B2', 'C1'),\n  ('tv:225180', 'B2', 'B2'),\n  ('tv:236235', 'C1', 'C2'),\n  ('tv:241259', 'C1', 'C1'),\n  ('tv:247718', 'C1', 'C2'),\n  ('tv:249042', 'B2', 'C1'),\n  ('tv:249201', 'A1', 'A2'),\n  ('tv:250307', 'C1', 'C2')\n) AS g(external_id, level_min, level_max)\nWHERE m.\"metadata_provider\" = 'tmdb' AND m.\"external_id\" = g.external_id;\n"
+    ],
+    "bps": true,
+    "folderMillis": 1792541880995,
+    "hash": "b27bd2cad201d4b4490e1c60845a5592787bcf96f32b0762d9f0fa6a0644942b"
+  },
+  {
+    "tag": "0029_level_sources",
+    "sql": [
+      "CREATE TABLE \"level_ratings\" (\n\t\"source_id\" uuid NOT NULL,\n\t\"external_id\" text NOT NULL,\n\t\"level_min\" text NOT NULL,\n\t\"level_max\" text NOT NULL,\n\tCONSTRAINT \"level_ratings_source_id_external_id_pk\" PRIMARY KEY(\"source_id\",\"external_id\")\n);\n",
+      "\nCREATE TABLE \"level_sources\" (\n\t\"id\" uuid PRIMARY KEY NOT NULL,\n\t\"url\" text NOT NULL,\n\t\"name\" text,\n\t\"parent_id\" uuid,\n\t\"enabled\" boolean DEFAULT true NOT NULL,\n\t\"status\" text DEFAULT 'PENDING' NOT NULL,\n\t\"rating_count\" integer DEFAULT 0 NOT NULL,\n\t\"rejected_count\" integer DEFAULT 0 NOT NULL,\n\t\"last_error\" text,\n\t\"last_status\" integer,\n\t\"fetched_at\" timestamp with time zone,\n\t\"created_by\" uuid,\n\t\"created_at\" timestamp with time zone NOT NULL,\n\t\"updated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"level_ratings\" ADD CONSTRAINT \"level_ratings_source_id_level_sources_id_fk\" FOREIGN KEY (\"source_id\") REFERENCES \"public\".\"level_sources\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"level_sources\" ADD CONSTRAINT \"level_sources_parent_id_level_sources_id_fk\" FOREIGN KEY (\"parent_id\") REFERENCES \"public\".\"level_sources\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"level_sources\" ADD CONSTRAINT \"level_sources_created_by_users_id_fk\" FOREIGN KEY (\"created_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nCREATE INDEX \"level_ratings_external\" ON \"level_ratings\" USING btree (\"external_id\");",
+      "\nCREATE UNIQUE INDEX \"level_sources_url\" ON \"level_sources\" USING btree (\"url\");"
+    ],
+    "bps": true,
+    "folderMillis": 1792544709823,
+    "hash": "3a9beb2df9b0ee5e2494a604f29185d14bbb81a09a5242a35057bef14aa8a9a5"
+  },
+  {
+    "tag": "0030_ai_level_ratings",
+    "sql": [
+      "CREATE TABLE \"ai_level_ratings\" (\n\t\"external_id\" text PRIMARY KEY NOT NULL,\n\t\"level_min\" text NOT NULL,\n\t\"level_max\" text NOT NULL,\n\t\"reason\" text NOT NULL,\n\t\"model\" text NOT NULL,\n\t\"rated_by\" uuid,\n\t\"rated_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"ai_level_ratings\" ADD CONSTRAINT \"ai_level_ratings_rated_by_users_id_fk\" FOREIGN KEY (\"rated_by\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE set null ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1792548718325,
+    "hash": "39cb445ab12ed250f0c8615d6e8e882bab2140fd5fe089e219212c450eb15b7b"
+  }
+]

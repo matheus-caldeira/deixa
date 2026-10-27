@@ -1,30 +1,10 @@
-import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openDatabase, type DatabaseHandle } from "@/infrastructure/database/client";
-import { runMigrations } from "@/infrastructure/database/migrate";
+import type { DatabaseHandle } from "@/infrastructure/database/client";
+import { openTestDatabase, testDatabaseAvailable } from "@/infrastructure/database/test-database";
 import { JOB_LOCK_MS } from "../domain/job";
 import { DrizzleJobRepository } from "./drizzle-job-repository";
 
 const TEST_DATABASE = "deixa_test_jobs";
-const baseUrl = process.env.DATABASE_URL;
-
-function testDatabaseUrl(): string {
-  const url = new URL(baseUrl ?? "postgres://deixa:deixa@localhost:1442/deixa");
-  url.pathname = `/${TEST_DATABASE}`;
-  return url.toString();
-}
-
-async function recreateDatabase(url: string): Promise<void> {
-  const admin = new URL(url);
-  admin.pathname = "/postgres";
-  const client = postgres(admin.toString(), { max: 1, onnotice: () => undefined });
-  try {
-    await client.unsafe(`DROP DATABASE IF EXISTS ${TEST_DATABASE} WITH (FORCE)`);
-  } finally {
-    await client.end({ timeout: 5 });
-  }
-  await runMigrations(url);
-}
 
 const payload = (episodeId: string) => ({
   userId: "11111111-1111-4111-8111-111111111111",
@@ -34,14 +14,12 @@ const payload = (episodeId: string) => ({
   episodeLabel: "x",
 });
 
-describe.skipIf(!baseUrl)("fila de jobs no Postgres real", () => {
+describe.skipIf(!testDatabaseAvailable)("fila de jobs no Postgres real", () => {
   let handle: DatabaseHandle;
   let jobs: DrizzleJobRepository;
 
   beforeAll(async () => {
-    const url = testDatabaseUrl();
-    await recreateDatabase(url);
-    handle = openDatabase(url);
+    handle = await openTestDatabase(TEST_DATABASE);
     jobs = new DrizzleJobRepository(handle.db);
   });
 
