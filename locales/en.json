@@ -1539,5 +1539,12 @@
     "missing": "We could not find this page.",
     "updateReady": "A new version of the app is ready.",
     "updateNow": "Update"
+  },
+  "pronunciation": {
+    "speak": "Say it",
+    "stop": "Stop and check",
+    "checking": "Checking…",
+    "score": "{score}% right:",
+    "heard": "We heard: {text}"
   }
 }

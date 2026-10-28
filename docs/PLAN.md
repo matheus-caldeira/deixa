@@ -290,13 +290,13 @@ Pendente desta etapa: publicar na Vercel (conta e domínio são do autor), confe
 
 ## Etapa 21: voz e publicação (fase 06)
 
-| #   | Tarefa                           | Critério de pronto                                                                                         | Estado |
-| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------ |
-| 143 | HTTPS local para microfone e PWA | `pnpm dev:https` com certificado gerado pelo `openssl` em `data/certs`; celular na rede abre com microfone | [x]    |
-| 144 | Fala para texto atrás de um port | `SpeechToText` com provedor de IA (transcrição) e reserva fake; medidor de uso; testes sem chamada real    | [x]    |
-| 145 | Chamada de voz com o tutor       | Microfone, fim de fala por silêncio, transcrição, resposta falada pelo Kokoro e interrupção                | [x]    |
-| 146 | Avaliação de pronúncia           | Exercício "fale a frase" compara a transcrição com a fala, palavra por palavra, e mostra o que faltou      | [ ]    |
-| 147 | Privacidade e direitos           | Página de privacidade e de direitos de legendas; limites de uso e retenção de áudio documentados           | [ ]    |
+| #   | Tarefa                           | Critério de pronto                                                                                             | Estado |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------ |
+| 143 | HTTPS local para microfone e PWA | `pnpm dev:https` com certificado gerado pelo `openssl` em `data/certs`; celular na rede abre com microfone     | [x]    |
+| 144 | Fala para texto atrás de um port | `SpeechToText` com provedor de IA (transcrição) e reserva fake; medidor de uso; testes sem chamada real        | [x]    |
+| 145 | Chamada de voz com o tutor       | Microfone, fim de fala por silêncio, transcrição, resposta falada pelo Kokoro e interrupção                    | [x]    |
+| 146 | Avaliação de pronúncia           | "Falar a frase" no verso do card compara a transcrição com a frase, palavra por palavra, e mostra o que faltou | [x]    |
+| 147 | Privacidade e direitos           | Página de privacidade e de direitos de legendas; limites de uso e retenção de áudio documentados               | [ ]    |
 
 ## Próximo
 

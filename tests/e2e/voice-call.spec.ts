@@ -64,3 +64,22 @@ test("chamada de voz: fala, pausa, o tutor responde e volta a ouvir", async ({ p
   await page.getByRole("button", { name: "Encerrar chamada" }).click();
   await expect(page.getByRole("button", { name: "Chamada de voz" })).toBeVisible();
 });
+
+test("falar a frase no card manda a gravação para a transcrição", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("E-mail").fill("lucas@deixa.example");
+  await page.getByLabel("Senha").fill("deixa1234");
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Perfil de Lucas" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Revisar" }).click();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Mostrar resposta" }).click();
+  await page.getByRole("button", { name: "Falar a frase" }).click();
+  await expect(page.getByRole("button", { name: "Parar e conferir" })).toBeVisible();
+  await page.getByRole("button", { name: "Parar e conferir" }).click();
+  await expect(
+    page
+      .getByText("Configure uma chave de IA para transcrever a sua fala.")
+      .or(page.getByTestId("pronunciation-result")),
+  ).toBeVisible({ timeout: 30_000 });
+});

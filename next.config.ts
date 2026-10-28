@@ -21,6 +21,7 @@ const WEB_ACTIONS = [
   "level-sources",
   "notifications",
   "personal-series",
+  "pronunciation",
   "profile",
   "reading",
   "recommendations",

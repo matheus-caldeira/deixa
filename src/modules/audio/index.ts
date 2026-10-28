@@ -15,3 +15,9 @@ export {
   type SpeechClip,
   type SpeechToText,
 } from "./application/transcribe-speech";
+export {
+  comparePronunciation,
+  spokenWords,
+  type PronunciationResult,
+  type WordCheck,
+} from "./domain/pronunciation";

@@ -4,6 +4,7 @@ import { catalogOperations } from "./catalog";
 import { levelSourceOperations } from "./level-sources";
 import { notificationOperations } from "./notifications";
 import { personalSeriesOperations } from "./personal-series";
+import { pronunciationOperations } from "./pronunciation";
 import { profileOperations } from "./profile";
 import { readingOperations } from "./reading";
 import { recommendationOperations } from "./recommendations";
@@ -66,6 +67,7 @@ export const OPERATION_GROUPS = [
   reviewView,
   trailView,
   audioOperations,
+  pronunciationOperations,
 ];
 
 export const OPERATIONS = {
@@ -102,6 +104,7 @@ export const OPERATIONS = {
   ...reviewView,
   ...trailView,
   ...audioOperations,
+  ...pronunciationOperations,
 };
 
 export type Operations = typeof OPERATIONS;

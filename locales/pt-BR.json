@@ -1539,5 +1539,12 @@
     "missing": "Não encontramos esta página.",
     "updateReady": "Versão nova do app pronta.",
     "updateNow": "Atualizar"
+  },
+  "pronunciation": {
+    "speak": "Falar a frase",
+    "stop": "Parar e conferir",
+    "checking": "Conferindo…",
+    "score": "{score}% certo:",
+    "heard": "Ouvimos: {text}"
   }
 }

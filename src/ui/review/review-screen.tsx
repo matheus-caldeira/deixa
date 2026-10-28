@@ -9,6 +9,7 @@ import { CheckIcon, SoundIcon } from "../icons";
 import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
+import { PronunciationCheck } from "./pronunciation-check";
 
 export type ReviewCard = {
   cardId: string;
@@ -194,6 +195,7 @@ export function ReviewScreen({ view, tabs }: { view: ReviewView; tabs?: React.Re
           </div>
         </div>
       </div>
+      {flipped ? <PronunciationCheck key={card.cardId} itemId={card.learningItemId} /> : null}
       {flipped ? (
         <div className="grades">
           {RATINGS.map((rating, position) => (
