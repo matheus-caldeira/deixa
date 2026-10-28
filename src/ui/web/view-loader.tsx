@@ -22,6 +22,10 @@ const MISSING = new Set([
   "INVALID_INPUT",
 ]);
 
+function signedOutTarget() {
+  return window.location.pathname === "/" ? "/welcome" : "/login";
+}
+
 export function useView<Name extends OperationName>(name: Name, input?: unknown) {
   const [state, setState] = useState<State<OperationOutput<Name>>>({ kind: "loading" });
   const key = JSON.stringify(input ?? null);
@@ -34,7 +38,7 @@ export function useView<Name extends OperationName>(name: Name, input?: unknown)
           (view): State<OperationOutput<Name>> => ({ kind: "ready", view: view as OperationOutput<Name> }),
           (failure: unknown): State<OperationOutput<Name>> => {
             const error = runtimeErrorOf(failure);
-            if (error.code === "UNAUTHENTICATED") navigate("/login");
+            if (error.code === "UNAUTHENTICATED") navigate(signedOutTarget());
             if (error.code === REDIRECT_CODE && error.detail) navigate(error.detail.key);
             if (error.code === REDIRECT_CODE) return { kind: "loading" };
             if (MISSING.has(error.code)) return { kind: "missing" };

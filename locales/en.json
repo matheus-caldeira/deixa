@@ -29,7 +29,8 @@
     "creating": "Creating…",
     "haveAccount": "I already have an account",
     "nativeLanguage": "Your language",
-    "targetLanguage": "I want to learn"
+    "targetLanguage": "I want to learn",
+    "discover": "Discover {app}"
   },
   "shell": {
     "tabs": {
@@ -1580,6 +1581,137 @@
     "control": {
       "title": "What you control",
       "body": "You can remove your AI keys, export your data in a personal package encrypted with your password and import it into another installation. Deleting the account from the app is not available yet."
+    }
+  },
+  "landing": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "hero": {
+      "eyebrow": "Languages through your shows",
+      "title": "Learn from the shows and movies you already watch.",
+      "lead": "{app} turns an episode's subtitles into reading, cards, exercises and conversation. You study the lines you are going to hear, with the scene still fresh in your mind.",
+      "primary": "Get started",
+      "secondary": "See how it works",
+      "imageAlt": "Explore screen on a computer, with the catalog and suggestions"
+    },
+    "languages": {
+      "en": "English",
+      "pt": "Portuguese",
+      "es": "Spanish",
+      "fr": "French"
+    },
+    "problem": {
+      "eyebrow": "Why it exists",
+      "title": "You already spend hours hearing the language. It just isn't study yet.",
+      "body": "Lesson apps teach sentences that have nothing to do with you. Flashcard apps make you build everything by hand. {app} connects both ends: your study material is the episode you just watched."
+    },
+    "example": {
+      "label": "Example of a line marked while reading",
+      "scene": "Scene 1 · 01:11",
+      "before": "Qual é, você dorme quando ficar velho. ",
+      "term": "Vamos sair",
+      "after": ".",
+      "translation": "Come on, you can sleep when you're old. Let's hang out.",
+      "cardLabel": "Generated card",
+      "meaning": "let's go out, let's hang out together",
+      "caption": "Tap the words you didn't get. The translation comes from the subtitle itself, and the mark becomes a card."
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "From episode to review in three steps",
+      "pick": {
+        "title": "Read the whole episode",
+        "body": "Upload the subtitle in the language you are learning and, if you have it, in your own. Lines are aligned by time, scene by scene, and you can listen to each one.",
+        "imageAlt": "Episode reading with lines in both languages"
+      },
+      "mark": {
+        "title": "Mark and follow the trail",
+        "body": "What you mark becomes a card. The episode becomes a trail of exercises built from its lines, paced to your level.",
+        "imageAlt": "Exercise trail for the episode"
+      },
+      "review": {
+        "title": "Review at the right time",
+        "body": "Spaced repetition brings each card back before you forget it. Whatever you miss comes back to review.",
+        "imageAlt": "Card review with Again, Hard, Good and Easy grades"
+      }
+    },
+    "features": {
+      "eyebrow": "All in one place",
+      "title": "What you get in {app}",
+      "explore": {
+        "title": "Explore",
+        "body": "A catalog of shows and movies by season and episode, with suggestions based on your taste and level."
+      },
+      "read": {
+        "title": "Read and mark",
+        "body": "The full subtitle in both languages, three display modes and audio for every line."
+      },
+      "cards": {
+        "title": "Cards",
+        "body": "Meaning, pronunciation and an example, just for you or for the whole household catalog."
+      },
+      "study": {
+        "title": "Trails",
+        "body": "Exercises built from the episode's lines, from A1 to C2."
+      },
+      "talk": {
+        "title": "Tutor",
+        "body": "Conversations by topic, with a correction on every message and a review at the end."
+      },
+      "voice": {
+        "title": "Voice",
+        "body": "Voice calls with the tutor and a pronunciation check on each card."
+      },
+      "progress": {
+        "title": "Progress",
+        "body": "Day streak, daily goal, XP, missions and achievements."
+      },
+      "keys": {
+        "title": "Your AI, your keys",
+        "body": "Google, OpenAI, Anthropic, OpenRouter or Ollama, with a spending limit if you want one."
+      }
+    },
+    "tutor": {
+      "eyebrow": "Talk",
+      "title": "Practice speaking, not just reading",
+      "body": "Pick a topic and talk to the tutor by text or voice. It corrects you on the spot and, when you finish, points out what you struggled with.",
+      "point1": "Voice call: speak, pause and hear the answer",
+      "point2": "The cards you pick become a personal study series",
+      "point3": "On a review card, say the sentence and see what was missing",
+      "imageAlt": "Talk screen with the tutor's topics"
+    },
+    "modes": {
+      "eyebrow": "Two ways to use it",
+      "title": "For the whole household or just for you",
+      "family": {
+        "title": "For the family",
+        "body": "An app for macOS, Windows and Linux. {app} runs on your computer and the household uses it from their phones on the same network.",
+        "point1": "Several accounts, each with its own level and progress",
+        "point2": "Shared catalog, individual learning",
+        "point3": "Opens on your phone with a QR code"
+      },
+      "personal": {
+        "title": "Personal, in the browser",
+        "body": "All of {app} inside the browser, with no server. Your data stays on your device.",
+        "point1": "Works offline once it has loaded",
+        "point2": "Installs as an app on your phone",
+        "point3": "Export and import your data whenever you want"
+      }
+    },
+    "trust": {
+      "title": "Your data and the ground rules",
+      "body": "{app} does not play video or distribute subtitles: you bring files you have the right to use. Your AI keys are encrypted and never come back to the screen. Your voice recordings are not stored.",
+      "link": "Read privacy and rights"
+    },
+    "final": {
+      "title": "Your next episode can be a lesson.",
+      "body": "Create your account, pick your language pair and import your first subtitle.",
+      "cta": "Create my account"
+    },
+    "footer": {
+      "free": "{app} · source available for non-commercial use",
+      "privacy": "Privacy and rights",
+      "tmdb": "Title metadata from TMDB, not endorsed or certified by TMDB."
     }
   }
 }

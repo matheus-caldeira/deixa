@@ -29,7 +29,8 @@
     "creating": "Criando…",
     "haveAccount": "Já tenho conta",
     "nativeLanguage": "Seu idioma",
-    "targetLanguage": "Quero aprender"
+    "targetLanguage": "Quero aprender",
+    "discover": "Conheça o {app}"
   },
   "shell": {
     "tabs": {
@@ -1580,6 +1581,137 @@
     "control": {
       "title": "O que você controla",
       "body": "Você pode remover suas chaves de IA, exportar seus dados num pacote pessoal cifrado com a sua senha e importá-lo em outra instalação. Apagar a conta pela tela ainda não existe."
+    }
+  },
+  "landing": {
+    "signIn": "Entrar",
+    "signUp": "Criar conta",
+    "hero": {
+      "eyebrow": "Idiomas com as suas séries",
+      "title": "Aprenda com as séries e os filmes que você já assiste.",
+      "lead": "O {app} transforma a legenda do episódio em leitura, cards, exercícios e conversa. Você estuda as falas que vai ouvir, com a cena ainda na cabeça.",
+      "primary": "Começar agora",
+      "secondary": "Ver como funciona",
+      "imageAlt": "Tela Explorar no computador, com o catálogo de obras e as sugestões"
+    },
+    "languages": {
+      "en": "Inglês",
+      "pt": "Português",
+      "es": "Espanhol",
+      "fr": "Francês"
+    },
+    "problem": {
+      "eyebrow": "Por que existe",
+      "title": "Você já passa horas ouvindo o idioma. Falta virar estudo.",
+      "body": "Aplicativo de lições ensina frases que não têm nada a ver com você. Aplicativo de cartões exige montar tudo à mão. O {app} junta as duas pontas: o material de estudo é o episódio que você acabou de ver."
+    },
+    "example": {
+      "label": "Exemplo de fala marcada na leitura",
+      "scene": "Cena 1 · 01:11",
+      "before": "Come on, you can sleep when you're old. Let's ",
+      "term": "hang out",
+      "after": ".",
+      "translation": "Qual é, você dorme quando ficar velho. Vamos sair.",
+      "cardLabel": "Card gerado",
+      "meaning": "sair, passar um tempo junto com alguém",
+      "caption": "Toque nas palavras que não entendeu. A tradução vem da própria legenda, e a marcação vira card."
+    },
+    "how": {
+      "eyebrow": "Como funciona",
+      "title": "Do episódio para a revisão em três passos",
+      "pick": {
+        "title": "Leia o episódio inteiro",
+        "body": "Envie a legenda no idioma de estudo e, se tiver, no seu idioma. As falas aparecem alinhadas por tempo, cena a cena, e você pode ouvir cada uma.",
+        "imageAlt": "Leitura do episódio com as falas nos dois idiomas"
+      },
+      "mark": {
+        "title": "Marque e siga a trilha",
+        "body": "O que você marca vira card. O episódio vira uma trilha de exercícios com as falas dele, dosada pelo seu nível.",
+        "imageAlt": "Trilha de exercícios do episódio"
+      },
+      "review": {
+        "title": "Revise no momento certo",
+        "body": "A repetição espaçada traz cada card de volta antes de você esquecer. O que você erra volta para a revisão.",
+        "imageAlt": "Revisão de cards com as notas De novo, Difícil, Bom e Fácil"
+      }
+    },
+    "features": {
+      "eyebrow": "Tudo num lugar só",
+      "title": "O que você encontra no {app}",
+      "explore": {
+        "title": "Explorar",
+        "body": "Catálogo de séries e filmes por temporada e episódio, com sugestões pelo seu gosto e nível."
+      },
+      "read": {
+        "title": "Ler e marcar",
+        "body": "Legenda inteira com os dois idiomas, três modos de exibição e áudio de cada fala."
+      },
+      "cards": {
+        "title": "Cards",
+        "body": "Significado, pronúncia e exemplo, só para você ou para todo o catálogo da casa."
+      },
+      "study": {
+        "title": "Trilhas",
+        "body": "Exercícios montados com as falas do episódio, do A1 ao C2."
+      },
+      "talk": {
+        "title": "Tutor",
+        "body": "Conversa por tema com correção a cada mensagem e revisão no final."
+      },
+      "voice": {
+        "title": "Voz",
+        "body": "Chamada de voz com o tutor e avaliação da sua pronúncia no card."
+      },
+      "progress": {
+        "title": "Progresso",
+        "body": "Sequência de dias, meta diária, XP, missões e conquistas."
+      },
+      "keys": {
+        "title": "Sua IA, suas chaves",
+        "body": "Google, OpenAI, Anthropic, OpenRouter ou Ollama, com limite de gasto se quiser."
+      }
+    },
+    "tutor": {
+      "eyebrow": "Conversar",
+      "title": "Pratique falando, não só lendo",
+      "body": "Escolha um tema e converse com o tutor por texto ou por voz. Ele corrige na hora e, quando você encerra, aponta suas dificuldades.",
+      "point1": "Chamada de voz: fale, faça uma pausa e ouça a resposta",
+      "point2": "Os cards que você escolher viram uma série pessoal de estudo",
+      "point3": "No card de revisão, fale a frase e veja o que faltou",
+      "imageAlt": "Tela Conversar com os temas do tutor"
+    },
+    "modes": {
+      "eyebrow": "Dois jeitos de usar",
+      "title": "Para a casa toda ou só para você",
+      "family": {
+        "title": "Para a família",
+        "body": "Aplicativo para macOS, Windows e Linux. O {app} roda no seu computador e a casa acessa pelo celular, na mesma rede.",
+        "point1": "Várias contas, cada uma com seu nível e seu progresso",
+        "point2": "Catálogo compartilhado, aprendizado individual",
+        "point3": "Abre no celular por QR code"
+      },
+      "personal": {
+        "title": "Pessoal, no navegador",
+        "body": "O {app} inteiro dentro do navegador, sem servidor. Os dados ficam no seu aparelho.",
+        "point1": "Funciona sem internet depois de aberto",
+        "point2": "Instala como aplicativo no celular",
+        "point3": "Exporte e importe seus dados quando quiser"
+      }
+    },
+    "trust": {
+      "title": "Seus dados e as regras do jogo",
+      "body": "O {app} não reproduz vídeo nem distribui legendas: você traz os arquivos que tem direito de usar. Suas chaves de IA ficam cifradas e nunca voltam para a tela. A gravação da sua voz não é guardada.",
+      "link": "Ler privacidade e direitos"
+    },
+    "final": {
+      "title": "O próximo episódio já pode ser aula.",
+      "body": "Crie a conta, escolha o par de idiomas e importe a primeira legenda.",
+      "cta": "Criar minha conta"
+    },
+    "footer": {
+      "free": "{app} · código aberto para uso não comercial",
+      "privacy": "Privacidade e direitos",
+      "tmdb": "Metadados de obras pelo TMDB, sem endosso ou certificação do TMDB."
     }
   }
 }

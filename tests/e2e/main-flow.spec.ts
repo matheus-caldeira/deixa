@@ -35,6 +35,9 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   page,
 }) => {
   await page.goto("/");
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("séries e os filmes");
+  await page.getByRole("link", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await signIn(page, "Matheus");
   await expect(page.getByRole("link", { name: "B1" })).toBeVisible();

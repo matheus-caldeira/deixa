@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
+import { APP_NAME } from "@/shared/app";
 import { signInAction } from "@/app/actions/auth";
 import { Logo } from "../shell/logo";
 
@@ -62,6 +63,9 @@ export function LoginScreen() {
         </Link>
       </form>
       <p className="note">{t("sharedNote")}</p>
+      <Link className="link" style={{ alignSelf: "center" }} href="/welcome">
+        {t("discover", { app: APP_NAME })}
+      </Link>
     </div>
   );
 }
