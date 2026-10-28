@@ -1,37 +1,6 @@
-import { getContainer } from "@/infrastructure/container";
-import { TransferScreen, type TransferWork } from "@/ui/transfer/transfer-screen";
-import { requireUser } from "../../session";
+import { TransferScreen } from "@/ui/transfer/transfer-screen";
+import { loadView } from "@/app/views";
 
-export default async function TransferPage(props: {
-  searchParams: Promise<{ mediaId?: string; erro?: string }>;
-}) {
-  await requireUser();
-  const { mediaId, erro } = await props.searchParams;
-  const container = getContainer();
-  const works: TransferWork[] = [];
-  for (const entry of await container.listCatalogWorks()) {
-    const episodes = await container.listEpisodesByMedia(entry.id);
-    const seasons = new Map<number, TransferWork["seasons"][number]>();
-    for (const episode of episodes) {
-      const season = seasons.get(episode.seasonNumber) ?? {
-        seasonNumber: episode.seasonNumber,
-        episodes: [],
-      };
-      season.episodes.push({
-        id: episode.id,
-        episodeNumber: episode.episodeNumber,
-        title: episode.title,
-        ready: episode.status === "READY",
-      });
-      seasons.set(episode.seasonNumber, season);
-    }
-    works.push({
-      id: entry.id,
-      title: entry.title,
-      type: entry.type,
-      seasons: [...seasons.values()].sort((a, b) => a.seasonNumber - b.seasonNumber),
-    });
-  }
-  const selectedMediaId = works.some((work) => work.id === mediaId) ? (mediaId ?? null) : null;
-  return <TransferScreen view={{ works, selectedMediaId, passwordError: erro === "senha" }} />;
+export default async function Page(props: { searchParams: Promise<Record<string, string | undefined>> }) {
+  return <TransferScreen {...await loadView("view.transfer", await props.searchParams)} />;
 }

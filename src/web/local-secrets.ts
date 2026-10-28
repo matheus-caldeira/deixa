@@ -24,8 +24,16 @@ export async function loadMasterKey(): Promise<string> {
   return created;
 }
 
+let cachedSession: Promise<string | null> | null = null;
+
 export const localSession = {
-  read: () => readText(SESSION_FILE),
-  write: (token: string) => store.write(SESSION_FILE, encoder.encode(token)),
-  clear: () => store.write(SESSION_FILE, new Uint8Array()),
+  read: () => (cachedSession ??= readText(SESSION_FILE)),
+  write: async (token: string) => {
+    cachedSession = Promise.resolve(token);
+    await store.write(SESSION_FILE, encoder.encode(token));
+  },
+  clear: async () => {
+    cachedSession = Promise.resolve(null);
+    await store.write(SESSION_FILE, new Uint8Array());
+  },
 };

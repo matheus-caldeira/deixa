@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
+import { REDIRECT_CODE } from "@/operations/operation";
 import type { OperationName, OperationOutput } from "@/operations/registry";
 import { describeError, runtimeErrorOf } from "@/web/call";
 import { navigate } from "@/web/navigation";
@@ -34,6 +35,8 @@ export function useView<Name extends OperationName>(name: Name, input?: unknown)
           (failure: unknown): State<OperationOutput<Name>> => {
             const error = runtimeErrorOf(failure);
             if (error.code === "UNAUTHENTICATED") navigate("/login");
+            if (error.code === REDIRECT_CODE && error.detail) navigate(error.detail.key);
+            if (error.code === REDIRECT_CODE) return { kind: "loading" };
             if (MISSING.has(error.code)) return { kind: "missing" };
             return { kind: "failed", message: describeError(error) };
           },

@@ -49,3 +49,12 @@ export async function execute(
   if (!parsed.success) throw new AppError("INVALID_INPUT");
   return definition.run(context, parsed.data as never);
 }
+
+export class ViewRedirect extends Error {
+  constructor(readonly href: string) {
+    super("view redirect");
+    this.name = "ViewRedirect";
+  }
+}
+
+export const REDIRECT_CODE = "REDIRECT";

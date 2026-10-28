@@ -1,20 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import { getContainer } from "@/infrastructure/container";
 import { posterColorsFor } from "@/modules/catalog";
-import { pairOf, type SessionUser } from "@/modules/identity";
+import { pairOf } from "@/modules/identity";
 import { nextEpisodeId } from "@/modules/personal-series";
 import type { WorkTrailView } from "@/ui/trail/work-trail-screen";
 import { routes } from "@/shared/routes";
+import type { OperationContext } from "../operation";
 
 const COMPLETE = 100;
 const NODE_ICONS = ["quote", "ear", "pen"] as const;
 
 export async function personalTrailView(
-  user: SessionUser,
+  { user, app, translator }: OperationContext,
   requested: string | undefined,
 ): Promise<WorkTrailView> {
-  const t = await getTranslations("trail");
-  const series = await getContainer().getPersonalSeries({
+  const t = await translator("trail");
+  const series = await app.getPersonalSeries({
     userId: user.id,
     pair: pairOf(user.preferences),
     userLevel: user.preferences.level,

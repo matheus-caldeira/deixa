@@ -14,7 +14,13 @@ import { silentLogger } from "@/infrastructure/logger/logger";
 import type { SessionUser } from "@/modules/identity";
 import { mergeSettings } from "@/modules/settings";
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
-import { execute, type AnyOperation, type OperationContext } from "@/operations/operation";
+import {
+  execute,
+  REDIRECT_CODE,
+  ViewRedirect,
+  type AnyOperation,
+  type OperationContext,
+} from "@/operations/operation";
 import { OPERATIONS } from "@/operations/registry";
 import { AppError, isAppError } from "@/shared/errors";
 import { CEFR_LEVELS } from "@/shared/levels";
@@ -150,7 +156,9 @@ async function handle(operation: string, input: unknown): Promise<unknown> {
 }
 
 function describe(error: unknown): RuntimeError {
+  if (error instanceof ViewRedirect) return { code: REDIRECT_CODE, detail: { key: error.href } };
   if (isAppError(error)) return { code: error.code, detail: error.detail };
+  console.error(error instanceof Error ? `${error.name}: ${error.message}\n${error.stack}` : String(error));
   return { code: "INTERNAL", detail: null };
 }
 

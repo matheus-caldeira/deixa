@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { execute, type AnyOperation } from "@/operations/operation";
+import { execute, ViewRedirect, type AnyOperation } from "@/operations/operation";
 import { OPERATIONS, type OperationName, type OperationOutput } from "@/operations/registry";
 import { isAppError, type AppErrorCode } from "@/shared/errors";
 import { operationContext } from "./operations";
@@ -22,6 +22,7 @@ export async function loadView<Name extends OperationName>(
   try {
     return (await execute(definition, await operationContext(), input)) as OperationOutput<Name>;
   } catch (error) {
+    if (error instanceof ViewRedirect) redirect(error.href);
     if (isAppError(error) && error.code === "UNAUTHENTICATED") redirect("/login");
     if (isAppError(error) && (MISSING.includes(error.code) || error.code === "INVALID_INPUT")) notFound();
     throw error;

@@ -12,6 +12,24 @@ import { transferOperations } from "./transfer";
 import { tutorOperations } from "./tutor";
 import { homeViews } from "./views/home";
 import { shellViews } from "./views/shell";
+import { trailView } from "./views/trail";
+import { reviewView } from "./views/review";
+import { tmdbView } from "./views/tmdb";
+import { workView } from "./views/work";
+import { transferView } from "./views/transfer";
+import { peopleView } from "./views/people";
+import { conversationReviewView } from "./views/conversationReview";
+import { conversationView } from "./views/conversation";
+import { studyView } from "./views/study";
+import { personalLessonView } from "./views/personalLesson";
+import { recapView } from "./views/recap";
+import { readView } from "./views/read";
+import { tutorView } from "./views/tutor";
+import { settingsView } from "./views/settings";
+import { seriesView } from "./views/series";
+import { seriesEpisodeView } from "./views/seriesEpisode";
+import { progressView } from "./views/progress";
+import { catalogView } from "./views/catalog";
 
 export const OPERATION_GROUPS = [
   aiSettingsOperations,
@@ -28,6 +46,24 @@ export const OPERATION_GROUPS = [
   tutorOperations,
   shellViews,
   homeViews,
+  catalogView,
+  progressView,
+  seriesEpisodeView,
+  seriesView,
+  settingsView,
+  tutorView,
+  readView,
+  recapView,
+  personalLessonView,
+  studyView,
+  conversationView,
+  conversationReviewView,
+  peopleView,
+  transferView,
+  workView,
+  tmdbView,
+  reviewView,
+  trailView,
 ];
 
 export const OPERATIONS = {
@@ -45,6 +81,24 @@ export const OPERATIONS = {
   ...tutorOperations,
   ...shellViews,
   ...homeViews,
+  ...catalogView,
+  ...progressView,
+  ...seriesEpisodeView,
+  ...seriesView,
+  ...settingsView,
+  ...tutorView,
+  ...readView,
+  ...recapView,
+  ...personalLessonView,
+  ...studyView,
+  ...conversationView,
+  ...conversationReviewView,
+  ...peopleView,
+  ...transferView,
+  ...workView,
+  ...tmdbView,
+  ...reviewView,
+  ...trailView,
 };
 
 export type Operations = typeof OPERATIONS;

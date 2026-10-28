@@ -1,58 +1,14 @@
-import { notFound, redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
-import { z } from "zod";
-import { getContainer } from "@/infrastructure/container";
-import { pairOf } from "@/modules/identity";
-import { isAppError } from "@/shared/errors";
 import { ToastProvider } from "@/ui/shell/toast";
 import { LessonScreen } from "@/ui/study/lesson-screen";
-import { requireUser } from "@/app/session";
-import { routes } from "@/shared/routes";
+import { loadView } from "@/app/views";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudyPage(props: { searchParams: Promise<{ id?: string; node?: string }> }) {
-  const user = await requireUser();
-  const { id: episodeId = "", node = "" } = await props.searchParams;
-  const nodeIndex = Number(node);
-  if (!z.uuid().safeParse(episodeId).success || !Number.isInteger(nodeIndex) || nodeIndex < 0) notFound();
-  const lesson = await getContainer()
-    .startLesson({
-      userId: user.id,
-      episodeId,
-      nodeIndex,
-      pair: pairOf(user.preferences),
-      level: user.preferences.level,
-    })
-    .catch((error: unknown) => {
-      if (isAppError(error)) redirect("/");
-      throw error;
-    });
-  const t = await getTranslations("home");
-  const context = await getContainer().getEpisodeContext(episodeId);
-  const backHref = !context
-    ? "/"
-    : context.media.type === "movie"
-      ? routes.trail(context.media.id)
-      : routes.trail(context.media.id, context.season.seasonNumber);
+export default async function Page(page: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const { viewKey, ...props } = await loadView("view.study", await page.searchParams);
   return (
     <ToastProvider>
-      <LessonScreen
-        key={`${episodeId}:${nodeIndex}`}
-        view={{
-          episodeId,
-          nodeIndex: lesson.nodeIndex,
-          seed: lesson.seed,
-          title:
-            lesson.title ||
-            t(lesson.isFinal ? "finalChallenge" : "sceneTitle", { number: lesson.nodeIndex + 1 }),
-          level: user.preferences.level,
-          replay: lesson.replay,
-          audioSpeed: user.preferences.audioSpeed,
-          exercises: lesson.exercises,
-          backHref,
-        }}
-      />
+      <LessonScreen key={viewKey} {...props} />
     </ToastProvider>
   );
 }

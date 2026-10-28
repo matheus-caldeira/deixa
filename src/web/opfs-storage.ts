@@ -17,6 +17,19 @@ function segments(relativePath: string): string[] {
   return parts;
 }
 
+const queues = new Map<string, Promise<unknown>>();
+
+function exclusive<T>(key: string, work: () => Promise<T>): Promise<T> {
+  const previous = queues.get(key) ?? Promise.resolve();
+  const next = previous.then(work, work);
+  const settled = next.catch(() => undefined);
+  queues.set(key, settled);
+  void settled.then(() => {
+    if (queues.get(key) === settled) queues.delete(key);
+  });
+  return next;
+}
+
 export class OpfsFileStorage implements FileStorage {
   constructor(private readonly folder: string) {}
 
@@ -45,7 +58,15 @@ export class OpfsFileStorage implements FileStorage {
     }
   }
 
-  async write(relativePath: string, bytes: Uint8Array): Promise<void> {
+  write(relativePath: string, bytes: Uint8Array): Promise<void> {
+    return exclusive(`${this.folder}/${relativePath}`, () => this.writeNow(relativePath, bytes));
+  }
+
+  read(relativePath: string): Promise<Uint8Array | null> {
+    return exclusive(`${this.folder}/${relativePath}`, () => this.readNow(relativePath));
+  }
+
+  private async writeNow(relativePath: string, bytes: Uint8Array): Promise<void> {
     const handle = await this.file(relativePath, true);
     if (!handle) throw new Error("storage write failed");
     const access = await handle.createSyncAccessHandle();
@@ -58,7 +79,7 @@ export class OpfsFileStorage implements FileStorage {
     }
   }
 
-  async read(relativePath: string): Promise<Uint8Array | null> {
+  private async readNow(relativePath: string): Promise<Uint8Array | null> {
     const handle = await this.file(relativePath, false);
     if (!handle) return null;
     const access = await handle.createSyncAccessHandle();
