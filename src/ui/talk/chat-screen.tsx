@@ -20,6 +20,7 @@ import { useSpeech } from "../shell/use-speech";
 import { routes } from "@/shared/routes";
 import { loadSpeech } from "@/ui/shell/speech-source";
 import { playSource, type Playback } from "../shell/speak";
+import { useVoiceCall } from "./use-voice-call";
 
 export type ChatView = {
   sessionId: string;
@@ -232,15 +233,22 @@ export function ChatScreen({ view }: { view: ChatView }) {
     setSending(false);
     if (!result) {
       toast(errorText(null));
-      return false;
+      return null;
     }
     if (!result.ok) {
       toast(result.message);
-      return false;
+      return null;
     }
     setTurns((current) => [...current, result.data.userTurn, result.data.tutorTurn]);
-    return true;
+    return result.data.tutorTurn.id;
   };
+
+  const call = useVoiceCall({
+    speed: view.audioSpeed,
+    send: async (clip) => deliver({ audio: { mimeType: clip.type, base64: await toBase64(clip) } }),
+    onError: toast,
+    messages: { insecure: t("micInsecure"), failed: t("micFailed") },
+  });
 
   const sendText = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -495,39 +503,54 @@ export function ChatScreen({ view }: { view: ChatView }) {
           {t("limitReached")}
         </p>
       ) : (
-        <form className="composer" onSubmit={sendText}>
-          <button
-            className="playbtn"
-            type="button"
-            onClick={toggleRecording}
-            disabled={sending}
-            style={
-              recording
-                ? { background: "var(--bad)", boxShadow: "0 3px 0 var(--line)" }
-                : { background: "var(--surface)", color: "var(--brand)", boxShadow: "0 3px 0 var(--line)" }
-            }
-            aria-label={recording ? t("stopRecording") : t("recordAnswer")}
-          >
-            <MicIcon />
-          </button>
-          <input
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder={recording ? t("recording") : t("answerPlaceholder")}
-            autoComplete="off"
-            maxLength={500}
-            disabled={recording}
-            aria-label={t("yourMessage")}
-          />
-          <button
-            className="playbtn"
-            type="submit"
-            disabled={sending || text.trim() === ""}
-            aria-label={t("send")}
-          >
-            <SendIcon />
-          </button>
-        </form>
+        <>
+          <div className="row" style={{ gap: 8, alignItems: "center", justifyContent: "space-between" }}>
+            <span className="small muted" role="status">
+              {call.phase === "off" ? t("callHint") : t(`callPhase.${call.phase}`)}
+            </span>
+            <button
+              type="button"
+              className={`btn sm ${call.phase === "off" ? "ghost" : ""}`}
+              onClick={() => (call.phase === "off" ? void call.start() : call.stop())}
+              disabled={recording}
+            >
+              {call.phase === "off" ? t("callStart") : t("callStop")}
+            </button>
+          </div>
+          <form className="composer" onSubmit={sendText}>
+            <button
+              className="playbtn"
+              type="button"
+              onClick={toggleRecording}
+              disabled={sending || call.phase !== "off"}
+              style={
+                recording
+                  ? { background: "var(--bad)", boxShadow: "0 3px 0 var(--line)" }
+                  : { background: "var(--surface)", color: "var(--brand)", boxShadow: "0 3px 0 var(--line)" }
+              }
+              aria-label={recording ? t("stopRecording") : t("recordAnswer")}
+            >
+              <MicIcon />
+            </button>
+            <input
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder={recording ? t("recording") : t("answerPlaceholder")}
+              autoComplete="off"
+              maxLength={500}
+              disabled={recording}
+              aria-label={t("yourMessage")}
+            />
+            <button
+              className="playbtn"
+              type="submit"
+              disabled={sending || text.trim() === ""}
+              aria-label={t("send")}
+            >
+              <SendIcon />
+            </button>
+          </form>
+        </>
       )}
       {confirming ? (
         <Sheet label={t("closeTitle")} onClose={() => setConfirming(false)}>

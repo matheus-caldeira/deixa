@@ -572,7 +572,15 @@
     "stopAll": "Parar",
     "marked": "marcadas",
     "createCards": "Criar cards",
-    "termsQueued": "{count, plural, one {# termo foi} other {# termos foram}} para a IA. O sino avisa quando os cards estiverem na série."
+    "termsQueued": "{count, plural, one {# termo foi} other {# termos foram}} para a IA. O sino avisa quando os cards estiverem na série.",
+    "callHint": "Prefere falar? Ligue para o tutor e converse sem tocar na tela.",
+    "callStart": "Chamada de voz",
+    "callStop": "Encerrar chamada",
+    "callPhase": {
+      "listening": "Ouvindo… fale e faça uma pausa quando terminar.",
+      "thinking": "O tutor está pensando…",
+      "speaking": "O tutor está falando. Fale para interromper."
+    }
   },
   "talk": {
     "title": "Conversar",

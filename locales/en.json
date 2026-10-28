@@ -572,7 +572,15 @@
     "stopAll": "Stop",
     "marked": "marked",
     "createCards": "Create cards",
-    "termsQueued": "{count, plural, one {# term was} other {# terms were}} sent to the AI. The bell lets you know when the cards are in your series."
+    "termsQueued": "{count, plural, one {# term was} other {# terms were}} sent to the AI. The bell lets you know when the cards are in your series.",
+    "callHint": "Rather talk? Call the tutor and speak without touching the screen.",
+    "callStart": "Voice call",
+    "callStop": "End call",
+    "callPhase": {
+      "listening": "Listening… speak and pause when you are done.",
+      "thinking": "The tutor is thinking…",
+      "speaking": "The tutor is speaking. Talk to interrupt."
+    }
   },
   "talk": {
     "title": "Talk",
