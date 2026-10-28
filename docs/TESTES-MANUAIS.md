@@ -75,11 +75,13 @@ A 0.0.5 falha na instalação do Postgres embutido com `spawn tar ENOENT`; a cor
 
 - [ ] Abrir pelo QR code da bandeja e instalar como PWA.
 - [ ] Ditado do teclado funciona no Conversar (microfone direto só com HTTPS).
+- [ ] `pnpm dev:https` (porta 1301): abrir `https://<ip>:1301` no celular, aceitar o certificado e gravar uma
+      resposta no Conversar pelo microfone.
 
 ## Versão web offline (Safari e iPhone)
 
 `pnpm build:web && node scripts/serve-web.mjs` publica o alvo web em `http://127.0.0.1:1320`. No iPhone, o
-banco e o service worker pedem HTTPS (ver `pnpm dev:https` quando existir).
+banco e o service worker pedem HTTPS: sirva o `.next-web` atrás de um HTTPS (ou publique na Vercel).
 
 - [ ] Safari no Mac: `/lab/` abre o banco, "Criar conta de prova" soma uma conta, recarregar mantém a contagem.
 - [ ] Safari no Mac: segunda aba mostra "Esperando o banco" e abre quando a primeira fecha.
