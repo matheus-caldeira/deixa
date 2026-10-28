@@ -154,6 +154,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
     }
     await page.getByRole("button", { name: /^Bom/ }).click();
     await expect(page.getByText(`${7 - position} na fila`).or(page.getByText("Fila em dia"))).toBeVisible();
+    await page.waitForLoadState("networkidle");
   }
   expect(foundNewCard).toBe(true);
 

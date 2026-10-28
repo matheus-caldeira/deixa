@@ -52,8 +52,14 @@ test("configurações: chaves por usuário em IA e Catálogo; globais e servidor
     .getByRole("link", { name: /Configurações/ })
     .click();
   await expect(page).toHaveURL(/\/settings/);
-  await page.getByRole("tab", { name: "Catálogo" }).click();
+  await page.waitForLoadState("networkidle");
+  const catalogTab = page.getByRole("tab", { name: "Catálogo" });
+  await expect(async () => {
+    await catalogTab.click({ timeout: 2_000 });
+    await expect(catalogTab).toHaveAttribute("aria-selected", "true", { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await page.getByRole("link", { name: "Globais do servidor" }).click();
+  await page.waitForLoadState("networkidle");
   for (const service of CATALOG_SERVICES) {
     await expect(page.getByLabel(`Chave: ${service} global`, { exact: true })).toBeVisible();
   }

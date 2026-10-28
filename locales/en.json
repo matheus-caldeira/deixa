@@ -1523,5 +1523,9 @@
     "detailLink": "Screen {id}",
     "detail": "Screen {id}",
     "back": "Back"
+  },
+  "web": {
+    "loading": "Loading…",
+    "missing": "We could not find this page."
   }
 }

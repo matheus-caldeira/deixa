@@ -1,38 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { aiSettingsOperations } from "./ai-settings";
-import { catalogOperations } from "./catalog";
-import { levelSourceOperations } from "./level-sources";
-import { notificationOperations } from "./notifications";
 import { execute, operation, type OperationContext } from "./operation";
-import { personalSeriesOperations } from "./personal-series";
-import { profileOperations } from "./profile";
-import { readingOperations } from "./reading";
-import { recommendationOperations } from "./recommendations";
-import { OPERATIONS } from "./registry";
-import { reviewOperations } from "./review";
-import { studyOperations } from "./study";
-import { transferOperations } from "./transfer";
-import { tutorOperations } from "./tutor";
-
-const GROUPS = [
-  aiSettingsOperations,
-  catalogOperations,
-  levelSourceOperations,
-  notificationOperations,
-  personalSeriesOperations,
-  profileOperations,
-  readingOperations,
-  recommendationOperations,
-  reviewOperations,
-  studyOperations,
-  transferOperations,
-  tutorOperations,
-];
+import { OPERATION_GROUPS, OPERATIONS } from "./registry";
 
 describe("registro de operações", () => {
-  it("não repete nome entre grupos", () => {
-    const total = GROUPS.reduce((sum, group) => sum + Object.keys(group).length, 0);
+  it("junta todos os grupos sem repetir nome", () => {
+    const total = OPERATION_GROUPS.reduce((sum, group) => sum + Object.keys(group).length, 0);
     expect(Object.keys(OPERATIONS)).toHaveLength(total);
   });
 

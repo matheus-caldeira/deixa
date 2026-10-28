@@ -13,7 +13,29 @@ const localAddresses = Object.values(networkInterfaces())
 const forDesktop = process.env.DEIXA_STANDALONE === "1";
 const forWeb = process.env.DEIXA_TARGET === "web";
 
+const WEB_ACTIONS = [
+  "ai-models",
+  "ai-usage",
+  "auth",
+  "catalog",
+  "level-sources",
+  "notifications",
+  "personal-series",
+  "profile",
+  "reading",
+  "recommendations",
+  "review",
+  "study",
+  "transfer",
+  "tutor",
+];
+
+const webAliases = Object.fromEntries(
+  WEB_ACTIONS.map((name) => [`@/app/actions/${name}`, `./src/web/actions/${name}.ts`]),
+);
+
 const nextConfig: NextConfig = {
+  turbopack: forWeb ? { resolveAlias: webAliases } : undefined,
   output: forWeb ? "export" : forDesktop ? "standalone" : undefined,
   distDir: forWeb ? ".next-web" : undefined,
   pageExtensions: forWeb ? ["web.tsx", "web.ts"] : ["tsx", "ts"],

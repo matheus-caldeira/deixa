@@ -1523,5 +1523,9 @@
     "detailLink": "Tela {id}",
     "detail": "Tela {id}",
     "back": "Voltar"
+  },
+  "web": {
+    "loading": "Carregando…",
+    "missing": "Não encontramos esta página."
   }
 }

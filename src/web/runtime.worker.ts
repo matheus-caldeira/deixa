@@ -52,6 +52,10 @@ const scope = globalThis as unknown as {
 };
 
 let runtime: Runtime | null = null;
+let markReady: () => void = () => undefined;
+const ready = new Promise<void>((resolve) => {
+  markReady = resolve;
+});
 
 function publish(status: RuntimeStatus) {
   scope.postMessage({ kind: "status", status });
@@ -114,6 +118,7 @@ async function authenticate(app: AppContainer, credentials: z.infer<typeof signI
 }
 
 async function handle(operation: string, input: unknown): Promise<unknown> {
+  await ready;
   const active = runtime;
   if (!active) throw new Error("runtime not ready");
   const { app } = active;
@@ -168,6 +173,7 @@ async function open(): Promise<void> {
   const opened = performance.now();
   await applyMigrations(drizzle(client));
   runtime = await buildRuntime(drizzle(client, { schema }));
+  markReady();
   publish({
     state: "ready",
     openMs: Math.round(opened - started),

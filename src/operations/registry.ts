@@ -10,6 +10,25 @@ import { reviewOperations } from "./review";
 import { studyOperations } from "./study";
 import { transferOperations } from "./transfer";
 import { tutorOperations } from "./tutor";
+import { homeViews } from "./views/home";
+import { shellViews } from "./views/shell";
+
+export const OPERATION_GROUPS = [
+  aiSettingsOperations,
+  catalogOperations,
+  levelSourceOperations,
+  notificationOperations,
+  personalSeriesOperations,
+  profileOperations,
+  readingOperations,
+  recommendationOperations,
+  reviewOperations,
+  studyOperations,
+  transferOperations,
+  tutorOperations,
+  shellViews,
+  homeViews,
+];
 
 export const OPERATIONS = {
   ...aiSettingsOperations,
@@ -24,6 +43,8 @@ export const OPERATIONS = {
   ...studyOperations,
   ...transferOperations,
   ...tutorOperations,
+  ...shellViews,
+  ...homeViews,
 };
 
 export type Operations = typeof OPERATIONS;
