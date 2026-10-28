@@ -251,7 +251,8 @@
       "levelSourceLimit": "Limit of {limit} sources reached. Remove one before adding another.",
       "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it.",
       "levelRatingNoAi": "Set up an AI key in Settings to rate the level.",
-      "adminOnlyLevelRating": "Only the administrator rates title levels with AI, because the rating applies to everyone's catalog."
+      "adminOnlyLevelRating": "Only the administrator rates title levels with AI, because the rating applies to everyone's catalog.",
+      "transcriptionNoAi": "Set up an AI key to transcribe your speech."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
@@ -796,7 +797,8 @@
       "lesson_plan": "Lesson plan",
       "suggestions": "Suggestions",
       "embeddings": "Embeddings",
-      "level_rating": "Title levels"
+      "level_rating": "Title levels",
+      "transcription": "Speech transcription"
     },
     "byModel": "By model",
     "yourKey": "your key",

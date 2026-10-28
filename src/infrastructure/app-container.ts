@@ -23,7 +23,9 @@ import {
   makeGetSpeechAudio,
   makeListCachedSpeech,
   makeSynthesizeLines,
+  makeTranscribeSpeech,
   voiceFor,
+  type SpeechToText,
   type TtsProvider,
 } from "@/modules/audio";
 import { DrizzleAudioAssetRepository } from "@/modules/audio/infrastructure/drizzle-audio-asset-repository";
@@ -58,6 +60,7 @@ import { LevelGuidedMetadataProvider, builtinLevelGuide } from "@/modules/catalo
 import { DrizzleLevelSourceRepository } from "@/modules/catalog/infrastructure/drizzle-level-source-repository";
 import { DrizzleAiLevelRatingRepository } from "@/modules/catalog/infrastructure/drizzle-ai-level-rating-repository";
 import { AiLevelRater } from "./ai/ai-level-rater";
+import { AiSpeechToText } from "./ai/ai-speech-to-text";
 import {
   makeAddCards,
   makeAnticipateReview,
@@ -283,6 +286,7 @@ export type ContainerOptions = {
   tutorForUser?: (userId: string) => Promise<TutorProvider>;
   embeddingForUser?: (userId: string) => Promise<EmbeddingProvider>;
   suggestionWriterForUser?: (userId: string) => Promise<SuggestionWriter | null>;
+  speechToTextForUser?: (userId: string) => Promise<SpeechToText | null>;
   testCredential?: CredentialTester;
   masterKey?: string;
   settings?: AppSettings;
@@ -570,6 +574,14 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     const meter = aiMeterFor(userId, access);
     await meter.ensureAllowed();
     return new AiLevelRater(access, access.model, { meter, locale: await localeOf(userId) });
+  };
+  const resolveTranscriber = async (userId: string): Promise<SpeechToText | null> => {
+    if (options.speechToTextForUser) return options.speechToTextForUser(userId);
+    const access = await aiAccessFor(userId);
+    if (!access) return null;
+    const meter = aiMeterFor(userId, access);
+    await meter.ensureAllowed();
+    return new AiSpeechToText(access, access.model, { meter });
   };
   const buildCatalogUseCases = (metadata: MetadataProvider) => {
     const deps = { ...catalogDeps, metadata };
@@ -1245,6 +1257,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
           : null;
       },
     }),
+    transcribeSpeech: makeTranscribeSpeech({ resolveTranscriber }),
     getCueSpeech: async (cueId: string): Promise<{ text: string; language: StudyLanguage }> => {
       const cue = await subtitles.findCue(cueId);
       if (!cue) throw new AppError("CUE_NOT_FOUND");

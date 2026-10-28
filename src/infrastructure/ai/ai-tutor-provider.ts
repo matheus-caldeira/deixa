@@ -15,6 +15,7 @@ import type { ModelMessage, UserContent } from "ai";
 import { generateJson, type AiDeps } from "./generate-json";
 import type { AiAccess } from "./models";
 import { type PromptLanguages, languageNames } from "./prompt-languages";
+import { base64ToBytes } from "@/shared/base64";
 
 const REPLY_TIMEOUT_MS = 45_000;
 const REVIEW_TIMEOUT_MS = 60_000;
@@ -110,7 +111,7 @@ function messageContent(message: TutorMessage): UserContent {
     {
       type: "file",
       mediaType: message.audio.mimeType.split(";")[0] ?? "audio/webm",
-      data: Buffer.from(message.audio.base64, "base64"),
+      data: base64ToBytes(message.audio.base64),
     },
     { type: "text", text: "Learner message as audio." },
   ];

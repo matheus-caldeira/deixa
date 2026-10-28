@@ -251,7 +251,8 @@
       "levelSourceLimit": "Limite de {limit} fontes atingido. Remova uma antes de adicionar outra.",
       "levelSourceChild": "Esta URL vem de outra fonte. Desligue-a ou remova a fonte que a lista.",
       "levelRatingNoAi": "Configure uma chave de IA em Configurações para avaliar o nível.",
-      "adminOnlyLevelRating": "Só o administrador avalia o nível das obras com IA, porque a avaliação vale para o catálogo de todos."
+      "adminOnlyLevelRating": "Só o administrador avalia o nível das obras com IA, porque a avaliação vale para o catálogo de todos.",
+      "transcriptionNoAi": "Configure uma chave de IA para transcrever a sua fala."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
@@ -796,7 +797,8 @@
       "lesson_plan": "Plano de aula",
       "suggestions": "Sugestões",
       "embeddings": "Embeddings",
-      "level_rating": "Nível das obras"
+      "level_rating": "Nível das obras",
+      "transcription": "Transcrição de fala"
     },
     "byModel": "Por modelo",
     "yourKey": "sua chave",
