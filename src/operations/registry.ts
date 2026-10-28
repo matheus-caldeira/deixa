@@ -1,4 +1,5 @@
 import { aiSettingsOperations } from "./ai-settings";
+import { audioOperations } from "./audio";
 import { catalogOperations } from "./catalog";
 import { levelSourceOperations } from "./level-sources";
 import { notificationOperations } from "./notifications";
@@ -64,6 +65,7 @@ export const OPERATION_GROUPS = [
   tmdbView,
   reviewView,
   trailView,
+  audioOperations,
 ];
 
 export const OPERATIONS = {
@@ -99,6 +101,7 @@ export const OPERATIONS = {
   ...tmdbView,
   ...reviewView,
   ...trailView,
+  ...audioOperations,
 };
 
 export type Operations = typeof OPERATIONS;

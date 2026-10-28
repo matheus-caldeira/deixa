@@ -2,23 +2,24 @@
 
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { loadSpeech, SpeechUnavailable, type SpeechKind, type SpeechSource } from "@/ui/shell/speech-source";
+import { playSource, type Playback } from "./speak";
 
-type SpeechKind = "cue" | "item" | "turn";
-const BUSY = 429;
+const SLOW_FACTOR = 0.6;
 
 export function useSpeech(options: { speed: number; onError: (message: string) => void }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [readyIds, setReadyIds] = useState<Set<string>>(() => new Set());
-  const urls = useRef(new Map<string, string>());
-  const player = useRef<HTMLAudioElement | null>(null);
+  const sources = useRef(new Map<string, SpeechSource>());
+  const player = useRef<Playback | null>(null);
   const errors = useTranslations("errors");
   const { speed, onError } = options;
 
   useEffect(() => {
-    const cache = urls.current;
+    const cache = sources.current;
     return () => {
-      player.current?.pause();
-      for (const url of cache.values()) URL.revokeObjectURL(url);
+      player.current?.stop();
+      for (const source of cache.values()) if (source.kind === "audio") URL.revokeObjectURL(source.url);
       cache.clear();
     };
   }, []);
@@ -26,30 +27,23 @@ export function useSpeech(options: { speed: number; onError: (message: string) =
   const play = useCallback(
     async (kind: SpeechKind, id: string, slow = false) => {
       if (loadingId) return;
-      let url = urls.current.get(id);
-      if (!url) {
+      let source = sources.current.get(id);
+      if (!source) {
         setLoadingId(id);
         try {
-          const response = await fetch(`/api/audio/${kind}/${id}`);
-          if (!response.ok) {
-            onError(errors(response.status === BUSY ? "AUDIO_BUSY" : "AUDIO_UNAVAILABLE"));
-            return;
-          }
-          url = URL.createObjectURL(await response.blob());
-          urls.current.set(id, url);
+          source = await loadSpeech(kind, id);
+          sources.current.set(id, source);
           setReadyIds((current) => new Set(current).add(id));
-        } catch {
-          onError(errors("AUDIO_UNAVAILABLE"));
+        } catch (error) {
+          const busy = error instanceof SpeechUnavailable && error.busy;
+          onError(errors(busy ? "AUDIO_BUSY" : "AUDIO_UNAVAILABLE"));
           return;
         } finally {
           setLoadingId(null);
         }
       }
-      player.current?.pause();
-      const audio = new Audio(url);
-      audio.playbackRate = slow ? speed * 0.6 : speed;
-      player.current = audio;
-      audio.play().catch(() => undefined);
+      player.current?.stop();
+      player.current = playSource(source, slow ? speed * SLOW_FACTOR : speed);
     },
     [errors, loadingId, onError, speed],
   );

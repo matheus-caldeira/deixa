@@ -30,9 +30,11 @@ const WEB_ACTIONS = [
   "tutor",
 ];
 
-const webAliases = Object.fromEntries(
-  WEB_ACTIONS.map((name) => [`@/app/actions/${name}`, `./src/web/actions/${name}.ts`]),
-);
+const webAliases = {
+  ...Object.fromEntries(WEB_ACTIONS.map((name) => [`@/app/actions/${name}`, `./src/web/actions/${name}.ts`])),
+  "@/ui/shell/speech-source": "./src/web/speech-source.ts",
+  "@/ui/transfer/transfer-client": "./src/web/transfer-client.ts",
+};
 
 const nextConfig: NextConfig = {
   turbopack: forWeb ? { resolveAlias: webAliases } : undefined,

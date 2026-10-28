@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { importPackageAction } from "@/app/actions/transfer";
+import {
+  downloadPackage,
+  exportPersonal,
+  inspectPackage,
+  PERSONAL_EXPORT_ACTION,
+} from "@/ui/transfer/transfer-client";
 import type { ImportReport, PackagePreview } from "@/modules/packages";
 import { CheckIcon } from "../icons";
 import { useToast } from "../shell/toast";
@@ -56,6 +62,7 @@ function Pick({
 }
 
 function ExportCard({ view }: { view: TransferView }) {
+  const router = useRouter();
   const t = useTranslations("transfer");
   const [scope, setScope] = useState<ExportScope>(view.selectedMediaId ? "work" : "me");
   const [includeKeys, setIncludeKeys] = useState(false);
@@ -75,7 +82,20 @@ function ExportCard({ view }: { view: TransferView }) {
   const ready = Boolean(work) && (scope !== "episode" || Boolean(params.get("episodeId")));
 
   const personal = (
-    <form className="col" style={{ gap: 14 }} method="post" action="/api/transfer/export-personal">
+    <form
+      className="col"
+      style={{ gap: 14 }}
+      method="post"
+      action={PERSONAL_EXPORT_ACTION}
+      onSubmit={(event) => {
+        if (PERSONAL_EXPORT_ACTION) return;
+        event.preventDefault();
+        const form = event.currentTarget;
+        void exportPersonal(form).then((outcome) => {
+          if (outcome === "wrongPassword") router.push("/transfer?erro=senha");
+        });
+      }}
+    >
       <p className="small muted">{t("personalIntro")}</p>
       <div className="field">
         <label>{t("apiKeys")}</label>
@@ -211,13 +231,14 @@ function ExportCard({ view }: { view: TransferView }) {
             />
           </div>
           <p className="note">{t("rightsNote")}</p>
-          <a
+          <button
+            type="button"
             className={`btn block ${ready ? "" : "disabled"}`}
-            href={ready ? `/api/transfer/export?${params}` : undefined}
-            download
+            disabled={!ready}
+            onClick={() => downloadPackage(params)}
           >
             {t("exportZip")}
-          </a>
+          </button>
         </>
       )}
     </section>
@@ -241,11 +262,7 @@ function ImportCard() {
     setBusy(true);
     setError("");
     try {
-      const form = new FormData();
-      form.set("file", file);
-      const response = await fetch("/api/transfer/import", { method: "POST", body: form });
-      const body = (await response.json()) as
-        { ok: true; data: PackagePreview } | { ok: false; message: string };
+      const body = await inspectPackage(file);
       if (!body.ok) {
         setError(body.message);
         return;

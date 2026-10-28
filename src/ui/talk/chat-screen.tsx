@@ -18,6 +18,8 @@ import { useToast } from "../shell/toast";
 import { useErrorText } from "../shell/use-error-text";
 import { useSpeech } from "../shell/use-speech";
 import { routes } from "@/shared/routes";
+import { loadSpeech } from "@/ui/shell/speech-source";
+import { playSource, type Playback } from "../shell/speak";
 
 export type ChatView = {
   sessionId: string;
@@ -82,11 +84,11 @@ function useConversationPlayer(speed: number, onError: (message: string) => void
   const errors = useTranslations("errors");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const cancelled = useRef(false);
-  const audio = useRef<HTMLAudioElement | null>(null);
+  const audio = useRef<Playback | null>(null);
 
   const stop = useCallback(() => {
     cancelled.current = true;
-    audio.current?.pause();
+    audio.current?.stop();
     setPlayingId(null);
   }, []);
 
@@ -99,22 +101,15 @@ function useConversationPlayer(speed: number, onError: (message: string) => void
         if (cancelled.current) break;
         setPlayingId(id);
         document.getElementById(`turn-${id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
-        const response = await fetch(`/api/audio/turn/${id}`).catch(() => null);
-        if (!response?.ok) {
+        const source = await loadSpeech("turn", id).catch(() => null);
+        if (!source) {
           onError(errors("AUDIO_UNAVAILABLE"));
           break;
         }
-        const url = URL.createObjectURL(await response.blob());
-        await new Promise<void>((resolve) => {
-          const player = new Audio(url);
-          player.playbackRate = speed;
-          audio.current = player;
-          player.onended = () => resolve();
-          player.onerror = () => resolve();
-          player.onpause = () => resolve();
-          player.play().catch(() => resolve());
-        });
-        URL.revokeObjectURL(url);
+        const playback = playSource(source, speed);
+        audio.current = playback;
+        await playback.done;
+        if (source.kind === "audio") URL.revokeObjectURL(source.url);
       }
       setPlayingId(null);
     },

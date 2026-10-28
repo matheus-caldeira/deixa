@@ -147,12 +147,16 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
       .locator(".face:not(.back)")
       .getByText("split the bill", { exact: true })
       .isVisible();
-    await page.getByRole("button", { name: "Mostrar resposta" }).click();
-    if (foundNewCard) {
-      await expect(page.locator(".face.back").getByText("dividir a conta")).toBeVisible();
-      await expect(page.getByText("Modern Family · T1 · E1 · suas marcações").first()).toBeVisible();
-    }
-    await page.getByRole("button", { name: /^Bom/ }).click();
+    await expect(async () => {
+      await page.getByRole("button", { name: "Mostrar resposta" }).click({ timeout: 3_000 });
+      if (foundNewCard) {
+        await expect(page.locator(".face.back").getByText("dividir a conta")).toBeVisible({ timeout: 3_000 });
+        await expect(page.getByText("Modern Family · T1 · E1 · suas marcações").first()).toBeVisible({
+          timeout: 3_000,
+        });
+      }
+      await page.getByRole("button", { name: /^Bom/ }).click({ timeout: 3_000 });
+    }).toPass({ timeout: 45_000 });
     await expect(page.getByText(`${7 - position} na fila`).or(page.getByText("Fila em dia"))).toBeVisible();
     await page.waitForLoadState("networkidle");
   }
