@@ -60,7 +60,9 @@
     "transfer": "Importar e exportar",
     "transferDetail": "Pacotes de obras, legendas, cards e áudio",
     "settings": "Configurações",
-    "settingsDetail": "Chaves, uso da IA e servidor"
+    "settingsDetail": "Chaves, uso da IA e servidor",
+    "privacy": "Privacidade e direitos",
+    "privacyDetail": "O que fica guardado e o que vai para a IA"
   },
   "profile": {
     "sheet": "Perfil e configurações",
@@ -1546,5 +1548,38 @@
     "checking": "Conferindo…",
     "score": "{score}% certo:",
     "heard": "Ouvimos: {text}"
+  },
+  "privacy": {
+    "back": "Voltar",
+    "title": "Privacidade e direitos",
+    "intro": "O que o {app} guarda, para onde vai cada coisa e o que você pode fazer com a legenda de uma obra.",
+    "stored": {
+      "title": "O que fica guardado",
+      "body": "Sua conta (nome, e-mail e senha cifrada com scrypt), suas preferências, marcações, cards, revisões, XP, conversas com o tutor em texto e as chaves de IA, cifradas com AES-256-GCM. O catálogo (obras, episódios e legendas) é compartilhado entre as contas da mesma instalação; o aprendizado é só seu."
+    },
+    "where": {
+      "title": "Onde fica",
+      "body": "Na instalação da família, no Postgres e na pasta de dados do computador que roda o {app}. No modo pessoal pelo navegador, tudo fica no próprio aparelho (IndexedDB e OPFS) e nada passa por um servidor nosso. Limpar os dados do site apaga tudo: exporte um pacote antes."
+    },
+    "ai": {
+      "title": "O que vai para a IA",
+      "body": "Só quando você usa um recurso de IA: o texto das falas e termos que você marcou, as mensagens da conversa com o tutor, a sinopse do episódio e o resumo do seu estudo. Vai para o provedor da chave em uso (a sua ou a do servidor), que tem a própria política de dados. O {app} nunca manda dados de outra pessoa e não guarda o prompt, só a contagem de tokens e o valor estimado."
+    },
+    "audio": {
+      "title": "Sua voz",
+      "body": "A gravação do microfone (resposta ao tutor, chamada de voz e \"Falar a frase\") vai direto para o provedor de IA para virar texto e não é guardada: fica só a transcrição na conversa. A voz das falas é gerada pelo Kokoro na instalação da família ou pelo próprio navegador no modo pessoal."
+    },
+    "limits": {
+      "title": "Limites de uso",
+      "body": "Cada conta pode ter teto de gasto de IA por dia e por mês, definido por ela ou pelo administrador; acima dele, a IA para até o período virar ou o limite subir. O download de legendas pelo OpenSubtitles também tem limite diário por pessoa."
+    },
+    "rights": {
+      "title": "Legendas e roteiros",
+      "body": "Legendas e roteiros de obras reais têm direitos autorais. Use-os para estudo pessoal ou da família. Exportar um pacote para uma cópia sua é uso pessoal; publicar pacotes com legendas é redistribuição e depende de autorização de quem tem os direitos."
+    },
+    "control": {
+      "title": "O que você controla",
+      "body": "Você pode remover suas chaves de IA, exportar seus dados num pacote pessoal cifrado com a sua senha e importá-lo em outra instalação. Apagar a conta pela tela ainda não existe."
+    }
   }
 }

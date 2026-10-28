@@ -60,7 +60,9 @@
     "transfer": "Import and export",
     "transferDetail": "Packages with shows, subtitles, cards and audio",
     "settings": "Settings",
-    "settingsDetail": "Keys, AI usage and server"
+    "settingsDetail": "Keys, AI usage and server",
+    "privacy": "Privacy and rights",
+    "privacyDetail": "What is kept and what goes to the AI"
   },
   "profile": {
     "sheet": "Profile and settings",
@@ -1546,5 +1548,38 @@
     "checking": "Checking…",
     "score": "{score}% right:",
     "heard": "We heard: {text}"
+  },
+  "privacy": {
+    "back": "Back",
+    "title": "Privacy and rights",
+    "intro": "What {app} keeps, where each thing goes and what you may do with a title's subtitles.",
+    "stored": {
+      "title": "What is kept",
+      "body": "Your account (name, email and a password hashed with scrypt), your preferences, marks, cards, reviews, XP, tutor conversations as text and your AI keys, encrypted with AES-256-GCM. The catalog (titles, episodes and subtitles) is shared by the accounts of the same installation; your learning is yours alone."
+    },
+    "where": {
+      "title": "Where it lives",
+      "body": "In the family installation, in Postgres and in the data folder of the computer running {app}. In personal mode in the browser, everything stays on the device (IndexedDB and OPFS) and nothing goes through a server of ours. Clearing the site data erases it all: export a package first."
+    },
+    "ai": {
+      "title": "What goes to the AI",
+      "body": "Only when you use an AI feature: the text of the lines and terms you marked, your messages to the tutor, the episode synopsis and a summary of your study. It goes to the provider of the key in use (yours or the server's), which has its own data policy. {app} never sends another person's data and does not keep the prompt, only the token count and estimated cost."
+    },
+    "audio": {
+      "title": "Your voice",
+      "body": "Microphone recordings (answers to the tutor, voice calls and \"Say it\") go straight to the AI provider to become text and are not kept: only the transcript stays in the conversation. Line audio is made by Kokoro in the family installation or by the browser itself in personal mode."
+    },
+    "limits": {
+      "title": "Usage limits",
+      "body": "Each account can have a daily and monthly AI spending cap, set by the account or by the administrator; above it, AI stops until the period resets or the limit is raised. Subtitle downloads from OpenSubtitles also have a daily limit per person."
+    },
+    "rights": {
+      "title": "Subtitles and scripts",
+      "body": "Subtitles and scripts of real titles are copyrighted. Use them for personal or family study. Exporting a package for your own copy is personal use; publishing packages with subtitles is redistribution and needs permission from the rights holders."
+    },
+    "control": {
+      "title": "What you control",
+      "body": "You can remove your AI keys, export your data in a personal package encrypted with your password and import it into another installation. Deleting the account from the app is not available yet."
+    }
   }
 }

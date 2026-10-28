@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { BackIcon, ChartIcon, SlidersIcon, SwapIcon } from "../icons";
+import { BackIcon, ChartIcon, LockIcon, SlidersIcon, SwapIcon } from "../icons";
 import { Sheet } from "./sheet";
 
 export const MORE_LINKS = [
   { href: "/progress", key: "progress", Icon: ChartIcon },
   { href: "/transfer", key: "transfer", Icon: SwapIcon },
   { href: "/settings", key: "settings", Icon: SlidersIcon },
+  { href: "/privacy", key: "privacy", Icon: LockIcon },
 ] as const;
 
 export function MoreSheet({ onClose }: { onClose: () => void }) {
