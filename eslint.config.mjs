@@ -97,6 +97,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
     ".next-web/**",
+    ".next-family/**",
     "out/**",
     "src-tauri/target/**",
     "src-tauri/gen/**",

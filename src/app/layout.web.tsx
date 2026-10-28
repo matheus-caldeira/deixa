@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { APP_NAME } from "@/shared/app";
-import { ServiceWorkerRegistration } from "@/ui/shell/service-worker";
 import { WebProviders } from "@/ui/shell/web-providers";
+import { WebUpdateNotice } from "@/ui/web/update-notice";
 import "./globals.css";
 
 const bricolage = localFont({
@@ -26,7 +26,13 @@ const jetbrains = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = { title: APP_NAME, applicationName: APP_NAME };
+export const metadata: Metadata = {
+  title: APP_NAME,
+  applicationName: APP_NAME,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "black-translucent" },
+  icons: { icon: "/pwa-icon/192", apple: "/pwa-icon/180" },
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -44,8 +50,8 @@ export default function WebRootLayout({ children }: { children: React.ReactNode 
       <body>
         <WebProviders>
           <div className="app">{children}</div>
+          <WebUpdateNotice />
         </WebProviders>
-        <ServiceWorkerRegistration />
       </body>
     </html>
   );

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const STATIC_DIR = ".next/static";
+const WEB_DIR = ".next-web";
 const SECRET_NAMES = [
   "TMDB_READ_ACCESS_TOKEN",
   "TMDB_API_KEY",
@@ -21,12 +22,8 @@ function filesUnder(directory: string): string[] {
   });
 }
 
-describe("bundle do cliente", () => {
-  it("existe: rode pnpm build antes deste teste", () => {
-    expect(existsSync(STATIC_DIR)).toBe(true);
-  });
-
-  const files = existsSync(STATIC_DIR) ? filesUnder(STATIC_DIR) : [];
+function checkBundle(directory: string, options: { tmdbInBrowser: boolean }) {
+  const files = existsSync(directory) ? filesUnder(directory) : [];
   const contents = files.map((path) => ({ path, text: readFileSync(path, "latin1") }));
 
   for (const name of SECRET_NAMES) {
@@ -44,9 +41,22 @@ describe("bundle do cliente", () => {
   });
 
   it("não cita variáveis de servidor nem usa NEXT_PUBLIC para o TMDB", () => {
-    const mentions = contents
-      .filter((file) => /NEXT_PUBLIC_TMDB|TMDB_READ_ACCESS_TOKEN|api\.themoviedb\.org/.test(file.text))
-      .map((file) => file.path);
+    const pattern = options.tmdbInBrowser
+      ? /NEXT_PUBLIC_TMDB/
+      : /NEXT_PUBLIC_TMDB|TMDB_READ_ACCESS_TOKEN|api\.themoviedb\.org/;
+    const mentions = contents.filter((file) => pattern.test(file.text)).map((file) => file.path);
     expect(mentions).toEqual([]);
   });
+}
+
+describe("bundle do cliente", () => {
+  it("existe: rode pnpm build antes deste teste", () => {
+    expect(existsSync(STATIC_DIR)).toBe(true);
+  });
+
+  checkBundle(STATIC_DIR, { tmdbInBrowser: false });
+});
+
+describe.skipIf(!existsSync(WEB_DIR))("bundle do alvo web (pnpm build:web)", () => {
+  checkBundle(WEB_DIR, { tmdbInBrowser: true });
 });

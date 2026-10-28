@@ -1,14 +1,18 @@
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 
 const ROOT = resolve(".next-web");
+const SHARED_HEADERS =
+  JSON.parse(readFileSync("vercel.json", "utf8")).headers.find((rule) => rule.source === "/(.*)")?.headers ??
+  [];
 const PORT = Number(process.env.PORT ?? 1320);
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
+  ".webmanifest": "application/manifest+json",
   ".txt": "text/plain; charset=utf-8",
   ".wasm": "application/wasm",
   ".data": "application/octet-stream",
@@ -31,8 +35,9 @@ createServer((request, response) => {
   const url = new URL(request.url ?? "/", "http://localhost");
   const found = resolveFile(url.pathname);
   const file = found ?? join(ROOT, "404.html");
-  response.setHeader("Content-Type", TYPES[extname(file)] ?? "application/octet-stream");
-  response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  const type = url.pathname.startsWith("/pwa-icon/") ? "image/png" : TYPES[extname(file)];
+  response.setHeader("Content-Type", type ?? "application/octet-stream");
+  for (const header of SHARED_HEADERS) response.setHeader(header.key, header.value);
   response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
   if (url.pathname.endsWith("/sw.js")) response.setHeader("Cache-Control", "no-cache");
   response.statusCode = found ? 200 : 404;

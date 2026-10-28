@@ -71,6 +71,8 @@ pnpm typecheck && pnpm lint && pnpm lint:comments && pnpm test
 pnpm test:integration  # Postgres + TMDB real (pulado sem token)
 pnpm build && pnpm test:bundle   # token do TMDB fora de .next/static
 pnpm test:e2e          # Playwright no Chrome instalado
+pnpm test:integration:pglite   # integração no PGlite em memória
+pnpm build:web && pnpm test:web # modo pessoal (export estático em .next-web) no Chrome
 ```
 
 ## Gates de qualidade

@@ -1526,6 +1526,8 @@
   },
   "web": {
     "loading": "Loading…",
-    "missing": "We could not find this page."
+    "missing": "We could not find this page.",
+    "updateReady": "A new version of the app is ready.",
+    "updateNow": "Update"
   }
 }

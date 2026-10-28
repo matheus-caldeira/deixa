@@ -8,7 +8,7 @@ import {
   type AppContainer,
 } from "@/infrastructure/app-container";
 import { parseEnv } from "@/infrastructure/config/env";
-import { applyMigrations } from "@/infrastructure/database/apply-migrations";
+import { applyMigrations, pendingMigrations } from "@/infrastructure/database/apply-migrations";
 import * as schema from "@/infrastructure/database/schema";
 import { silentLogger } from "@/infrastructure/logger/logger";
 import type { SessionUser } from "@/modules/identity";
@@ -28,6 +28,7 @@ import { localeSchema, type Locale } from "@/shared/locales";
 import { studyLanguageSchema } from "@/shared/study-languages";
 import en from "../../locales/en.json";
 import ptBR from "../../locales/pt-BR.json";
+import { backupBeforeMigration } from "./backups";
 import { loadMasterKey, localSession } from "./local-secrets";
 import { browserPlatform } from "./platform";
 import {
@@ -179,6 +180,8 @@ async function open(): Promise<void> {
   const started = performance.now();
   const client = await PGlite.create(BROWSER_DATA_DIR);
   const opened = performance.now();
+  const migrations = await pendingMigrations(drizzle(client));
+  if (migrations.pending > 0 && !migrations.fresh) await backupBeforeMigration(client);
   await applyMigrations(drizzle(client));
   runtime = await buildRuntime(drizzle(client, { schema }));
   markReady();
