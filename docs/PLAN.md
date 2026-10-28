@@ -313,5 +313,7 @@ Ordem decidida em 14/10/2026 (detalhes em `docs/LANGUAGES-DRAFT.md`):
 5. Fase 04 restante: percentual de nível, habilidades e erros recorrentes com fonte real.
 6. ~~Fase 03 restante: worker separado, áudio em lote, roteiro.~~ Pronta na etapa 15 (sem PDF e sem busca de
    transcrição por IA).
-7. Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`), que herda as frentes A e B prontas.
-8. Fase 06: fala em tempo real, HTTPS para PWA e microfone.
+7. ~~Versão web offline (etapas 0, 6, 8 e 9 de `docs/WEB-OFFLINE-PLAN.md`).~~ Pronta na etapa 20; falta publicar
+   na Vercel e conferir Safari e iPhone.
+8. ~~Fase 06: fala em tempo real, HTTPS para PWA e microfone.~~ Pronta na etapa 21; falta testar a chamada de voz e
+   o "Falar a frase" com chave real no celular.

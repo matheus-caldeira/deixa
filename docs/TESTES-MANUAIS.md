@@ -87,3 +87,8 @@ banco e o service worker pedem HTTPS: sirva o `.next-web` atrás de um HTTPS (ou
 - [ ] Safari no Mac: segunda aba mostra "Esperando o banco" e abre quando a primeira fecha.
 - [ ] Safari no Mac: depois da primeira visita, sem rede, `/lab/detail/?id=b` abre.
 - [ ] iPhone: os três itens acima, e anotar o espaço mostrado na prova.
+
+## Voz (com chave de IA real)
+
+- [ ] Conversar → "Chamada de voz": falar, pausar, ouvir a resposta e interromper falando por cima.
+- [ ] Revisar → "Mostrar resposta" → "Falar a frase": a transcrição e o percentual batem com o que foi dito.
