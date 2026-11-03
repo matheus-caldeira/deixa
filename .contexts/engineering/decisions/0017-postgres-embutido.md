@@ -1,7 +1,7 @@
 ---
 title: "ADR 0017: Postgres embutido na instalação local"
 updated: 2026-10-13
-source: conversa de 13/10/2026 e docs/HANDOFF.md §3.3 A
+source: conversa de 13/10/2026 e .superpowers/planning/HANDOFF.md §3.3 A
 status: aceita
 ---
 

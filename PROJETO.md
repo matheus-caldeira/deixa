@@ -715,8 +715,8 @@ Ambiente: macOS, zsh, Docker disponível.
 
 ## Antes de começar
 
-1. Leia `docs/PLAN.md`, `docs/DECISIONS.md`, `README.md`, @PROJETO.md e @deixa.html para entender o estado atual.
-2. Se a etapa anterior (fases 01 e 02) ainda tiver tarefas abertas no `docs/PLAN.md`, não mexa nelas. Esta etapa depende só de: cadastro de obra e episódio pelo TMDB, pipeline de upload de SRT (hash, deduplicação, parser, alinhamento EN ↔ PT) e tela de envio de legenda. Se algum desses ainda não existir, termine o mínimo necessário dele primeiro e registre isso em DECISIONS.md.
+1. Leia `.superpowers/planning/PLAN.md`, `docs/DECISIONS.md`, `README.md`, @PROJETO.md e @deixa.html para entender o estado atual.
+2. Se a etapa anterior (fases 01 e 02) ainda tiver tarefas abertas no `.superpowers/planning/PLAN.md`, não mexa nelas. Esta etapa depende só de: cadastro de obra e episódio pelo TMDB, pipeline de upload de SRT (hash, deduplicação, parser, alinhamento EN ↔ PT) e tela de envio de legenda. Se algum desses ainda não existir, termine o mínimo necessário dele primeiro e registre isso em DECISIONS.md.
 3. Crie uma branch `feat/opensubtitles` a partir da branch principal.
 4. Leia a documentação oficial da API REST do OpenSubtitles (`https://opensubtitles.stoplight.io/docs/opensubtitles-api`). Confirme lá, antes de implementar:
    - autenticação: header `Api-Key`, login com usuário e senha que devolve um token;
@@ -726,8 +726,8 @@ Ambiente: macOS, zsh, Docker disponível.
    - os limites de requisição e a cota diária de downloads.
 
    Se algo deste prompt divergir da documentação, siga a documentação e registre em DECISIONS.md.
-5. Escreva `docs/STAGE-2-SUBTITLES.md` com a especificação desta etapa (o que está abaixo, ajustado ao que você confirmou na documentação). Não altere o `PROJETO.md`; só adicione nele, no final, uma linha apontando para esse arquivo.
-6. Acrescente as tarefas desta etapa ao `docs/PLAN.md`, numa seção "Etapa 2", com critério de pronto de cada uma.
+5. Escreva `.superpowers/planning/STAGE-2-SUBTITLES.md` com a especificação desta etapa (o que está abaixo, ajustado ao que você confirmou na documentação). Não altere o `PROJETO.md`; só adicione nele, no final, uma linha apontando para esse arquivo.
+6. Acrescente as tarefas desta etapa ao `.superpowers/planning/PLAN.md`, numa seção "Etapa 2", com critério de pronto de cada uma.
 
 ## Credenciais
 
@@ -818,4 +818,4 @@ Ambiente: macOS, zsh, Docker disponível.
   - riscos de termos e cota antes de abrir para outros usuários.
 ```
 
-Etapa 2 (OpenSubtitles) implementada: ver [docs/STAGE-2-SUBTITLES.md](docs/STAGE-2-SUBTITLES.md).
+Etapa 2 (OpenSubtitles) implementada: ver `.superpowers/planning/STAGE-2-SUBTITLES.md`.

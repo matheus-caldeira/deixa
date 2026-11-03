@@ -1,7 +1,7 @@
 ---
 title: "ADR 0021: Worker separado, áudio em lote e roteiro"
 updated: 2026-10-15
-source: PROJETO.md §6 e §9, docs/PLAN.md fase 03 e conversa de 14/10/2026
+source: PROJETO.md §6 e §9, .superpowers/planning/PLAN.md fase 03 e conversa de 14/10/2026
 status: aceita
 ---
 

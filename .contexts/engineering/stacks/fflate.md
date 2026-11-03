@@ -1,7 +1,7 @@
 ---
 title: fflate
 updated: 2026-10-13
-source: docs/OFFLINE-EXPORT-DRAFT.md e ADR 0016
+source: .superpowers/planning/OFFLINE-EXPORT-DRAFT.md e ADR 0016
 package: fflate
 version: "0.8"
 docs: https://github.com/101arrowz/fflate

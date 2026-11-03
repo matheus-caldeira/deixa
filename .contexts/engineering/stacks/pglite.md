@@ -1,7 +1,7 @@
 ---
 title: PGlite
 updated: 2026-10-27
-source: docs/WEB-OFFLINE-PLAN.md (etapas 0 e 1)
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md (etapas 0 e 1)
 package: "@electric-sql/pglite"
 version: "0.5"
 docs: https://pglite.dev/docs/
@@ -37,4 +37,4 @@ abre no processo do servidor.
   atende operações por mensagem (`src/web/protocol.ts`). `src/web/runtime-client.ts` é o lado da tela.
 - Uma aba por vez: a trava `deixa-database` (Web Locks) decide quem abre o banco.
 - Medido no Chrome em 27/10/2026: abrir em cerca de 190 ms, 62 MB de memória, 29 MB de espaço com o app em
-  cache. Safari e iPhone em `docs/TESTES-MANUAIS.md`.
+  cache. Safari e iPhone em `.superpowers/planning/TESTES-MANUAIS.md`.

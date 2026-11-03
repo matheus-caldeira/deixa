@@ -1,7 +1,7 @@
 ---
 title: "ADR 0014: Chamadas de IA pelo AI SDK"
 updated: 2026-10-13
-source: docs/WEB-OFFLINE-PLAN.md §4
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md §4
 status: aceita
 ---
 

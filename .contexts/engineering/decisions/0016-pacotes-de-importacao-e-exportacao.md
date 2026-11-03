@@ -1,7 +1,7 @@
 ---
 title: "ADR 0016: Pacotes de importação e exportação"
 updated: 2026-10-13
-source: docs/OFFLINE-EXPORT-DRAFT.md e docs/WEB-OFFLINE-PLAN.md
+source: .superpowers/planning/OFFLINE-EXPORT-DRAFT.md e .superpowers/planning/WEB-OFFLINE-PLAN.md
 status: aceita
 ---
 

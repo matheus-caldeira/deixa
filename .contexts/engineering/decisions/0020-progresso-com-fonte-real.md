@@ -1,7 +1,7 @@
 ---
 title: "ADR 0020: Progresso com fonte real"
 updated: 2026-10-15
-source: docs/PLAN.md fase 04 e conversa de 14/10/2026
+source: .superpowers/planning/PLAN.md fase 04 e conversa de 14/10/2026
 status: aceita
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: AI SDK
 updated: 2026-10-13
-source: docs/WEB-OFFLINE-PLAN.md §4 e ADR 0014
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md §4 e ADR 0014
 package: ai
 version: "7.0"
 docs: https://ai-sdk.dev/docs

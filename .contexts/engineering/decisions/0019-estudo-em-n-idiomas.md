@@ -1,7 +1,7 @@
 ---
 title: "ADR 0019: Estudo em N idiomas"
 updated: 2026-10-15
-source: conversa de 14/10/2026 e docs/LANGUAGES-DRAFT.md
+source: conversa de 14/10/2026 e .superpowers/planning/LANGUAGES-DRAFT.md
 status: aceita
 ---
 

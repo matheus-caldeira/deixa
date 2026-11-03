@@ -1,7 +1,7 @@
 ---
 title: "ADR 0023: Registro de operações (borda única)"
 updated: 2026-10-27
-source: docs/WEB-OFFLINE-PLAN.md (etapa 6) e tarefa 138
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md (etapa 6) e tarefa 138
 status: aceita
 ---
 

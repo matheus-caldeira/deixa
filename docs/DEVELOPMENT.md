@@ -1,7 +1,7 @@
 ---
 title: Desenvolvimento
 updated: 2026-10-12
-source: README.md anterior, docs/HANDOFF.md
+source: README.md anterior, .superpowers/planning/HANDOFF.md
 ---
 
 # Desenvolvimento
@@ -11,7 +11,7 @@ aplicativo pronto, veja o [README](../README.md).
 
 - Especificação: [`PROJETO.md`](../PROJETO.md)
 - Protótipo aprovado da interface: [`deixa.html`](../deixa.html)
-- Plano e pendências: [`PLAN.md`](PLAN.md) · [`HANDOFF.md`](HANDOFF.md) · Diário de decisões: [`DECISIONS.md`](DECISIONS.md)
+- Plano e pendências: `.superpowers/planning/` (local, fora do git) · Diário de decisões: [`DECISIONS.md`](DECISIONS.md)
 - Regras de arquitetura e documentação por tecnologia: [`.contexts/`](../.contexts/README.md)
 
 ## Requisitos

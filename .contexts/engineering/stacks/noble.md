@@ -1,7 +1,7 @@
 ---
 title: noble (hashes e ciphers)
 updated: 2026-10-27
-source: docs/WEB-OFFLINE-PLAN.md (bibliotecas novas previstas)
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md (bibliotecas novas previstas)
 package: "@noble/hashes, @noble/ciphers"
 version: "2.4"
 docs: https://github.com/paulmillr/noble-hashes

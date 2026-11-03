@@ -1,7 +1,7 @@
 ---
 title: "ADR 0022: Conversa encerrada e série pessoal"
 updated: 2026-10-16
-source: docs/CONVERSATION-REVIEW-DRAFT.md e conversa de 16/10/2026
+source: .superpowers/planning/CONVERSATION-REVIEW-DRAFT.md e conversa de 16/10/2026
 status: aceita
 ---
 

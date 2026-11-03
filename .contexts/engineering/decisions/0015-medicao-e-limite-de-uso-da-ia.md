@@ -1,7 +1,7 @@
 ---
 title: "ADR 0015: Medição e limite de uso da IA"
 updated: 2026-10-16
-source: docs/WEB-OFFLINE-PLAN.md §4 e conversa de 12/10/2026
+source: .superpowers/planning/WEB-OFFLINE-PLAN.md §4 e conversa de 12/10/2026
 status: aceita
 ---
 

@@ -15,7 +15,8 @@ nunca fica no código: vai para `locales/pt-BR.json` e `locales/en.json`, com a 
 - `.contexts/` é a **fonte da verdade** (negócio, produto, engenharia). Índice: @.contexts/README.md
 - `.claude/` só **ativa** esse conhecimento: rules, skills, agents e hooks. Mudou uma regra? Edite `.contexts/`
   primeiro, depois o ativador.
-- `docs/PLAN.md`: tarefas da etapa em curso, com critério de pronto. `docs/DECISIONS.md`: diário de decisões.
+- `.superpowers/planning/` (local, fora do git): `PLAN.md` com as tarefas e o critério de pronto, `HANDOFF.md`,
+  rascunhos e `TESTES-MANUAIS.md`. `docs/DECISIONS.md`: diário de decisões (versionado).
 - Vocabulário único: @.contexts/business/glossary.md
 - `data/` (legendas enviadas, alinhamentos, áudio) e `.env*` ficam fora do git.
 

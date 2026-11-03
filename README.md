@@ -260,9 +260,7 @@ fixtures/             legendas fictícias em inglês, português e espanhol
 Documentação:
 
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md): variáveis de ambiente, chaves e empacotamento.
-- [`docs/PLAN.md`](docs/PLAN.md): etapas e tarefas, com critério de pronto.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): diário de decisões.
-- [`docs/TESTES-MANUAIS.md`](docs/TESTES-MANUAIS.md): roteiro de testes manuais (Safari, iPhone, voz).
 - [`.contexts/`](.contexts/README.md): negócio, produto, arquitetura, ADRs e uma página por tecnologia.
 
 ## Direitos autorais e pirataria
