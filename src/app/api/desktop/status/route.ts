@@ -4,17 +4,20 @@ import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
 import { getContainer } from "@/infrastructure/container";
 import { verifyDesktopRequest } from "@/infrastructure/desktop";
 import { getDatabaseStatus } from "@/infrastructure/setup";
+import { internalPath } from "@/shared/internal-path";
+import { routes } from "@/shared/routes";
 import { DESKTOP_SIGNATURE_HEADER } from "@/shared/session-cookie";
 
 const NOT_FOUND = 404;
 const MAX_NOTIFICATIONS = 10;
+const HOME = "/";
 
 export type DesktopStatus = {
   state: "setup" | "no-owner" | "ready";
   locale: Locale;
   owner: string | null;
-  current: { title: string; label: string; progressPercent: number } | null;
-  notifications: { id: string; title: string; body: string }[];
+  current: { title: string; label: string; progressPercent: number; href: string } | null;
+  notifications: { id: string; title: string; body: string; href: string }[];
 };
 
 const reply = (status: DesktopStatus): NextResponse =>
@@ -64,10 +67,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           title: latest.media.title,
           label: `${latest.label} · ${latest.episodeTitle}`,
           progressPercent: latest.progressPercent,
+          href:
+            internalPath(
+              latest.media.type === "movie"
+                ? routes.trail(latest.mediaId)
+                : routes.trail(latest.mediaId, latest.seasonNumber),
+            ) ?? HOME,
         }
       : null,
     notifications: inbox.items
       .slice(0, MAX_NOTIFICATIONS)
-      .map((item) => ({ id: item.id, ...describe(item) })),
+      .map((item) => ({ id: item.id, ...describe(item), href: internalPath(item.href) ?? HOME })),
   });
 }
