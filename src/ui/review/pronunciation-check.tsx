@@ -79,7 +79,8 @@ export function PronunciationCheck({ itemId }: { itemId: string }) {
   return (
     <div className="col" style={{ gap: 8 }}>
       <button type="button" className="btn ghost sm" onClick={toggle} disabled={state === "checking"}>
-        <MicIcon /> {state === "recording" ? t("stop") : state === "checking" ? t("checking") : t("speak")}
+        <MicIcon width={18} height={18} />{" "}
+        {state === "recording" ? t("stop") : state === "checking" ? t("checking") : t("speak")}
       </button>
       {result ? (
         <div className="col" style={{ gap: 4 }} data-testid="pronunciation-result">
