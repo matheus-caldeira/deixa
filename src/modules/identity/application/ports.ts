@@ -25,6 +25,10 @@ export interface AccountRepository {
   removeAccount(accountId: string): Promise<AccountRemoval>;
 }
 
+export interface AccountFiles {
+  removeFor(accountId: string): Promise<void>;
+}
+
 export interface RequestOrigin {
   isLoopback(): Promise<boolean>;
 }

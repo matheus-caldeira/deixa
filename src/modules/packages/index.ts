@@ -38,6 +38,7 @@ export type {
   PersonalWorkRef,
 } from "./application/ports";
 export {
+  accountUploadsDirectory,
   makeImportPackage,
   makeInspectPackage,
   makePeekPersonalEmail,

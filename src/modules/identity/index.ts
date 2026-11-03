@@ -6,6 +6,7 @@ export {
   isLoopbackRequest,
 } from "./domain/loopback";
 export type {
+  AccountFiles,
   AccountRepository,
   AccountSummary,
   FirstAccountPolicy,

@@ -2,6 +2,7 @@ export interface FileStorage {
   write(relativePath: string, bytes: Uint8Array): Promise<void>;
   read(relativePath: string): Promise<Uint8Array | null>;
   exists(relativePath: string): Promise<boolean>;
+  removeDirectory(relativePath: string): Promise<void>;
 }
 
 export class InMemoryFileStorage implements FileStorage {
@@ -17,5 +18,12 @@ export class InMemoryFileStorage implements FileStorage {
 
   async exists(relativePath: string): Promise<boolean> {
     return this.files.has(relativePath);
+  }
+
+  async removeDirectory(relativePath: string): Promise<void> {
+    const prefix = `${relativePath.replace(/\/+$/, "")}/`;
+    for (const path of [...this.files.keys()]) {
+      if (path.startsWith(prefix)) this.files.delete(path);
+    }
   }
 }

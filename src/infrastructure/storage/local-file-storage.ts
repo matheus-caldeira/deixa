@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { FileStorage } from "@/shared/storage";
@@ -40,5 +40,11 @@ export class LocalFileStorage implements FileStorage {
     } catch {
       return false;
     }
+  }
+
+  async removeDirectory(relativePath: string): Promise<void> {
+    const target = this.resolveInsideRoot(relativePath);
+    if (target === this.root) throw new Error("refusing to remove the data directory");
+    await rm(target, { recursive: true, force: true });
   }
 }

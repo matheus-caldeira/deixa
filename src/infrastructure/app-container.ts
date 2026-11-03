@@ -196,6 +196,7 @@ import { makeGetSettings, makeUpdateSettings, type AppSettings } from "@/modules
 import { DrizzleSettingsRepository } from "@/modules/settings/infrastructure/drizzle-settings-repository";
 import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastructure/drizzle-model-choice-repository";
 import {
+  accountUploadsDirectory,
   makeExportPackage,
   makeExportPersonalPackage,
   makeImportPackage,
@@ -572,7 +573,13 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     clock,
     ids,
   };
-  const accountDeps = { accounts: identity, passwords: platform.passwords };
+  const accountDeps = {
+    accounts: identity,
+    passwords: platform.passwords,
+    accountFiles: {
+      removeFor: (accountId: string) => storage.removeDirectory(accountUploadsDirectory(accountId)),
+    },
+  };
   const catalogDeps = { catalog, progress: catalog, clock, ids };
   const resolveLevelRater = async (userId: string): Promise<LevelRater | null> => {
     const access = await aiAccessFor(userId);

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
+import { InMemoryFileStorage } from "@/shared/storage";
 import { SequentialIds } from "@/shared/ids";
 import { makeCreateAccount } from "./create-account";
 import { makeListAccounts } from "./list-accounts";
@@ -17,6 +18,7 @@ const local: RequestOrigin = { isLoopback: async () => true };
 function setup() {
   const store = new InMemoryIdentityStore();
   const clock = new FixedClock("2026-11-03T12:00:00Z");
+  const files = new InMemoryFileStorage();
   const base = {
     users: store,
     sessions: store,
@@ -26,9 +28,11 @@ function setup() {
     tokens: sequentialTokens(),
     clock,
     ids: new SequentialIds("u"),
+    accountFiles: { removeFor: (accountId: string) => files.removeDirectory(`packages/${accountId}`) },
   };
   return {
     store,
+    files,
     clock,
     signUp: makeSignUp({ ...base, firstAccount: "loopback-only" }),
     signIn: makeSignIn(base),
@@ -179,8 +183,13 @@ describe("gestão de contas", () => {
     await expect(
       app.removeAccount({ actor: { userId: "u-outro", isAdmin: true }, accountId }),
     ).rejects.toMatchObject({ code: "FORBIDDEN", detail: { key: "lastAdmin" } });
+    const bytes = new Uint8Array([1]);
+    await app.files.write(`packages/${admin.userId}/envio.zip`, bytes);
+    await app.files.write(`packages/${accountId}/envio.zip`, bytes);
     await app.removeAccount({ actor: { userId: accountId, isAdmin: true }, accountId: admin.userId });
     expect(app.store.users.has(admin.userId)).toBe(false);
+    expect(await app.files.exists(`packages/${admin.userId}/envio.zip`)).toBe(false);
+    expect(await app.files.exists(`packages/${accountId}/envio.zip`)).toBe(true);
     expect(app.store.preferencesByUser.has(admin.userId)).toBe(false);
     await expect(
       app.removeAccount({ actor: { userId: accountId, isAdmin: true }, accountId: admin.userId }),
