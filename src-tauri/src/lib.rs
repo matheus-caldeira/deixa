@@ -1,3 +1,5 @@
+mod labels;
+
 use std::collections::HashSet;
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream};
@@ -17,6 +19,8 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
+
+use labels::{Labels, DEFAULT_LOCALE};
 
 const DEFAULT_PORT: u16 = 1300;
 const PORT_VARIABLE: &str = "DEIXA_PORT";
@@ -62,22 +66,21 @@ const NONCE_BYTES: usize = 16;
 const PROOF_PREFIX: &str = "hello:";
 const MAX_STATUS_BYTES: u64 = 64 * 1024;
 const NAVIGATION: [(&str, &str, &str, &str); 7] = [
-    ("go-home", "Início", "/", "CmdOrCtrl+1"),
-    ("go-catalog", "Explorar", "/catalog", "CmdOrCtrl+2"),
-    ("go-review", "Revisar", "/review", "CmdOrCtrl+3"),
-    ("go-tutor", "Conversar", "/tutor", "CmdOrCtrl+4"),
-    ("go-progress", "Progresso", "/progress", "CmdOrCtrl+5"),
-    ("go-transfer", "Importar e exportar", "/transfer", "CmdOrCtrl+6"),
-    ("go-settings", "Configurações", "/settings", "CmdOrCtrl+7"),
+    ("go-home", "goHome", "/", "CmdOrCtrl+1"),
+    ("go-catalog", "goCatalog", "/catalog", "CmdOrCtrl+2"),
+    ("go-review", "goReview", "/review", "CmdOrCtrl+3"),
+    ("go-tutor", "goTutor", "/tutor", "CmdOrCtrl+4"),
+    ("go-progress", "goProgress", "/progress", "CmdOrCtrl+5"),
+    ("go-transfer", "goTransfer", "/transfer", "CmdOrCtrl+6"),
+    ("go-settings", "goSettings", "/settings", "CmdOrCtrl+7"),
 ];
 const TRANSFER_IMPORT_PATH: &str = "/transfer#importar";
 const TRANSFER_EXPORT_PATH: &str = "/transfer#exportar";
 const AUTHOR_NAME: &str = "Matheus Caldeira";
 const AUTHOR_EMAIL: &str = "matheuscardozo4@gmail.com";
 const AUTHOR_PHONE: &str = "+55 41 99524-5271";
-const ABOUT_COMMENTS: &str = "Inglês a partir das séries e filmes que você já assiste.";
-const RESUME_EMPTY: &str = "Nada em andamento";
-const INBOX_EMPTY: &str = "Sem notificações novas";
+const LOCALE_FILE: &str = "desktop-locale.txt";
+const MAX_LOCALE_CHARS: usize = 16;
 const SERVER_FOLDER: &str = "server";
 const SERVER_ENTRY: &str = "server.js";
 const NODE_BINARY: &str = if cfg!(windows) { "node.exe" } else { "node" };
@@ -95,11 +98,6 @@ const INHERITED_VARIABLES: [&str; 10] = [
 ];
 const START_ATTEMPTS: u32 = 150;
 const START_INTERVAL: Duration = Duration::from_millis(300);
-const STATUS_STARTING: &str = "Servidor: iniciando";
-const STATUS_BUSY: &str = "Servidor: a porta está ocupada por outro programa";
-const STATUS_MISSING: &str = "Servidor: arquivos do servidor não encontrados";
-const STATUS_UP: &str = "Servidor: no ar";
-const STATUS_DOWN: &str = "Servidor: fora do ar";
 
 fn server_port() -> u16 {
     std::env::var(PORT_VARIABLE)
@@ -275,8 +273,46 @@ fn running_child_id(app: &AppHandle) -> Option<u32> {
 }
 
 struct OwnerStatus {
-    resume: Option<String>,
+    locale: Option<String>,
+    resume: Option<(String, String, u64)>,
     notifications: Vec<(String, String, String)>,
+}
+
+struct MenuLabels(Mutex<Labels>);
+
+fn current_labels(app: &AppHandle) -> Labels {
+    app.state::<MenuLabels>()
+        .0
+        .lock()
+        .map(|labels| labels.clone())
+        .unwrap_or_else(|_| Labels::for_locale(DEFAULT_LOCALE))
+}
+
+fn saved_locale(app: &AppHandle) -> String {
+    data_home(app)
+        .and_then(|home| std::fs::read_to_string(home.join(LOCALE_FILE)).ok())
+        .map(|text| text.trim().chars().take(MAX_LOCALE_CHARS).collect())
+        .unwrap_or_else(|| DEFAULT_LOCALE.to_string())
+}
+
+fn save_locale(app: &AppHandle, locale: &str) {
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::write(home.join(LOCALE_FILE), locale);
+    }
+}
+
+fn switch_labels(app: &AppHandle, locale: &str) -> Option<Labels> {
+    let state = app.state::<MenuLabels>();
+    let mut current = state.0.lock().ok()?;
+    if current.locale() == locale {
+        return None;
+    }
+    let next = Labels::for_locale(locale);
+    if current.locale() == next.locale() {
+        return None;
+    }
+    *current = next.clone();
+    Some(next)
 }
 
 fn issue_desktop_token(home: &PathBuf) -> Option<String> {
@@ -331,13 +367,9 @@ fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
     let text = |value: &serde_json::Value, key: &str| value.get(key)?.as_str().map(str::to_string);
     let resume = status.get("current").filter(|current| !current.is_null()).and_then(|current| {
         let percent = current.get("progressPercent")?.as_u64()?;
-        Some(format!(
-            "Continuar: {} · {} ({}%)",
-            text(current, "title")?,
-            text(current, "label")?,
-            percent
-        ))
+        Some((text(current, "title")?, text(current, "label")?, percent))
     });
+    let locale = text(&status, "locale");
     let notifications = status
         .get("notifications")
         .and_then(|list| list.as_array())
@@ -347,7 +379,7 @@ fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
                 .collect()
         })
         .unwrap_or_default();
-    Some(OwnerStatus { resume, notifications })
+    Some(OwnerStatus { locale, resume, notifications })
 }
 
 enum Startup {
@@ -559,44 +591,46 @@ fn go_to(app: &AppHandle, path: &str) {
 }
 
 
-fn about_metadata(app: &AppHandle) -> AboutMetadata<'static> {
+fn about_metadata(app: &AppHandle, labels: &Labels) -> AboutMetadata<'static> {
+    let comments = labels.get("aboutComments");
     AboutMetadata {
         name: Some("Deixa".into()),
         version: Some(app.package_info().version.to_string()),
         authors: Some(vec![AUTHOR_NAME.into()]),
-        comments: Some(ABOUT_COMMENTS.into()),
+        comments: Some(comments.clone()),
         copyright: Some(format!("© 2026 {}", AUTHOR_NAME)),
-        credits: Some(format!("{}\n{}\n{}\n{}", ABOUT_COMMENTS, AUTHOR_NAME, AUTHOR_EMAIL, AUTHOR_PHONE)),
+        credits: Some(format!("{}\n{}\n{}\n{}", comments, AUTHOR_NAME, AUTHOR_EMAIL, AUTHOR_PHONE)),
         ..Default::default()
     }
 }
 
-fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
-    let settings = MenuItem::with_id(app, "settings", "Configurações…", true, Some("CmdOrCtrl+,"))?;
-    let quit = MenuItem::with_id(app, "app-quit", "Sair do Deixa", true, Some("CmdOrCtrl+Q"))?;
+fn build_app_menu(app: &AppHandle, labels: &Labels) -> tauri::Result<()> {
+    let l = |key: &str| labels.get(key);
+    let settings = MenuItem::with_id(app, "settings", l("settings"), true, Some("CmdOrCtrl+,"))?;
+    let quit = MenuItem::with_id(app, "app-quit", l("quit"), true, Some("CmdOrCtrl+Q"))?;
     let application = Submenu::with_items(
         app,
         "Deixa",
         true,
         &[
-            &PredefinedMenuItem::about(app, Some("Sobre o Deixa"), Some(about_metadata(app)))?,
+            &PredefinedMenuItem::about(app, Some(&l("about")), Some(about_metadata(app, labels)))?,
             &PredefinedMenuItem::separator(app)?,
             &settings,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::hide(app, Some("Ocultar o Deixa"))?,
-            &PredefinedMenuItem::hide_others(app, Some("Ocultar outros"))?,
-            &PredefinedMenuItem::show_all(app, Some("Mostrar todos"))?,
+            &PredefinedMenuItem::hide(app, Some(&l("hide")))?,
+            &PredefinedMenuItem::hide_others(app, Some(&l("hideOthers")))?,
+            &PredefinedMenuItem::show_all(app, Some(&l("showAll")))?,
             &PredefinedMenuItem::separator(app)?,
             &quit,
         ],
     )?;
-    let browser = MenuItem::with_id(app, "app-browser", "Abrir no navegador", true, Some("CmdOrCtrl+B"))?;
-    let qr = MenuItem::with_id(app, "app-qr", "Abrir no celular (QR code)", true, None::<&str>)?;
-    let import = MenuItem::with_id(app, "transfer-import", "Importar…", true, Some("CmdOrCtrl+I"))?;
-    let export = MenuItem::with_id(app, "transfer-export", "Exportar…", true, Some("CmdOrCtrl+E"))?;
+    let browser = MenuItem::with_id(app, "app-browser", l("openBrowser"), true, Some("CmdOrCtrl+B"))?;
+    let qr = MenuItem::with_id(app, "app-qr", l("openPhone"), true, None::<&str>)?;
+    let import = MenuItem::with_id(app, "transfer-import", l("import"), true, Some("CmdOrCtrl+I"))?;
+    let export = MenuItem::with_id(app, "transfer-export", l("export"), true, Some("CmdOrCtrl+E"))?;
     let file = Submenu::with_items(
         app,
-        "Arquivo",
+        l("file"),
         true,
         &[
             &import,
@@ -605,40 +639,44 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
             &browser,
             &qr,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::close_window(app, Some("Fechar janela"))?,
+            &PredefinedMenuItem::close_window(app, Some(&l("closeWindow")))?,
         ],
     )?;
     let edit = Submenu::with_items(
         app,
-        "Editar",
+        l("edit"),
         true,
         &[
-            &PredefinedMenuItem::undo(app, Some("Desfazer"))?,
-            &PredefinedMenuItem::redo(app, Some("Refazer"))?,
+            &PredefinedMenuItem::undo(app, Some(&l("undo")))?,
+            &PredefinedMenuItem::redo(app, Some(&l("redo")))?,
             &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::cut(app, Some("Recortar"))?,
-            &PredefinedMenuItem::copy(app, Some("Copiar"))?,
-            &PredefinedMenuItem::paste(app, Some("Colar"))?,
-            &PredefinedMenuItem::select_all(app, Some("Selecionar tudo"))?,
+            &PredefinedMenuItem::cut(app, Some(&l("cut")))?,
+            &PredefinedMenuItem::copy(app, Some(&l("copy")))?,
+            &PredefinedMenuItem::paste(app, Some(&l("paste")))?,
+            &PredefinedMenuItem::select_all(app, Some(&l("selectAll")))?,
         ],
     )?;
-    let go = Submenu::new(app, "Ir", true)?;
-    for (id, label, _path, shortcut) in NAVIGATION {
-        go.append(&MenuItem::with_id(app, id, label, true, Some(shortcut))?)?;
+    let go = Submenu::new(app, l("go"), true)?;
+    for (id, key, _, shortcut) in NAVIGATION {
+        go.append(&MenuItem::with_id(app, id, l(key), true, Some(shortcut))?)?;
     }
     go.append(&PredefinedMenuItem::separator(app)?)?;
-    go.append(&MenuItem::with_id(app, "reload", "Recarregar", true, Some("CmdOrCtrl+R"))?)?;
+    go.append(&MenuItem::with_id(app, "reload", l("reload"), true, Some("CmdOrCtrl+R"))?)?;
     let window = Submenu::with_items(
         app,
-        "Janela",
+        l("window"),
         true,
         &[
-            &PredefinedMenuItem::minimize(app, Some("Minimizar"))?,
-            &PredefinedMenuItem::maximize(app, Some("Zoom"))?,
-            &PredefinedMenuItem::fullscreen(app, Some("Tela cheia"))?,
+            &PredefinedMenuItem::minimize(app, Some(&l("minimize")))?,
+            &PredefinedMenuItem::maximize(app, Some(&l("zoom")))?,
+            &PredefinedMenuItem::fullscreen(app, Some(&l("fullscreen")))?,
         ],
     )?;
     app.set_menu(Menu::with_items(app, &[&application, &file, &edit, &go, &window])?)?;
+    Ok(())
+}
+
+fn listen_app_menu(app: &AppHandle) {
     app.on_menu_event(|app, event| {
         let id = event.id.as_ref();
         if let Some((_, _, path, _)) = NAVIGATION.iter().find(|entry| entry.0 == id) {
@@ -662,7 +700,6 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         }
     });
-    Ok(())
 }
 
 fn show_main_window(app: &AppHandle) {
@@ -708,7 +745,7 @@ fn show_qr_window(app: &AppHandle) {
         .unwrap_or_default();
     let payload = serde_json::json!({ "svg": image, "url": url });
     let _ = WebviewWindowBuilder::new(app, QR_WINDOW, WebviewUrl::App("qr.html".into()))
-        .title("Abrir no celular")
+        .title(current_labels(app).get("phoneWindow"))
         .inner_size(340.0, 460.0)
         .resizable(false)
         .initialization_script(format!("window.__DEIXA_QR__ = {};", payload))
@@ -716,13 +753,14 @@ fn show_qr_window(app: &AppHandle) {
 }
 
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
-    let status = MenuItem::with_id(app, "status", STATUS_DOWN, false, None::<&str>)?;
-    let resume = MenuItem::with_id(app, "resume", RESUME_EMPTY, false, None::<&str>)?;
-    let inbox = MenuItem::with_id(app, "inbox", INBOX_EMPTY, false, None::<&str>)?;
-    let open = MenuItem::with_id(app, "open", "Abrir o Deixa", true, None::<&str>)?;
-    let browser = MenuItem::with_id(app, "browser", "Abrir no navegador", true, None::<&str>)?;
-    let qr = MenuItem::with_id(app, "qr", "Abrir no celular (QR code)", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
+    let labels = current_labels(app);
+    let status = MenuItem::with_id(app, "status", labels.get("statusDown"), false, None::<&str>)?;
+    let resume = MenuItem::with_id(app, "resume", labels.get("resumeEmpty"), false, None::<&str>)?;
+    let inbox = MenuItem::with_id(app, "inbox", labels.get("inboxEmpty"), false, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", labels.get("trayOpen"), true, None::<&str>)?;
+    let browser = MenuItem::with_id(app, "browser", labels.get("openBrowser"), true, None::<&str>)?;
+    let qr = MenuItem::with_id(app, "qr", labels.get("openPhone"), true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", labels.get("trayQuit"), true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
@@ -757,11 +795,11 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
 
     let handle = app.clone();
     std::thread::spawn(move || {
-        let _ = status.set_text(STATUS_STARTING);
+        let _ = status.set_text(current_labels(&handle).get("statusStarting"));
         let startup = start_server(&handle);
         let trouble = match startup {
-            Startup::PortBusy => Some(STATUS_BUSY),
-            Startup::Missing => Some(STATUS_MISSING),
+            Startup::PortBusy => Some("statusBusy"),
+            Startup::Missing => Some("statusMissing"),
             Startup::AlreadyRunning | Startup::Started => None,
         };
         if trouble.is_none() {
@@ -771,18 +809,33 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         let _ = handle.run_on_main_thread(move || show_main_window(&opener));
         let mut announced: Option<HashSet<String>> = None;
         loop {
-            let text = if server_is_up() { STATUS_UP } else { trouble.unwrap_or(STATUS_DOWN) };
-            let _ = status.set_text(text);
             let owner = read_owner_status(&handle);
-            let resume_text = owner.as_ref().and_then(|current| current.resume.clone());
+            let wanted = owner.as_ref().and_then(|current| current.locale.as_deref());
+            if let Some(next) = wanted.and_then(|locale| switch_labels(&handle, locale)) {
+                save_locale(&handle, next.locale());
+                let _ = open.set_text(next.get("trayOpen"));
+                let _ = browser.set_text(next.get("openBrowser"));
+                let _ = qr.set_text(next.get("openPhone"));
+                let _ = quit.set_text(next.get("trayQuit"));
+                let menu_owner = handle.clone();
+                let _ = handle.run_on_main_thread(move || {
+                    let _ = build_app_menu(&menu_owner, &next);
+                });
+            }
+            let labels = current_labels(&handle);
+            let key = if server_is_up() { "statusUp" } else { trouble.unwrap_or("statusDown") };
+            let _ = status.set_text(labels.get(key));
+            let resume_text = owner.as_ref().and_then(|current| current.resume.as_ref()).map(|(title, label, percent)| {
+                labels.fill("resume", &[("title", title), ("label", label), ("percent", &percent.to_string())])
+            });
             let _ = resume.set_enabled(resume_text.is_some());
-            let _ = resume.set_text(resume_text.unwrap_or_else(|| RESUME_EMPTY.to_string()));
+            let _ = resume.set_text(resume_text.unwrap_or_else(|| labels.get("resumeEmpty")));
             let pending = owner.as_ref().map(|current| current.notifications.len()).unwrap_or(0);
             let _ = inbox.set_enabled(pending > 0);
             let _ = inbox.set_text(match pending {
-                0 => INBOX_EMPTY.to_string(),
-                1 => "1 notificação nova".to_string(),
-                count => format!("{} notificações novas", count),
+                0 => labels.get("inboxEmpty"),
+                1 => labels.get("inboxOne"),
+                count => labels.fill("inboxMany", &[("count", &count.to_string())]),
             });
             if let Some(current) = owner {
                 let ids: HashSet<String> = current.notifications.iter().map(|item| item.0.clone()).collect();
@@ -809,6 +862,7 @@ pub fn run() {
         .manage(ServerProcess(Mutex::new(None)))
         .manage(DesktopToken(Mutex::new(None)))
         .manage(VerifiedPeer(Mutex::new(None)))
+        .manage(MenuLabels(Mutex::new(Labels::for_locale(DEFAULT_LOCALE))))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))
@@ -817,7 +871,12 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-            build_app_menu(app.handle())?;
+            let saved = Labels::for_locale(&saved_locale(app.handle()));
+            if let Ok(mut labels) = app.state::<MenuLabels>().0.lock() {
+                *labels = saved.clone();
+            }
+            build_app_menu(app.handle(), &saved)?;
+            listen_app_menu(app.handle());
             build_tray(app.handle())?;
             let handle = app.handle().clone();
             let _ = ctrlc::set_handler(move || {
