@@ -426,6 +426,7 @@ export function makeRefreshRecommendations(deps: Deps) {
             levelMin,
             levelMax,
             popularity: work.popularity,
+            genres: work.genres,
           };
         }),
       });

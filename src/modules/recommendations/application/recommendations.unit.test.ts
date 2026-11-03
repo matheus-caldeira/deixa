@@ -5,7 +5,7 @@ import {
 } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { FixedClock } from "@/shared/clock";
 import { assessLearner, estimateLevelRange, levelFitScore, type StudiedWork } from "../domain/learner";
-import { rankWorks } from "../domain/ranking";
+import { diversifyByGenre, genreOverlap, rankWorks } from "../domain/ranking";
 import { cosine, documentHash, hashEmbedding, weightedCentroid, workDocument } from "../domain/vectors";
 import { HashEmbeddingProvider } from "../infrastructure/hash-embedding-provider";
 import type { SuggestionWriter, WriterInput } from "./ports";
@@ -132,12 +132,13 @@ describe("retrato do aluno", () => {
 });
 
 describe("ranqueamento", () => {
-  const work = (workKey: string, vector: number[], popularity = 1) => ({
+  const work = (workKey: string, vector: number[], popularity = 1, genres: string[] = []) => ({
     workKey,
     vector,
     levelMin: "B1" as const,
     levelMax: "B2" as const,
     popularity,
+    genres,
   });
 
   it("põe na frente o que parece com o gosto e afasta o que parece com o que foi recusado", () => {
@@ -169,6 +170,63 @@ describe("ranqueamento", () => {
     });
     expect(ranked[0]?.workKey).toBe("facil");
     expect(ranked[0]?.closestIndex).toBeNull();
+  });
+
+  it("uma obra muito estudada não puxa todas as sugestões para o mesmo gênero", () => {
+    const comedyTaste = [1, 0, 0];
+    const works = [
+      work("comedia-1", [1, 0.05, 0], 5, ["Comédia"]),
+      work("comedia-2", [1, 0.1, 0], 5, ["Comédia"]),
+      work("comedia-3", [1, 0.15, 0], 5, ["Comédia", "Romance"]),
+      work("comedia-4", [1, 0.2, 0], 5, ["Comédia"]),
+      work("drama", [0.8, 0.6, 0], 3, ["Drama"]),
+      work("crime", [0.7, 0, 0.7], 2, ["Crime", "Drama"]),
+    ];
+    const ranked = rankWorks({
+      taste: comedyTaste,
+      targetIndex: 2,
+      works,
+      liked: [comedyTaste],
+      dismissed: [],
+    });
+    const order = ranked.map((item) => item.workKey);
+    expect(order[0]).toBe("comedia-1");
+    expect(order.slice(0, 3)).toEqual(["comedia-1", "drama", "comedia-3"]);
+    const relevanceOnly = [...ranked].sort((left, right) => right.score - left.score);
+    expect(relevanceOnly.slice(0, 4).map((item) => item.workKey)).toEqual([
+      "comedia-1",
+      "comedia-2",
+      "comedia-3",
+      "comedia-4",
+    ]);
+  });
+
+  it("a diversidade por gênero vale sem IA e sem histórico, só com nível e popularidade", () => {
+    const ranked = rankWorks({
+      taste: null,
+      targetIndex: 2,
+      liked: [],
+      dismissed: [],
+      works: [
+        work("comedia-a", [], 10, ["Comédia"]),
+        work("comedia-b", [], 9, ["Comédia"]),
+        work("comedia-c", [], 8, ["Comédia"]),
+        work("drama", [], 1, ["Drama"]),
+      ],
+    });
+    expect(ranked.map((item) => item.workKey)).toEqual(["comedia-a", "drama", "comedia-b", "comedia-c"]);
+  });
+
+  it("sem gêneros ou com peso zero, a ordem é a da pontuação", () => {
+    const items = [
+      { key: "a", score: 0.9, genres: ["Comédia"] },
+      { key: "b", score: 0.8, genres: ["Comédia"] },
+      { key: "c", score: 0.5, genres: [] },
+    ];
+    expect(diversifyByGenre(items, 0).map((item) => item.key)).toEqual(["a", "b", "c"]);
+    expect(diversifyByGenre(items).map((item) => item.key)).toEqual(["a", "c", "b"]);
+    expect(genreOverlap(new Set(["drama"]), new Set())).toBe(0);
+    expect(genreOverlap(new Set(["drama", "crime"]), new Set(["drama"]))).toBe(0.5);
   });
 });
 
