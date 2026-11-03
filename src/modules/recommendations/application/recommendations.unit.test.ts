@@ -17,6 +17,7 @@ import {
   makeDismissRecommendation,
   makeGetRecommendations,
   makeRefreshRecommendations,
+  type NewSuggestionsNotice,
 } from "./recommendation-use-cases";
 import { CountingEmbeddingProvider, EMPTY_SIGNALS, InMemoryRecommendationRepository } from "./testing/fakes";
 
@@ -505,5 +506,111 @@ describe("sugestões para o usuário", () => {
       makeRefreshRecommendations(broken)({ userId: "ana", level: "B2", language: "en" }),
     ).rejects.toThrow();
     expect(repository.runs.get("ana")).toMatchObject({ status: "FAILED" });
+  });
+});
+
+describe("aviso de sugestões novas", () => {
+  const local = new HashEmbeddingProvider();
+  const source = new FakeMetadataProvider();
+  let repository: InMemoryRecommendationRepository;
+  let clock: FixedClock;
+  let notices: NewSuggestionsNotice[];
+  let visible: number;
+  let reversed: boolean;
+
+  const limitedSource = {
+    name: source.name,
+    listRelatedWorks: async (...args: Parameters<FakeMetadataProvider["listRelatedWorks"]>) =>
+      (await source.listRelatedWorks(...args)).slice(0, visible),
+    listPopularWorks: async (...args: Parameters<FakeMetadataProvider["listPopularWorks"]>) =>
+      (await source.listPopularWorks(...args)).slice(0, visible),
+  };
+  const reorderingWriter: SuggestionWriter = {
+    name: "gemini",
+    write: async (input) => {
+      const keys = input.candidates.map((candidate) => candidate.key);
+      return {
+        items: (reversed ? [...keys].reverse() : keys).map((key) => ({ key, reason: "Combina com você." })),
+      };
+    },
+  };
+  const deps = (notify: (notice: NewSuggestionsNotice) => Promise<void>) => ({
+    repository,
+    resolveCandidates: async () => limitedSource,
+    resolveEmbedding: async () => local,
+    localEmbedding: local,
+    resolveWriter: async () => reorderingWriter,
+    clock,
+    notify,
+  });
+  const collect = async (notice: NewSuggestionsNotice) => {
+    notices.push(notice);
+  };
+  const refresh = (userId = "ana", notify = collect) =>
+    makeRefreshRecommendations(deps(notify))({ userId, level: "B2", language: "en" });
+  const later = () => clock.advanceMs(MIN_REFRESH_HOURS * HOUR_MS);
+
+  beforeEach(() => {
+    repository = new InMemoryRecommendationRepository();
+    clock = new FixedClock("2026-10-12T12:00:00Z");
+    notices = [];
+    visible = 2;
+    reversed = false;
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [SUITS] });
+    repository.signals.set("bia", { ...EMPTY_SIGNALS, works: [SUITS] });
+  });
+
+  it("avisa uma vez quando aparecem obras nunca sugeridas, com link para o Explorar", async () => {
+    await refresh();
+    const first = repository.suggestions.get("ana") ?? [];
+    expect(first.length).toBeGreaterThan(0);
+    expect(notices).toEqual([
+      {
+        userId: "ana",
+        kind: "recommendations_ready",
+        params: { count: first.length },
+        href: "/catalog",
+      },
+    ]);
+  });
+
+  it("não avisa de novo quando só a ordem muda nem quando a rodada se repete", async () => {
+    await refresh();
+    const before = (repository.suggestions.get("ana") ?? []).map((item) => item.workKey);
+    reversed = true;
+    later();
+    expect(await refresh()).toEqual({ refreshed: true });
+    const after = (repository.suggestions.get("ana") ?? []).map((item) => item.workKey);
+    expect(after).not.toEqual(before);
+    expect([...after].sort()).toEqual([...before].sort());
+    later();
+    await refresh();
+    expect(notices).toHaveLength(1);
+  });
+
+  it("avisa só as obras inéditas quando a lista cresce", async () => {
+    await refresh();
+    const before = new Set((repository.suggestions.get("ana") ?? []).map((item) => item.workKey));
+    visible = 20;
+    later();
+    await refresh();
+    const fresh = (repository.suggestions.get("ana") ?? []).filter((item) => !before.has(item.workKey));
+    expect(fresh.length).toBeGreaterThan(0);
+    expect(notices.map((notice) => notice.params.count)).toEqual([before.size, fresh.length]);
+  });
+
+  it("o histórico de uma conta não cala o aviso da outra", async () => {
+    await refresh("ana");
+    await refresh("bia");
+    expect(notices.map((notice) => notice.userId)).toEqual(["ana", "bia"]);
+    expect(notices[1]?.params.count).toBe(notices[0]?.params.count);
+  });
+
+  it("falha no aviso não derruba a rodada", async () => {
+    const result = await refresh("ana", async () => {
+      throw new Error("sino fora do ar");
+    });
+    expect(result).toEqual({ refreshed: true });
+    expect(repository.runs.get("ana")).toMatchObject({ status: "READY" });
   });
 });

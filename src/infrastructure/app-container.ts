@@ -554,6 +554,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     localEmbedding,
     resolveWriter: resolveSuggestionWriter,
     clock,
+    notify,
     onFallback: (stage: string, reason: string) => log.warn("recommendations.fallback", { stage, reason }),
   };
 

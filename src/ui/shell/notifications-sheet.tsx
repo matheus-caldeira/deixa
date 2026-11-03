@@ -68,7 +68,9 @@ export function NotificationsSheet(props: { inbox: InboxView; onChange: () => vo
                   <span style={{ width: 22, height: 22, display: "grid" }}>
                     {failed ? (
                       <XIcon />
-                    ) : item.kind === "cards_ready" || item.kind.startsWith("conversation_") ? (
+                    ) : item.kind === "cards_ready" ||
+                      item.kind === "recommendations_ready" ||
+                      item.kind.startsWith("conversation_") ? (
                       <SparkIcon />
                     ) : item.kind === "audio_ready" ? (
                       <SoundIcon />

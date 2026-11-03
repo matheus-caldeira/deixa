@@ -1,6 +1,6 @@
 ---
 title: Isolamento entre usuários
-updated: 2026-10-10
+updated: 2026-11-03
 source: PROJETO.md §1 (regra central), §7 e §8
 ---
 
@@ -10,11 +10,12 @@ source: PROJETO.md §1 (regra central), §7 e §8
 
 ## Duas famílias de tabelas
 
-| Compartilhadas (catálogo)                                                                 | Individuais (por usuário)                                                                |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `media_items`, `seasons`, `episodes`, `subtitle_files`, `subtitle_cues`, `cue_alignments` | `sessions`, `user_preferences`, `user_ai_credentials`, `progress_snapshots`              |
-| `cue_translations`, `audio_assets`, `processing_jobs`                                     | `user_highlights`, `highlight_card_batches`, `user_cards`, `review_logs`                 |
-| `learning_items` com `visibility = global`, `highlight_stats` (só contagem)               | `episode_progress`, `xp_events`, `learning_items` com `visibility = private` (pelo dono) |
+| Compartilhadas (catálogo)                                                                 | Individuais (por usuário)                                                                          |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `media_items`, `seasons`, `episodes`, `subtitle_files`, `subtitle_cues`, `cue_alignments` | `sessions`, `user_preferences`, `user_ai_credentials`, `progress_snapshots`                        |
+| `cue_translations`, `audio_assets`, `processing_jobs`                                     | `user_highlights`, `highlight_card_batches`, `user_cards`, `review_logs`                           |
+| `learning_items` com `visibility = global`, `highlight_stats` (só contagem)               | `episode_progress`, `xp_events`, `learning_items` com `visibility = private` (pelo dono)           |
+|                                                                                           | `user_recommendations`, `recommendation_feedback`, `recommendation_runs`, `recommendation_history` |
 
 ## De onde vem o usuário
 

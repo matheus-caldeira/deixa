@@ -8,6 +8,7 @@ import {
   lessonAttempts,
   mediaItems,
   recommendationFeedback,
+  recommendationHistory,
   recommendationRuns,
   reviewLogs,
   seasons,
@@ -215,6 +216,17 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
         .insert(userRecommendations)
         .values(suggestions.map((suggestion) => ({ userId, ...suggestion, createdAt: now })));
     });
+  }
+
+  async rememberSuggested(userId: string, workKeys: string[], now: Date): Promise<number> {
+    const unique = [...new Set(workKeys)];
+    if (unique.length === 0) return 0;
+    const inserted = await this.db
+      .insert(recommendationHistory)
+      .values(unique.map((workKey) => ({ userId, workKey, firstSuggestedAt: now })))
+      .onConflictDoNothing()
+      .returning({ workKey: recommendationHistory.workKey });
+    return inserted.length;
   }
 
   async removeSuggestion(userId: string, workKey: string): Promise<void> {

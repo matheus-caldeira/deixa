@@ -94,6 +94,7 @@ export interface RecommendationRepository {
   listSuggestions(userId: string): Promise<Suggestion[]>;
   findSuggestion(userId: string, workKey: string): Promise<Suggestion | null>;
   replaceSuggestions(userId: string, suggestions: Suggestion[], now: Date): Promise<void>;
+  rememberSuggested(userId: string, workKeys: string[], now: Date): Promise<number>;
   removeSuggestion(userId: string, workKey: string): Promise<void>;
   saveFeedback(userId: string, workKey: string, verdict: FeedbackVerdict, now: Date): Promise<void>;
   listFeedback(userId: string): Promise<Feedback[]>;

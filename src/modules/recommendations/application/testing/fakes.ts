@@ -27,6 +27,7 @@ export class InMemoryRecommendationRepository implements RecommendationRepositor
   readonly suggestions = new Map<string, Suggestion[]>();
   readonly feedback = new Map<string, Feedback[]>();
   readonly embeddings = new Map<string, StoredEmbedding>();
+  readonly history = new Map<string, Set<string>>();
 
   async loadSignals(userId: string): Promise<StoredSignals> {
     return this.signals.get(userId) ?? EMPTY_SIGNALS;
@@ -75,6 +76,14 @@ export class InMemoryRecommendationRepository implements RecommendationRepositor
 
   async replaceSuggestions(userId: string, suggestions: Suggestion[]): Promise<void> {
     this.suggestions.set(userId, suggestions);
+  }
+
+  async rememberSuggested(userId: string, workKeys: string[]): Promise<number> {
+    const known = this.history.get(userId) ?? new Set<string>();
+    const fresh = [...new Set(workKeys)].filter((workKey) => !known.has(workKey));
+    for (const workKey of fresh) known.add(workKey);
+    this.history.set(userId, known);
+    return fresh.length;
   }
 
   async removeSuggestion(userId: string, workKey: string): Promise<void> {

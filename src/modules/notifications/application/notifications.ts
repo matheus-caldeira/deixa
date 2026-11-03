@@ -11,6 +11,7 @@ export const NOTIFICATION_KINDS = [
   "conversation_review_ready",
   "conversation_review_failed",
   "conversation_terms_ready",
+  "recommendations_ready",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

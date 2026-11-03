@@ -2,6 +2,7 @@ import { z } from "zod";
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import type { WorkCandidate } from "@/modules/catalog";
 import type { Clock } from "@/shared/clock";
+import { routes } from "@/shared/routes";
 import { AppError } from "@/shared/errors";
 import { CEFR_LEVELS, levelIndex, type CefrLevel } from "@/shared/levels";
 import { cleanLlmText } from "@/shared/llm-text";
@@ -56,7 +57,15 @@ type Deps = {
   localEmbedding: EmbeddingProvider;
   resolveWriter: (userId: string) => Promise<SuggestionWriter | null>;
   clock: Clock;
-  onFallback?: (stage: "embedding" | "writer" | "candidates", reason: string) => void;
+  notify?: (input: NewSuggestionsNotice) => Promise<void>;
+  onFallback?: (stage: "embedding" | "writer" | "candidates" | "notification", reason: string) => void;
+};
+
+export type NewSuggestionsNotice = {
+  userId: string;
+  kind: "recommendations_ready";
+  params: { count: number };
+  href: string;
 };
 
 export type RecommendationsView = {
@@ -348,6 +357,15 @@ async function writeSuggestions(
   };
 }
 
+async function announceNewSuggestions(deps: Deps, userId: string, count: number): Promise<void> {
+  if (count === 0 || !deps.notify) return;
+  try {
+    await deps.notify({ userId, kind: "recommendations_ready", params: { count }, href: routes.catalog() });
+  } catch (error) {
+    deps.onFallback?.("notification", reasonOf(error));
+  }
+}
+
 export function makeRefreshRecommendations(deps: Deps) {
   return async function refreshRecommendations(input: {
     userId: string;
@@ -446,6 +464,11 @@ export function makeRefreshRecommendations(deps: Deps) {
         studied,
       );
       const finishedAt = deps.clock.now();
+      const newlySuggested = await deps.repository.rememberSuggested(
+        input.userId,
+        written.map(({ draft }) => workKeyOf(draft.work)),
+        finishedAt,
+      );
       await deps.repository.replaceSuggestions(
         input.userId,
         written.map(({ draft, reason, levels }, position) => ({
@@ -479,6 +502,7 @@ export function makeRefreshRecommendations(deps: Deps) {
         },
         finishedAt,
       );
+      await announceNewSuggestions(deps, input.userId, newlySuggested);
       return { refreshed: true };
     } catch (error) {
       await deps.repository.finishRun(

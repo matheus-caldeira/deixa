@@ -74,3 +74,15 @@ export const recommendationFeedback = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.workKey] })],
 );
+
+export const recommendationHistory = pgTable(
+  "recommendation_history",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    workKey: text("work_key").notNull(),
+    firstSuggestedAt: timestamp("first_suggested_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.workKey] })],
+);

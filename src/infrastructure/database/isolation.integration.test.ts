@@ -404,6 +404,17 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     expect(forAna.insight).toContain("accuracyPercent");
     const forLucas = await app.getRecommendations({ userId: lucas, level: "C1", language: "en" });
     expect(forLucas).toMatchObject({ status: "pending", items: [] });
+    const recommendationNotices = async (userId: string) =>
+      (await app.getInbox(userId)).items.filter((item) => item.kind === "recommendations_ready");
+    expect(await recommendationNotices(ana)).toMatchObject([
+      { href: "/catalog", params: { count: forAna.items.length } },
+    ]);
+    expect(await recommendationNotices(lucas)).toEqual([]);
+    const history = new DrizzleRecommendationRepository(handle.db);
+    const anaKeys = forAna.items.map((item) => item.workKey);
+    expect(await history.rememberSuggested(ana, anaKeys, new Date())).toBe(0);
+    expect(await history.rememberSuggested(lucas, anaKeys.slice(0, 1), new Date())).toBe(1);
+    expect(await history.rememberSuggested(lucas, anaKeys.slice(0, 1), new Date())).toBe(0);
 
     const refused = forAna.items[0];
     if (!refused) throw new Error("sugestão esperada");

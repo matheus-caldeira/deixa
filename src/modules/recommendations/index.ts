@@ -19,6 +19,7 @@ export {
   makeRefreshRecommendations,
   parseLocalReason,
   type LocalReason,
+  type NewSuggestionsNotice,
   type RecommendationsView,
 } from "./application/recommendation-use-cases";
 export {
