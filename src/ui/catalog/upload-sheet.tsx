@@ -78,6 +78,12 @@ export function UploadSheet(props: {
   const steps = useTranslations("processing");
   const languages = useTranslations("languages");
   const names = { target: languages(props.pair.target), native: languages(props.pair.native) };
+  const pairParams = {
+    targetLanguage: names.target,
+    nativeLanguage: names.native,
+    targetCode: LANGUAGE_TAGS[props.pair.target],
+    nativeCode: LANGUAGE_TAGS[props.pair.native],
+  };
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [stage, setStage] = useState<Stage>(props.mediaId ? "files" : "search");
@@ -452,9 +458,11 @@ export function UploadSheet(props: {
               return (
                 <div key={step.key} className={`pstep ${state}`}>
                   <span className="s">{state === "done" ? <CheckIcon /> : null}</span>
-                  <span>{steps(`steps.${step.key}`)}</span>
+                  <span>{steps(`steps.${step.key}`, pairParams)}</span>
                   <span className="small muted mono">
-                    {state === "wait" ? "" : steps(`details.${step.detail.key}`, step.detail.params)}
+                    {state === "wait"
+                      ? ""
+                      : steps(`details.${step.detail.key}`, { ...pairParams, ...step.detail.params })}
                   </span>
                 </div>
               );
