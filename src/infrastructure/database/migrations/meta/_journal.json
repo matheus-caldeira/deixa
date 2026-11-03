@@ -232,6 +232,13 @@
       "when": 1793748740265,
       "tag": "0032_media_genres",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793748896567,
+      "tag": "0033_embedding_document_hash",
+      "breakpoints": true
     }
   ]
 }

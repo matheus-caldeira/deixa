@@ -1,12 +1,13 @@
 import type { LearnerSignals } from "../../domain/learner";
-import type { Vector } from "../../domain/vectors";
 import type {
+  EmbeddingEntry,
   EmbeddingProvider,
   Feedback,
   FeedbackVerdict,
   RecommendationRepository,
   RecommendationRun,
   RunOutcome,
+  StoredEmbedding,
   Suggestion,
 } from "../ports";
 
@@ -25,7 +26,7 @@ export class InMemoryRecommendationRepository implements RecommendationRepositor
   readonly runs = new Map<string, RecommendationRun>();
   readonly suggestions = new Map<string, Suggestion[]>();
   readonly feedback = new Map<string, Feedback[]>();
-  readonly embeddings = new Map<string, Vector>();
+  readonly embeddings = new Map<string, StoredEmbedding>();
 
   async loadSignals(userId: string): Promise<StoredSignals> {
     return this.signals.get(userId) ?? EMPTY_SIGNALS;
@@ -92,17 +93,19 @@ export class InMemoryRecommendationRepository implements RecommendationRepositor
     return [...(this.feedback.get(userId) ?? [])];
   }
 
-  async getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, Vector>> {
-    const known = new Map<string, Vector>();
+  async getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, StoredEmbedding>> {
+    const known = new Map<string, StoredEmbedding>();
     for (const workKey of workKeys) {
-      const vector = this.embeddings.get(`${model}|${workKey}`);
-      if (vector) known.set(workKey, vector);
+      const stored = this.embeddings.get(`${model}|${workKey}`);
+      if (stored) known.set(workKey, stored);
     }
     return known;
   }
 
-  async saveEmbeddings(model: string, entries: { workKey: string; vector: Vector }[]): Promise<void> {
-    for (const entry of entries) this.embeddings.set(`${model}|${entry.workKey}`, entry.vector);
+  async saveEmbeddings(model: string, entries: EmbeddingEntry[]): Promise<void> {
+    for (const { workKey, vector, documentHash } of entries) {
+      this.embeddings.set(`${model}|${workKey}`, { vector, documentHash });
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { count, eq } from "drizzle-orm";
+import { count, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   FakeMetadataProvider,
@@ -19,6 +19,7 @@ import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructu
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { uuidGenerator } from "@/shared/ids";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
+import { DrizzleRecommendationRepository } from "@/modules/recommendations/infrastructure/drizzle-recommendation-repository";
 import {
   DrizzleAiUsageRepository,
   DrizzleModelPriceRepository,
@@ -384,6 +385,8 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
 
   it("sugestões saem do estudo de cada um: lista, recusa e vetores não vazam entre usuários", async () => {
     await app.startEpisode(ana, episodeId);
+    const signals = await new DrizzleRecommendationRepository(handle.db).loadSignals(ana, new Date(0));
+    expect(signals.works).toMatchObject([{ title: "Suits", genres: ["Drama", "Crime"] }]);
     expect(await app.getRecommendations({ userId: ana, level: "A1", language: "en" })).toMatchObject({
       status: "pending",
       refresh: true,
@@ -417,6 +420,11 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     expect(lucasItems.map((item) => item.workKey)).toContain(refused.workKey);
     const [vectors] = await handle.db.select({ total: count() }).from(workEmbeddings);
     expect(vectors?.total).toBeGreaterThan(0);
+    const [unmarked] = await handle.db
+      .select({ total: count() })
+      .from(workEmbeddings)
+      .where(isNull(workEmbeddings.documentHash));
+    expect(unmarked?.total).toBe(0);
   });
 
   it("conversa encerrada vira cards na série pessoal de quem conversou, sem duplicar nem vazar", async () => {

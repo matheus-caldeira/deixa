@@ -16,7 +16,7 @@ import {
   type StudiedWork,
 } from "../domain/learner";
 import { rankWorks, type RankedWork } from "../domain/ranking";
-import { weightedCentroid, type Vector } from "../domain/vectors";
+import { documentHash, weightedCentroid, workDocument, type Vector } from "../domain/vectors";
 import type {
   CandidateSource,
   EmbeddingProvider,
@@ -152,9 +152,6 @@ async function gatherCandidates(
   return [...unique.values()].slice(0, MAX_CANDIDATES);
 }
 
-const documentOf = (work: { title: string; overview: string; genres?: readonly string[] }): string =>
-  [work.title, (work.genres ?? []).join(", "), work.overview].filter((part) => part.length > 0).join(". ");
-
 async function embedWith(
   deps: Deps,
   provider: EmbeddingProvider,
@@ -162,12 +159,21 @@ async function embedWith(
   now: Date,
 ): Promise<Map<string, Vector>> {
   const keys = [...documents.keys()];
-  const known = await deps.repository.getEmbeddings(provider.model, keys);
+  const hashes = new Map(keys.map((key) => [key, documentHash(documents.get(key) ?? "")]));
+  const stored = await deps.repository.getEmbeddings(provider.model, keys);
+  const known = new Map<string, Vector>();
+  for (const [key, entry] of stored) {
+    if (entry.documentHash === hashes.get(key)) known.set(key, entry.vector);
+  }
   const missing = keys.filter((key) => !known.has(key));
   if (missing.length === 0) return known;
   const vectors = await provider.embed(missing.map((key) => documents.get(key) ?? ""));
   if (vectors.length !== missing.length) throw new AppError("LLM_INVALID_OUTPUT");
-  const fresh = missing.map((workKey, index) => ({ workKey, vector: vectors[index] ?? [] }));
+  const fresh = missing.map((workKey, index) => ({
+    workKey,
+    vector: vectors[index] ?? [],
+    documentHash: hashes.get(workKey) ?? "",
+  }));
   await deps.repository.saveEmbeddings(provider.model, fresh, now);
   for (const entry of fresh) known.set(entry.workKey, entry.vector);
   return known;
@@ -377,8 +383,8 @@ export function makeRefreshRecommendations(deps: Deps) {
       );
 
       const documents = new Map<string, string>();
-      for (const work of candidates) documents.set(workKeyOf(work), documentOf(work));
-      for (const work of studied) documents.set(work.workKey, documentOf(work));
+      for (const work of candidates) documents.set(workKeyOf(work), workDocument(work));
+      for (const work of studied) documents.set(work.workKey, workDocument(work));
       const { vectors, provider } =
         candidates.length > 0
           ? await embedDocuments(deps, input.userId, documents, startedAt)
@@ -388,11 +394,11 @@ export function makeRefreshRecommendations(deps: Deps) {
         feedback.map((entry) => entry.workKey),
       );
       const dismissed = feedback.flatMap((entry) => {
-        const vector = feedbackVectors.get(entry.workKey);
+        const vector = feedbackVectors.get(entry.workKey)?.vector;
         return entry.verdict === "dismissed" && vector ? [vector] : [];
       });
       const added = feedback.flatMap((entry) => {
-        const vector = feedbackVectors.get(entry.workKey);
+        const vector = feedbackVectors.get(entry.workKey)?.vector;
         return entry.verdict === "added" && vector ? [{ vector, weight: ADDED_WEIGHT }] : [];
       });
       const studiedVectors = studied.map((work) => vectors.get(work.workKey) ?? []);

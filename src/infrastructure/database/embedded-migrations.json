@@ -495,5 +495,14 @@
     "bps": true,
     "folderMillis": 1793748740265,
     "hash": "29379624fe5f9dcd1b586f77f3cb5c9c4811feddc981139560ed6c5d11d7fe93"
+  },
+  {
+    "tag": "0033_embedding_document_hash",
+    "sql": [
+      "ALTER TABLE \"work_embeddings\" ADD COLUMN \"document_hash\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1793748896567,
+    "hash": "e35389b671c3e624ba3a3dc514e333de6488bc8808856c3872a30ac57a27e026"
   }
 ]

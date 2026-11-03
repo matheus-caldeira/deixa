@@ -6,7 +6,7 @@ import {
 import { FixedClock } from "@/shared/clock";
 import { assessLearner, estimateLevelRange, levelFitScore, type StudiedWork } from "../domain/learner";
 import { rankWorks } from "../domain/ranking";
-import { cosine, hashEmbedding, weightedCentroid } from "../domain/vectors";
+import { cosine, documentHash, hashEmbedding, weightedCentroid, workDocument } from "../domain/vectors";
 import { HashEmbeddingProvider } from "../infrastructure/hash-embedding-provider";
 import type { SuggestionWriter, WriterInput } from "./ports";
 import {
@@ -23,13 +23,20 @@ import { CountingEmbeddingProvider, EMPTY_SIGNALS, InMemoryRecommendationReposit
 const HOUR_MS = 60 * 60 * 1000;
 const key = (slug: string): string => `fake:${fakeExternalId(slug)}`;
 
-const studied = (slug: string, title: string, overview: string, engagement = 1.5): StudiedWork => ({
+const studied = (
+  slug: string,
+  title: string,
+  overview: string,
+  engagement = 1.5,
+  genres: string[] = [],
+): StudiedWork => ({
   workKey: key(slug),
   provider: "fake",
   externalId: fakeExternalId(slug),
   type: "series",
   title,
   overview,
+  genres,
   engagement,
 });
 
@@ -37,6 +44,8 @@ const SUITS = studied(
   "suits",
   "Suits",
   "Um escritório de advocacia em Nova York. Inglês jurídico, negociações e respostas afiadas.",
+  1.5,
+  ["Drama", "Crime"],
 );
 
 describe("vetores", () => {
@@ -47,6 +56,18 @@ describe("vetores", () => {
     expect(cosine(office, similar)).toBeGreaterThan(cosine(office, distant));
     expect(cosine(office, office)).toBeCloseTo(1);
     expect(cosine([], [])).toBe(0);
+  });
+
+  it("o texto da obra leva os gêneros e aproxima obras do mesmo gênero no vetor local", () => {
+    const comedy = workDocument({ title: "Uma", overview: "Vizinhos num prédio.", genres: ["Comédia"] });
+    expect(comedy).toBe("Uma. Comédia. Vizinhos num prédio.");
+    const sameGenre = workDocument({ title: "Outra", overview: "Uma fazenda.", genres: ["Comédia"] });
+    const otherGenre = workDocument({ title: "Outra", overview: "Uma fazenda.", genres: ["Guerra"] });
+    expect(cosine(hashEmbedding(comedy), hashEmbedding(sameGenre))).toBeGreaterThan(
+      cosine(hashEmbedding(comedy), hashEmbedding(otherGenre)),
+    );
+    expect(documentHash(comedy)).toBe(documentHash(comedy));
+    expect(documentHash(comedy)).not.toBe(documentHash(sameGenre));
   });
 
   it("o centro do gosto pende para a obra com mais peso e ignora vetor vazio", () => {
@@ -327,6 +348,37 @@ describe("sugestões para o usuário", () => {
     clock.advanceMs(2 * HOUR_MS);
     await refresh();
     expect(embedding.embedded.length).toBe(firstRound);
+  });
+
+  it("o vetor da obra estudada inclui os gêneros e é refeito quando o texto da obra muda", async () => {
+    const withoutGenres = { ...SUITS, genres: [] };
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [withoutGenres] });
+    await refresh();
+    const firstRound = embedding.embedded.length;
+    expect(embedding.embedded).toContain(workDocument(withoutGenres));
+    clock.advanceMs(2 * HOUR_MS);
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [SUITS] });
+    await refresh();
+    expect(embedding.embedded.slice(firstRound)).toEqual([
+      "Suits. Drama, Crime. Um escritório de advocacia em Nova York. Inglês jurídico, negociações e respostas afiadas.",
+    ]);
+    expect(repository.embeddings.get(`${embedding.model}|${SUITS.workKey}`)?.documentHash).toBe(
+      documentHash(workDocument(SUITS)),
+    );
+  });
+
+  it("vetor guardado sem marca do texto é refeito uma vez", async () => {
+    await refresh();
+    const stored = repository.embeddings.get(`${embedding.model}|${SUITS.workKey}`);
+    if (!stored) throw new Error("vetor esperado");
+    repository.embeddings.set(`${embedding.model}|${SUITS.workKey}`, { ...stored, documentHash: null });
+    const firstRound = embedding.embedded.length;
+    clock.advanceMs(2 * HOUR_MS);
+    await refresh();
+    expect(embedding.embedded.length).toBe(firstRound + 1);
+    clock.advanceMs(2 * HOUR_MS);
+    await refresh();
+    expect(embedding.embedded.length).toBe(firstRound + 1);
   });
 
   it("não roda duas atualizações ao mesmo tempo nem em seguida", async () => {

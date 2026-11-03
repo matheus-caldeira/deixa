@@ -16,6 +16,7 @@ export const workEmbeddings = pgTable(
     workKey: text("work_key").notNull(),
     model: text("model").notNull(),
     vector: jsonb("vector").notNull(),
+    documentHash: text("document_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.workKey, table.model] })],
