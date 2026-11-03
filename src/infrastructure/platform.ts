@@ -1,7 +1,7 @@
 import type { KeyCipher } from "@/modules/ai-credentials";
 import type { TtsProvider } from "@/modules/audio";
 import type { LevelSourceFetcher } from "@/modules/catalog";
-import type { PasswordHasher, SessionTokens } from "@/modules/identity";
+import type { FirstAccountPolicy, PasswordHasher, SessionTokens } from "@/modules/identity";
 import type { PersonalCipher } from "@/modules/packages";
 import type { SubtitleSourceProvider } from "@/modules/subtitle-sources";
 import type { FileStorage } from "@/shared/storage";
@@ -11,6 +11,7 @@ export type Platform = {
   storage: (env: Env) => FileStorage;
   passwords: PasswordHasher;
   tokens: SessionTokens;
+  firstAccount: FirstAccountPolicy;
   cipher: (masterKey: string) => KeyCipher;
   personalCipher: PersonalCipher;
   levelSourceFetcher: (env: Env) => LevelSourceFetcher;

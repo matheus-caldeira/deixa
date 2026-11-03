@@ -1,3 +1,4 @@
+import { accountOperations } from "./accounts";
 import { aiSettingsOperations } from "./ai-settings";
 import { audioOperations } from "./audio";
 import { catalogOperations } from "./catalog";
@@ -34,6 +35,7 @@ import { progressView } from "./views/progress";
 import { catalogView } from "./views/catalog";
 
 export const OPERATION_GROUPS = [
+  accountOperations,
   aiSettingsOperations,
   catalogOperations,
   levelSourceOperations,
@@ -71,6 +73,7 @@ export const OPERATION_GROUPS = [
 ];
 
 export const OPERATIONS = {
+  ...accountOperations,
   ...aiSettingsOperations,
   ...catalogOperations,
   ...levelSourceOperations,

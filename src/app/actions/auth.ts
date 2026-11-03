@@ -7,6 +7,7 @@ import { AppError } from "@/shared/errors";
 import { DEFAULT_LOCALE, isLocale } from "@/shared/locales";
 import { studyLanguageSchema } from "@/shared/study-languages";
 import { getLocale } from "next-intl/server";
+import { requestOrigin } from "../request-origin";
 import { endSession, requireDatabase, startSession } from "../session";
 import { rememberLocale } from "./locale";
 import { app, runAction, type ActionResult } from "./result";
@@ -58,6 +59,7 @@ export async function signUpAction(input: unknown): Promise<ActionResult<null>> 
       ...account,
       locale: isLocale(locale) ? locale : DEFAULT_LOCALE,
       pair: { target: targetLanguage, native: nativeLanguage },
+      origin: requestOrigin,
     });
     const session = await app().signIn({ email: parsed.data.email, password: parsed.data.password });
     await startSession(session.token, session.expiresAt);

@@ -22,6 +22,7 @@ export const nodePlatform: Platform = {
   storage: (env) => new LocalFileStorage(env.DATA_DIR),
   passwords: scryptPasswords,
   tokens: randomSessionTokens,
+  firstAccount: "loopback-only",
   cipher: (masterKey) => new AesGcmCipher(masterKey),
   personalCipher: new NodePersonalCipher(),
   levelSourceFetcher: (env) =>

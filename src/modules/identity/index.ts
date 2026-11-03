@@ -1,6 +1,11 @@
 export * from "./domain/user";
+export { isLoopbackAddress, isLoopbackForwardedFor } from "./domain/loopback";
 export type {
+  AccountRepository,
+  AccountSummary,
+  FirstAccountPolicy,
   LanguagePairRepository,
+  RequestOrigin,
   PasswordHasher,
   PreferencesRepository,
   StoredLanguagePair,
@@ -19,3 +24,9 @@ export {
   makeListLanguagePairs,
   makeSwitchLanguagePair,
 } from "./application/language-pairs";
+export type { AccountActor } from "./application/account-actor";
+export { makeListAccounts } from "./application/list-accounts";
+export { makeCreateAccount } from "./application/create-account";
+export { makeSetAccountAdmin } from "./application/set-account-admin";
+export { makeResetAccountPassword } from "./application/reset-account-password";
+export { makeRemoveAccount } from "./application/remove-account";

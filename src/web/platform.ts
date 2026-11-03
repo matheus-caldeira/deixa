@@ -22,6 +22,7 @@ export const browserPlatform: Platform = {
   storage: () => new OpfsFileStorage(DATA_FOLDER),
   passwords: portablePasswords,
   tokens: portableSessionTokens,
+  firstAccount: "open",
   cipher: (masterKey) => new PortableGcmCipher(masterKey),
   personalCipher: new PortablePersonalCipher(),
   levelSourceFetcher: () => new FetchLevelSourceFetcher(),

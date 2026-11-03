@@ -28,7 +28,8 @@ export type AppErrorCode =
   | "SUBTITLE_SOURCE_UNAVAILABLE"
   | "SUBTITLE_SOURCE_EMPTY"
   | "AUDIO_BUSY"
-  | "AUDIO_UNAVAILABLE";
+  | "AUDIO_UNAVAILABLE"
+  | "ACCOUNT_NOT_FOUND";
 
 export type MessageParams = Record<string, string | number>;
 

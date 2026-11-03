@@ -167,6 +167,7 @@
     "SUBTITLE_SOURCE_EMPTY": "We could not find subtitles for this episode. Upload the file manually.",
     "AUDIO_BUSY": "We are already generating other audio for you. Try again in a moment.",
     "AUDIO_UNAVAILABLE": "Audio is not available right now.",
+    "ACCOUNT_NOT_FOUND": "We could not find this account.",
     "detail": {
       "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
       "chooseZip": "Choose a .deixa.zip file.",
@@ -255,7 +256,11 @@
       "levelSourceChild": "This URL comes from another source. Turn it off or remove the source that lists it.",
       "levelRatingNoAi": "Set up an AI key in Settings to rate the level.",
       "adminOnlyLevelRating": "Only the administrator rates title levels with AI, because the rating applies to everyone's catalog.",
-      "transcriptionNoAi": "Set up an AI key to transcribe your speech."
+      "transcriptionNoAi": "Set up an AI key to transcribe your speech.",
+      "adminOnlyAccounts": "Only the administrator manages accounts.",
+      "lastAdmin": "The installation needs at least one administrator.",
+      "cannotRemoveSelf": "You cannot remove your own account.",
+      "firstAccountLocalOnly": "The first account can only be created on the computer where Deixa is installed."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",

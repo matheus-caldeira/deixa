@@ -1,5 +1,9 @@
 import type { Preferences, User } from "../../domain/user";
 import type {
+  AccountRemoval,
+  AccountRepository,
+  AccountSummary,
+  AdminChange,
   LanguagePairRepository,
   NewUser,
   PasswordHasher,
@@ -12,12 +16,18 @@ import type {
 } from "../ports";
 
 export class InMemoryIdentityStore
-  implements UserRepository, SessionRepository, PreferencesRepository, LanguagePairRepository
+  implements
+    UserRepository,
+    SessionRepository,
+    PreferencesRepository,
+    LanguagePairRepository,
+    AccountRepository
 {
+  readonly createdAtByUser = new Map<string, Date>();
   readonly pairsByUser = new Map<string, StoredLanguagePair[]>();
   readonly users = new Map<string, UserRecord>();
   readonly preferencesByUser = new Map<string, Preferences>();
-  readonly sessions = new Map<string, { userId: string; expiresAt: Date }>();
+  readonly sessions = new Map<string, { userId: string; expiresAt: Date; createdAt: Date }>();
 
   async findByEmail(email: string): Promise<UserRecord | null> {
     return [...this.users.values()].find((user) => user.email === email) ?? null;
@@ -37,14 +47,79 @@ export class InMemoryIdentityStore
     return user;
   }
 
-  async create(user: NewUser, preferences: Preferences): Promise<void> {
+  async create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void> {
     const isAdmin = this.users.size === 0;
     this.users.set(user.id, { ...user, isAdmin });
     this.preferencesByUser.set(user.id, preferences);
+    this.createdAtByUser.set(user.id, createdAt);
   }
 
-  async createSession(session: { userId: string; tokenHash: string; expiresAt: Date }): Promise<void> {
-    this.sessions.set(session.tokenHash, { userId: session.userId, expiresAt: session.expiresAt });
+  async hasAccounts(): Promise<boolean> {
+    return this.users.size > 0;
+  }
+
+  async createSession(session: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+    createdAt: Date;
+  }): Promise<void> {
+    this.sessions.set(session.tokenHash, {
+      userId: session.userId,
+      expiresAt: session.expiresAt,
+      createdAt: session.createdAt,
+    });
+  }
+
+  async listAccounts(): Promise<AccountSummary[]> {
+    return [...this.users.values()].map(({ passwordHash: _passwordHash, ...user }) => {
+      const starts = [...this.sessions.values()]
+        .filter((session) => session.userId === user.id)
+        .map((session) => session.createdAt.getTime());
+      return {
+        ...user,
+        createdAt: this.createdAtByUser.get(user.id) ?? new Date(0),
+        lastActiveAt: starts.length > 0 ? new Date(Math.max(...starts)) : null,
+      };
+    });
+  }
+
+  private isLastAdmin(accountId: string): boolean {
+    const admins = [...this.users.values()].filter((user) => user.isAdmin);
+    return admins.length === 1 && admins[0]?.id === accountId;
+  }
+
+  async setAdmin(accountId: string, isAdmin: boolean): Promise<AdminChange> {
+    const record = this.users.get(accountId);
+    if (!record) return "not_found";
+    if (!isAdmin && this.isLastAdmin(accountId)) return "last_admin";
+    this.users.set(accountId, { ...record, isAdmin });
+    return "changed";
+  }
+
+  async replacePassword(accountId: string, passwordHash: string): Promise<boolean> {
+    const record = this.users.get(accountId);
+    if (!record) return false;
+    this.users.set(accountId, { ...record, passwordHash });
+    this.dropSessionsOf(accountId);
+    return true;
+  }
+
+  async removeAccount(accountId: string): Promise<AccountRemoval> {
+    if (!this.users.has(accountId)) return "not_found";
+    if (this.isLastAdmin(accountId)) return "last_admin";
+    this.users.delete(accountId);
+    this.preferencesByUser.delete(accountId);
+    this.pairsByUser.delete(accountId);
+    this.createdAtByUser.delete(accountId);
+    this.dropSessionsOf(accountId);
+    return "removed";
+  }
+
+  private dropSessionsOf(accountId: string): void {
+    for (const [tokenHash, session] of this.sessions) {
+      if (session.userId === accountId) this.sessions.delete(tokenHash);
+    }
   }
 
   async listByEmailSuffix(suffix: string): Promise<(User & { level: Preferences["level"] })[]> {

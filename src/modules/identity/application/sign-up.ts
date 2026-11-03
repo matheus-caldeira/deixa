@@ -5,7 +5,13 @@ import type { CefrLevel } from "@/shared/levels";
 import type { Locale } from "@/shared/locales";
 import { isStudyLanguage, type LanguagePair } from "@/shared/study-languages";
 import { MIN_PASSWORD_LENGTH, defaultPreferences, normalizeEmail, pickAvatarColor } from "../domain/user";
-import type { LanguagePairRepository, PasswordHasher, UserRepository } from "./ports";
+import type {
+  FirstAccountPolicy,
+  LanguagePairRepository,
+  PasswordHasher,
+  RequestOrigin,
+  UserRepository,
+} from "./ports";
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,7 +21,14 @@ export function makeSignUp(deps: {
   passwords: PasswordHasher;
   clock: Clock;
   ids: IdGenerator;
+  firstAccount?: FirstAccountPolicy;
 }) {
+  async function firstAccountAllowed(origin: RequestOrigin | undefined): Promise<boolean> {
+    if (deps.firstAccount !== "loopback-only") return true;
+    if (await deps.users.hasAccounts()) return true;
+    return origin ? origin.isLoopback() : false;
+  }
+
   return async function signUp(input: {
     name: string;
     email: string;
@@ -23,6 +36,7 @@ export function makeSignUp(deps: {
     level: CefrLevel;
     locale?: Locale;
     pair?: LanguagePair;
+    origin?: RequestOrigin;
   }): Promise<{ userId: string }> {
     const name = input.name.trim();
     const email = normalizeEmail(input.email);
@@ -37,6 +51,7 @@ export function makeSignUp(deps: {
     ) {
       throw new AppError("INVALID_INPUT");
     }
+    if (!(await firstAccountAllowed(input.origin))) throw new AppError("FORBIDDEN", "firstAccountLocalOnly");
     if (await deps.users.findByEmail(email)) throw new AppError("EMAIL_TAKEN");
     const id = deps.ids.next();
     const preferences = defaultPreferences(input.level, input.locale, input.pair);

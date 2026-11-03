@@ -130,6 +130,11 @@ import {
   makeAddLanguagePair,
   makeListLanguagePairs,
   makeSwitchLanguagePair,
+  makeCreateAccount,
+  makeListAccounts,
+  makeRemoveAccount,
+  makeResetAccountPassword,
+  makeSetAccountAdmin,
   pairOf,
 } from "@/modules/identity";
 import { DEFAULT_LOCALE, type Locale } from "@/shared/locales";
@@ -567,6 +572,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     clock,
     ids,
   };
+  const accountDeps = { accounts: identity, passwords: platform.passwords };
   const catalogDeps = { catalog, progress: catalog, clock, ids };
   const resolveLevelRater = async (userId: string): Promise<LevelRater | null> => {
     const access = await aiAccessFor(userId);
@@ -1126,7 +1132,12 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     loginThrottle: new AttemptThrottle(MAX_LOGIN_FAILURES, LOGIN_WINDOW_MS, clock),
 
     signIn: makeSignIn(sessionDeps),
-    signUp: makeSignUp(sessionDeps),
+    signUp: makeSignUp({ ...sessionDeps, firstAccount: platform.firstAccount }),
+    listAccounts: makeListAccounts(accountDeps),
+    createAccount: makeCreateAccount(sessionDeps),
+    setAccountAdmin: makeSetAccountAdmin(accountDeps),
+    resetAccountPassword: makeResetAccountPassword(accountDeps),
+    removeAccount: makeRemoveAccount(accountDeps),
     signOut: makeSignOut(sessionDeps),
     findOwner: makeFindOwner(sessionDeps),
     getPreferences: (userId: string) => identity.get(userId),
