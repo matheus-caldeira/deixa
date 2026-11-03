@@ -16,7 +16,7 @@ nunca fica no código: vai para `locales/pt-BR.json` e `locales/en.json`, com a 
 - `.claude/` só **ativa** esse conhecimento: rules, skills, agents e hooks. Mudou uma regra? Edite `.contexts/`
   primeiro, depois o ativador.
 - `.superpowers/planning/` (local, fora do git): `PLAN.md` com as tarefas e o critério de pronto, `HANDOFF.md`,
-  rascunhos e `TESTES-MANUAIS.md`. `docs/DECISIONS.md`: diário de decisões (versionado).
+  rascunhos e `TESTES-MANUAIS.md`. `.contexts/engineering/decisions/journal.md`: diário de decisões (versionado).
 - Vocabulário único: @.contexts/business/glossary.md
 - `data/` (legendas enviadas, alinhamentos, áudio) e `.env*` ficam fora do git.
 

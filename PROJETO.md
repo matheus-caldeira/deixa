@@ -709,13 +709,13 @@ Siga o prompt abaixo como próximo etapa:
 ```markdown
 # Etapa 2 · Busca e download automático de legendas (OpenSubtitles)
 
-Esta é uma adição ao projeto já em andamento. Trabalhe de forma autônoma: não pare para pedir confirmação. Quando houver uma decisão em aberto, escolha a opção mais simples, registre em `docs/DECISIONS.md` (data, decisão, motivo, alternativa descartada) e siga em frente.
+Esta é uma adição ao projeto já em andamento. Trabalhe de forma autônoma: não pare para pedir confirmação. Quando houver uma decisão em aberto, escolha a opção mais simples, registre em `.contexts/engineering/decisions/journal.md` (data, decisão, motivo, alternativa descartada) e siga em frente.
 
 Ambiente: macOS, zsh, Docker disponível.
 
 ## Antes de começar
 
-1. Leia `.superpowers/planning/PLAN.md`, `docs/DECISIONS.md`, `README.md`, @PROJETO.md e @deixa.html para entender o estado atual.
+1. Leia `.superpowers/planning/PLAN.md`, `.contexts/engineering/decisions/journal.md`, `README.md`, @PROJETO.md e @deixa.html para entender o estado atual.
 2. Se a etapa anterior (fases 01 e 02) ainda tiver tarefas abertas no `.superpowers/planning/PLAN.md`, não mexa nelas. Esta etapa depende só de: cadastro de obra e episódio pelo TMDB, pipeline de upload de SRT (hash, deduplicação, parser, alinhamento EN ↔ PT) e tela de envio de legenda. Se algum desses ainda não existir, termine o mínimo necessário dele primeiro e registre isso em DECISIONS.md.
 3. Crie uma branch `feat/opensubtitles` a partir da branch principal.
 4. Leia a documentação oficial da API REST do OpenSubtitles (`https://opensubtitles.stoplight.io/docs/opensubtitles-api`). Confirme lá, antes de implementar:
@@ -725,7 +725,7 @@ Ambiente: macOS, zsh, Docker disponível.
    - o fluxo de download (pedir link a partir do `file_id`);
    - os limites de requisição e a cota diária de downloads.
 
-   Se algo deste prompt divergir da documentação, siga a documentação e registre em DECISIONS.md.
+   Se algo deste prompt divergir da documentação, siga a documentação e registre em `.contexts/engineering/decisions/journal.md`.
 5. Escreva `.superpowers/planning/STAGE-2-SUBTITLES.md` com a especificação desta etapa (o que está abaixo, ajustado ao que você confirmou na documentação). Não altere o `PROJETO.md`; só adicione nele, no final, uma linha apontando para esse arquivo.
 6. Acrescente as tarefas desta etapa ao `.superpowers/planning/PLAN.md`, numa seção "Etapa 2", com critério de pronto de cada uma.
 
@@ -783,7 +783,7 @@ Ambiente: macOS, zsh, Docker disponível.
 - Na tela do episódio, mostrar a origem de cada legenda: "Legenda EN: OpenSubtitles · release · autor".
 - Na tela "Sobre", ao lado da atribuição do TMDB, citar o OpenSubtitles.
 - Os arquivos baixados não ficam disponíveis para download pelo usuário. O app só usa o texto dentro do estudo e da leitura.
-- Registre em DECISIONS.md que, antes de abrir a plataforma ao público, é preciso revisar os termos da API e o modelo de cota (talvez cada usuário conecte a própria conta).
+- Registre no diário de decisões (`.contexts/engineering/decisions/journal.md`) que, antes de abrir a plataforma ao público, é preciso revisar os termos da API e o modelo de cota (talvez cada usuário conecte a própria conta).
 
 ## Visual
 

@@ -7,7 +7,7 @@ source: PROJETO.md e execução das fases 01 e 02
 # ADRs
 
 Decisões permanentes de arquitetura. O diário do dia a dia, com as escolhas feitas durante a execução, está em
-`docs/DECISIONS.md`; quando uma delas vira regra, ganha um ADR aqui.
+[`journal.md`](journal.md), nesta pasta; quando uma delas vira regra, ganha um ADR aqui.
 
 | ADR  | Decisão                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------- |

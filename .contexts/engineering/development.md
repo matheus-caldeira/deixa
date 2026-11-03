@@ -1,18 +1,18 @@
 ---
 title: Desenvolvimento
-updated: 2026-10-12
+updated: 2026-11-03
 source: README.md anterior, .superpowers/planning/HANDOFF.md
 ---
 
 # Desenvolvimento
 
 Como rodar, testar e empacotar o Deixa a partir do código. Para o que o projeto é e como instalar o
-aplicativo pronto, veja o [README](../README.md).
+aplicativo pronto, veja o [README](../../README.md).
 
-- Especificação: [`PROJETO.md`](../PROJETO.md)
-- Protótipo aprovado da interface: [`deixa.html`](../deixa.html)
-- Plano e pendências: `.superpowers/planning/` (local, fora do git) · Diário de decisões: [`DECISIONS.md`](DECISIONS.md)
-- Regras de arquitetura e documentação por tecnologia: [`.contexts/`](../.contexts/README.md)
+- Especificação: [`PROJETO.md`](../../PROJETO.md)
+- Protótipo aprovado da interface: [`deixa.html`](../../deixa.html)
+- Plano e pendências: `.superpowers/planning/` (local, fora do git) · Diário de decisões: [`decisions/journal.md`](decisions/journal.md)
+- Regras de arquitetura e documentação por tecnologia: [`.contexts/`](../../README.md)
 
 ## Requisitos
 
@@ -50,7 +50,7 @@ silêncio e o resto funciona.
 ## Configuração
 
 Em desenvolvimento, a configuração vem do `.env`, validado com Zod em `src/infrastructure/config/env.ts`. O
-[`.env.example`](../.env.example) lista os nomes, sem valores. No aplicativo instalado não há `.env`: o banco é
+[`.env.example`](../../.env.example) lista os nomes, sem valores. No aplicativo instalado não há `.env`: o banco é
 configurado na tela `/setup` e o resto no perfil.
 
 | Variável                              | Para quê                                                                                |
@@ -94,7 +94,7 @@ o banco e as tabelas. O endereço fica em `database-url.txt`; para trocar de ban
 ## Seed de demonstração
 
 `pnpm db:seed` cria três perfis, sete obras com os identificadores reais do TMDB, quinze episódios com
-legendas fictícias e as trilhas deles em A1, B1 e C1. Usa só os arquivos de [`fixtures/`](../fixtures/): não
+legendas fictícias e as trilhas deles em A1, B1 e C1. Usa só os arquivos de [`fixtures/`](../../fixtures/): não
 precisa de `.env` nem de chave nenhuma, apenas do banco configurado.
 
 | Perfil  | E-mail                  | Nível | Senha       |

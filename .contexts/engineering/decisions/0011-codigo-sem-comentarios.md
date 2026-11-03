@@ -13,7 +13,7 @@ Comentário envelhece e esconde nome ruim.
 
 ## Decisão
 
-Nenhum comentário em código ou config. O porquê vai para ADR, documento de stack, `docs/DECISIONS.md` ou corpo
+Nenhum comentário em código ou config. O porquê vai para ADR, documento de stack, `.contexts/engineering/decisions/journal.md` ou corpo
 do commit. `pnpm lint:comments` verifica.
 
 ## Consequências

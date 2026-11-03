@@ -1,6 +1,6 @@
 # Código sem comentários
 
-O código se explica sozinho: nenhum comentário em `.ts/.tsx/.mts/.js/.mjs/.cjs` nem em configs. Precisa explicar? Extraia função, constante ou tipo com nome melhor. O porquê vai para ADR, stack, `docs/DECISIONS.md` ou corpo do commit.
+O código se explica sozinho: nenhum comentário em `.ts/.tsx/.mts/.js/.mjs/.cjs` nem em configs. Precisa explicar? Extraia função, constante ou tipo com nome melhor. O porquê vai para ADR, stack, `.contexts/engineering/decisions/journal.md` ou corpo do commit.
 
 Checklist:
 

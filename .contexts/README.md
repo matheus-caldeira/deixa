@@ -15,14 +15,15 @@ pessoa já assiste. A especificação completa está em `PROJETO.md`, na raiz; e
 
 ## Mapa das pastas
 
-| Pasta          | Conteúdo                                                                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `business/`    | `vision.md` (problema, valor, fases), `brand.md` (nome, logotipo, cor), `glossary.md` (vocabulário único), `compliance.md` (direitos, segredos, IA)    |
-| `product/`     | `persona.md` (quem usa), `tone-of-voice.md` (como o produto fala), `design-system.md` (tokens, tipografia, componentes), `product-scope.md` (entregas) |
-| `engineering/` | `architecture/`, `decisions/` (ADRs a partir de 0001), `rules/` (invariantes de código), `stacks/` (uma por tecnologia)                                |
+| Pasta          | Conteúdo                                                                                                                                                                                                        |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `business/`    | `vision.md` (problema, valor, fases), `brand.md` (nome, logotipo, cor), `glossary.md` (vocabulário único), `compliance.md` (direitos, segredos, IA)                                                             |
+| `product/`     | `persona.md` (quem usa), `tone-of-voice.md` (como o produto fala), `design-system.md` (tokens, tipografia, componentes), `product-scope.md` (entregas)                                                          |
+| `engineering/` | `architecture/`, `decisions/` (ADRs a partir de 0001 e `journal.md`, o diário de decisões), `development.md` (como rodar, testar e empacotar), `rules/` (invariantes de código), `stacks/` (uma por tecnologia) |
 
-Fora daqui: `.superpowers/planning/PLAN.md` (tarefas da etapa em curso) e `docs/DECISIONS.md` (diário de decisões tomadas durante
-a execução, com data, motivo e alternativa descartada). Decisão que vira regra permanente ganha um ADR.
+Fora daqui: `.superpowers/planning/PLAN.md` (tarefas da etapa em curso, local). O diário de decisões
+(`engineering/decisions/journal.md`) guarda as escolhas feitas durante a execução, com data, motivo e alternativa
+descartada; decisão que vira regra permanente ganha um ADR.
 
 ## Convenção de front-matter
 

@@ -30,15 +30,15 @@ por texto ou por voz.
 ---
 
 <p align="center">
-  <img src="docs/images/landing.png" alt="Página de apresentação do Deixa, em /welcome" width="100%" />
+  <img src=".github/images/landing.png" alt="Página de apresentação do Deixa, em /welcome" width="100%" />
 </p>
 
 <p align="center">
-  <img src="docs/images/leitura.png" alt="Leitura do episódio com as falas alinhadas nos dois idiomas" width="30%" />
+  <img src=".github/images/leitura.png" alt="Leitura do episódio com as falas alinhadas nos dois idiomas" width="30%" />
   &nbsp;
-  <img src="docs/images/trilha.png" alt="Trilha de estudo do episódio" width="30%" />
+  <img src=".github/images/trilha.png" alt="Trilha de estudo do episódio" width="30%" />
   &nbsp;
-  <img src="docs/images/revisar.png" alt="Revisão de cards" width="30%" />
+  <img src=".github/images/revisar.png" alt="Revisão de cards" width="30%" />
 </p>
 
 <p align="center"><sub>As telas usam o seed de demonstração. Os diálogos são fictícios, escritos para o projeto.</sub></p>
@@ -259,8 +259,8 @@ fixtures/             legendas fictícias em inglês, português e espanhol
 
 Documentação:
 
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md): variáveis de ambiente, chaves e empacotamento.
-- [`docs/DECISIONS.md`](docs/DECISIONS.md): diário de decisões.
+- [`.contexts/engineering/development.md`](.contexts/engineering/development.md): variáveis de ambiente, chaves e empacotamento.
+- [`.contexts/engineering/decisions/journal.md`](.contexts/engineering/decisions/journal.md): diário de decisões.
 - [`.contexts/`](.contexts/README.md): negócio, produto, arquitetura, ADRs e uma página por tecnologia.
 
 ## Direitos autorais e pirataria

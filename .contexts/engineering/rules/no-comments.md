@@ -12,12 +12,12 @@ Nenhum comentário em `.ts`, `.tsx`, `.mts`, `.js`, `.mjs`, `.cjs` nem em config
 
 ## Em vez de comentar
 
-| Vontade                          | Faça                                        |
-| -------------------------------- | ------------------------------------------- |
-| Explicar um bloco                | Extraia função com nome que diga o que faz  |
-| Explicar um número               | Constante nomeada (`SCENE_GAP_MS`)          |
-| Explicar uma decisão             | ADR, `docs/DECISIONS.md` ou corpo do commit |
-| Silenciar o lint ou o compilador | Corrija a causa                             |
+| Vontade                          | Faça                                                                 |
+| -------------------------------- | -------------------------------------------------------------------- |
+| Explicar um bloco                | Extraia função com nome que diga o que faz                           |
+| Explicar um número               | Constante nomeada (`SCENE_GAP_MS`)                                   |
+| Explicar uma decisão             | ADR, `.contexts/engineering/decisions/journal.md` ou corpo do commit |
+| Silenciar o lint ou o compilador | Corrija a causa                                                      |
 
 ## Verificação
 
