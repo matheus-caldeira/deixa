@@ -23,21 +23,25 @@ export type AccountRow = {
   lastActiveAt: string | null;
 };
 
+export async function listAccountRows(context: OperationContext): Promise<AccountRow[]> {
+  const accounts = await context.app.listAccounts({ actor: actorOf(context) });
+  return accounts.map((account) => ({
+    id: account.id,
+    name: account.name,
+    email: account.email,
+    avatarColor: account.avatarColor,
+    isAdmin: account.isAdmin,
+    isSelf: account.id === context.user.id,
+    createdAt: account.createdAt.toISOString(),
+    lastActiveAt: account.lastActiveAt?.toISOString() ?? null,
+  }));
+}
+
 export const accountOperations = {
   "accounts.list": operation({
     input: z.undefined(),
     run: async (context): Promise<AccountRow[]> => {
-      const accounts = await context.app.listAccounts({ actor: actorOf(context) });
-      return accounts.map((account) => ({
-        id: account.id,
-        name: account.name,
-        email: account.email,
-        avatarColor: account.avatarColor,
-        isAdmin: account.isAdmin,
-        isSelf: account.id === context.user.id,
-        createdAt: account.createdAt.toISOString(),
-        lastActiveAt: account.lastActiveAt?.toISOString() ?? null,
-      }));
+      return listAccountRows(context);
     },
   }),
   "accounts.create": operation({

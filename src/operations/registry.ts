@@ -29,6 +29,7 @@ import { recapView } from "./views/recap";
 import { readView } from "./views/read";
 import { tutorView } from "./views/tutor";
 import { settingsView } from "./views/settings";
+import { accountsView } from "./views/accounts";
 import { seriesView } from "./views/series";
 import { seriesEpisodeView } from "./views/seriesEpisode";
 import { progressView } from "./views/progress";
@@ -55,6 +56,7 @@ export const OPERATION_GROUPS = [
   seriesEpisodeView,
   seriesView,
   settingsView,
+  accountsView,
   tutorView,
   readView,
   recapView,
@@ -93,6 +95,7 @@ export const OPERATIONS = {
   ...seriesEpisodeView,
   ...seriesView,
   ...settingsView,
+  ...accountsView,
   ...tutorView,
   ...readView,
   ...recapView,

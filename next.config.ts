@@ -14,6 +14,7 @@ const forDesktop = process.env.DEIXA_STANDALONE === "1";
 const forWeb = process.env.DEIXA_TARGET === "web";
 
 const WEB_ACTIONS = [
+  "accounts",
   "ai-models",
   "ai-usage",
   "auth",
