@@ -60,7 +60,8 @@ export interface PlanRepository {
     level: CefrLevel;
     requestedBy: string;
     now: Date;
-  }): Promise<void>;
+    staleBefore: Date;
+  }): Promise<boolean>;
   saveReady(input: {
     id: string;
     episodeId: string;
@@ -193,14 +194,16 @@ export function makeEnsurePlan(deps: Pick<Deps, "plans" | "loadLines" | "resolve
       });
       return { status: "READY" };
     }
-    await deps.plans.markPending({
+    const claimed = await deps.plans.markPending({
       id: deps.ids.next(),
       episodeId: input.episodeId,
       pair: input.pair,
       level: input.level,
       requestedBy: input.userId,
       now,
+      staleBefore: new Date(now.getTime() - PLAN_TIMEOUT_MS),
     });
+    if (!claimed) return { status: "PENDING", job: null };
     const { retry: _retry, ...job } = input;
     return { status: "PENDING", job };
   };

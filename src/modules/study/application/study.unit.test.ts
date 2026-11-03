@@ -369,13 +369,16 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   const plans: PlanRepository = {
     find: async (episodeId, _pair, level) => stored.get(key(episodeId, level)) ?? null,
     markPending: async (input) => {
-      if (stored.get(key(input.episodeId, input.level))?.status === "READY") return;
+      const current = stored.get(key(input.episodeId, input.level));
+      if (current?.status === "READY") return false;
+      if (current?.status === "PENDING" && current.updatedAt >= input.staleBefore) return false;
       stored.set(key(input.episodeId, input.level), {
         status: "PENDING",
         plan: null,
         failureReason: null,
         updatedAt: input.now,
       });
+      return true;
     },
     saveReady: async (input) => {
       if (stored.get(key(input.episodeId, input.level))?.status === "READY") return;
@@ -502,6 +505,12 @@ describe("geração da trilha em segundo plano", () => {
       ["Depois de tantos anos", "locked", "pen"],
       ["", "locked", "chest"],
     ]);
+  });
+
+  it("dois pedidos ao mesmo tempo agendam a geração da trilha uma vez só", async () => {
+    const app = setup();
+    const results = await Promise.all([app.ensure(job), app.ensure({ ...job, userId: "lucas" })]);
+    expect(results.filter((result) => result.status === "PENDING" && result.job !== null)).toHaveLength(1);
   });
 
   it("o plano é do episódio e do nível: outro usuário do mesmo nível reaproveita, outro nível gera o seu", async () => {

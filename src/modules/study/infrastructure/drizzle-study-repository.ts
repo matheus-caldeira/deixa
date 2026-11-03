@@ -1,4 +1,4 @@
-import { and, asc, eq, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, lt, ne, or, sql, type SQL } from "drizzle-orm";
 import { pairKey, type LanguagePair } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import { lessonAttempts, lessonPlans } from "@/infrastructure/database/schema";
@@ -79,8 +79,13 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
       failureReason: string | null;
     },
     requestedBy: string | null,
-  ): Promise<void> {
-    await this.db
+    claimWhere?: SQL,
+  ): Promise<boolean> {
+    const replaceable = or(
+      ne(lessonPlans.status, "READY"),
+      sql`coalesce((${lessonPlans.plan}->>'version')::int, 0) <> ${PLAN_VERSION}`,
+    );
+    const written = await this.db
       .insert(lessonPlans)
       .values({
         id: input.id,
@@ -95,11 +100,10 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
       .onConflictDoUpdate({
         target: [lessonPlans.episodeId, lessonPlans.languagePair, lessonPlans.level],
         set: { ...values, updatedAt: input.now },
-        setWhere: or(
-          ne(lessonPlans.status, "READY"),
-          sql`coalesce((${lessonPlans.plan}->>'version')::int, 0) <> ${PLAN_VERSION}`,
-        ),
-      });
+        setWhere: claimWhere ? and(replaceable, claimWhere) : replaceable,
+      })
+      .returning({ id: lessonPlans.id });
+    return written.length > 0;
   }
 
   async markPending(input: {
@@ -109,11 +113,13 @@ export class DrizzleStudyRepository implements StudyRepository, PlanRepository {
     level: CefrLevel;
     requestedBy: string;
     now: Date;
-  }): Promise<void> {
-    await this.upsert(
+    staleBefore: Date;
+  }): Promise<boolean> {
+    return this.upsert(
       input,
       { status: "PENDING", provider: null, plan: null, failureReason: null },
       input.requestedBy,
+      or(ne(lessonPlans.status, "PENDING"), lt(lessonPlans.updatedAt, input.staleBefore)),
     );
   }
 

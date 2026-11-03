@@ -16,6 +16,7 @@ import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizz
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
 import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
 import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructure/drizzle-source-repository";
+import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { uuidGenerator } from "@/shared/ids";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import {
@@ -555,5 +556,28 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     const cached = await sources.getCachedSearch(episodeId, "fake");
     expect(cached?.languages).toEqual(["es", "pt-BR", "fr"]);
     expect(cached?.candidates.map((entry) => entry.language)).toEqual(["es", "pt-BR", "fr"]);
+  });
+  it("só um pedido simultâneo reivindica a geração da trilha; pendência velha pode ser retomada", async () => {
+    const plans = new DrizzleStudyRepository(handle.db);
+    const now = new Date("2026-11-03T12:00:00Z");
+    const claim = (id: string, at: Date, staleBefore: Date) =>
+      plans.markPending({
+        id,
+        episodeId,
+        pair: { target: "en", native: "pt-BR" },
+        level: "C2",
+        requestedBy: ana,
+        now: at,
+        staleBefore,
+      });
+    const [first, second] = await Promise.all([
+      claim("55555555-5555-4555-8555-000000000001", now, new Date(now.getTime() - 60_000)),
+      claim("55555555-5555-4555-8555-000000000002", now, new Date(now.getTime() - 60_000)),
+    ]);
+    expect([first, second].filter(Boolean)).toHaveLength(1);
+    const later = new Date(now.getTime() + 120_000);
+    expect(
+      await claim("55555555-5555-4555-8555-000000000003", later, new Date(later.getTime() - 60_000)),
+    ).toBe(true);
   });
 });
