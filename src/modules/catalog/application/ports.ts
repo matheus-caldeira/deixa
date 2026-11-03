@@ -1,5 +1,6 @@
 import type { StudyLanguage } from "@/shared/study-languages";
 import type { CefrLevel } from "@/shared/levels";
+import type { MeasurableCue, SubtitleLevelMeasurement } from "../domain/subtitle-level";
 import type {
   Episode,
   EpisodeContext,
@@ -127,3 +128,19 @@ export interface EpisodeProgressRepository {
   listForUser(userId: string): Promise<EpisodeProgressEntry[]>;
   upsert(userId: string, episodeId: string, progressPercent: number, now: Date): Promise<void>;
 }
+
+export type EpisodeLevelMeasurementInput = {
+  episodeId: string;
+  mediaItemId: string;
+  language: StudyLanguage;
+  measurement: SubtitleLevelMeasurement;
+  now: Date;
+};
+
+export interface EpisodeLevelMeasurementRepository {
+  save(input: EpisodeLevelMeasurementInput): Promise<void>;
+  remove(episodeId: string): Promise<void>;
+  levelsFor(externalIds: readonly string[]): Promise<Map<string, CefrLevel[]>>;
+}
+
+export type ReadEpisodeCues = (episodeId: string, language: StudyLanguage) => Promise<MeasurableCue[] | null>;

@@ -17,7 +17,19 @@ export type {
   WorkCandidate,
   WorkDetails,
   WorkSummary,
+  EpisodeLevelMeasurementInput,
+  EpisodeLevelMeasurementRepository,
+  ReadEpisodeCues,
 } from "./application/ports";
+export { makeMeasureEpisodeLevel, type EpisodeLevelOutcome } from "./application/measure-episode-level";
+export {
+  MIN_MEASURED_WORDS,
+  aggregateMeasuredLevels,
+  measureSubtitleLevel,
+  type MeasurableCue,
+  type SubtitleLevelMeasurement,
+  type SubtitleLevelMetrics,
+} from "./domain/subtitle-level";
 export { DISCOVER_SORTS } from "./application/ports";
 export { makeRegisterWork, makeRefreshWork } from "./application/register-work";
 export { makeLoadSeasonEpisodes } from "./application/load-season-episodes";

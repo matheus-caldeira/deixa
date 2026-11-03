@@ -338,7 +338,8 @@
     },
     "levelRatings": "Nível pela mediana de {count, plural, one {# avaliação} other {# avaliações}}:",
     "levelRatingBuiltin": "guia do {app}",
-    "levelRatingAi": "IA"
+    "levelRatingAi": "IA",
+    "levelRatingMeasured": "medida pelas falas de {count, plural, one {# episódio} other {# episódios}}"
   },
   "home": {
     "continue": "Continuar",

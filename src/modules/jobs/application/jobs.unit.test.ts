@@ -62,6 +62,9 @@ function setup() {
     level_sources_sync: async (payload) => {
       calls.push(`levels:${payload.sourceId ?? "all"}`);
     },
+    episode_level: async (payload) => {
+      calls.push(`episode-level:${payload.episodeId}`);
+    },
   };
   const run = makeRunClaimedJob({ jobs, handlers, clock });
   return {

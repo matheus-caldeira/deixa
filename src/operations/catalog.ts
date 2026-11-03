@@ -12,6 +12,7 @@ import {
 import { pairOf, type Preferences } from "@/modules/identity";
 import type { ProcessingStep } from "@/modules/subtitles";
 import { AppError } from "@/shared/errors";
+import type { StudyLanguage } from "@/shared/study-languages";
 import { operation, type ScheduleJob, type Upload } from "./operation";
 import type {
   ImportView,
@@ -116,6 +117,17 @@ async function scheduleEpisodeAudio(
   });
 }
 
+async function scheduleEpisodeLevel(
+  app: Container,
+  schedule: ScheduleJob,
+  input: { context: EpisodeContext; language: StudyLanguage },
+): Promise<void> {
+  if (input.context.media.originalLanguage !== input.language) return;
+  const payload = { episodeId: input.context.episode.id, language: input.language };
+  if (await app.hasPendingJob("episode_level", payload)) return;
+  await schedule("episode_level", payload);
+}
+
 function fullEpisodeLabel(context: EpisodeContext): string {
   return `${context.media.title} · ${episodeLabel(context.media.type, context.season.seasonNumber, context.episode.episodeNumber)}`;
 }
@@ -215,6 +227,7 @@ export const catalogOperations = {
             })
           ).steps
         : [];
+      if (result) await scheduleEpisodeLevel(app, schedule, { context, language: pair.target });
       if (result?.outcome === "PROCESSED") {
         await scheduleEpisodeAudio(app, schedule, {
           userId: user.id,
@@ -293,6 +306,7 @@ export const catalogOperations = {
         targetFileId,
         nativeFileId,
       });
+      await scheduleEpisodeLevel(app, schedule, { context, language: pairOf(user.preferences).target });
       if (result.outcome === "PROCESSED") {
         await scheduleEpisodeAudio(app, schedule, {
           userId: user.id,

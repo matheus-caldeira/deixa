@@ -74,6 +74,7 @@ export const workView = {
             kind: rating.kind,
             source: rating.sourceName,
             range: `${rating.range[0]}–${rating.range[1]}`,
+            episodes: rating.episodes ?? null,
           })),
           accent: media.accent,
           uploaderName: media.uploaderName,

@@ -39,7 +39,7 @@ export type MediaDetailView = {
   overview: string;
   fit: LevelFit;
   levelRange: string;
-  levelRatings: { kind: LevelRatingKind; source: string | null; range: string }[];
+  levelRatings: { kind: LevelRatingKind; source: string | null; range: string; episodes: number | null }[];
   accent: string | null;
   uploaderName: string | null;
   canRefresh: boolean;
@@ -161,7 +161,9 @@ export function MediaDetailScreen({ media }: { media: MediaDetailView }) {
                   ? t("levelRatingBuiltin", { app: APP_NAME })
                   : rating.kind === "ai"
                     ? t("levelRatingAi")
-                    : rating.source;
+                    : rating.kind === "measured"
+                      ? t("levelRatingMeasured", { count: rating.episodes ?? 0 })
+                      : rating.source;
               return `${label} ${rating.range}`;
             })
             .join(" · ")}
