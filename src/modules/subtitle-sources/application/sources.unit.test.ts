@@ -13,6 +13,7 @@ import {
   SEARCH_CACHE_HOURS,
   makeImportFromSource,
   makeSearchSubtitles,
+  type CachedSearch,
   type EpisodeSource,
   type ImportedFile,
   type SourceProviderName,
@@ -36,6 +37,7 @@ const candidate = (
 });
 
 const PAIR = { target: "en", native: "pt-BR" } as const;
+const SPANISH_PAIR = { target: "es", native: "pt-BR" } as const;
 
 describe("normalização de release", () => {
   it("ignora caixa, separadores, extensão e marcas de idioma", () => {
@@ -161,20 +163,15 @@ describe("ranqueamento de legendas", () => {
 });
 
 class InMemorySources implements SourceRepository {
-  readonly cache = new Map<string, { candidates: SubtitleCandidate[]; fetchedAt: Date }>();
+  readonly cache = new Map<string, CachedSearch>();
   readonly quota = new Map<string, SourceQuota & { updatedAt: Date }>();
 
   async getCachedSearch(episodeId: string, provider: SourceProviderName) {
     return this.cache.get(`${provider}:${episodeId}`) ?? null;
   }
 
-  async saveSearch(
-    episodeId: string,
-    provider: SourceProviderName,
-    candidates: SubtitleCandidate[],
-    now: Date,
-  ) {
-    this.cache.set(`${provider}:${episodeId}`, { candidates, fetchedAt: now });
+  async saveSearch(episodeId: string, provider: SourceProviderName, search: CachedSearch) {
+    this.cache.set(`${provider}:${episodeId}`, search);
   }
 
   async getQuota(provider: string) {
@@ -282,6 +279,37 @@ describe("busca de legendas com cache", () => {
     app.clock.advanceMs((SEARCH_CACHE_HOURS + 1) * 3_600_000);
     expect((await app.search({ episodeId: "ep-1", pair: PAIR })).cached).toBe(false);
     expect(fake().calls.search).toBe(3);
+  });
+
+  it("o cache de outro par de idiomas não esconde as legendas do par pedido", async () => {
+    await app.search({ episodeId: "ep-1", pair: PAIR });
+    const spanish = await app.search({ episodeId: "ep-1", pair: SPANISH_PAIR });
+    expect(spanish.cached).toBe(false);
+    expect(fake().calls.search).toBe(2);
+    expect(spanish.ranking.suggestion?.target?.fileId).toBe("fake-es-1");
+    expect((await app.search({ episodeId: "ep-1", pair: PAIR })).cached).toBe(true);
+    expect((await app.search({ episodeId: "ep-1", pair: SPANISH_PAIR })).cached).toBe(true);
+  });
+
+  it("importa legenda em espanhol a partir da busca guardada", async () => {
+    await app.search({ episodeId: "ep-1", pair: PAIR });
+    await app.search({ episodeId: "ep-1", pair: SPANISH_PAIR });
+    const result = await app.importFrom({
+      pair: SPANISH_PAIR,
+      userId: "ana",
+      episodeId: "ep-1",
+      targetFileId: "fake-es-1",
+      nativeFileId: "fake-pt-1",
+    });
+    expect(result).toMatchObject({ outcome: "PROCESSED", hasNative: true });
+    const english = await app.importFrom({
+      pair: PAIR,
+      userId: "bia",
+      episodeId: "ep-1",
+      targetFileId: "fake-en-1",
+      nativeFileId: null,
+    });
+    expect(english).toMatchObject({ outcome: "PROCESSED" });
   });
 
   it("buscar nunca baixa nada", async () => {

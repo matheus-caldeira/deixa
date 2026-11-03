@@ -15,6 +15,7 @@ import { DrizzleModelChoiceRepository } from "@/modules/ai-credentials/infrastru
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
 import { DrizzleLearningRepository } from "@/modules/learning/infrastructure/drizzle-learning-repository";
 import { DrizzlePersonalData } from "@/modules/packages/infrastructure/drizzle-personal-data";
+import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructure/drizzle-source-repository";
 import { uuidGenerator } from "@/shared/ids";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
 import {
@@ -530,5 +531,29 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     ]);
     const [allCards] = await handle.db.select({ total: count() }).from(personalEpisodeCards);
     expect(allCards?.total).toBe(4);
+  });
+  it("a busca de legendas guardada devolve espanhol e francês, não só inglês e português", async () => {
+    const sources = new DrizzleSourceRepository(handle.db);
+    const candidate = (fileId: string, language: "es" | "fr" | "pt-BR") => ({
+      fileId,
+      language,
+      release: "Suits.S01E01",
+      fileName: `${fileId}.srt`,
+      downloads: 1,
+      rating: 0,
+      hearingImpaired: false,
+      machineTranslated: false,
+      fps: null,
+      uploader: null,
+    });
+    const fetchedAt = new Date("2026-11-03T12:00:00Z");
+    await sources.saveSearch(episodeId, "fake", {
+      languages: ["es", "pt-BR", "fr"],
+      candidates: [candidate("es-1", "es"), candidate("pt-1", "pt-BR"), candidate("fr-1", "fr")],
+      fetchedAt,
+    });
+    const cached = await sources.getCachedSearch(episodeId, "fake");
+    expect(cached?.languages).toEqual(["es", "pt-BR", "fr"]);
+    expect(cached?.candidates.map((entry) => entry.language)).toEqual(["es", "pt-BR", "fr"]);
   });
 });

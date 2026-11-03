@@ -9,6 +9,29 @@ export type SourceQuery =
   | { kind: "episode"; showTmdbId: string; seasonNumber: number; episodeNumber: number }
   | { kind: "movie"; tmdbId: string };
 export type SourceQuota = { remaining: number; resetAt: Date | null };
+export type CachedSearch = {
+  languages: SourceLanguage[];
+  candidates: SubtitleCandidate[];
+  fetchedAt: Date;
+};
+
+function covers(cached: CachedSearch, pair: LanguagePair): boolean {
+  return cached.languages.includes(pair.target) && cached.languages.includes(pair.native);
+}
+
+function mergeSearch(
+  previous: CachedSearch | null,
+  languages: SourceLanguage[],
+  candidates: SubtitleCandidate[],
+  now: Date,
+): CachedSearch {
+  const kept = previous?.candidates.filter((candidate) => !languages.includes(candidate.language)) ?? [];
+  return {
+    languages: [...new Set([...(previous?.languages ?? []), ...languages])],
+    candidates: [...kept, ...candidates],
+    fetchedAt: now,
+  };
+}
 
 export class SourceQuotaExceeded extends AppError {
   constructor(readonly quota: SourceQuota | null) {
@@ -23,16 +46,8 @@ export interface SubtitleSourceProvider {
 }
 
 export interface SourceRepository {
-  getCachedSearch(
-    episodeId: string,
-    provider: SourceProviderName,
-  ): Promise<{ candidates: SubtitleCandidate[]; fetchedAt: Date } | null>;
-  saveSearch(
-    episodeId: string,
-    provider: SourceProviderName,
-    candidates: SubtitleCandidate[],
-    now: Date,
-  ): Promise<void>;
+  getCachedSearch(episodeId: string, provider: SourceProviderName): Promise<CachedSearch | null>;
+  saveSearch(episodeId: string, provider: SourceProviderName, search: CachedSearch): Promise<void>;
   getQuota(quotaKey: string): Promise<(SourceQuota & { updatedAt: Date }) | null>;
   saveQuota(quotaKey: string, quota: SourceQuota, now: Date): Promise<void>;
   recordDownload(userId: string, provider: SourceProviderName, fileId: string, now: Date): Promise<void>;
@@ -126,7 +141,7 @@ export function makeSearchSubtitles(
     const fresh = cached && now.getTime() - cached.fetchedAt.getTime() < SEARCH_CACHE_HOURS * MS_PER_HOUR;
     const recent =
       cached && now.getTime() - cached.fetchedAt.getTime() < REFRESH_INTERVAL_MINUTES * MS_PER_MINUTE;
-    if (cached && (recent || (fresh && !input.refresh))) {
+    if (cached && covers(cached, input.pair) && (recent || (fresh && !input.refresh))) {
       return {
         provider: deps.provider.name,
         ranking: rankCandidates(cached.candidates, input.pair),
@@ -137,8 +152,13 @@ export function makeSearchSubtitles(
     if (!episode.query) {
       throw new AppError("SUBTITLE_SOURCE_EMPTY", "noExternalId");
     }
-    const candidates = await deps.provider.search(episode.query, [input.pair.target, input.pair.native]);
-    await deps.sources.saveSearch(input.episodeId, deps.provider.name, candidates, now);
+    const languages: SourceLanguage[] = [input.pair.target, input.pair.native];
+    const candidates = await deps.provider.search(episode.query, languages);
+    await deps.sources.saveSearch(
+      input.episodeId,
+      deps.provider.name,
+      mergeSearch(cached, languages, candidates, now),
+    );
     return {
       provider: deps.provider.name,
       ranking: rankCandidates(candidates, input.pair),

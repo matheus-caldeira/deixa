@@ -5,6 +5,7 @@ export {
   SourceQuotaExceeded,
   makeImportFromSource,
   makeSearchSubtitles,
+  type CachedSearch,
   type EpisodeSource,
   type ImportOutcome,
   type ImportedFile,

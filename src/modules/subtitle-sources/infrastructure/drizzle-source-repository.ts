@@ -2,15 +2,20 @@ import { and, count, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
 import { externalApiQuota, subtitleDownloads, subtitleSearchCache } from "@/infrastructure/database/schema";
-import type { SubtitleCandidate } from "../domain/ranking";
-import type { SourceProviderName, SourceQuota, SourceRepository } from "../application/source-use-cases";
+import { isStudyLanguage, studyLanguageSchema } from "@/shared/study-languages";
+import type {
+  CachedSearch,
+  SourceProviderName,
+  SourceQuota,
+  SourceRepository,
+} from "../application/source-use-cases";
 
-const LANGUAGES = "en,pt-BR";
+const LANGUAGE_SEPARATOR = ",";
 
 const candidatesSchema = z.array(
   z.object({
     fileId: z.string().min(1),
-    language: z.enum(["en", "pt-BR"]),
+    language: studyLanguageSchema,
     release: z.string(),
     fileName: z.string(),
     downloads: z.number(),
@@ -25,26 +30,25 @@ const candidatesSchema = z.array(
 export class DrizzleSourceRepository implements SourceRepository {
   constructor(private readonly db: Database) {}
 
-  async getCachedSearch(
-    episodeId: string,
-    provider: SourceProviderName,
-  ): Promise<{ candidates: SubtitleCandidate[]; fetchedAt: Date } | null> {
+  async getCachedSearch(episodeId: string, provider: SourceProviderName): Promise<CachedSearch | null> {
     const [row] = await this.db
       .select()
       .from(subtitleSearchCache)
       .where(and(eq(subtitleSearchCache.episodeId, episodeId), eq(subtitleSearchCache.provider, provider)));
     if (!row) return null;
     const parsed = candidatesSchema.safeParse(row.resultsJson);
-    return parsed.success ? { candidates: parsed.data, fetchedAt: row.fetchedAt } : null;
+    if (!parsed.success) return null;
+    const languages = row.languages.split(LANGUAGE_SEPARATOR).filter(isStudyLanguage);
+    return { languages, candidates: parsed.data, fetchedAt: row.fetchedAt };
   }
 
-  async saveSearch(
-    episodeId: string,
-    provider: SourceProviderName,
-    candidates: SubtitleCandidate[],
-    now: Date,
-  ): Promise<void> {
-    const values = { provider, languages: LANGUAGES, resultsJson: candidates, fetchedAt: now };
+  async saveSearch(episodeId: string, provider: SourceProviderName, search: CachedSearch): Promise<void> {
+    const values = {
+      provider,
+      languages: search.languages.join(LANGUAGE_SEPARATOR),
+      resultsJson: search.candidates,
+      fetchedAt: search.fetchedAt,
+    };
     await this.db
       .insert(subtitleSearchCache)
       .values({ episodeId, ...values })
