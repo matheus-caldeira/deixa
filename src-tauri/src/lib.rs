@@ -1,4 +1,5 @@
 mod labels;
+mod listeners;
 mod shell;
 
 use std::collections::HashSet;
@@ -72,7 +73,12 @@ const EMBEDDED_POSTGRES_DIRECTORY: &str = "postgres";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
 const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
 const DESKTOP_SIGNATURE_HEADER: &str = "x-deixa-desktop-signature";
+#[cfg(unix)]
 const LISTENER_TOOLS: [&str; 2] = ["/usr/sbin/lsof", "/usr/bin/lsof"];
+#[cfg(target_os = "linux")]
+const SOCKET_TOOLS: [&str; 4] = ["/usr/bin/ss", "/bin/ss", "/usr/sbin/ss", "/sbin/ss"];
+#[cfg(target_os = "linux")]
+const PROC_TCP_TABLES: [&str; 2] = ["/proc/net/tcp", "/proc/net/tcp6"];
 const DESKTOP_TOKEN_BYTES: usize = 32;
 const STATUS_PATH: &str = "/api/desktop/status";
 const HELLO_PATH: &str = "/api/desktop/hello";
@@ -258,40 +264,85 @@ fn signed_request(token: &str, method: &str, path: &str) -> Option<String> {
     )
 }
 
-#[cfg(unix)]
-fn listener_ids(port: u16) -> Option<Vec<u32>> {
-    let tool = LISTENER_TOOLS.iter().find(|path| std::path::Path::new(path).exists())?;
+fn tool_output(tool: &str, args: &[&str]) -> Option<String> {
     let output = hidden_command(tool)
-        .args(["-nP", &format!("-iTCP:{}", port), "-sTCP:LISTEN", "-t"])
+        .args(args)
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()
         .ok()?;
-    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| line.trim().parse().ok())
+    Some(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+#[cfg(unix)]
+fn first_existing(paths: &[&'static str]) -> Option<&'static str> {
+    paths.iter().copied().find(|path| std::path::Path::new(path).exists())
+}
+
+#[cfg(unix)]
+fn lsof_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tool = first_existing(&LISTENER_TOOLS)?;
+    let filter = format!("-iTCP:{}", port);
+    tool_output(tool, &["-nP", &filter, "-sTCP:LISTEN", "-t"]).map(|output| listeners::parse_lsof_ids(&output))
+}
+
+#[cfg(target_os = "linux")]
+fn ss_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tool = first_existing(&SOCKET_TOOLS)?;
+    tool_output(tool, &["-ltnp"]).map(|output| listeners::parse_ss(&output, port))
+}
+
+#[cfg(target_os = "linux")]
+fn socket_owners(inodes: &[u64]) -> Vec<u32> {
+    let Ok(processes) = std::fs::read_dir("/proc") else {
+        return Vec::new();
+    };
+    processes
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let pid: u32 = entry.file_name().to_str()?.parse().ok()?;
+            let descriptors = std::fs::read_dir(entry.path().join("fd")).ok()?;
+            descriptors
+                .filter_map(Result::ok)
+                .filter_map(|descriptor| std::fs::read_link(descriptor.path()).ok())
+                .filter_map(|link| listeners::socket_inode(&link.to_string_lossy()))
+                .any(|inode| inodes.contains(&inode))
+                .then_some(pid)
+        })
+        .collect()
+}
+
+#[cfg(target_os = "linux")]
+fn proc_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tables: Vec<String> = PROC_TCP_TABLES
+        .iter()
+        .filter_map(|path| std::fs::read_to_string(path).ok())
         .collect();
-    Some(ids)
+    if tables.is_empty() {
+        return None;
+    }
+    let inodes: Vec<u64> = tables.iter().flat_map(|table| listeners::parse_proc_net_tcp(table, port)).collect();
+    if inodes.is_empty() {
+        return Some(Vec::new());
+    }
+    Some(socket_owners(&inodes))
+}
+
+#[cfg(target_os = "linux")]
+fn listener_ids(port: u16) -> Option<Vec<u32>> {
+    lsof_listener_ids(port)
+        .or_else(|| ss_listener_ids(port))
+        .or_else(|| proc_listener_ids(port))
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn listener_ids(port: u16) -> Option<Vec<u32>> {
+    lsof_listener_ids(port)
 }
 
 #[cfg(windows)]
 fn listener_ids(port: u16) -> Option<Vec<u32>> {
-    let output = hidden_command("netstat")
-        .args(["-ano", "-p", "TCP"])
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .ok()?;
-    let suffix = format!(":{}", port);
-    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| {
-            let fields: Vec<&str> = line.split_whitespace().collect();
-            let listening = fields.len() >= 5 && fields[3] == "LISTENING" && fields[1].ends_with(&suffix);
-            listening.then(|| fields[4].parse().ok()).flatten()
-        })
-        .collect();
-    Some(ids)
+    tool_output("netstat", &["-ano"]).map(|output| listeners::parse_netstat(&output, port))
 }
 
 #[cfg(unix)]
