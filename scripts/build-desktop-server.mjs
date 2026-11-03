@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import {
-  chmodSync,
   copyFileSync,
   cpSync,
   existsSync,
@@ -15,13 +14,13 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { provideNode } from "./desktop-node.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const STANDALONE = join(ROOT, ".next", "standalone");
 const SERVER = join(ROOT, "src-tauri", "server");
 const BINARIES = join(ROOT, "src-tauri", "binaries");
 const MIGRATIONS = ["src", "infrastructure", "database", "migrations"];
-const EXECUTABLE = 0o755;
 const MIN_SECRET_LENGTH = 12;
 const SECRET_FILES = ["master-key.txt", "database-url.txt", "setup-code.txt", "desktop-token.txt"];
 const NOT_SECRET = new Set([
@@ -154,13 +153,15 @@ if (links.length > 0) {
 }
 const checkedSecrets = assertNoSecrets(SERVER);
 
-const windows = process.platform === "win32";
-const node = join(BINARIES, `node-${targetTriple()}${windows ? ".exe" : ""}`);
+const triple = targetTriple();
+const node = join(BINARIES, `node-${triple}${triple.includes("windows") ? ".exe" : ""}`);
 mkdirSync(BINARIES, { recursive: true });
-cpSync(process.execPath, node, { dereference: true });
-chmodSync(node, EXECUTABLE);
+const provided = await provideNode({ root: ROOT, triple, destination: node });
 
 const megabytes = (bytes) => `${Math.round(bytes / 1024 / 1024)} MB`;
+const size = provided.officialBytes
+  ? `${megabytes(provided.officialBytes)} -> ${megabytes(provided.bytes)}${provided.stripped ? ", strip" : ""}`
+  : megabytes(provided.bytes);
 console.info(
-  `servidor empacotado em src-tauri/server; Node ${process.version} (${megabytes(statSync(node).size)}); ${checkedSecrets} segredo(s) conferidos, nenhum no pacote`,
+  `servidor empacotado em src-tauri/server; Node ${provided.origin} (${size}); ${checkedSecrets} segredo(s) conferidos, nenhum no pacote`,
 );
