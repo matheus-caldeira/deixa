@@ -1,5 +1,10 @@
 export * from "./domain/user";
-export { isLoopbackAddress, isLoopbackForwardedFor } from "./domain/loopback";
+export {
+  isLoopbackAddress,
+  isLoopbackForwardedFor,
+  isLoopbackHost,
+  isLoopbackRequest,
+} from "./domain/loopback";
 export type {
   AccountRepository,
   AccountSummary,

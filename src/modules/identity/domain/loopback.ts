@@ -18,3 +18,21 @@ export function isLoopbackForwardedFor(header: string | null | undefined): boole
   const [only] = hops;
   return hops.length === 1 && only !== undefined && isLoopbackAddress(only);
 }
+
+const LOOPBACK_HOST_NAME = "localhost";
+const HOST_WITH_PORT = /^(\[[^\]]+\]|[^:]+)(:\d+)?$/;
+
+export function isLoopbackHost(header: string | null | undefined): boolean {
+  if (!header) return false;
+  const match = HOST_WITH_PORT.exec(header.trim().toLowerCase());
+  const name = match?.[1];
+  if (!name) return false;
+  return name === LOOPBACK_HOST_NAME || isLoopbackAddress(name);
+}
+
+export function isLoopbackRequest(headers: {
+  forwardedFor: string | null | undefined;
+  host: string | null | undefined;
+}): boolean {
+  return isLoopbackForwardedFor(headers.forwardedFor) && isLoopbackHost(headers.host);
+}

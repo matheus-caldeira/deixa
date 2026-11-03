@@ -1,8 +1,12 @@
 import { headers } from "next/headers";
-import { isLoopbackForwardedFor, type RequestOrigin } from "@/modules/identity";
+import { isLoopbackRequest, type RequestOrigin } from "@/modules/identity";
 
 const FORWARDED_FOR = "x-forwarded-for";
+const HOST = "host";
 
 export const requestOrigin: RequestOrigin = {
-  isLoopback: async () => isLoopbackForwardedFor((await headers()).get(FORWARDED_FOR)),
+  isLoopback: async () => {
+    const incoming = await headers();
+    return isLoopbackRequest({ forwardedFor: incoming.get(FORWARDED_FOR), host: incoming.get(HOST) });
+  },
 };
