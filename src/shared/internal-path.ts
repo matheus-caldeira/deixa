@@ -7,7 +7,7 @@ export function internalPath(candidate: unknown): string | null {
   if (!candidate.startsWith("/") || candidate.startsWith("//") || UNSAFE_CHARACTERS.test(candidate)) return null;
   try {
     const parsed = new URL(candidate, BASE);
-    if (parsed.origin !== BASE) return null;
+    if (parsed.origin !== BASE || parsed.pathname.startsWith("//")) return null;
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     return null;

@@ -8,6 +8,12 @@ describe("internalPath", () => {
     expect(internalPath("/")).toBe("/");
   });
 
+  it("refuses a path that only becomes protocol-relative after normalization", () => {
+    for (const candidate of ["/.//evil.com", "/a/..//evil.com", "/%2e//evil.com"]) {
+      expect(internalPath(candidate)).toBeNull();
+    }
+  });
+
   it("refuses anything that could leave the app", () => {
     for (const candidate of [
       "//evil.example/x",
