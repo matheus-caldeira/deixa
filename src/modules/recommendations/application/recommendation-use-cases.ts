@@ -11,8 +11,10 @@ import {
   assessLearner,
   estimateLevelRange,
   fitLabel,
+  parseLearnerInsight,
   signalsFingerprint,
   type LearnerAssessment,
+  type LearnerInsight,
   type LearnerSignals,
   type StudiedWork,
 } from "../domain/learner";
@@ -541,5 +543,28 @@ export function makeAcceptRecommendation(deps: Pick<Deps, "repository" | "clock"
     await deps.repository.saveFeedback(input.userId, input.workKey, "added", deps.clock.now());
     await deps.repository.removeSuggestion(input.userId, input.workKey);
     return suggestion;
+  };
+}
+
+const fingerprintSchema = z.tuple([z.string(), z.string()]).rest(z.unknown());
+
+function fingerprintLanguage(fingerprint: string | null): string | null {
+  if (!fingerprint) return null;
+  try {
+    const parsed = fingerprintSchema.safeParse(JSON.parse(fingerprint));
+    return parsed.success ? parsed.data[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export function makeGetLearnerInsight(deps: Pick<Deps, "repository">) {
+  return async function getLearnerInsight(
+    userId: string,
+    language: StudyLanguage,
+  ): Promise<LearnerInsight | null> {
+    const run = await deps.repository.getRun(userId);
+    if (!run || fingerprintLanguage(run.fingerprint) !== language) return null;
+    return parseLearnerInsight(run.insight);
   };
 }

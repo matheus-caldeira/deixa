@@ -15,6 +15,7 @@ export type {
 export {
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
   parseLocalReason,

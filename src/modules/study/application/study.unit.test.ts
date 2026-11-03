@@ -15,6 +15,7 @@ import {
   normalizeOption,
   type Answer,
   type Exercise,
+  type LessonChallenge,
 } from "../domain/exercises";
 import { assemblePlan, fallbackPlan, type LessonPlan } from "../domain/plan";
 import { buildTrail, nodeStates, trailProgressPercent, type TrailLine } from "../domain/trail";
@@ -401,10 +402,12 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   };
   let activePlanner = planner;
   let outOfBudget = false;
+  const challenges = new Map<string, LessonChallenge>();
   const deps = {
     study,
     plans,
     clock,
+    learnerChallenge: async (userId: string) => challenges.get(userId) ?? "steady",
     ids: new SequentialIds("at"),
     loadLines: async (episodeId: string, _pair: LanguagePair) => (episodeId === "ep-1" ? LINES : null),
     resolvePlanner: async (_userId: string) => {
@@ -440,6 +443,7 @@ function setup(planner: LessonPlanner | null = { name: "gemini", plan: async () 
   return {
     attempts,
     stored,
+    challenges,
     xp,
     progress,
     queued,
@@ -591,6 +595,30 @@ describe("sessão de estudo", () => {
   beforeEach(async () => {
     app = setup();
     await ready(app);
+  });
+
+  it("o retrato do aluno muda só as dicas da lição de cada conta; a correção no servidor segue a semente", async () => {
+    app.challenges.set("ana", "harder");
+    app.challenges.set("bia", "easier");
+    const harder = await app.start({ ...base, nodeIndex: 0 });
+    const easier = await app.start({ ...base, userId: "bia", nodeIndex: 0 });
+    const hinted = (lesson: typeof harder) =>
+      lesson.exercises.filter(
+        (exercise) =>
+          (exercise.kind === "order" || exercise.kind === "blank" || exercise.kind === "type") &&
+          exercise.hint !== null,
+      ).length;
+    expect(hinted(harder)).toBe(0);
+    expect(hinted(easier)).toBeGreaterThan(0);
+    app.challenges.set("ana", "easier");
+    const result = await app.complete({
+      ...base,
+      nodeIndex: 0,
+      seed: harder.seed,
+      answers: harder.exercises.map(rightAnswer),
+      seconds: 60,
+    });
+    expect(result).toMatchObject({ passed: true, accuracy: 100 });
   });
 
   it("aprova com o mínimo de acerto, paga XP só pelos acertos e libera o próximo bloco", async () => {

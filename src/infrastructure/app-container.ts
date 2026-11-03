@@ -180,6 +180,7 @@ import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructu
 import {
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
   type EmbeddingProvider,
@@ -557,6 +558,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     notify,
     onFallback: (stage: string, reason: string) => log.warn("recommendations.fallback", { stage, reason }),
   };
+  const getLearnerInsight = makeGetLearnerInsight(recommendationDeps);
 
   const sessionDeps = {
     users: identity,
@@ -779,6 +781,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     conversations,
     resolveTutor,
     recentMistakes,
+    studyPortrait: getLearnerInsight,
     awardXp,
     seasonContext: async (userId: string) => getSeasonContext(await learnerOf(userId)),
     createCards: createConversationCards,
@@ -798,6 +801,8 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     study,
     plans: study,
     resolvePlanner,
+    learnerChallenge: async (userId: string, pair: LanguagePair) =>
+      (await getLearnerInsight(userId, pair.target))?.challenge ?? "steady",
     notify,
     clock,
     ids,

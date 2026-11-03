@@ -15,6 +15,7 @@ import {
   MIN_REFRESH_HOURS,
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
   type NewSuggestionsNotice,
@@ -612,5 +613,34 @@ describe("aviso de sugestões novas", () => {
     });
     expect(result).toEqual({ refreshed: true });
     expect(repository.runs.get("ana")).toMatchObject({ status: "READY" });
+  });
+});
+
+describe("retrato do aluno para trilha e tutor", () => {
+  it("devolve o retrato da última rodada só para a própria conta e o mesmo idioma", async () => {
+    const repository = new InMemoryRecommendationRepository();
+    const local = new HashEmbeddingProvider();
+    repository.signals.set("ana", {
+      ...EMPTY_SIGNALS,
+      works: [SUITS],
+      lessons: { answers: 60, correct: 55, attempts: 10, failed: 0 },
+    });
+    await makeRefreshRecommendations({
+      repository,
+      resolveCandidates: async () => new FakeMetadataProvider(),
+      resolveEmbedding: async () => local,
+      localEmbedding: local,
+      resolveWriter: async () => null,
+      clock: new FixedClock("2026-10-12T12:00:00Z"),
+    })({ userId: "ana", level: "B2", language: "en" });
+    const insight = makeGetLearnerInsight({ repository });
+    expect(await insight("ana", "en")).toEqual({
+      challenge: "harder",
+      accuracyPercent: 92,
+      againPercent: null,
+      marksPerHundred: null,
+    });
+    expect(await insight("ana", "fr")).toBeNull();
+    expect(await insight("bia", "en")).toBeNull();
   });
 });
