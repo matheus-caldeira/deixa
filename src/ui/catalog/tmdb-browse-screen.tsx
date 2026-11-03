@@ -10,6 +10,7 @@ import type { LevelFit } from "@/shared/levels";
 import { STUDY_LANGUAGES, type StudyLanguage } from "@/shared/study-languages";
 import { BackIcon, SearchIcon } from "../icons";
 import { FIT_CLASS } from "./catalog-screen";
+import { downloadLevelRatings } from "@/ui/catalog/level-ratings-client";
 import { Poster, type PosterData } from "./poster";
 import { routes } from "@/shared/routes";
 
@@ -170,9 +171,9 @@ export function TmdbBrowseScreen({
           <BackIcon />
         </Link>
         <h1 style={{ fontSize: 24, flex: 1 }}>{t("title")}</h1>
-        <a className="btn ghost sm" href="/api/level-ratings/export" download>
+        <button type="button" className="btn ghost sm" onClick={downloadLevelRatings}>
           {t("export")}
-        </a>
+        </button>
       </div>
       <p className="small muted">{t("intro")}</p>
       <form

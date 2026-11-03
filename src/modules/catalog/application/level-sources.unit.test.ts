@@ -5,6 +5,7 @@ import { SequentialIds } from "@/shared/ids";
 import { posterColorsFor } from "../domain/catalog";
 import { aggregateLevelRanges, parseLevelSourceDocument, type LevelRange } from "../domain/level-ratings";
 import {
+  levelRatingsFile,
   makeAddLevelSource,
   makeGetWorkLevelRatings,
   makeListLevelSources,
@@ -316,5 +317,20 @@ describe("fontes de nível", () => {
     );
     await app.remove({ actor: ADMIN, sourceId });
     expect(app.sources.sources).toEqual([]);
+  });
+});
+
+describe("arquivo da exportação de níveis", () => {
+  it("nomeia pelo app e pelo dia e fecha o JSON com quebra de linha", () => {
+    const file = levelRatingsFile({
+      name: "Deixa",
+      exportedAt: "2026-11-03T12:30:00.000Z",
+      count: 1,
+      ratings: { "tv:1": "A2-B1" },
+      ai: {},
+    });
+    expect(file.filename).toBe("deixa-niveis-2026-11-03.json");
+    expect(file.contents.endsWith("}\n")).toBe(true);
+    expect(JSON.parse(file.contents)).toMatchObject({ count: 1, ratings: { "tv:1": "A2-B1" } });
   });
 });

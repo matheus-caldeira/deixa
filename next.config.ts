@@ -35,6 +35,7 @@ const webAliases = {
   ...Object.fromEntries(WEB_ACTIONS.map((name) => [`@/app/actions/${name}`, `./src/web/actions/${name}.ts`])),
   "@/ui/shell/speech-source": "./src/web/speech-source.ts",
   "@/ui/transfer/transfer-client": "./src/web/transfer-client.ts",
+  "@/ui/catalog/level-ratings-client": "./src/web/level-ratings-client.ts",
 };
 
 const nextConfig: NextConfig = {

@@ -1,8 +1,14 @@
 import { z } from "zod";
+import { levelRatingsFile } from "@/modules/catalog";
+import { APP_NAME } from "@/shared/app";
 import { AppError } from "@/shared/errors";
 import { operation } from "./operation";
 
 export const levelSourceOperations = {
+  "levelRatings.export": operation({
+    input: z.undefined(),
+    run: async ({ app }) => levelRatingsFile(await app.exportLevelRatings({ name: APP_NAME })),
+  }),
   "levelSources.add": operation({
     input: z.unknown(),
     refresh: true,

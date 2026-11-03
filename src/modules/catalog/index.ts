@@ -42,6 +42,7 @@ export {
 export {
   LEVEL_FETCH_FAILURES,
   LEVEL_RATING_KINDS,
+  levelRatingsFile,
   makeExportLevelRatings,
   makeAddLevelSource,
   makeGetWorkLevelRatings,
@@ -55,6 +56,7 @@ export {
   type LevelRating,
   type LevelRatingKind,
   type LevelRatingsExport,
+  type LevelRatingsFile,
   type LevelSource,
   type LevelSourceFetcher,
   type WorkLevelRatings,

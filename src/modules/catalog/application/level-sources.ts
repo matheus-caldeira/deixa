@@ -316,6 +316,18 @@ export type LevelRatingsExport = {
   ai: Record<string, { range: string; reason: string; model: string; ratedAt: string }>;
 };
 
+export type LevelRatingsFile = { filename: string; contents: string };
+
+const FILENAME_DATE_LENGTH = 10;
+
+export function levelRatingsFile(exported: LevelRatingsExport): LevelRatingsFile {
+  const day = exported.exportedAt.slice(0, FILENAME_DATE_LENGTH);
+  return {
+    filename: `${exported.name.toLowerCase()}-niveis-${day}.json`,
+    contents: `${JSON.stringify(exported, null, 2)}\n`,
+  };
+}
+
 const rangeText = ([min, max]: LevelRange) => (min === max ? min : `${min}-${max}`);
 
 export function makeExportLevelRatings(deps: ResolveDeps & Pick<Deps, "clock">) {
