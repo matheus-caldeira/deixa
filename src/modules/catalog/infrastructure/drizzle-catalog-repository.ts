@@ -1,4 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
+import { z } from "zod";
 import { isStudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
 import { qualified } from "@/infrastructure/database/qualified";
@@ -20,6 +21,7 @@ import {
   type MetadataSource,
   type PosterColors,
   type Season,
+  type WorkGenre,
 } from "../domain/catalog";
 import type {
   CatalogEntry,
@@ -61,6 +63,13 @@ function toPosterColors(value: unknown, title: string): PosterColors {
   return posterColorsFor(title);
 }
 
+const genresSchema = z.array(z.object({ id: z.number().int().nullable(), name: z.string().min(1) }));
+
+function toGenres(value: unknown): WorkGenre[] {
+  const parsed = genresSchema.safeParse(value);
+  return parsed.success ? parsed.data : [];
+}
+
 function toMedia(row: MediaRow, uploaderName: string | null): MediaItem {
   return {
     id: row.id,
@@ -79,6 +88,7 @@ function toMedia(row: MediaRow, uploaderName: string | null): MediaItem {
     levelMax: isCefrLevel(row.levelMax) ? row.levelMax : "B2",
     accent: row.accent,
     originalLanguage: isStudyLanguage(row.originalLanguage) ? row.originalLanguage : "en",
+    genres: toGenres(row.genres),
     uploaderName,
     metadataSyncedAt: row.metadataSyncedAt,
   };
@@ -165,6 +175,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
         levelMax: input.levelMax,
         accent: input.accent,
         originalLanguage: input.originalLanguage,
+        genres: input.genres ?? [],
         createdBy: input.createdBy,
         metadataSyncedAt: input.syncedAt,
         createdAt: input.createdAt,
@@ -179,6 +190,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
           posterPath: input.posterPath,
           backdropPath: input.backdropPath,
           metadataSyncedAt: input.syncedAt,
+          ...(input.genres ? { genres: input.genres } : {}),
         },
       })
       .returning({ id: mediaItems.id });

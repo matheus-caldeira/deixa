@@ -9,6 +9,7 @@ import type {
   MetadataSource,
   PosterColors,
   Season,
+  WorkGenre,
 } from "../domain/catalog";
 
 export type WorkSummary = {
@@ -47,6 +48,7 @@ export type WorkPage = { works: WorkCandidate[]; page: number; totalPages: numbe
 export type SeasonSummary = { seasonNumber: number; title: string; episodeCount: number | null };
 
 export type WorkDetails = WorkSummary & {
+  genres: WorkGenre[];
   seasons: SeasonSummary[];
   runtimeMinutes: number | null;
   accent?: string;
@@ -86,6 +88,7 @@ export type MediaUpsert = {
   levelMax: CefrLevel;
   accent: string | null;
   originalLanguage: StudyLanguage;
+  genres?: WorkGenre[];
   createdBy: string | null;
   syncedAt: Date | null;
   createdAt: Date;

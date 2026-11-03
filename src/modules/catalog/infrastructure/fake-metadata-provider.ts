@@ -1,7 +1,7 @@
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 import type { CefrLevel } from "@/shared/levels";
-import type { MediaType, PosterColors } from "../domain/catalog";
+import type { MediaType, PosterColors, WorkGenre } from "../domain/catalog";
 import type {
   DiscoverQuery,
   EpisodeMetadata,
@@ -179,6 +179,19 @@ const FAKE_WORKS: readonly FakeWork[] = [
 
 const EXTERNAL_PREFIX = "fake-";
 
+const TMDB_GENRE_IDS: Readonly<Record<string, number>> = {
+  Comédia: 35,
+  Crime: 80,
+  Drama: 18,
+  Família: 10751,
+  História: 36,
+  Romance: 10749,
+};
+
+function toGenres(work: FakeWork): WorkGenre[] {
+  return work.genres.map((name) => ({ id: TMDB_GENRE_IDS[name] ?? null, name }));
+}
+
 function toSummary(work: FakeWork): WorkSummary {
   return {
     provider: "fake",
@@ -227,6 +240,7 @@ export class FakeMetadataProvider implements MetadataProvider {
     return {
       ...toSummary(work),
       runtimeMinutes: work.runtimeMinutes,
+      genres: toGenres(work),
       levelRange: work.levels,
       accent: work.accent,
       seasons: Object.entries(work.seasons).map(([seasonNumber, titles]) => ({

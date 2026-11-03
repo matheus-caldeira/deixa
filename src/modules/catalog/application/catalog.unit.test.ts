@@ -102,6 +102,26 @@ describe("catálogo", () => {
     expect(await app.catalog.findMediaById(mediaId)).toMatchObject({ levelMin: "A2", levelMax: "B2" });
   });
 
+  it("guarda os gêneros no cadastro e os preenche na atualização de obra que não tinha", async () => {
+    const { mediaId } = await app.registerWork({
+      userId: "u1",
+      type: "series",
+      externalId: fakeExternalId("himym"),
+    });
+    const romanticComedy = [
+      { id: 35, name: "Comédia" },
+      { id: 10749, name: "Romance" },
+    ];
+    expect((await app.catalog.findMediaById(mediaId))?.genres).toEqual(romanticComedy);
+    const stored = app.catalog.media.get(mediaId);
+    if (stored) app.catalog.media.set(mediaId, { ...stored, genres: [] });
+    expect(await app.refreshWork({ mediaId, force: false })).toEqual({ refreshed: false });
+    expect((await app.catalog.findMediaById(mediaId))?.genres).toEqual([]);
+    app.clock.advanceDays(METADATA_MAX_AGE_DAYS + 1);
+    await app.refreshWork({ mediaId, force: false });
+    expect((await app.catalog.findMediaById(mediaId))?.genres).toEqual(romanticComedy);
+  });
+
   it("carrega os episódios da temporada uma vez e depois lê do banco", async () => {
     const { mediaId } = await app.registerWork({
       userId: "u1",

@@ -24,6 +24,7 @@ const details = (externalId: string): WorkDetails => ({
   year: 2001,
   posterPath: null,
   originalLanguage: "en",
+  genres: [],
   seasons: [],
   runtimeMinutes: null,
 });

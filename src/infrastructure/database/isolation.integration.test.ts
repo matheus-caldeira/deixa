@@ -134,6 +134,26 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     });
   });
 
+  it("guarda os gêneros da obra e os mantém quando a atualização não traz nenhum", async () => {
+    const dramaCrime = [
+      { id: 18, name: "Drama" },
+      { id: 80, name: "Crime" },
+    ];
+    expect((await app.getEpisodeContext(episodeId))?.media.genres).toEqual(dramaCrime);
+    const catalog = new DrizzleCatalogRepository(handle.db);
+    const stored = await catalog.findMediaById(mediaId);
+    if (!stored) throw new Error("obra esperada");
+    await catalog.upsertMedia({
+      ...stored,
+      metadataProvider: "fake",
+      createdBy: null,
+      syncedAt: stored.metadataSyncedAt,
+      createdAt: new Date(),
+      genres: undefined,
+    });
+    expect((await catalog.findMediaById(mediaId))?.genres).toEqual(dramaCrime);
+  });
+
   it("um usuário não vê marcações, cards, XP nem a chave de IA do outro", async () => {
     const view = await app.getReadingView(ana, episodeId, PAIR);
     const line = view.lines.find((candidate) => candidate.text.includes("picked up the tab"));

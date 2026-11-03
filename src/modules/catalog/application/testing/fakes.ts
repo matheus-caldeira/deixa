@@ -50,6 +50,7 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
       type: input.type,
       title: input.title,
       originalLanguage: input.originalLanguage,
+      genres: input.genres ?? existing?.genres ?? [],
       originalTitle: input.originalTitle,
       overview: input.overview,
       year: input.year,

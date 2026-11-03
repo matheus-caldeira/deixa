@@ -225,6 +225,13 @@
       "when": 1793141954178,
       "tag": "0031_query_string_routes",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793748740265,
+      "tag": "0032_media_genres",
+      "breakpoints": true
     }
   ]
 }

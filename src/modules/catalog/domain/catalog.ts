@@ -7,6 +7,7 @@ export type MetadataProviderName = "tmdb" | "fake";
 export type MetadataSource = MetadataProviderName | "manual";
 export type EpisodeStatus = "NONE" | "UPLOADED" | "PROCESSING" | "READY" | "FAILED" | "NEEDS_REVIEW";
 export type PosterColors = { c1: string; c2: string; fg: string };
+export type WorkGenre = { id: number | null; name: string };
 
 export const MOVIE_SEASON_NUMBER = 0;
 export const MOVIE_EPISODE_NUMBER = 1;
@@ -33,6 +34,7 @@ export type MediaItem = {
   levelMax: CefrLevel;
   accent: string | null;
   originalLanguage: StudyLanguage;
+  genres: WorkGenre[];
   uploaderName: string | null;
   metadataSyncedAt: Date | null;
 };
