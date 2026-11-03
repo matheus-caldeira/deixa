@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { isStudyLanguage } from "@/shared/study-languages";
 import type { Database } from "@/infrastructure/database/client";
+import { qualified } from "@/infrastructure/database/qualified";
 import {
   episodeProgress,
   episodes,
@@ -256,7 +257,7 @@ export class DrizzleCatalogRepository implements CatalogRepository, EpisodeProgr
   }
 
   async listCatalog(): Promise<CatalogEntry[]> {
-    const readyEpisodes = sql<number>`(select count(*)::int from ${episodes} inner join ${seasons} on ${seasons.id} = ${episodes.seasonId} where ${seasons.mediaItemId} = ${mediaItems.id} and ${episodes.status} = 'READY')`;
+    const readyEpisodes = sql<number>`(select count(*)::int from ${episodes} inner join ${seasons} on ${qualified(seasons.id)} = ${qualified(episodes.seasonId)} where ${qualified(seasons.mediaItemId)} = ${qualified(mediaItems.id)} and ${qualified(episodes.status)} = 'READY')`;
     const rows = await this.db
       .select({ media: mediaItems, uploaderName: users.name, readyEpisodes })
       .from(mediaItems)

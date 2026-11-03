@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
+import { qualified } from "@/infrastructure/database/qualified";
 import { conversationSessions, conversationTurns } from "@/infrastructure/database/schema";
 import type { CefrLevel } from "@/shared/levels";
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
@@ -113,7 +114,7 @@ export class DrizzleConversationRepository implements ConversationRepository {
     language: StudyLanguage,
     limit: number,
   ): Promise<(Session & { turnCount: number })[]> {
-    const turnCount = sql<number>`(select count(*)::int from ${conversationTurns} where ${conversationTurns.sessionId} = ${conversationSessions.id})`;
+    const turnCount = sql<number>`(select count(*)::int from ${conversationTurns} where ${qualified(conversationTurns.sessionId)} = ${qualified(conversationSessions.id)})`;
     const rows = await this.db
       .select({ session: conversationSessions, turnCount })
       .from(conversationSessions)

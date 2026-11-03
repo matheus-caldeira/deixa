@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Database } from "@/infrastructure/database/client";
+import { qualified } from "@/infrastructure/database/qualified";
 import {
   conversationSessions,
   learningItemExplanations,
@@ -134,8 +135,8 @@ export class DrizzlePersonalSeriesRepository implements PersonalSeriesRepository
   }
 
   async listEpisodes(seriesId: string): Promise<Episode[]> {
-    const cardCount = sql<number>`(select count(*)::int from ${personalEpisodeCards} where ${personalEpisodeCards.episodeId} = ${personalEpisodes.id})`;
-    const sourceCount = sql<number>`(select count(distinct ${personalEpisodeCards.sessionId})::int from ${personalEpisodeCards} where ${personalEpisodeCards.episodeId} = ${personalEpisodes.id})`;
+    const cardCount = sql<number>`(select count(*)::int from ${personalEpisodeCards} where ${qualified(personalEpisodeCards.episodeId)} = ${qualified(personalEpisodes.id)})`;
+    const sourceCount = sql<number>`(select count(distinct ${qualified(personalEpisodeCards.sessionId)})::int from ${personalEpisodeCards} where ${qualified(personalEpisodeCards.episodeId)} = ${qualified(personalEpisodes.id)})`;
     const rows = await this.db
       .select({ episode: personalEpisodes, cardCount, sourceCount })
       .from(personalEpisodes)
@@ -236,8 +237,8 @@ export class DrizzlePersonalSeriesRepository implements PersonalSeriesRepository
 
   async findEpisode(userId: string, episodeId: string): Promise<OwnedEpisode | null> {
     if (!isId(episodeId)) return null;
-    const cardCount = sql<number>`(select count(*)::int from ${personalEpisodeCards} where ${personalEpisodeCards.episodeId} = ${personalEpisodes.id})`;
-    const sourceCount = sql<number>`(select count(distinct ${personalEpisodeCards.sessionId})::int from ${personalEpisodeCards} where ${personalEpisodeCards.episodeId} = ${personalEpisodes.id})`;
+    const cardCount = sql<number>`(select count(*)::int from ${personalEpisodeCards} where ${qualified(personalEpisodeCards.episodeId)} = ${qualified(personalEpisodes.id)})`;
+    const sourceCount = sql<number>`(select count(distinct ${qualified(personalEpisodeCards.sessionId)})::int from ${personalEpisodeCards} where ${qualified(personalEpisodeCards.episodeId)} = ${qualified(personalEpisodes.id)})`;
     const [row] = await this.db
       .select({ episode: personalEpisodes, season: personalSeasons, cardCount, sourceCount })
       .from(personalEpisodes)
