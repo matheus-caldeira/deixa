@@ -466,11 +466,6 @@ export function makeRefreshRecommendations(deps: Deps) {
         studied,
       );
       const finishedAt = deps.clock.now();
-      const newlySuggested = await deps.repository.rememberSuggested(
-        input.userId,
-        written.map(({ draft }) => workKeyOf(draft.work)),
-        finishedAt,
-      );
       await deps.repository.replaceSuggestions(
         input.userId,
         written.map(({ draft, reason, levels }, position) => ({
@@ -502,6 +497,11 @@ export function makeRefreshRecommendations(deps: Deps) {
           insight: JSON.stringify(assessment.insight),
           failureReason: null,
         },
+        finishedAt,
+      );
+      const newlySuggested = await deps.repository.rememberSuggested(
+        input.userId,
+        written.map(({ draft }) => workKeyOf(draft.work)),
         finishedAt,
       );
       await announceNewSuggestions(deps, input.userId, newlySuggested);

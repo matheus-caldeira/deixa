@@ -614,6 +614,21 @@ describe("aviso de sugestões novas", () => {
     expect(result).toEqual({ refreshed: true });
     expect(repository.runs.get("ana")).toMatchObject({ status: "READY" });
   });
+
+  it("falha ao gravar as sugestões não marca as obras como já sugeridas", async () => {
+    const replace = repository.replaceSuggestions.bind(repository);
+    repository.replaceSuggestions = async () => {
+      throw new Error("banco fora do ar");
+    };
+    await expect(refresh()).rejects.toThrow("banco fora do ar");
+    expect(notices).toHaveLength(0);
+    repository.replaceSuggestions = replace;
+    later();
+    await refresh();
+    const written = repository.suggestions.get("ana") ?? [];
+    expect(written.length).toBeGreaterThan(0);
+    expect(notices.map((notice) => notice.params.count)).toEqual([written.length]);
+  });
 });
 
 describe("retrato do aluno para trilha e tutor", () => {
