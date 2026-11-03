@@ -1757,9 +1757,11 @@
     "inboxOne": "1 new notification",
     "inboxMany": "{count} new notifications",
     "statusStarting": "Server: starting",
-    "statusBusy": "Server: the port is taken by another program",
+    "statusBusy": "Server: every port in the range is taken",
     "statusMissing": "Server: server files not found",
     "statusUp": "Server: running",
-    "statusDown": "Server: down"
+    "statusDown": "Server: down",
+    "trayAutoEnter": "Sign in automatically as the owner",
+    "trayAutostart": "Open at login"
   }
 }

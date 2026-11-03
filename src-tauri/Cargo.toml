@@ -25,6 +25,7 @@ getrandom = "0.3"
 hmac = "0.12"
 sha2 = "0.10"
 tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
 
 [profile.release]
 opt-level = "s"
