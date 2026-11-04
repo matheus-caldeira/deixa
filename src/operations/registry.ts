@@ -1,3 +1,4 @@
+import { accountOperations } from "./accounts";
 import { aiSettingsOperations } from "./ai-settings";
 import { audioOperations } from "./audio";
 import { catalogOperations } from "./catalog";
@@ -28,12 +29,14 @@ import { recapView } from "./views/recap";
 import { readView } from "./views/read";
 import { tutorView } from "./views/tutor";
 import { settingsView } from "./views/settings";
+import { accountsView } from "./views/accounts";
 import { seriesView } from "./views/series";
 import { seriesEpisodeView } from "./views/seriesEpisode";
 import { progressView } from "./views/progress";
 import { catalogView } from "./views/catalog";
 
 export const OPERATION_GROUPS = [
+  accountOperations,
   aiSettingsOperations,
   catalogOperations,
   levelSourceOperations,
@@ -53,6 +56,7 @@ export const OPERATION_GROUPS = [
   seriesEpisodeView,
   seriesView,
   settingsView,
+  accountsView,
   tutorView,
   readView,
   recapView,
@@ -71,6 +75,7 @@ export const OPERATION_GROUPS = [
 ];
 
 export const OPERATIONS = {
+  ...accountOperations,
   ...aiSettingsOperations,
   ...catalogOperations,
   ...levelSourceOperations,
@@ -90,6 +95,7 @@ export const OPERATIONS = {
   ...seriesEpisodeView,
   ...seriesView,
   ...settingsView,
+  ...accountsView,
   ...tutorView,
   ...readView,
   ...recapView,

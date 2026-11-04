@@ -58,7 +58,9 @@ export type ImportReport = {
   warnings: ImportWarning[];
 };
 
-const uploadPath = (userId: string, uploadId: string): string => `packages/${userId}/${uploadId}.zip`;
+export const accountUploadsDirectory = (userId: string): string => `packages/${userId}`;
+const uploadPath = (userId: string, uploadId: string): string =>
+  `${accountUploadsDirectory(userId)}/${uploadId}.zip`;
 const AUDIO_PATH = (voiceId: string, hash: string, format: string) => `audio/${voiceId}/${hash}.${format}`;
 const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
 const AUDIO_FORMAT = "wav";

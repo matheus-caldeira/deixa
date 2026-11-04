@@ -1,11 +1,21 @@
-import { and, eq, gt, like, sql } from "drizzle-orm";
+import { and, count, eq, gt, like, max, sql } from "drizzle-orm";
 import type { Database } from "@/infrastructure/database/client";
-import { sessions, userLanguagePairs, userPreferences, users } from "@/infrastructure/database/schema";
+import {
+  jobQueue,
+  sessions,
+  userLanguagePairs,
+  userPreferences,
+  users,
+} from "@/infrastructure/database/schema";
 import { isStudyLanguage, type StudyLanguage } from "@/shared/study-languages";
 import { isCefrLevel } from "@/shared/levels";
 import { DEFAULT_LOCALE, isLocale } from "@/shared/locales";
 import type { Accent, Preferences, User } from "../domain/user";
 import type {
+  AccountRemoval,
+  AccountRepository,
+  AccountSummary,
+  AdminChange,
   LanguagePairRepository,
   NewUser,
   PreferencesRepository,
@@ -15,7 +25,7 @@ import type {
   UserRepository,
 } from "../application/ports";
 
-const FIRST_ACCOUNT_LOCK = 7_301_001;
+const ACCOUNTS_LOCK = 7_301_001;
 
 const toStudyLanguage = (value: string, fallback: StudyLanguage): StudyLanguage =>
   isStudyLanguage(value) ? value : fallback;
@@ -36,10 +46,96 @@ function toPreferences(row: PreferencesRow): Preferences {
   };
 }
 
+type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+async function lockAccounts(tx: Transaction): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(${ACCOUNTS_LOCK})`);
+}
+
+async function isLastAdmin(tx: Transaction, accountId: string): Promise<boolean | null> {
+  const [target] = await tx
+    .select({ isAdmin: users.isAdmin })
+    .from(users)
+    .where(eq(users.id, accountId))
+    .limit(1);
+  if (!target) return null;
+  if (!target.isAdmin) return false;
+  const [admins] = await tx.select({ total: count() }).from(users).where(eq(users.isAdmin, true));
+  return (admins?.total ?? 0) <= 1;
+}
+
 export class DrizzleIdentityRepository
-  implements UserRepository, SessionRepository, PreferencesRepository, LanguagePairRepository
+  implements
+    UserRepository,
+    SessionRepository,
+    PreferencesRepository,
+    LanguagePairRepository,
+    AccountRepository
 {
   constructor(private readonly db: Database) {}
+
+  async hasAccounts(): Promise<boolean> {
+    const [row] = await this.db.select({ id: users.id }).from(users).limit(1);
+    return row !== undefined;
+  }
+
+  async listAccounts(): Promise<AccountSummary[]> {
+    const [rows, activity] = await Promise.all([
+      this.db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          avatarColor: users.avatarColor,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .orderBy(users.createdAt, users.email),
+      this.db
+        .select({ userId: sessions.userId, lastActiveAt: max(sessions.createdAt) })
+        .from(sessions)
+        .groupBy(sessions.userId),
+    ]);
+    const lastActive = new Map(activity.map((entry) => [entry.userId, entry.lastActiveAt]));
+    return rows.map((row) => ({ ...row, lastActiveAt: lastActive.get(row.id) ?? null }));
+  }
+
+  async setAdmin(accountId: string, isAdmin: boolean): Promise<AdminChange> {
+    return this.db.transaction(async (tx) => {
+      await lockAccounts(tx);
+      const last = await isLastAdmin(tx, accountId);
+      if (last === null) return "not_found";
+      if (!isAdmin && last) return "last_admin";
+      await tx.update(users).set({ isAdmin }).where(eq(users.id, accountId));
+      return "changed";
+    });
+  }
+
+  async replacePassword(accountId: string, passwordHash: string): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const updated = await tx
+        .update(users)
+        .set({ passwordHash })
+        .where(eq(users.id, accountId))
+        .returning({ id: users.id });
+      if (updated.length === 0) return false;
+      await tx.delete(sessions).where(eq(sessions.userId, accountId));
+      return true;
+    });
+  }
+
+  async removeAccount(accountId: string): Promise<AccountRemoval> {
+    return this.db.transaction(async (tx) => {
+      await lockAccounts(tx);
+      const last = await isLastAdmin(tx, accountId);
+      if (last === null) return "not_found";
+      if (last) return "last_admin";
+      await tx.delete(jobQueue).where(sql`${jobQueue.payload} ->> 'userId' = ${accountId}`);
+      await tx.delete(users).where(eq(users.id, accountId));
+      return "removed";
+    });
+  }
 
   async findByEmail(email: string): Promise<UserRecord | null> {
     const [row] = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -87,7 +183,7 @@ export class DrizzleIdentityRepository
 
   async create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void> {
     await this.db.transaction(async (tx) => {
-      await tx.execute(sql`select pg_advisory_xact_lock(${FIRST_ACCOUNT_LOCK})`);
+      await lockAccounts(tx);
       await tx.insert(users).values({
         ...user,
         isAdmin: sql<boolean>`not exists (select 1 from ${users})`,

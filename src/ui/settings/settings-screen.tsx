@@ -12,6 +12,7 @@ import {
 } from "@/modules/ai-credentials";
 import type { UsageOverview, UsageSummary } from "@/modules/ai-usage";
 import type { AppSettings } from "@/modules/settings";
+import { BackIcon, KeyIcon } from "../icons";
 import { CredentialCard } from "../shell/credential-card";
 import { ServerSettingsCard } from "../shell/server-settings-card";
 import { AiUsageSection } from "./ai-usage-section";
@@ -98,6 +99,28 @@ function KeysTab({
   );
 }
 
+function AccountsLink() {
+  const t = useTranslations("settings");
+  return (
+    <div className="card" style={{ padding: "4px 16px" }}>
+      <div className="ep" style={{ gridTemplateColumns: "1fr" }}>
+        <Link className="scen" href="/accounts">
+          <span className="ic">
+            <KeyIcon />
+          </span>
+          <span className="col" style={{ gap: 3, minWidth: 0 }}>
+            <b>{t("accounts")}</b>
+            <span className="small muted">{t("accountsDetail")}</span>
+          </span>
+          <span style={{ color: "var(--muted)", width: 20, transform: "rotate(180deg)" }}>
+            <BackIcon />
+          </span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsScreen({ view }: { view: SettingsView }) {
   const t = useTranslations("settings");
   const aiServices = view.credentials.filter(
@@ -173,6 +196,7 @@ export function SettingsScreen({ view }: { view: SettingsView }) {
         {view.tab === "server" && view.settings ? (
           <>
             <p className="small muted">{t("serverIntro")}</p>
+            <AccountsLink />
             <ServerSettingsCard initial={view.settings} />
           </>
         ) : null}

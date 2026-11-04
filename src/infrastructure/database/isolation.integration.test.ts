@@ -77,8 +77,15 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
       suggestionWriterForUser: async () => null,
       testCredential: async () => true,
     });
-    ana = (await app.signUp({ name: "Ana", email: "ana@example.com", password: "segredo123", level: "A1" }))
-      .userId;
+    ana = (
+      await app.signUp({
+        name: "Ana",
+        email: "ana@example.com",
+        password: "segredo123",
+        level: "A1",
+        origin: { isLoopback: async () => true },
+      })
+    ).userId;
     lucas = (
       await app.signUp({ name: "Lucas", email: "lucas@example.com", password: "segredo123", level: "C1" })
     ).userId;

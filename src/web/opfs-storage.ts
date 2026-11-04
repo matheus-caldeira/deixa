@@ -95,4 +95,17 @@ export class OpfsFileStorage implements FileStorage {
   async exists(relativePath: string): Promise<boolean> {
     return (await this.file(relativePath, false)) !== null;
   }
+
+  async removeDirectory(relativePath: string): Promise<void> {
+    const parts = segments(relativePath);
+    const name = parts.pop();
+    if (!name) throw new Error("invalid storage path");
+    const parent = await this.directory(parts, false);
+    if (!parent) return;
+    try {
+      await parent.removeEntry(name, { recursive: true });
+    } catch {
+      return;
+    }
+  }
 }

@@ -11,7 +11,29 @@ export interface UserRepository {
   findAdmin(): Promise<User | null>;
   create(user: NewUser, preferences: Preferences, createdAt: Date): Promise<void>;
   listByEmailSuffix(suffix: string): Promise<(User & { level: Preferences["level"] })[]>;
+  hasAccounts(): Promise<boolean>;
 }
+
+export type AccountSummary = User & { createdAt: Date; lastActiveAt: Date | null };
+export type AdminChange = "changed" | "last_admin" | "not_found";
+export type AccountRemoval = "removed" | "last_admin" | "not_found";
+
+export interface AccountRepository {
+  listAccounts(): Promise<AccountSummary[]>;
+  setAdmin(accountId: string, isAdmin: boolean): Promise<AdminChange>;
+  replacePassword(accountId: string, passwordHash: string): Promise<boolean>;
+  removeAccount(accountId: string): Promise<AccountRemoval>;
+}
+
+export interface AccountFiles {
+  removeFor(accountId: string): Promise<void>;
+}
+
+export interface RequestOrigin {
+  isLoopback(): Promise<boolean>;
+}
+
+export type FirstAccountPolicy = "loopback-only" | "open";
 
 export interface SessionRepository {
   createSession(session: {
