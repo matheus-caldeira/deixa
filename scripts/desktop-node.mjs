@@ -100,9 +100,32 @@ function extractNode(archive, version, platform, workspace) {
   return join(workspace, member);
 }
 
-function stripWhenSafe(binary, platform) {
-  if (platform.os !== "linux" || process.platform !== "linux") return false;
+function stripLinux(binary) {
   return run("strip", ["--strip-all", binary]);
+}
+
+function stripMacos(binary) {
+  const candidate = `${binary}.stripped`;
+  copyFileSync(binary, candidate);
+  const ready =
+    run("strip", ["-x", candidate]) &&
+    run("codesign", ["--force", "--sign", "-", candidate]) &&
+    run(candidate, ["-e", "process.exit(0)"]);
+  if (!ready) {
+    rmSync(candidate, { force: true });
+    return false;
+  }
+  renameSync(candidate, binary);
+  return true;
+}
+
+const STRIPPERS = { linux: stripLinux, darwin: stripMacos };
+const HOST_OS = { linux: "linux", darwin: "macos" };
+
+function stripWhenSafe(binary, platform) {
+  const strip = STRIPPERS[process.platform];
+  if (!strip || HOST_OS[process.platform] !== platform.os) return false;
+  return strip(binary);
 }
 
 function replaceFile(source, destination) {
