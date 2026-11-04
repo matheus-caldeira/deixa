@@ -24,6 +24,7 @@
     "test:integration:pglite": "TEST_DATABASE_DRIVER=pglite vitest run --config vitest.integration.config.mts",
     "test:bundle": "vitest run --config vitest.bundle.config.mts",
     "test:web": "pnpm build:web && playwright test --config playwright.web.config.ts",
+    "test:desktop": "pnpm desktop:server && tsx tests/desktop/prepare.ts && playwright test --config playwright.desktop.config.ts",
     "test:e2e": "pnpm build && tsx tests/e2e/prepare.ts && playwright test",
     "setup:env": "node scripts/setup-env.mjs",
     "infra:up": "docker compose up -d --wait postgres && docker compose up -d kokoro",
