@@ -26,6 +26,7 @@ hmac = "0.12"
 sha2 = "0.10"
 tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
+ureq = { version = "3", default-features = false, features = ["rustls"] }
 
 [profile.release]
 opt-level = "s"

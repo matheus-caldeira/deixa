@@ -1762,6 +1762,7 @@
     "statusUp": "Servidor: no ar",
     "statusDown": "Servidor: fora do ar",
     "trayAutoEnter": "Entrar sozinho como o dono",
-    "trayAutostart": "Abrir ao iniciar o computador"
+    "trayAutostart": "Abrir ao iniciar o computador",
+    "updateAvailable": "Versão {version} disponível"
   }
 }

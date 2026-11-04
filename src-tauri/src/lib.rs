@@ -1,6 +1,7 @@
 mod labels;
 mod listeners;
 mod shell;
+mod updates;
 
 use std::collections::HashSet;
 use std::io::{Read, Write};
@@ -48,6 +49,12 @@ const HOME_PATH: &str = "/";
 const TAP_ACTION: &str = "tap";
 const ORPHAN_STOP_ATTEMPTS: u32 = 20;
 const ORPHAN_STOP_INTERVAL: Duration = Duration::from_millis(250);
+const UPDATE_RECORD_FILE: &str = "desktop-update-check.txt";
+const LATEST_RELEASE_URL: &str = "https://api.github.com/repos/matheus-caldeira/deixa/releases/latest";
+const UPDATE_TIMEOUT: Duration = Duration::from_secs(10);
+const UPDATE_RETRY_INTERVAL: Duration = Duration::from_secs(60 * 60);
+const MAX_RELEASE_BYTES: u64 = 512 * 1024;
+const UPDATE_ITEM: &str = "update";
 #[cfg(target_os = "macos")]
 const TRAY_TEMPLATE_ICON: &[u8] = include_bytes!("../icons/tray-template@2x.png");
 static ACTIVE_PORT: AtomicU16 = AtomicU16::new(0);
@@ -459,6 +466,106 @@ struct SignedOut(AtomicBool);
 struct NotificationTargets(Mutex<HashMap<i32, String>>);
 struct LatestTarget(Mutex<Option<String>>);
 struct ResumeTarget(Mutex<Option<String>>);
+struct UpdateNotice(Mutex<Option<updates::Release>>);
+
+enum ReleaseLookup {
+    Answered(Option<updates::Release>),
+    Unreachable,
+}
+
+fn unix_now() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|elapsed| elapsed.as_secs()).unwrap_or(0)
+}
+
+fn current_version(app: &AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+fn read_update_record(app: &AppHandle) -> updates::CheckRecord {
+    data_home(app)
+        .and_then(|home| std::fs::read_to_string(home.join(UPDATE_RECORD_FILE)).ok())
+        .map(|text| updates::parse_record(&text))
+        .unwrap_or_default()
+}
+
+fn save_update_record(app: &AppHandle, record: &updates::CheckRecord) {
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::create_dir_all(&home);
+        let _ = std::fs::write(home.join(UPDATE_RECORD_FILE), updates::format_record(record));
+    }
+}
+
+fn look_up_latest_release(app: &AppHandle) -> ReleaseLookup {
+    let agent: ureq::Agent = ureq::Agent::config_builder().timeout_global(Some(UPDATE_TIMEOUT)).build().into();
+    let answer = agent
+        .get(LATEST_RELEASE_URL)
+        .header("User-Agent", format!("Deixa-desktop/{}", current_version(app)))
+        .header("Accept", "application/vnd.github+json")
+        .call();
+    match answer {
+        Ok(mut response) => {
+            let body = response.body_mut().with_config().limit(MAX_RELEASE_BYTES).read_to_string();
+            ReleaseLookup::Answered(body.ok().and_then(|text| updates::parse_release(&text)))
+        }
+        Err(ureq::Error::StatusCode(_)) => ReleaseLookup::Answered(None),
+        Err(_) => ReleaseLookup::Unreachable,
+    }
+}
+
+fn update_text(labels: &Labels, release: &updates::Release) -> String {
+    labels.fill("updateAvailable", &[("version", &release.version)])
+}
+
+fn offer_update(
+    app: &AppHandle,
+    menu: &Menu<tauri::Wry>,
+    item: &MenuItem<tauri::Wry>,
+    separator: &PredefinedMenuItem<tauri::Wry>,
+    release: Option<updates::Release>,
+) {
+    let Some(release) = updates::newer_release(release.as_ref(), &current_version(app)) else {
+        return;
+    };
+    let _ = item.set_text(update_text(&current_labels(app), &release));
+    let first_offer = app
+        .state::<UpdateNotice>()
+        .0
+        .lock()
+        .map(|mut notice| notice.replace(release).is_none())
+        .unwrap_or(false);
+    if first_offer && menu.get(UPDATE_ITEM).is_none() {
+        let _ = menu.insert_items(&[item, separator], 0);
+    }
+}
+
+fn watch_updates(
+    app: AppHandle,
+    menu: Menu<tauri::Wry>,
+    item: MenuItem<tauri::Wry>,
+    separator: PredefinedMenuItem<tauri::Wry>,
+) {
+    std::thread::spawn(move || {
+        offer_update(&app, &menu, &item, &separator, read_update_record(&app).release);
+        loop {
+            let record = read_update_record(&app);
+            let now = unix_now();
+            if updates::should_check(record.checked_at, now) {
+                if let ReleaseLookup::Answered(release) = look_up_latest_release(&app) {
+                    save_update_record(&app, &updates::CheckRecord { checked_at: Some(now), release: release.clone() });
+                    offer_update(&app, &menu, &item, &separator, release);
+                }
+            }
+            std::thread::sleep(UPDATE_RETRY_INTERVAL);
+        }
+    });
+}
+
+fn open_update_page(app: &AppHandle) {
+    let url = app.state::<UpdateNotice>().0.lock().ok().and_then(|notice| notice.clone()).map(|release| release.url);
+    if let Some(url) = url.filter(|url| url.starts_with(updates::RELEASES_PAGE_PREFIX)) {
+        let _ = app.opener().open_url(url, None::<&str>);
+    }
+}
 
 fn saved_auto_enter(app: &AppHandle) -> bool {
     let text = data_home(app).and_then(|home| std::fs::read_to_string(home.join(AUTO_ENTER_FILE)).ok());
@@ -1087,6 +1194,8 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         None::<&str>,
     )?;
     let quit = MenuItem::with_id(app, "quit", labels.get("trayQuit"), true, None::<&str>)?;
+    let update = MenuItem::with_id(app, UPDATE_ITEM, labels.get("updateAvailable"), true, None::<&str>)?;
+    let update_separator = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(
         app,
         &[
@@ -1117,6 +1226,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 go_to(app, &target);
             }
             "inbox" => open_notification(app, None),
+            UPDATE_ITEM => open_update_page(app),
             "browser" => {
                 let _ = app.opener().open_url(local_url(), None::<&str>);
             }
@@ -1135,6 +1245,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         tray = tray.icon(icon.clone());
     }
     tray.build(app)?;
+    watch_updates(app.clone(), menu.clone(), update.clone(), update_separator);
 
     let handle = app.clone();
     let hidden = shell::launched_hidden(std::env::args());
@@ -1166,6 +1277,10 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 let _ = auto_enter.set_text(next.get("trayAutoEnter"));
                 let _ = autostart.set_text(next.get("trayAutostart"));
                 let _ = quit.set_text(next.get("trayQuit"));
+                let offered = handle.state::<UpdateNotice>().0.lock().ok().and_then(|notice| notice.clone());
+                if let Some(release) = offered {
+                    let _ = update.set_text(update_text(&next, &release));
+                }
                 let menu_owner = handle.clone();
                 let _ = handle.run_on_main_thread(move || {
                     let _ = build_app_menu(&menu_owner, &next);
@@ -1220,6 +1335,7 @@ pub fn run() {
         .manage(NotificationTargets(Mutex::new(HashMap::new())))
         .manage(LatestTarget(Mutex::new(None)))
         .manage(ResumeTarget(Mutex::new(None)))
+        .manage(UpdateNotice(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))

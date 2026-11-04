@@ -1762,6 +1762,7 @@
     "statusUp": "Server: running",
     "statusDown": "Server: down",
     "trayAutoEnter": "Sign in automatically as the owner",
-    "trayAutostart": "Open at login"
+    "trayAutostart": "Open at login",
+    "updateAvailable": "Version {version} available"
   }
 }
