@@ -146,8 +146,12 @@ pnpm desktop:build       # gera só o aplicativo em src-tauri/target/release/bun
 pnpm desktop:installer   # gera também o instalador
 ```
 
+O `desktop:server` baixa o Node oficial da versão fixada no `.nvmrc` para a plataforma do Rust, confere o
+hash no `SHASUMS256.txt` de nodejs.org e guarda o download em `node_modules/.cache/deixa-node/`. Sem rede, use
+o Node da máquina com `DEIXA_DESKTOP_LOCAL_NODE=1 pnpm desktop:server` (só para desenvolvimento).
+
 Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
-instalado ficam na pasta de dados do sistema, não na pasta do projeto.
+instalado ficam na pasta de dados do sistema, não na pasta do projeto; a pasta do servidor é só leitura.
 
 ## Publicar uma versão
 

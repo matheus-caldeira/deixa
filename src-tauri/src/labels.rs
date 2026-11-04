@@ -89,6 +89,6 @@ mod tests {
         "selectAll", "go", "goHome", "goCatalog", "goReview", "goTutor", "goProgress", "goTransfer",
         "goSettings", "reload", "window", "minimize", "zoom", "fullscreen", "phoneWindow", "trayOpen",
         "trayQuit", "resume", "resumeEmpty", "inboxEmpty", "inboxOne", "inboxMany", "statusStarting",
-        "statusBusy", "statusMissing", "statusUp", "statusDown",
+        "statusBusy", "statusMissing", "statusUp", "statusDown", "trayAutoEnter", "trayAutostart", "updateAvailable",
     ];
 }

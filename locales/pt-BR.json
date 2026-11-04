@@ -1757,9 +1757,12 @@
     "inboxOne": "1 notificação nova",
     "inboxMany": "{count} notificações novas",
     "statusStarting": "Servidor: iniciando",
-    "statusBusy": "Servidor: a porta está ocupada por outro programa",
+    "statusBusy": "Servidor: todas as portas da faixa estão ocupadas",
     "statusMissing": "Servidor: arquivos do servidor não encontrados",
     "statusUp": "Servidor: no ar",
-    "statusDown": "Servidor: fora do ar"
+    "statusDown": "Servidor: fora do ar",
+    "trayAutoEnter": "Entrar sozinho como o dono",
+    "trayAutostart": "Abrir ao iniciar o computador",
+    "updateAvailable": "Versão {version} disponível"
   }
 }

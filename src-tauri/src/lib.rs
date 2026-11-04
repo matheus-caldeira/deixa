@@ -1,4 +1,7 @@
 mod labels;
+mod listeners;
+mod shell;
+mod updates;
 
 use std::collections::HashSet;
 use std::io::{Read, Write};
@@ -7,6 +10,8 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU16, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -14,9 +19,10 @@ use hmac::{Hmac, Mac};
 use qrcode::render::svg;
 use qrcode::QrCode;
 use sha2::Sha256;
-use tauri::menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{AboutMetadata, CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -34,6 +40,25 @@ const IDENTITY_PATH: &str = "/manifest.webmanifest";
 const IDENTITY_MARK: &str = "Deixa";
 const MAX_IDENTITY_BYTES: u64 = 16 * 1024;
 const DATA_HOME_VARIABLE: &str = "DEIXA_APP_DIR";
+const PORT_SPAN: u16 = 10;
+const SERVER_RECORD_FILE: &str = "desktop-server.pid";
+const AUTO_ENTER_FILE: &str = "desktop-auto-enter.txt";
+const AUTO_ENTER_DEFAULT: bool = true;
+const LOGIN_PATH: &str = "/login";
+const HOME_PATH: &str = "/";
+const TAP_ACTION: &str = "tap";
+const ORPHAN_STOP_ATTEMPTS: u32 = 20;
+const ORPHAN_STOP_INTERVAL: Duration = Duration::from_millis(250);
+const UPDATE_RECORD_FILE: &str = "desktop-update-check.txt";
+const LATEST_RELEASE_URL: &str = "https://api.github.com/repos/matheus-caldeira/deixa/releases/latest";
+const UPDATE_TIMEOUT: Duration = Duration::from_secs(10);
+const UPDATE_RETRY_INTERVAL: Duration = Duration::from_secs(60 * 60);
+const MAX_RELEASE_BYTES: u64 = 512 * 1024;
+const UPDATE_ITEM: &str = "update";
+#[cfg(target_os = "macos")]
+const TRAY_TEMPLATE_ICON: &[u8] = include_bytes!("../icons/tray-template@2x.png");
+static ACTIVE_PORT: AtomicU16 = AtomicU16::new(0);
+static NEXT_NOTIFICATION_ID: AtomicI32 = AtomicI32::new(1);
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -57,7 +82,12 @@ const EMBEDDED_POSTGRES_DIRECTORY: &str = "postgres";
 const SETUP_CODE_FILE: &str = "setup-code.txt";
 const DESKTOP_TOKEN_FILE: &str = "desktop-token.txt";
 const DESKTOP_SIGNATURE_HEADER: &str = "x-deixa-desktop-signature";
+#[cfg(unix)]
 const LISTENER_TOOLS: [&str; 2] = ["/usr/sbin/lsof", "/usr/bin/lsof"];
+#[cfg(target_os = "linux")]
+const SOCKET_TOOLS: [&str; 4] = ["/usr/bin/ss", "/bin/ss", "/usr/sbin/ss", "/sbin/ss"];
+#[cfg(target_os = "linux")]
+const PROC_TCP_TABLES: [&str; 2] = ["/proc/net/tcp", "/proc/net/tcp6"];
 const DESKTOP_TOKEN_BYTES: usize = 32;
 const STATUS_PATH: &str = "/api/desktop/status";
 const HELLO_PATH: &str = "/api/desktop/hello";
@@ -99,11 +129,18 @@ const INHERITED_VARIABLES: [&str; 10] = [
 const START_ATTEMPTS: u32 = 150;
 const START_INTERVAL: Duration = Duration::from_millis(300);
 
-fn server_port() -> u16 {
+fn configured_port() -> u16 {
     std::env::var(PORT_VARIABLE)
         .ok()
         .and_then(|value| value.parse().ok())
         .unwrap_or(DEFAULT_PORT)
+}
+
+fn server_port() -> u16 {
+    match ACTIVE_PORT.load(Ordering::Relaxed) {
+        0 => configured_port(),
+        port => port,
+    }
 }
 
 fn local_url() -> String {
@@ -122,7 +159,17 @@ fn http_get(path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<Stri
 }
 
 fn http_request(method: &str, path: &str, header: Option<(&str, &str)>, limit: u64) -> Option<String> {
-    let address = SocketAddr::from((LOOPBACK, server_port()));
+    http_request_on(server_port(), method, path, header, limit)
+}
+
+fn http_request_on(
+    port: u16,
+    method: &str,
+    path: &str,
+    header: Option<(&str, &str)>,
+    limit: u64,
+) -> Option<String> {
+    let address = SocketAddr::from((LOOPBACK, port));
     let mut stream = TcpStream::connect_timeout(&address, PROBE_TIMEOUT).ok()?;
     stream.set_read_timeout(Some(REQUEST_TIMEOUT)).ok()?;
     stream.set_write_timeout(Some(PROBE_TIMEOUT)).ok()?;
@@ -134,7 +181,7 @@ fn http_request(method: &str, path: &str, header: Option<(&str, &str)>, limit: u
         method,
         path,
         LOOPBACK,
-        server_port(),
+        port,
         extra
     );
     stream.write_all(request.as_bytes()).ok()?;
@@ -143,8 +190,8 @@ fn http_request(method: &str, path: &str, header: Option<(&str, &str)>, limit: u
     Some(response)
 }
 
-fn read_identity() -> Option<String> {
-    http_get(IDENTITY_PATH, None, MAX_IDENTITY_BYTES)
+fn read_identity_on(port: u16) -> Option<String> {
+    http_request_on(port, "GET", IDENTITY_PATH, None, MAX_IDENTITY_BYTES)
 }
 
 fn is_ok(response: &str) -> bool {
@@ -155,10 +202,14 @@ fn is_ok(response: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn server_is_up() -> bool {
-    read_identity()
+fn deixa_answers_on(port: u16) -> bool {
+    read_identity_on(port)
         .map(|response| is_ok(&response) && response.contains(IDENTITY_MARK))
         .unwrap_or(false)
+}
+
+fn server_is_up() -> bool {
+    deixa_answers_on(server_port())
 }
 
 struct ServerProcess(Mutex<Option<Child>>);
@@ -222,44 +273,182 @@ fn signed_request(token: &str, method: &str, path: &str) -> Option<String> {
     )
 }
 
-#[cfg(unix)]
-fn listener_ids() -> Option<Vec<u32>> {
-    let tool = LISTENER_TOOLS.iter().find(|path| std::path::Path::new(path).exists())?;
+fn tool_output(tool: &str, args: &[&str]) -> Option<String> {
     let output = hidden_command(tool)
-        .args(["-nP", &format!("-iTCP:{}", server_port()), "-sTCP:LISTEN", "-t"])
+        .args(args)
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()
         .ok()?;
-    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| line.trim().parse().ok())
+    Some(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+#[cfg(unix)]
+fn first_existing(paths: &[&'static str]) -> Option<&'static str> {
+    paths.iter().copied().find(|path| std::path::Path::new(path).exists())
+}
+
+#[cfg(unix)]
+fn lsof_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tool = first_existing(&LISTENER_TOOLS)?;
+    let filter = format!("-iTCP:{}", port);
+    tool_output(tool, &["-nP", &filter, "-sTCP:LISTEN", "-t"]).map(|output| listeners::parse_lsof_ids(&output))
+}
+
+#[cfg(target_os = "linux")]
+fn ss_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tool = first_existing(&SOCKET_TOOLS)?;
+    tool_output(tool, &["-ltnp"]).map(|output| listeners::parse_ss(&output, port))
+}
+
+#[cfg(target_os = "linux")]
+fn socket_owners(inodes: &[u64]) -> Vec<u32> {
+    let Ok(processes) = std::fs::read_dir("/proc") else {
+        return Vec::new();
+    };
+    processes
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let pid: u32 = entry.file_name().to_str()?.parse().ok()?;
+            let descriptors = std::fs::read_dir(entry.path().join("fd")).ok()?;
+            descriptors
+                .filter_map(Result::ok)
+                .filter_map(|descriptor| std::fs::read_link(descriptor.path()).ok())
+                .filter_map(|link| listeners::socket_inode(&link.to_string_lossy()))
+                .any(|inode| inodes.contains(&inode))
+                .then_some(pid)
+        })
+        .collect()
+}
+
+#[cfg(target_os = "linux")]
+fn proc_listener_ids(port: u16) -> Option<Vec<u32>> {
+    let tables: Vec<String> = PROC_TCP_TABLES
+        .iter()
+        .filter_map(|path| std::fs::read_to_string(path).ok())
         .collect();
-    Some(ids)
+    if tables.is_empty() {
+        return None;
+    }
+    let inodes: Vec<u64> = tables.iter().flat_map(|table| listeners::parse_proc_net_tcp(table, port)).collect();
+    if inodes.is_empty() {
+        return Some(Vec::new());
+    }
+    Some(socket_owners(&inodes))
+}
+
+#[cfg(target_os = "linux")]
+fn listener_ids(port: u16) -> Option<Vec<u32>> {
+    lsof_listener_ids(port)
+        .or_else(|| ss_listener_ids(port))
+        .or_else(|| proc_listener_ids(port))
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn listener_ids(port: u16) -> Option<Vec<u32>> {
+    lsof_listener_ids(port)
 }
 
 #[cfg(windows)]
-fn listener_ids() -> Option<Vec<u32>> {
-    let output = hidden_command("netstat")
-        .args(["-ano", "-p", "TCP"])
+fn listener_ids(port: u16) -> Option<Vec<u32>> {
+    tool_output("netstat", &["-ano"]).map(|output| listeners::parse_netstat(&output, port))
+}
+
+#[cfg(unix)]
+fn process_command(pid: u32) -> Option<String> {
+    let output = hidden_command("/bin/ps")
+        .args(["-p", &pid.to_string(), "-o", "command="])
         .stdin(Stdio::null())
         .stderr(Stdio::null())
         .output()
         .ok()?;
-    let suffix = format!(":{}", server_port());
-    let ids: Vec<u32> = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| {
-            let fields: Vec<&str> = line.split_whitespace().collect();
-            let listening = fields.len() >= 5 && fields[3] == "LISTENING" && fields[1].ends_with(&suffix);
-            listening.then(|| fields[4].parse().ok()).flatten()
-        })
-        .collect();
-    Some(ids)
+    Some(String::from_utf8_lossy(&output.stdout).trim().to_string()).filter(|text| !text.is_empty())
+}
+
+#[cfg(windows)]
+fn process_command(pid: u32) -> Option<String> {
+    let query = format!(
+        "(Get-CimInstance Win32_Process -Filter 'ProcessId={}').CommandLine",
+        pid
+    );
+    let output = tool_output("powershell", &["-NoProfile", "-NonInteractive", "-Command", &query])?;
+    Some(output.trim().to_string()).filter(|text| !text.is_empty())
+}
+
+#[cfg(unix)]
+fn terminate(pid: u32, force: bool) {
+    let signal = if force { "-KILL" } else { "-TERM" };
+    let _ = hidden_command("kill").args([signal, &pid.to_string()]).output();
+}
+
+#[cfg(windows)]
+fn terminate(pid: u32, _force: bool) {
+    let _ = hidden_command("taskkill").args(["/PID", &pid.to_string(), "/T", "/F"]).output();
+}
+
+fn listens_on(pid: u32, port: u16) -> bool {
+    listener_ids(port).map(|ids| ids.contains(&pid)).unwrap_or(false)
+}
+
+fn owns_server(record: shell::ServerRecord) -> bool {
+    listens_on(record.pid, record.port)
+        && process_command(record.pid)
+            .map(|command| shell::looks_like_server_command(&command, SERVER_ENTRY))
+            .unwrap_or(false)
+}
+
+fn is_orphan_server(record: shell::ServerRecord) -> bool {
+    deixa_answers_on(record.port) && owns_server(record)
+}
+
+fn terminate_if_owned(record: shell::ServerRecord, force: bool) -> bool {
+    let owned = owns_server(record);
+    if owned {
+        terminate(record.pid, force);
+    }
+    owned
+}
+
+fn wait_until_released(record: shell::ServerRecord) -> bool {
+    for _ in 0..ORPHAN_STOP_ATTEMPTS {
+        if !listens_on(record.pid, record.port) {
+            return true;
+        }
+        std::thread::sleep(ORPHAN_STOP_INTERVAL);
+    }
+    false
+}
+
+fn stop_orphan_server(app: &AppHandle) {
+    let Some(path) = data_home(app).map(|home| home.join(SERVER_RECORD_FILE)) else {
+        return;
+    };
+    let record = std::fs::read_to_string(&path).ok().and_then(|text| shell::parse_server_record(&text));
+    if let Some(record) = record.filter(|record| is_orphan_server(*record)) {
+        report_entry("servidor órfão encerrado");
+        if terminate_if_owned(record, false) && !wait_until_released(record) && terminate_if_owned(record, true) {
+            wait_until_released(record);
+        }
+        stop_embedded_postgres(app);
+        wait_for_postgres_exit(app);
+    }
+    let _ = std::fs::remove_file(path);
+}
+
+fn save_server_record(app: &AppHandle, record: shell::ServerRecord) {
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::write(home.join(SERVER_RECORD_FILE), shell::format_server_record(record));
+    }
+}
+
+fn forget_server_record(app: &AppHandle) {
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::remove_file(home.join(SERVER_RECORD_FILE));
+    }
 }
 
 fn only_child_listens(child: u32) -> bool {
-    match listener_ids() {
+    match listener_ids(server_port()) {
         Some(ids) => !ids.is_empty() && ids.iter().all(|id| *id == child),
         None => false,
     }
@@ -274,8 +463,175 @@ fn running_child_id(app: &AppHandle) -> Option<u32> {
 
 struct OwnerStatus {
     locale: Option<String>,
-    resume: Option<(String, String, u64)>,
-    notifications: Vec<(String, String, String)>,
+    resume: Option<(String, String, u64, String)>,
+    notifications: Vec<(String, String, String, String)>,
+}
+
+struct AutoEnter(AtomicBool);
+struct SignedOut(AtomicBool);
+struct NotificationTargets(Mutex<HashMap<i32, String>>);
+struct LatestTarget(Mutex<Option<String>>);
+struct ResumeTarget(Mutex<Option<String>>);
+struct UpdateNotice(Mutex<Option<updates::Release>>);
+
+enum ReleaseLookup {
+    Answered(Option<updates::Release>),
+    Unreachable,
+}
+
+fn unix_now() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|elapsed| elapsed.as_secs()).unwrap_or(0)
+}
+
+fn current_version(app: &AppHandle) -> String {
+    app.package_info().version.to_string()
+}
+
+fn read_update_record(app: &AppHandle) -> updates::CheckRecord {
+    data_home(app)
+        .and_then(|home| std::fs::read_to_string(home.join(UPDATE_RECORD_FILE)).ok())
+        .map(|text| updates::parse_record(&text))
+        .unwrap_or_default()
+}
+
+fn save_update_record(app: &AppHandle, record: &updates::CheckRecord) {
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::create_dir_all(&home);
+        let _ = std::fs::write(home.join(UPDATE_RECORD_FILE), updates::format_record(record));
+    }
+}
+
+fn look_up_latest_release(app: &AppHandle) -> ReleaseLookup {
+    let agent: ureq::Agent = ureq::Agent::config_builder().timeout_global(Some(UPDATE_TIMEOUT)).build().into();
+    let answer = agent
+        .get(LATEST_RELEASE_URL)
+        .header("User-Agent", format!("Deixa-desktop/{}", current_version(app)))
+        .header("Accept", "application/vnd.github+json")
+        .call();
+    match answer {
+        Ok(mut response) => {
+            let body = response.body_mut().with_config().limit(MAX_RELEASE_BYTES).read_to_string();
+            ReleaseLookup::Answered(body.ok().and_then(|text| updates::parse_release(&text)))
+        }
+        Err(ureq::Error::StatusCode(_)) => ReleaseLookup::Answered(None),
+        Err(_) => ReleaseLookup::Unreachable,
+    }
+}
+
+fn update_text(labels: &Labels, release: &updates::Release) -> String {
+    labels.fill("updateAvailable", &[("version", &release.version)])
+}
+
+fn offer_update(
+    app: &AppHandle,
+    menu: &Menu<tauri::Wry>,
+    item: &MenuItem<tauri::Wry>,
+    separator: &PredefinedMenuItem<tauri::Wry>,
+    release: Option<updates::Release>,
+) {
+    let Some(release) = updates::newer_release(release.as_ref(), &current_version(app)) else {
+        return;
+    };
+    let _ = item.set_text(update_text(&current_labels(app), &release));
+    let first_offer = app
+        .state::<UpdateNotice>()
+        .0
+        .lock()
+        .map(|mut notice| notice.replace(release).is_none())
+        .unwrap_or(false);
+    if first_offer && menu.get(UPDATE_ITEM).is_none() {
+        let _ = menu.insert_items(&[item, separator], 0);
+    }
+}
+
+fn watch_updates(
+    app: AppHandle,
+    menu: Menu<tauri::Wry>,
+    item: MenuItem<tauri::Wry>,
+    separator: PredefinedMenuItem<tauri::Wry>,
+) {
+    std::thread::spawn(move || {
+        offer_update(&app, &menu, &item, &separator, read_update_record(&app).release);
+        loop {
+            let record = read_update_record(&app);
+            let now = unix_now();
+            if updates::should_check(record.checked_at, now) {
+                if let ReleaseLookup::Answered(release) = look_up_latest_release(&app) {
+                    save_update_record(&app, &updates::CheckRecord { checked_at: Some(now), release: release.clone() });
+                    offer_update(&app, &menu, &item, &separator, release);
+                }
+            }
+            std::thread::sleep(UPDATE_RETRY_INTERVAL);
+        }
+    });
+}
+
+fn open_update_page(app: &AppHandle) {
+    let url = app.state::<UpdateNotice>().0.lock().ok().and_then(|notice| notice.clone()).map(|release| release.url);
+    if let Some(url) = url.filter(|url| url.starts_with(updates::RELEASES_PAGE_PREFIX)) {
+        let _ = app.opener().open_url(url, None::<&str>);
+    }
+}
+
+fn saved_auto_enter(app: &AppHandle) -> bool {
+    let text = data_home(app).and_then(|home| std::fs::read_to_string(home.join(AUTO_ENTER_FILE)).ok());
+    shell::parse_toggle(text.as_deref(), AUTO_ENTER_DEFAULT)
+}
+
+fn save_auto_enter(app: &AppHandle, enabled: bool) {
+    app.state::<AutoEnter>().0.store(enabled, Ordering::Relaxed);
+    if let Some(home) = data_home(app) {
+        let _ = std::fs::create_dir_all(&home);
+        let _ = std::fs::write(home.join(AUTO_ENTER_FILE), shell::format_toggle(enabled));
+    }
+}
+
+fn may_enter_alone(app: &AppHandle) -> bool {
+    app.state::<AutoEnter>().0.load(Ordering::Relaxed) && !app.state::<SignedOut>().0.load(Ordering::Relaxed)
+}
+
+fn notice_location(app: &AppHandle, url: &Url) {
+    if is_app_page(url) && shell::path_signs_out(url.path()) {
+        app.state::<SignedOut>().0.store(true, Ordering::Relaxed);
+    }
+}
+
+fn set_target(slot: &Mutex<Option<String>>, value: Option<String>) {
+    if let Ok(mut current) = slot.lock() {
+        *current = value;
+    }
+}
+
+fn read_target(slot: &Mutex<Option<String>>) -> Option<String> {
+    slot.lock().ok().and_then(|current| current.clone())
+}
+
+fn remember_notification(app: &AppHandle, href: &str) -> i32 {
+    let id = NEXT_NOTIFICATION_ID.fetch_add(1, Ordering::Relaxed);
+    if let Ok(mut targets) = app.state::<NotificationTargets>().0.lock() {
+        targets.insert(id, href.to_string());
+    }
+    id
+}
+
+fn open_notification(app: &AppHandle, id: Option<i32>) {
+    let remembered = id.and_then(|id| {
+        app.state::<NotificationTargets>().0.lock().ok().and_then(|targets| targets.get(&id).cloned())
+    });
+    let target = remembered
+        .or_else(|| read_target(&app.state::<LatestTarget>().0))
+        .unwrap_or_else(|| HOME_PATH.to_string());
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || go_to(&handle, &target));
+}
+
+fn listen_notification_clicks(app: &AppHandle) {
+    let handle = app.clone();
+    let _ = app.notification().on_action(move |action| {
+        if action.action_id() == TAP_ACTION {
+            open_notification(&handle, action.notification().map(|item| item.id()));
+        }
+    });
 }
 
 struct MenuLabels(Mutex<Labels>);
@@ -365,9 +721,12 @@ fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
     let body = response.split_once("\r\n\r\n")?.1;
     let status: serde_json::Value = serde_json::from_str(body).ok()?;
     let text = |value: &serde_json::Value, key: &str| value.get(key)?.as_str().map(str::to_string);
+    let destination = |value: &serde_json::Value| {
+        text(value, "href").and_then(|href| shell::internal_path(&href)).unwrap_or_else(|| HOME_PATH.to_string())
+    };
     let resume = status.get("current").filter(|current| !current.is_null()).and_then(|current| {
         let percent = current.get("progressPercent")?.as_u64()?;
-        Some((text(current, "title")?, text(current, "label")?, percent))
+        Some((text(current, "title")?, text(current, "label")?, percent, destination(current)))
     });
     let locale = text(&status, "locale");
     let notifications = status
@@ -375,7 +734,9 @@ fn read_owner_status(app: &AppHandle) -> Option<OwnerStatus> {
         .and_then(|list| list.as_array())
         .map(|list| {
             list.iter()
-                .filter_map(|item| Some((text(item, "id")?, text(item, "title")?, text(item, "body")?)))
+                .filter_map(|item| {
+                    Some((text(item, "id")?, text(item, "title")?, text(item, "body")?, destination(item)))
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -389,8 +750,8 @@ enum Startup {
     Missing,
 }
 
-fn port_is_taken() -> bool {
-    let address = SocketAddr::from((LOOPBACK, server_port()));
+fn port_is_taken(port: u16) -> bool {
+    let address = SocketAddr::from((LOOPBACK, port));
     TcpStream::connect_timeout(&address, PROBE_TIMEOUT).is_ok()
 }
 
@@ -439,12 +800,14 @@ fn server_folder(app: &AppHandle) -> Option<PathBuf> {
 }
 
 fn start_server(app: &AppHandle) -> Startup {
+    stop_orphan_server(app);
     if server_is_up() {
         return Startup::AlreadyRunning;
     }
-    if port_is_taken() {
+    let Some(port) = shell::pick_port(configured_port(), PORT_SPAN, |port| !port_is_taken(port)) else {
         return Startup::PortBusy;
-    }
+    };
+    ACTIVE_PORT.store(port, Ordering::Relaxed);
     let (Some(node), Some(folder), Some(home)) = (node_binary(), server_folder(app), data_home(app))
     else {
         return Startup::Missing;
@@ -473,6 +836,7 @@ fn start_server(app: &AppHandle) -> Startup {
         .spawn();
     match spawned {
         Ok(child) => {
+            save_server_record(app, shell::ServerRecord { pid: child.id(), port });
             if let Ok(mut slot) = app.state::<ServerProcess>().0.lock() {
                 *slot = Some(child);
             }
@@ -491,15 +855,31 @@ fn stop_server(app: &AppHandle) {
             let _ = child.kill();
             let _ = child.wait();
             stop_embedded_postgres(app);
+            forget_server_record(app);
         }
     }
 }
 
-fn stop_embedded_postgres(app: &AppHandle) {
-    let Some(home) = data_home(app) else {
+fn postmaster_pid_file(app: &AppHandle) -> Option<PathBuf> {
+    data_home(app).map(|home| home.join(EMBEDDED_POSTGRES_DIRECTORY).join("data").join("postmaster.pid"))
+}
+
+fn wait_for_postgres_exit(app: &AppHandle) {
+    let Some(pid_file) = postmaster_pid_file(app) else {
         return;
     };
-    let pid_file = home.join(EMBEDDED_POSTGRES_DIRECTORY).join("data").join("postmaster.pid");
+    for _ in 0..ORPHAN_STOP_ATTEMPTS {
+        if !pid_file.exists() {
+            return;
+        }
+        std::thread::sleep(ORPHAN_STOP_INTERVAL);
+    }
+}
+
+fn stop_embedded_postgres(app: &AppHandle) {
+    let Some(pid_file) = postmaster_pid_file(app) else {
+        return;
+    };
     let Ok(contents) = std::fs::read_to_string(&pid_file) else {
         return;
     };
@@ -531,7 +911,7 @@ fn report_entry(kind: &str) {
     }
 }
 
-fn entry_url(app: &AppHandle) -> String {
+fn entry_url(app: &AppHandle, next: Option<&str>) -> String {
     if current_token(app).is_none() {
         report_entry("sem servidor próprio conferido");
         return local_url();
@@ -544,10 +924,14 @@ fn entry_url(app: &AppHandle) -> String {
         report_entry("configuração destravada");
         return format!("{}/setup/unlock?code={}", local_url(), code);
     }
+    if !may_enter_alone(app) {
+        report_entry("entrada manual");
+        return format!("{}{}", local_url(), LOGIN_PATH);
+    }
     match request_entry_ticket(app) {
         Some(ticket) => {
             report_entry("bilhete do dono");
-            format!("{}/desktop/enter?ticket={}", local_url(), ticket)
+            format!("{}{}", local_url(), shell::entry_location(&ticket, next))
         }
         None => {
             report_entry("sem bilhete");
@@ -581,12 +965,19 @@ fn show_in_dock(app: &AppHandle, visible: bool) {
 }
 
 fn go_to(app: &AppHandle, path: &str) {
-    show_main_window(app);
-    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+    let Some(path) = shell::internal_path(path) else {
+        show_main_window(app);
         return;
     };
-    if let Ok(url) = format!("{}{}", local_url(), path).parse() {
-        let _ = window.navigate(url);
+    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+        open_main_window(app, Some(&path));
+        return;
+    };
+    show_main_window(app);
+    if let Ok(url) = format!("{}{}", local_url(), path).parse::<Url>() {
+        if is_app_page(&url) {
+            let _ = window.navigate(url);
+        }
     }
 }
 
@@ -703,6 +1094,10 @@ fn listen_app_menu(app: &AppHandle) {
 }
 
 fn show_main_window(app: &AppHandle) {
+    open_main_window(app, None);
+}
+
+fn open_main_window(app: &AppHandle, next: Option<&str>) {
     show_in_dock(app, true);
     if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
         let _ = window.show();
@@ -711,7 +1106,7 @@ fn show_main_window(app: &AppHandle) {
         return;
     }
     let target = if server_is_up() {
-        entry_url(app)
+        entry_url(app, next)
             .parse()
             .map(WebviewUrl::External)
             .unwrap_or_else(|_| WebviewUrl::App("index.html".into()))
@@ -722,6 +1117,7 @@ fn show_main_window(app: &AppHandle) {
     let _ = WebviewWindowBuilder::new(app, MAIN_WINDOW, target)
         .on_navigation(move |url| {
             if is_app_page(url) {
+                notice_location(&opener, url);
                 return true;
             }
             if url.scheme() == "https" || url.scheme() == "http" {
@@ -752,6 +1148,33 @@ fn show_qr_window(app: &AppHandle) {
         .build();
 }
 
+fn toggle_autostart(app: &AppHandle, item: &CheckMenuItem<tauri::Wry>) {
+    let launcher = app.autolaunch();
+    let enabled = launcher.is_enabled().unwrap_or(false);
+    let _ = if enabled { launcher.disable() } else { launcher.enable() };
+    let _ = item.set_checked(launcher.is_enabled().unwrap_or(false));
+}
+
+fn toggle_auto_enter(app: &AppHandle, item: &CheckMenuItem<tauri::Wry>) {
+    let enabled = !app.state::<AutoEnter>().0.load(Ordering::Relaxed);
+    save_auto_enter(app, enabled);
+    let _ = item.set_checked(enabled);
+}
+
+fn watch_sign_out(app: &AppHandle) {
+    if let Some(url) = app.get_webview_window(MAIN_WINDOW).and_then(|window| window.url().ok()) {
+        notice_location(app, &url);
+    }
+}
+
+fn announce(app: &AppHandle, title: &str, body: &str, href: &str) {
+    let id = remember_notification(app, href);
+    let shown = app.notification().builder().id(id).title(title).body(body).show();
+    if cfg!(debug_assertions) {
+        eprintln!("aviso nativo: {:?}", shown.map(|_| "enviado ao sistema"));
+    }
+}
+
 fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let labels = current_labels(app);
     let status = MenuItem::with_id(app, "status", labels.get("statusDown"), false, None::<&str>)?;
@@ -760,7 +1183,25 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", labels.get("trayOpen"), true, None::<&str>)?;
     let browser = MenuItem::with_id(app, "browser", labels.get("openBrowser"), true, None::<&str>)?;
     let qr = MenuItem::with_id(app, "qr", labels.get("openPhone"), true, None::<&str>)?;
+    let auto_enter = CheckMenuItem::with_id(
+        app,
+        "auto-enter",
+        labels.get("trayAutoEnter"),
+        true,
+        app.state::<AutoEnter>().0.load(Ordering::Relaxed),
+        None::<&str>,
+    )?;
+    let autostart = CheckMenuItem::with_id(
+        app,
+        "autostart",
+        labels.get("trayAutostart"),
+        true,
+        app.autolaunch().is_enabled().unwrap_or(false),
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, "quit", labels.get("trayQuit"), true, None::<&str>)?;
+    let update = MenuItem::with_id(app, UPDATE_ITEM, labels.get("updateAvailable"), true, None::<&str>)?;
+    let update_separator = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(
         app,
         &[
@@ -772,28 +1213,48 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             &browser,
             &qr,
             &PredefinedMenuItem::separator(app)?,
+            &auto_enter,
+            &autostart,
+            &PredefinedMenuItem::separator(app)?,
             &quit,
         ],
     )?;
+    let auto_enter_item = auto_enter.clone();
+    let autostart_item = autostart.clone();
     let mut tray = TrayIconBuilder::with_id("deixa")
         .tooltip("Deixa")
         .menu(&menu)
         .show_menu_on_left_click(true)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "open" | "resume" | "inbox" => show_main_window(app),
+        .on_menu_event(move |app, event| match event.id.as_ref() {
+            "open" => show_main_window(app),
+            "resume" => {
+                let target = read_target(&app.state::<ResumeTarget>().0).unwrap_or_else(|| HOME_PATH.to_string());
+                go_to(app, &target);
+            }
+            "inbox" => open_notification(app, None),
+            UPDATE_ITEM => open_update_page(app),
             "browser" => {
                 let _ = app.opener().open_url(local_url(), None::<&str>);
             }
             "qr" => show_qr_window(app),
+            "auto-enter" => toggle_auto_enter(app, &auto_enter_item),
+            "autostart" => toggle_autostart(app, &autostart_item),
             "quit" => app.exit(0),
             _ => {}
         });
+    #[cfg(target_os = "macos")]
+    {
+        tray = tray.icon(tauri::image::Image::from_bytes(TRAY_TEMPLATE_ICON)?).icon_as_template(true);
+    }
+    #[cfg(not(target_os = "macos"))]
     if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone());
     }
     tray.build(app)?;
+    watch_updates(app.clone(), menu.clone(), update.clone(), update_separator);
 
     let handle = app.clone();
+    let hidden = shell::launched_hidden(std::env::args());
     std::thread::spawn(move || {
         let _ = status.set_text(current_labels(&handle).get("statusStarting"));
         let startup = start_server(&handle);
@@ -805,10 +1266,13 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
         if trouble.is_none() {
             wait_until_up();
         }
-        let opener = handle.clone();
-        let _ = handle.run_on_main_thread(move || show_main_window(&opener));
+        if !hidden {
+            let opener = handle.clone();
+            let _ = handle.run_on_main_thread(move || show_main_window(&opener));
+        }
         let mut announced: Option<HashSet<String>> = None;
         loop {
+            watch_sign_out(&handle);
             let owner = read_owner_status(&handle);
             let wanted = owner.as_ref().and_then(|current| current.locale.as_deref());
             if let Some(next) = wanted.and_then(|locale| switch_labels(&handle, locale)) {
@@ -816,7 +1280,13 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 let _ = open.set_text(next.get("trayOpen"));
                 let _ = browser.set_text(next.get("openBrowser"));
                 let _ = qr.set_text(next.get("openPhone"));
+                let _ = auto_enter.set_text(next.get("trayAutoEnter"));
+                let _ = autostart.set_text(next.get("trayAutostart"));
                 let _ = quit.set_text(next.get("trayQuit"));
+                let offered = handle.state::<UpdateNotice>().0.lock().ok().and_then(|notice| notice.clone());
+                if let Some(release) = offered {
+                    let _ = update.set_text(update_text(&next, &release));
+                }
                 let menu_owner = handle.clone();
                 let _ = handle.run_on_main_thread(move || {
                     let _ = build_app_menu(&menu_owner, &next);
@@ -825,7 +1295,9 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             let labels = current_labels(&handle);
             let key = if server_is_up() { "statusUp" } else { trouble.unwrap_or("statusDown") };
             let _ = status.set_text(labels.get(key));
-            let resume_text = owner.as_ref().and_then(|current| current.resume.as_ref()).map(|(title, label, percent)| {
+            let current_resume = owner.as_ref().and_then(|current| current.resume.as_ref());
+            set_target(&handle.state::<ResumeTarget>().0, current_resume.map(|resume| resume.3.clone()));
+            let resume_text = current_resume.map(|(title, label, percent, _)| {
                 labels.fill("resume", &[("title", title), ("label", label), ("percent", &percent.to_string())])
             });
             let _ = resume.set_enabled(resume_text.is_some());
@@ -838,14 +1310,15 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 count => labels.fill("inboxMany", &[("count", &count.to_string())]),
             });
             if let Some(current) = owner {
+                set_target(
+                    &handle.state::<LatestTarget>().0,
+                    current.notifications.first().map(|item| item.3.clone()),
+                );
                 let ids: HashSet<String> = current.notifications.iter().map(|item| item.0.clone()).collect();
                 if let Some(known) = &announced {
-                    for (id, title, body) in &current.notifications {
+                    for (id, title, body, href) in &current.notifications {
                         if !known.contains(id) {
-                            let shown = handle.notification().builder().title(title).body(body).show();
-                            if cfg!(debug_assertions) {
-                                eprintln!("aviso nativo: {:?}", shown.map(|_| "enviado ao sistema"));
-                            }
+                            announce(&handle, title, body, href);
                         }
                     }
                 }
@@ -863,11 +1336,21 @@ pub fn run() {
         .manage(DesktopToken(Mutex::new(None)))
         .manage(VerifiedPeer(Mutex::new(None)))
         .manage(MenuLabels(Mutex::new(Labels::for_locale(DEFAULT_LOCALE))))
+        .manage(AutoEnter(AtomicBool::new(AUTO_ENTER_DEFAULT)))
+        .manage(SignedOut(AtomicBool::new(false)))
+        .manage(NotificationTargets(Mutex::new(HashMap::new())))
+        .manage(LatestTarget(Mutex::new(None)))
+        .manage(ResumeTarget(Mutex::new(None)))
+        .manage(UpdateNotice(Mutex::new(None)))
         .plugin(tauri_plugin_single_instance::init(|app, _arguments, _directory| {
             show_main_window(app)
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec![shell::HIDDEN_FLAG]),
+        ))
         .setup(|app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
@@ -875,6 +1358,8 @@ pub fn run() {
             if let Ok(mut labels) = app.state::<MenuLabels>().0.lock() {
                 *labels = saved.clone();
             }
+            app.state::<AutoEnter>().0.store(saved_auto_enter(app.handle()), Ordering::Relaxed);
+            listen_notification_clicks(app.handle());
             build_app_menu(app.handle(), &saved)?;
             listen_app_menu(app.handle());
             build_tray(app.handle())?;

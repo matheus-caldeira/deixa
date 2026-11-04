@@ -38,6 +38,8 @@ const webAliases = {
   "@/ui/catalog/level-ratings-client": "./src/web/level-ratings-client.ts",
 };
 
+const IMAGE_LIBRARIES = ["**/node_modules/sharp/**", "**/node_modules/@img/**"];
+
 const nextConfig: NextConfig = {
   turbopack: forWeb ? { resolveAlias: webAliases } : undefined,
   output: forWeb ? "export" : forDesktop ? "standalone" : undefined,
@@ -46,13 +48,16 @@ const nextConfig: NextConfig = {
   trailingSlash: forWeb,
   allowedDevOrigins: [...localAddresses, LOOPBACK_ADDRESS],
   logging: { serverFunctions: false },
+  outputFileTracingExcludes: forDesktop ? { "*": IMAGE_LIBRARIES } : undefined,
   images: {
     unoptimized: forDesktop || forWeb,
+    maximumDiskCacheSize: forDesktop ? 0 : undefined,
     remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
   },
   redirects: forWeb ? undefined : async () => LEGACY_ROUTES.map((route) => ({ ...route, permanent: false })),
   experimental: {
     serverActions: { bodySizeLimit: "12mb" },
+    isrFlushToDisk: !forDesktop,
   },
 };
 
