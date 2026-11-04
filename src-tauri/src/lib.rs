@@ -48,6 +48,8 @@ const HOME_PATH: &str = "/";
 const TAP_ACTION: &str = "tap";
 const ORPHAN_STOP_ATTEMPTS: u32 = 20;
 const ORPHAN_STOP_INTERVAL: Duration = Duration::from_millis(250);
+#[cfg(target_os = "macos")]
+const TRAY_TEMPLATE_ICON: &[u8] = include_bytes!("../icons/tray-template@2x.png");
 static ACTIVE_PORT: AtomicU16 = AtomicU16::new(0);
 static NEXT_NOTIFICATION_ID: AtomicI32 = AtomicI32::new(1);
 
@@ -1124,6 +1126,11 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             "quit" => app.exit(0),
             _ => {}
         });
+    #[cfg(target_os = "macos")]
+    {
+        tray = tray.icon(tauri::image::Image::from_bytes(TRAY_TEMPLATE_ICON)?).icon_as_template(true);
+    }
+    #[cfg(not(target_os = "macos"))]
     if let Some(icon) = app.default_window_icon() {
         tray = tray.icon(icon.clone());
     }
