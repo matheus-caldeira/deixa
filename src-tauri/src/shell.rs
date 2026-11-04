@@ -53,13 +53,20 @@ pub fn parse_server_record(text: &str) -> Option<ServerRecord> {
 }
 
 pub fn looks_like_server_command(command: &str, entry: &str) -> bool {
-    let mut words = command.split_whitespace();
-    let program_is_node = words
+    let (program, arguments) = split_program(command.trim());
+    let program_is_node = program
+        .rsplit(['/', '\\'])
         .next()
-        .and_then(|program| program.rsplit(['/', '\\']).next())
-        .map(|name| name.trim_matches('"').to_ascii_lowercase().starts_with("node"))
+        .map(|name| name.to_ascii_lowercase().starts_with("node"))
         .unwrap_or(false);
-    program_is_node && words.any(|word| word == entry)
+    program_is_node && arguments.split_whitespace().any(|word| word.trim_matches('"') == entry)
+}
+
+fn split_program(command: &str) -> (&str, &str) {
+    if let Some(quoted) = command.strip_prefix('"') {
+        return quoted.split_once('"').unwrap_or((quoted, ""));
+    }
+    command.split_once(char::is_whitespace).unwrap_or((command, ""))
 }
 
 pub fn path_signs_out(url_path: &str) -> bool {
@@ -133,6 +140,10 @@ mod tests {
     fn recognizes_only_the_node_server_command() {
         assert!(looks_like_server_command("/Applications/Deixa.app/Contents/MacOS/node server.js", "server.js"));
         assert!(looks_like_server_command("C:\\Deixa\\node.exe server.js", "server.js"));
+        assert!(looks_like_server_command("\"C:\\Program Files\\Deixa\\node.exe\" server.js", "server.js"));
+        assert!(!looks_like_server_command("\"C:\\Program Files\\Deixa\\node.exe\" other.js", "server.js"));
+        assert!(!looks_like_server_command("\"C:\\Program Files\\Tools\\python.exe\" server.js", "server.js"));
+        assert!(!looks_like_server_command("node.exe", "server.js"));
         assert!(!looks_like_server_command("/usr/bin/python3 server.js", "server.js"));
         assert!(!looks_like_server_command("/usr/local/bin/node other.js", "server.js"));
         assert!(!looks_like_server_command("", "server.js"));

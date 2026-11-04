@@ -367,15 +367,12 @@ fn process_command(pid: u32) -> Option<String> {
 
 #[cfg(windows)]
 fn process_command(pid: u32) -> Option<String> {
-    let output = hidden_command("tasklist")
-        .args(["/FI", &format!("PID eq {}", pid), "/FO", "CSV", "/NH"])
-        .stdin(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .ok()?;
-    let line = String::from_utf8_lossy(&output.stdout).lines().next()?.to_string();
-    let image = line.split(',').next()?.trim_matches('"').to_string();
-    Some(format!("{} {}", image, SERVER_ENTRY)).filter(|_| !image.is_empty())
+    let query = format!(
+        "(Get-CimInstance Win32_Process -Filter 'ProcessId={}').CommandLine",
+        pid
+    );
+    let output = tool_output("powershell", &["-NoProfile", "-NonInteractive", "-Command", &query])?;
+    Some(output.trim().to_string()).filter(|text| !text.is_empty())
 }
 
 #[cfg(unix)]
@@ -393,12 +390,23 @@ fn listens_on(pid: u32, port: u16) -> bool {
     listener_ids(port).map(|ids| ids.contains(&pid)).unwrap_or(false)
 }
 
-fn is_orphan_server(record: shell::ServerRecord) -> bool {
+fn owns_server(record: shell::ServerRecord) -> bool {
     listens_on(record.pid, record.port)
         && process_command(record.pid)
             .map(|command| shell::looks_like_server_command(&command, SERVER_ENTRY))
             .unwrap_or(false)
-        && deixa_answers_on(record.port)
+}
+
+fn is_orphan_server(record: shell::ServerRecord) -> bool {
+    deixa_answers_on(record.port) && owns_server(record)
+}
+
+fn terminate_if_owned(record: shell::ServerRecord, force: bool) -> bool {
+    let owned = owns_server(record);
+    if owned {
+        terminate(record.pid, force);
+    }
+    owned
 }
 
 fn wait_until_released(record: shell::ServerRecord) -> bool {
@@ -418,9 +426,7 @@ fn stop_orphan_server(app: &AppHandle) {
     let record = std::fs::read_to_string(&path).ok().and_then(|text| shell::parse_server_record(&text));
     if let Some(record) = record.filter(|record| is_orphan_server(*record)) {
         report_entry("servidor órfão encerrado");
-        terminate(record.pid, false);
-        if !wait_until_released(record) {
-            terminate(record.pid, true);
+        if terminate_if_owned(record, false) && !wait_until_released(record) && terminate_if_owned(record, true) {
             wait_until_released(record);
         }
         stop_embedded_postgres(app);
