@@ -11,6 +11,8 @@ import type { AiLevelRating, AiLevelRatingRepository } from "../level-sources";
 import type {
   CatalogEntry,
   CatalogRepository,
+  EpisodeLevelMeasurementInput,
+  EpisodeLevelMeasurementRepository,
   EpisodeProgressEntry,
   EpisodeProgressRepository,
   EpisodeUpsert,
@@ -50,6 +52,7 @@ export class InMemoryCatalog implements CatalogRepository, EpisodeProgressReposi
       type: input.type,
       title: input.title,
       originalLanguage: input.originalLanguage,
+      genres: input.genres ?? existing?.genres ?? [],
       originalTitle: input.originalTitle,
       overview: input.overview,
       year: input.year,
@@ -182,5 +185,25 @@ export class InMemoryAiLevelRatings implements AiLevelRatingRepository {
   }
   async listIds() {
     return [...this.rows.keys()];
+  }
+}
+
+export class InMemoryEpisodeLevels implements EpisodeLevelMeasurementRepository {
+  readonly rows = new Map<string, EpisodeLevelMeasurementInput>();
+  constructor(private readonly catalog: InMemoryCatalog) {}
+  async save(input: EpisodeLevelMeasurementInput) {
+    this.rows.set(input.episodeId, input);
+  }
+  async remove(episodeId: string) {
+    this.rows.delete(episodeId);
+  }
+  async levelsFor(externalIds: readonly string[]) {
+    const levels = new Map<string, CefrLevel[]>();
+    for (const row of [...this.rows.values()].sort((a, b) => a.episodeId.localeCompare(b.episodeId))) {
+      const media = this.catalog.media.get(row.mediaItemId);
+      if (!media || media.metadataProvider !== "tmdb" || !externalIds.includes(media.externalId)) continue;
+      levels.set(media.externalId, [...(levels.get(media.externalId) ?? []), row.measurement.level]);
+    }
+    return levels;
   }
 }

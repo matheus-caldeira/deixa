@@ -32,6 +32,7 @@ export const mediaItems = pgTable(
     levelMax: text("level_max").notNull(),
     accent: text("accent"),
     originalLanguage: text("original_language").notNull().default("en"),
+    genres: jsonb("genres").notNull().default([]),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     metadataSyncedAt: timestamp("metadata_synced_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

@@ -134,6 +134,10 @@
     "conversation_terms_ready": {
       "title": "New cards in your series",
       "body": "{theme}: {count, plural, one {# marked term became a card} other {# marked terms became cards}}."
+    },
+    "recommendations_ready": {
+      "title": "New suggestions in Explore",
+      "body": "{count, plural, one {# new title matches} other {# new titles match}} what you study."
     }
   },
   "errors": {
@@ -339,7 +343,8 @@
     },
     "levelRatings": "Level from the median of {count, plural, one {# rating} other {# ratings}}:",
     "levelRatingBuiltin": "{app} guide",
-    "levelRatingAi": "AI"
+    "levelRatingAi": "AI",
+    "levelRatingMeasured": "measured from the lines of {count, plural, one {# episode} other {# episodes}}"
   },
   "home": {
     "continue": "Continue",

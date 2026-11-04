@@ -11,7 +11,8 @@ import {
   type LevelRange,
   type LevelSourceStatus,
 } from "../domain/level-ratings";
-import type { CatalogRepository } from "./ports";
+import { aggregateMeasuredLevels } from "../domain/subtitle-level";
+import type { CatalogRepository, EpisodeLevelMeasurementRepository } from "./ports";
 
 export const LEVEL_FETCH_FAILURES = [
   "unreachable",
@@ -39,13 +40,14 @@ export type LevelSource = {
   createdAt: Date;
 };
 
-export const LEVEL_RATING_KINDS = ["builtin", "source", "ai"] as const;
+export const LEVEL_RATING_KINDS = ["builtin", "source", "ai", "measured"] as const;
 export type LevelRatingKind = (typeof LEVEL_RATING_KINDS)[number];
 export type LevelRating = {
   kind: LevelRatingKind;
   sourceId: string | null;
   sourceName: string | null;
   range: LevelRange;
+  episodes?: number;
 };
 
 export type AiLevelRating = {
@@ -109,12 +111,13 @@ type Deps = {
   fetcher: LevelSourceFetcher;
   builtin: BuiltinLevelGuide;
   aiRatings: AiLevelRatingRepository;
+  measured: EpisodeLevelMeasurementRepository;
   catalog: CatalogRepository;
   clock: Clock;
   ids: IdGenerator;
 };
 
-type ResolveDeps = Pick<Deps, "sources" | "builtin" | "aiRatings">;
+export type ResolveDeps = Pick<Deps, "sources" | "builtin" | "aiRatings" | "measured">;
 
 const TMDB = "tmdb";
 
@@ -131,17 +134,31 @@ export function makeResolveLevelRatings(deps: ResolveDeps) {
     const unique = [...new Set(externalIds)];
     const resolved = new Map<string, WorkLevelRatings>();
     if (unique.length === 0) return resolved;
-    const [stored, fromAi] = await Promise.all([
+    const [stored, fromAi, fromSubtitles] = await Promise.all([
       deps.sources.ratingsFor(unique),
       deps.aiRatings.ratingsFor(unique),
+      deps.measured.levelsFor(unique),
     ]);
     for (const externalId of unique) {
       const builtin = deps.builtin.rangeOf(externalId);
       const ai = fromAi.get(externalId);
+      const episodeLevels = fromSubtitles.get(externalId) ?? [];
+      const measured = aggregateMeasuredLevels(episodeLevels);
       const ratings: LevelRating[] = [
         ...(builtin ? [{ kind: "builtin" as const, sourceId: null, sourceName: null, range: builtin }] : []),
         ...(stored.get(externalId) ?? []),
         ...(ai ? [{ kind: "ai" as const, sourceId: null, sourceName: ai.model, range: ai.range }] : []),
+        ...(measured
+          ? [
+              {
+                kind: "measured" as const,
+                sourceId: null,
+                sourceName: null,
+                range: measured,
+                episodes: episodeLevels.length,
+              },
+            ]
+          : []),
       ];
       if (ratings.length === 0) continue;
       resolved.set(externalId, {
@@ -188,7 +205,7 @@ async function findOwned(deps: Pick<Deps, "sources">, sourceId: string): Promise
 }
 
 export function makeRecomputeCatalogLevels(
-  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">,
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "measured" | "catalog">,
 ) {
   const resolve = makeResolveLevelRatings(deps);
   return async function recomputeCatalogLevels(): Promise<{ updated: number }> {
@@ -207,7 +224,9 @@ export function makeRecomputeCatalogLevels(
   };
 }
 
-export function makeRemoveLevelSource(deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">) {
+export function makeRemoveLevelSource(
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "measured" | "catalog">,
+) {
   const recompute = makeRecomputeCatalogLevels(deps);
   return async function removeLevelSource(input: { actor: Actor; sourceId: string }): Promise<void> {
     requireAdmin(input.actor);
@@ -219,7 +238,7 @@ export function makeRemoveLevelSource(deps: Pick<Deps, "sources" | "builtin" | "
 }
 
 export function makeSetLevelSourceEnabled(
-  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog" | "clock">,
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "measured" | "catalog" | "clock">,
 ) {
   const recompute = makeRecomputeCatalogLevels(deps);
   return async function setLevelSourceEnabled(input: {
@@ -298,7 +317,9 @@ export function makeSyncLevelSources(deps: Deps) {
   };
 }
 
-export function makeGetWorkLevelRatings(deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "catalog">) {
+export function makeGetWorkLevelRatings(
+  deps: Pick<Deps, "sources" | "builtin" | "aiRatings" | "measured" | "catalog">,
+) {
   const resolve = makeResolveLevelRatings(deps);
   return async function getWorkLevelRatings(input: { mediaId: string }): Promise<WorkLevelRatings> {
     const media = await deps.catalog.findMediaById(input.mediaId);

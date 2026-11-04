@@ -225,6 +225,34 @@
       "when": 1793141954178,
       "tag": "0031_query_string_routes",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793748740265,
+      "tag": "0032_media_genres",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793748896567,
+      "tag": "0033_embedding_document_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793749220421,
+      "tag": "0034_recommendation_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793749814865,
+      "tag": "0035_episode_level_measurements",
+      "breakpoints": true
     }
   ]
 }

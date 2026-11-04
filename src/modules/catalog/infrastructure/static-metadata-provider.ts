@@ -102,6 +102,7 @@ export class StaticMetadataProvider implements MetadataProvider {
     return {
       ...toSummary(work),
       runtimeMinutes: work.runtimeMinutes,
+      genres: work.genres.map((name) => ({ id: null, name })),
       seasons: work.seasons.map(({ seasonNumber, title, episodeCount }) => ({
         seasonNumber,
         title,

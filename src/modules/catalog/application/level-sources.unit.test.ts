@@ -18,7 +18,7 @@ import {
   type LevelSource,
   type LevelSourceRepository,
 } from "./level-sources";
-import { InMemoryAiLevelRatings, InMemoryCatalog } from "./testing/fakes";
+import { InMemoryAiLevelRatings, InMemoryEpisodeLevels, InMemoryCatalog } from "./testing/fakes";
 
 const ADMIN = { userId: "admin", isAdmin: true };
 const PERSON = { userId: "ana", isAdmin: false };
@@ -134,6 +134,7 @@ function setup() {
     clock,
     ids: new SequentialIds("ls"),
     aiRatings: new InMemoryAiLevelRatings(),
+    measured: new InMemoryEpisodeLevels(catalog),
     builtin: {
       count: 1,
       ids: () => ["tv:1668"],

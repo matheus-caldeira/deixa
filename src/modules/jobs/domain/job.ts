@@ -8,6 +8,7 @@ export const JOB_KINDS = [
   "conversation_audio",
   "personal_series_description",
   "level_sources_sync",
+  "episode_level",
 ] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 
@@ -39,6 +40,7 @@ export const MAX_ATTEMPTS_BY_KIND: Record<JobKind, number> = {
   conversation_audio: 3,
   personal_series_description: 1,
   level_sources_sync: 2,
+  episode_level: 1,
 };
 
 export const JOB_LOCK_MS = 15 * 60 * 1000;

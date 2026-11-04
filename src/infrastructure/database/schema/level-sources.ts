@@ -1,6 +1,7 @@
 import {
   type AnyPgColumn,
   boolean,
+  doublePrecision,
   index,
   integer,
   pgTable,
@@ -10,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { episodes, mediaItems } from "./catalog";
 import { users } from "./identity";
 
 export const levelSources = pgTable(
@@ -58,3 +60,25 @@ export const aiLevelRatings = pgTable("ai_level_ratings", {
   ratedBy: uuid("rated_by").references(() => users.id, { onDelete: "set null" }),
   ratedAt: timestamp("rated_at", { withTimezone: true }).notNull(),
 });
+
+export const episodeLevelMeasurements = pgTable(
+  "episode_level_measurements",
+  {
+    episodeId: uuid("episode_id")
+      .primaryKey()
+      .references(() => episodes.id, { onDelete: "cascade" }),
+    mediaItemId: uuid("media_item_id")
+      .notNull()
+      .references(() => mediaItems.id, { onDelete: "cascade" }),
+    language: text("language").notNull(),
+    level: text("level").notNull(),
+    score: doublePrecision("score").notNull(),
+    words: integer("words").notNull(),
+    wordsPerMinute: doublePrecision("words_per_minute").notNull(),
+    meanSentenceWords: doublePrecision("mean_sentence_words").notNull(),
+    lexicalDiversity: doublePrecision("lexical_diversity").notNull(),
+    longWordRatio: doublePrecision("long_word_ratio").notNull(),
+    measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("episode_level_measurements_media").on(table.mediaItemId)],
+);

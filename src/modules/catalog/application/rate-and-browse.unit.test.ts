@@ -7,7 +7,7 @@ import { makeBrowseWorks } from "./browse-works";
 import { makeExportLevelRatings, type LevelSourceRepository } from "./level-sources";
 import type { MetadataProvider, WorkCandidate, WorkDetails } from "./ports";
 import { makeRateWorkLevel, type LevelRater, type LevelRaterInput } from "./rate-work-level";
-import { InMemoryAiLevelRatings, InMemoryCatalog } from "./testing/fakes";
+import { InMemoryAiLevelRatings, InMemoryEpisodeLevels, InMemoryCatalog } from "./testing/fakes";
 
 const FRIENDS = "tv:1668";
 const ADMIN = { userId: "admin", isAdmin: true };
@@ -24,6 +24,7 @@ const details = (externalId: string): WorkDetails => ({
   year: 2001,
   posterPath: null,
   originalLanguage: "en",
+  genres: [],
   seasons: [],
   runtimeMinutes: null,
 });
@@ -90,6 +91,7 @@ function setup() {
     sources: emptySources,
     builtin,
     aiRatings,
+    measured: new InMemoryEpisodeLevels(catalog),
     clock,
     resolveRater: async () => (withAi ? rater : null),
   };

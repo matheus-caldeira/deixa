@@ -1,4 +1,11 @@
-import type { EpisodeMetadata, MediaType, WorkCandidate, WorkDetails, WorkSummary } from "@/modules/catalog";
+import type {
+  EpisodeMetadata,
+  MediaType,
+  WorkCandidate,
+  WorkDetails,
+  WorkGenre,
+  WorkSummary,
+} from "@/modules/catalog";
 import type {
   TmdbMovieDetails,
   TmdbSearchMulti,
@@ -27,6 +34,16 @@ function firstFilled(...values: (string | null | undefined)[]): string {
 function yearOf(date: string | null | undefined): number | null {
   const year = Number(filled(date).slice(0, 4));
   return Number.isInteger(year) && year > 0 ? year : null;
+}
+
+type TmdbGenres = TmdbTvDetails["genres"];
+
+export function mapGenres(localized: TmdbGenres, english?: TmdbGenres): WorkGenre[] {
+  const englishById = new Map((english ?? []).map((genre) => [genre.id, genre.name]));
+  return (localized ?? []).flatMap((genre) => {
+    const name = firstFilled(genre.name, englishById.get(genre.id));
+    return name === "" ? [] : [{ id: genre.id, name }];
+  });
 }
 
 export function needsEnglishFallback(fields: { title: string; overview: string }): boolean {
@@ -115,6 +132,7 @@ export function mapTvDetails(localized: TmdbTvDetails, english?: TmdbTvDetails):
     posterPath: firstFilled(localized.poster_path, english?.poster_path) || null,
     backdropPath: firstFilled(localized.backdrop_path, english?.backdrop_path) || null,
     runtimeMinutes: runtime,
+    genres: mapGenres(localized.genres ?? english?.genres, english?.genres),
     seasons: localized.seasons.map((season) => ({
       seasonNumber: season.season_number,
       title: firstFilled(
@@ -141,6 +159,7 @@ export function mapMovieDetails(localized: TmdbMovieDetails, english?: TmdbMovie
     posterPath: firstFilled(localized.poster_path, english?.poster_path) || null,
     backdropPath: firstFilled(localized.backdrop_path, english?.backdrop_path) || null,
     runtimeMinutes: localized.runtime ?? english?.runtime ?? null,
+    genres: mapGenres(localized.genres ?? english?.genres, english?.genres),
     seasons: [],
   };
 }

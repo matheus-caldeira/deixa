@@ -364,7 +364,9 @@
   },
   {
     "tag": "0022_condemned_lady_deathstrike",
-    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"],
+    "sql": [
+      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"language\" text DEFAULT 'en' NOT NULL;"
+    ],
     "bps": true,
     "folderMillis": 1792115432664,
     "hash": "616a1ee9b6d0f6e1b2fb18e47b091784456904267b48abc42e8cadabc71a18fa"
@@ -433,7 +435,9 @@
   },
   {
     "tag": "0027_conversation_episode",
-    "sql": ["ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"],
+    "sql": [
+      "ALTER TABLE \"conversation_sessions\" ADD COLUMN \"episode_context\" jsonb;"
+    ],
     "bps": true,
     "folderMillis": 1792166687587,
     "hash": "332f14f21dd4df88cfb91e26a858672361aa1b6b073a7210cb5304c2c82d990c"
@@ -482,5 +486,46 @@
     "bps": true,
     "folderMillis": 1793141954178,
     "hash": "b883d8856be670d6dc52dce4f0e6eb33ec8fc1ad67319d89d7f679babbc3c2d2"
+  },
+  {
+    "tag": "0032_media_genres",
+    "sql": [
+      "ALTER TABLE \"media_items\" ADD COLUMN \"genres\" jsonb DEFAULT '[]'::jsonb NOT NULL;"
+    ],
+    "bps": true,
+    "folderMillis": 1793748740265,
+    "hash": "29379624fe5f9dcd1b586f77f3cb5c9c4811feddc981139560ed6c5d11d7fe93"
+  },
+  {
+    "tag": "0033_embedding_document_hash",
+    "sql": [
+      "ALTER TABLE \"work_embeddings\" ADD COLUMN \"document_hash\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1793748896567,
+    "hash": "e35389b671c3e624ba3a3dc514e333de6488bc8808856c3872a30ac57a27e026"
+  },
+  {
+    "tag": "0034_recommendation_history",
+    "sql": [
+      "CREATE TABLE \"recommendation_history\" (\n\t\"user_id\" uuid NOT NULL,\n\t\"work_key\" text NOT NULL,\n\t\"first_suggested_at\" timestamp with time zone NOT NULL,\n\tCONSTRAINT \"recommendation_history_user_id_work_key_pk\" PRIMARY KEY(\"user_id\",\"work_key\")\n);\n",
+      "\nALTER TABLE \"recommendation_history\" ADD CONSTRAINT \"recommendation_history_user_id_users_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"users\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nINSERT INTO \"recommendation_history\" (\"user_id\", \"work_key\", \"first_suggested_at\")\nSELECT \"user_id\", \"work_key\", \"created_at\" FROM \"user_recommendations\"\nUNION ALL\nSELECT \"user_id\", \"work_key\", \"created_at\" FROM \"recommendation_feedback\"\nON CONFLICT DO NOTHING;\n"
+    ],
+    "bps": true,
+    "folderMillis": 1793749220421,
+    "hash": "52d2f24354994c04c5f5d231f4317cb4090aa87f0f7236deef924589dc445fca"
+  },
+  {
+    "tag": "0035_episode_level_measurements",
+    "sql": [
+      "CREATE TABLE \"episode_level_measurements\" (\n\t\"episode_id\" uuid PRIMARY KEY NOT NULL,\n\t\"media_item_id\" uuid NOT NULL,\n\t\"language\" text NOT NULL,\n\t\"level\" text NOT NULL,\n\t\"score\" double precision NOT NULL,\n\t\"words\" integer NOT NULL,\n\t\"words_per_minute\" double precision NOT NULL,\n\t\"mean_sentence_words\" double precision NOT NULL,\n\t\"lexical_diversity\" double precision NOT NULL,\n\t\"long_word_ratio\" double precision NOT NULL,\n\t\"measured_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"episode_level_measurements\" ADD CONSTRAINT \"episode_level_measurements_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"episode_level_measurements\" ADD CONSTRAINT \"episode_level_measurements_media_item_id_media_items_id_fk\" FOREIGN KEY (\"media_item_id\") REFERENCES \"public\".\"media_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE INDEX \"episode_level_measurements_media\" ON \"episode_level_measurements\" USING btree (\"media_item_id\");"
+    ],
+    "bps": true,
+    "folderMillis": 1793749814865,
+    "hash": "55d9f9b14f2e3d81207340a702d59e915ba1b46bed9d317c59f4d4f269319ca2"
   }
 ]

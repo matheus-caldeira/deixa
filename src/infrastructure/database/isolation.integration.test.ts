@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { count, eq } from "drizzle-orm";
+import { count, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   FakeMetadataProvider,
@@ -19,6 +19,7 @@ import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructu
 import { DrizzleStudyRepository } from "@/modules/study/infrastructure/drizzle-study-repository";
 import { uuidGenerator } from "@/shared/ids";
 import { HashEmbeddingProvider } from "@/modules/recommendations/infrastructure/hash-embedding-provider";
+import { DrizzleRecommendationRepository } from "@/modules/recommendations/infrastructure/drizzle-recommendation-repository";
 import {
   DrizzleAiUsageRepository,
   DrizzleModelPriceRepository,
@@ -139,6 +140,26 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     ).rejects.toMatchObject({
       code: "SUBTITLE_VERSION_CONFLICT",
     });
+  });
+
+  it("guarda os gêneros da obra e os mantém quando a atualização não traz nenhum", async () => {
+    const dramaCrime = [
+      { id: 18, name: "Drama" },
+      { id: 80, name: "Crime" },
+    ];
+    expect((await app.getEpisodeContext(episodeId))?.media.genres).toEqual(dramaCrime);
+    const catalog = new DrizzleCatalogRepository(handle.db);
+    const stored = await catalog.findMediaById(mediaId);
+    if (!stored) throw new Error("obra esperada");
+    await catalog.upsertMedia({
+      ...stored,
+      metadataProvider: "fake",
+      createdBy: null,
+      syncedAt: stored.metadataSyncedAt,
+      createdAt: new Date(),
+      genres: undefined,
+    });
+    expect((await catalog.findMediaById(mediaId))?.genres).toEqual(dramaCrime);
   });
 
   it("um usuário não vê marcações, cards, XP nem a chave de IA do outro", async () => {
@@ -371,6 +392,8 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
 
   it("sugestões saem do estudo de cada um: lista, recusa e vetores não vazam entre usuários", async () => {
     await app.startEpisode(ana, episodeId);
+    const signals = await new DrizzleRecommendationRepository(handle.db).loadSignals(ana, new Date(0));
+    expect(signals.works).toMatchObject([{ title: "Suits", genres: ["Drama", "Crime"] }]);
     expect(await app.getRecommendations({ userId: ana, level: "A1", language: "en" })).toMatchObject({
       status: "pending",
       refresh: true,
@@ -388,6 +411,17 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     expect(forAna.insight).toContain("accuracyPercent");
     const forLucas = await app.getRecommendations({ userId: lucas, level: "C1", language: "en" });
     expect(forLucas).toMatchObject({ status: "pending", items: [] });
+    const recommendationNotices = async (userId: string) =>
+      (await app.getInbox(userId)).items.filter((item) => item.kind === "recommendations_ready");
+    expect(await recommendationNotices(ana)).toMatchObject([
+      { href: "/catalog", params: { count: forAna.items.length } },
+    ]);
+    expect(await recommendationNotices(lucas)).toEqual([]);
+    const history = new DrizzleRecommendationRepository(handle.db);
+    const anaKeys = forAna.items.map((item) => item.workKey);
+    expect(await history.rememberSuggested(ana, anaKeys, new Date())).toBe(0);
+    expect(await history.rememberSuggested(lucas, anaKeys.slice(0, 1), new Date())).toBe(1);
+    expect(await history.rememberSuggested(lucas, anaKeys.slice(0, 1), new Date())).toBe(0);
 
     const refused = forAna.items[0];
     if (!refused) throw new Error("sugestão esperada");
@@ -404,6 +438,11 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     expect(lucasItems.map((item) => item.workKey)).toContain(refused.workKey);
     const [vectors] = await handle.db.select({ total: count() }).from(workEmbeddings);
     expect(vectors?.total).toBeGreaterThan(0);
+    const [unmarked] = await handle.db
+      .select({ total: count() })
+      .from(workEmbeddings)
+      .where(isNull(workEmbeddings.documentHash));
+    expect(unmarked?.total).toBe(0);
   });
 
   it("conversa encerrada vira cards na série pessoal de quem conversou, sem duplicar nem vazar", async () => {

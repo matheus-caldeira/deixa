@@ -364,6 +364,13 @@ export type LearnerProfile = {
   averageScore: number | null;
 };
 
+export type StudyPortrait = {
+  challenge: "easier" | "steady" | "harder";
+  accuracyPercent: number | null;
+  againPercent: number | null;
+  marksPerHundred: number | null;
+};
+
 const PROFILE_SESSIONS = 5;
 const PROFILE_POINTS = 4;
 const PROFILE_TOPICS = 4;

@@ -1,0 +1,1 @@
+ALTER TABLE "work_embeddings" ADD COLUMN "document_hash" text;

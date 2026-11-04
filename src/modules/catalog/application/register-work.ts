@@ -48,6 +48,7 @@ async function storeWork(
       existing?.originalLanguage ??
       normalizeLanguageTag(details.originalLanguage ?? "") ??
       DEFAULT_TARGET_LANGUAGE,
+    genres: details.genres.length > 0 ? details.genres : (existing?.genres ?? []),
     createdBy: userId,
     syncedAt: now,
     createdAt: now,

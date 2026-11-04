@@ -14,6 +14,7 @@ import {
   type Correction,
   type ReviewStatus,
   type Session,
+  type StudyPortrait,
   type Turn,
   type EpisodeContext,
 } from "../domain/conversation";
@@ -201,10 +202,12 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
   const created: { userId: string; cards: NewCard[] }[] = [];
   const placed: { userId: string; sessionId: string; cards: CardPlacement[] }[] = [];
   const notifications: ConversationNotification[] = [];
+  const portraits = new Map<string, StudyPortrait>();
   const deps = {
     conversations,
     resolveTutor: async () => tutor,
     recentMistakes: async () => mistakes,
+    studyPortrait: async (userId: string, language: string) => portraits.get(`${userId}:${language}`) ?? null,
     awardXp: async (input: { userId: string; sourceId: string; amount: number }) => {
       if (!xp.some((event) => event.sourceId === input.sourceId))
         xp.push({ userId: input.userId, sourceId: input.sourceId, amount: input.amount });
@@ -244,6 +247,7 @@ function setup(tutor: TutorProvider = new FakeTutorProvider()) {
     turnText: makeGetTurnSpeechText(deps),
     profile: makeGetLearnerProfile(deps),
     mistakes,
+    portraits,
   };
 }
 
@@ -265,6 +269,30 @@ function silentTutor(overrides: Partial<TutorProvider>): TutorProvider {
     ...overrides,
   };
 }
+
+describe("retrato do aluno no tutor", () => {
+  it("manda ao tutor só o retrato da própria conta e do idioma da conversa", async () => {
+    const seen: { portrait: StudyPortrait | null }[] = [];
+    const app = setup(
+      silentTutor({
+        reply: async (input) => {
+          seen.push({ portrait: input.portrait });
+          return { transcript: null, reply: "Nice!", replyTranslation: null, corrections: [] };
+        },
+      }),
+    );
+    const portrait: StudyPortrait = {
+      challenge: "harder",
+      accuracyPercent: 91,
+      againPercent: 8,
+      marksPerHundred: 3,
+    };
+    app.portraits.set("ana:en", portrait);
+    await talk(app, "ana", ["hello"]);
+    await talk(app, "bia", ["hello"]);
+    expect(seen).toEqual([{ portrait }, { portrait: null }]);
+  });
+});
 
 describe("temas", () => {
   it("resolve tema pronto e tema livre, e recusa assunto vazio ou com marcação", () => {

@@ -15,10 +15,12 @@ export type {
 export {
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
   parseLocalReason,
   type LocalReason,
+  type NewSuggestionsNotice,
   type RecommendationsView,
 } from "./application/recommendation-use-cases";
 export {

@@ -23,6 +23,7 @@ export type Exercise =
 export type ExerciseKind = Exercise["kind"];
 export type Answer = null | number | number[] | string;
 export type LevelBand = "beginner" | "intermediate" | "advanced";
+export type LessonChallenge = "easier" | "steady" | "harder";
 
 export const LESSON_SIZE = 6;
 export const PASS_ACCURACY = 70;
@@ -384,12 +385,52 @@ function rearranged(exercise: Exercise, random: () => number): Exercise {
   }
 }
 
-export function arrangeLesson(exercises: readonly Exercise[], seed: string): Exercise[] {
+function withHint(exercise: Exercise): Exercise {
+  const hint = exercise.translation;
+  if (!hint) return exercise;
+  switch (exercise.kind) {
+    case "order":
+      return { ...exercise, prompt: PROMPTS.orderFromHint, hint };
+    case "blank":
+      return { ...exercise, hint };
+    case "type":
+      return { ...exercise, prompt: PROMPTS.typeFromHint, hint };
+    default:
+      return exercise;
+  }
+}
+
+function withoutHint(exercise: Exercise): Exercise {
+  switch (exercise.kind) {
+    case "order":
+      return { ...exercise, prompt: PROMPTS.orderFromAudio, hint: null };
+    case "blank":
+      return { ...exercise, hint: null };
+    case "type":
+      return { ...exercise, prompt: PROMPTS.dictation, hint: null };
+    default:
+      return exercise;
+  }
+}
+
+export function adaptToChallenge(exercise: Exercise, challenge: LessonChallenge): Exercise {
+  if (challenge === "easier") return withHint(exercise);
+  if (challenge === "harder") return withoutHint(exercise);
+  return exercise;
+}
+
+export function arrangeLesson(
+  exercises: readonly Exercise[],
+  seed: string,
+  challenge: LessonChallenge = "steady",
+): Exercise[] {
   const random = createRandom(`arrange:${seed}`);
   const intros = exercises.filter((exercise) => exercise.kind === "intro");
   const practice = shuffled(
     exercises.filter((exercise) => exercise.kind !== "intro"),
     random,
   );
-  return [...intros, ...practice].map((exercise) => rearranged(exercise, random));
+  return [...intros, ...practice].map((exercise) =>
+    adaptToChallenge(rearranged(exercise, random), challenge),
+  );
 }

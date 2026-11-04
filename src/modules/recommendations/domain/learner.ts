@@ -9,6 +9,7 @@ export type StudiedWork = {
   type: "series" | "movie";
   title: string;
   overview: string;
+  genres: string[];
   engagement: number;
 };
 

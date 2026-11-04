@@ -80,6 +80,9 @@ export type RunOutcome = {
   failureReason: string | null;
 };
 
+export type StoredEmbedding = { vector: Vector; documentHash: string | null };
+export type EmbeddingEntry = { workKey: string; vector: Vector; documentHash: string };
+
 export type FeedbackVerdict = "dismissed" | "added";
 export type Feedback = { workKey: string; verdict: FeedbackVerdict };
 
@@ -91,9 +94,10 @@ export interface RecommendationRepository {
   listSuggestions(userId: string): Promise<Suggestion[]>;
   findSuggestion(userId: string, workKey: string): Promise<Suggestion | null>;
   replaceSuggestions(userId: string, suggestions: Suggestion[], now: Date): Promise<void>;
+  rememberSuggested(userId: string, workKeys: string[], now: Date): Promise<number>;
   removeSuggestion(userId: string, workKey: string): Promise<void>;
   saveFeedback(userId: string, workKey: string, verdict: FeedbackVerdict, now: Date): Promise<void>;
   listFeedback(userId: string): Promise<Feedback[]>;
-  getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, Vector>>;
-  saveEmbeddings(model: string, entries: { workKey: string; vector: Vector }[], now: Date): Promise<void>;
+  getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, StoredEmbedding>>;
+  saveEmbeddings(model: string, entries: EmbeddingEntry[], now: Date): Promise<void>;
 }

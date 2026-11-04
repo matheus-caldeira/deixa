@@ -32,7 +32,8 @@ casos de uso nem prompts.
   seguinte; `NoObjectGeneratedError` e `JSONParseError` viram `LLM_INVALID_OUTPUT`.
 - Um adapter por port: `AiLlmProvider`, `AiTutorProvider` (áudio como `FilePart` em bytes), `AiLessonPlanner`,
   `AiSuggestionWriter` e `AiEmbeddingProvider` (`embedMany`; 256 dimensões no Google e na OpenAI, a largura do
-  modelo nos demais; a chave em `work_embeddings` é `provedor/modelo`).
+  modelo nos demais; a chave em `work_embeddings` é `provedor/modelo`, e `document_hash` marca o texto
+  vetorizado: texto novo, vetor novo).
 - A saída continua `unknown` e passa pelo schema Zod do caso de uso, como antes.
 - Teste de chave por provedor: listagem de modelos por HTTP, sem gastar tokens (`test-api-key.ts`).
 

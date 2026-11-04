@@ -28,6 +28,7 @@ import {
   type ReviewStatus,
   type SeasonContext,
   type Session,
+  type StudyPortrait,
   type Turn,
   type TurnRole,
 } from "../domain/conversation";
@@ -43,6 +44,7 @@ export interface TutorProvider {
     history: { role: TurnRole; text: string }[];
     message: TutorMessage;
     learner: LearnerProfile;
+    portrait: StudyPortrait | null;
     episode: EpisodeContext | null;
   }): Promise<unknown>;
   review(input: {
@@ -137,6 +139,7 @@ type Deps = {
   }) => Promise<{ newEpisodes: number }>;
   notify: (input: ConversationNotification) => Promise<void>;
   recentMistakes: (userId: string, language: StudyLanguage) => Promise<string[]>;
+  studyPortrait?: (userId: string, language: StudyLanguage) => Promise<StudyPortrait | null>;
   awardXp: (input: { userId: string; source: string; sourceId: string; amount: number }) => Promise<void>;
   clock: Clock;
   ids: IdGenerator;
@@ -240,7 +243,7 @@ export function makeListConversations(deps: Pick<Deps, "conversations">) {
 }
 
 export function makeSendMessage(
-  deps: Pick<Deps, "conversations" | "resolveTutor" | "recentMistakes" | "clock" | "ids">,
+  deps: Pick<Deps, "conversations" | "resolveTutor" | "recentMistakes" | "studyPortrait" | "clock" | "ids">,
 ) {
   const getLearnerProfile = makeGetLearnerProfile(deps);
   return async function sendMessage(input: {
@@ -277,11 +280,15 @@ export function makeSendMessage(
     const release = () => deps.conversations.releaseUserTurn(input.userId, input.sessionId);
 
     const tutor = await deps.resolveTutor(input.userId);
-    const learner = await getLearnerProfile(input.userId, input.language);
+    const [learner, portrait] = await Promise.all([
+      getLearnerProfile(input.userId, input.language),
+      deps.studyPortrait?.(input.userId, input.language) ?? null,
+    ]);
     let raw: unknown;
     try {
       raw = await tutor.reply({
         learner,
+        portrait,
         level: input.level,
         theme: session.themeTitle,
         episode: session.episode,

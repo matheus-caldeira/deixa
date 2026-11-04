@@ -92,6 +92,10 @@ describe("mapeamento da resposta do TMDB", () => {
       first_air_date: "2005-09-19",
       poster_path: "/a.jpg",
       episode_run_time: [22],
+      genres: [
+        { id: 35, name: "Comédia" },
+        { id: 10765, name: "" },
+      ],
       seasons: [
         { season_number: 0, name: "Especiais", episode_count: 3 },
         { season_number: 1, name: "", episode_count: 22 },
@@ -102,6 +106,10 @@ describe("mapeamento da resposta do TMDB", () => {
       name: "A Show",
       original_name: "A Show",
       overview: "Plot in English.",
+      genres: [
+        { id: 35, name: "Comedy" },
+        { id: 10765, name: "Sci-Fi & Fantasy" },
+      ],
       seasons: [{ season_number: 1, name: "Season 1", episode_count: 22 }],
     });
     expect(needsEnglishFallback({ title: "Uma Série", overview: "" })).toBe(true);
@@ -116,6 +124,10 @@ describe("mapeamento da resposta do TMDB", () => {
       posterPath: "/a.jpg",
       backdropPath: null,
       runtimeMinutes: 22,
+      genres: [
+        { id: 35, name: "Comédia" },
+        { id: 10765, name: "Sci-Fi & Fantasy" },
+      ],
       seasons: [
         { seasonNumber: 0, title: "Especiais", episodeCount: 3 },
         { seasonNumber: 1, title: "Season 1", episodeCount: 22 },
@@ -132,6 +144,7 @@ describe("mapeamento da resposta do TMDB", () => {
       release_date: "2006-06-30",
       poster_path: null,
       runtime: 109,
+      genres: [{ id: 18, name: "Drama" }],
     });
     expect(mapMovieDetails(movie)).toMatchObject({
       type: "movie",
@@ -139,6 +152,7 @@ describe("mapeamento da resposta do TMDB", () => {
       year: 2006,
       posterPath: null,
       runtimeMinutes: 109,
+      genres: [{ id: 18, name: "Drama" }],
       seasons: [],
     });
   });

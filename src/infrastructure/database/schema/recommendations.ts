@@ -16,6 +16,7 @@ export const workEmbeddings = pgTable(
     workKey: text("work_key").notNull(),
     model: text("model").notNull(),
     vector: jsonb("vector").notNull(),
+    documentHash: text("document_hash"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.workKey, table.model] })],
@@ -70,6 +71,18 @@ export const recommendationFeedback = pgTable(
     workKey: text("work_key").notNull(),
     verdict: text("verdict").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.workKey] })],
+);
+
+export const recommendationHistory = pgTable(
+  "recommendation_history",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    workKey: text("work_key").notNull(),
+    firstSuggestedAt: timestamp("first_suggested_at", { withTimezone: true }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.workKey] })],
 );

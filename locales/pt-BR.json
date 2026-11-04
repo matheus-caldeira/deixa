@@ -134,6 +134,10 @@
     "conversation_terms_ready": {
       "title": "Cards novos na sua série",
       "body": "{theme}: {count, plural, one {# termo marcado virou card} other {# termos marcados viraram cards}}."
+    },
+    "recommendations_ready": {
+      "title": "Sugestões novas no Explorar",
+      "body": "{count, plural, one {# obra nova combina} other {# obras novas combinam}} com o que você estuda."
     }
   },
   "errors": {
@@ -339,7 +343,8 @@
     },
     "levelRatings": "Nível pela mediana de {count, plural, one {# avaliação} other {# avaliações}}:",
     "levelRatingBuiltin": "guia do {app}",
-    "levelRatingAi": "IA"
+    "levelRatingAi": "IA",
+    "levelRatingMeasured": "medida pelas falas de {count, plural, one {# episódio} other {# episódios}}"
   },
   "home": {
     "continue": "Continuar",

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import type { WorkCandidate } from "@/modules/catalog";
 import type { Clock } from "@/shared/clock";
+import { routes } from "@/shared/routes";
 import { AppError } from "@/shared/errors";
 import { CEFR_LEVELS, levelIndex, type CefrLevel } from "@/shared/levels";
 import { cleanLlmText } from "@/shared/llm-text";
@@ -10,13 +11,15 @@ import {
   assessLearner,
   estimateLevelRange,
   fitLabel,
+  parseLearnerInsight,
   signalsFingerprint,
   type LearnerAssessment,
+  type LearnerInsight,
   type LearnerSignals,
   type StudiedWork,
 } from "../domain/learner";
 import { rankWorks, type RankedWork } from "../domain/ranking";
-import { weightedCentroid, type Vector } from "../domain/vectors";
+import { documentHash, weightedCentroid, workDocument, type Vector } from "../domain/vectors";
 import type {
   CandidateSource,
   EmbeddingProvider,
@@ -56,7 +59,15 @@ type Deps = {
   localEmbedding: EmbeddingProvider;
   resolveWriter: (userId: string) => Promise<SuggestionWriter | null>;
   clock: Clock;
-  onFallback?: (stage: "embedding" | "writer" | "candidates", reason: string) => void;
+  notify?: (input: NewSuggestionsNotice) => Promise<void>;
+  onFallback?: (stage: "embedding" | "writer" | "candidates" | "notification", reason: string) => void;
+};
+
+export type NewSuggestionsNotice = {
+  userId: string;
+  kind: "recommendations_ready";
+  params: { count: number };
+  href: string;
 };
 
 export type RecommendationsView = {
@@ -152,9 +163,6 @@ async function gatherCandidates(
   return [...unique.values()].slice(0, MAX_CANDIDATES);
 }
 
-const documentOf = (work: { title: string; overview: string; genres?: readonly string[] }): string =>
-  [work.title, (work.genres ?? []).join(", "), work.overview].filter((part) => part.length > 0).join(". ");
-
 async function embedWith(
   deps: Deps,
   provider: EmbeddingProvider,
@@ -162,12 +170,21 @@ async function embedWith(
   now: Date,
 ): Promise<Map<string, Vector>> {
   const keys = [...documents.keys()];
-  const known = await deps.repository.getEmbeddings(provider.model, keys);
+  const hashes = new Map(keys.map((key) => [key, documentHash(documents.get(key) ?? "")]));
+  const stored = await deps.repository.getEmbeddings(provider.model, keys);
+  const known = new Map<string, Vector>();
+  for (const [key, entry] of stored) {
+    if (entry.documentHash === hashes.get(key)) known.set(key, entry.vector);
+  }
   const missing = keys.filter((key) => !known.has(key));
   if (missing.length === 0) return known;
   const vectors = await provider.embed(missing.map((key) => documents.get(key) ?? ""));
   if (vectors.length !== missing.length) throw new AppError("LLM_INVALID_OUTPUT");
-  const fresh = missing.map((workKey, index) => ({ workKey, vector: vectors[index] ?? [] }));
+  const fresh = missing.map((workKey, index) => ({
+    workKey,
+    vector: vectors[index] ?? [],
+    documentHash: hashes.get(workKey) ?? "",
+  }));
   await deps.repository.saveEmbeddings(provider.model, fresh, now);
   for (const entry of fresh) known.set(entry.workKey, entry.vector);
   return known;
@@ -342,6 +359,15 @@ async function writeSuggestions(
   };
 }
 
+async function announceNewSuggestions(deps: Deps, userId: string, count: number): Promise<void> {
+  if (count === 0 || !deps.notify) return;
+  try {
+    await deps.notify({ userId, kind: "recommendations_ready", params: { count }, href: routes.catalog() });
+  } catch (error) {
+    deps.onFallback?.("notification", reasonOf(error));
+  }
+}
+
 export function makeRefreshRecommendations(deps: Deps) {
   return async function refreshRecommendations(input: {
     userId: string;
@@ -377,8 +403,8 @@ export function makeRefreshRecommendations(deps: Deps) {
       );
 
       const documents = new Map<string, string>();
-      for (const work of candidates) documents.set(workKeyOf(work), documentOf(work));
-      for (const work of studied) documents.set(work.workKey, documentOf(work));
+      for (const work of candidates) documents.set(workKeyOf(work), workDocument(work));
+      for (const work of studied) documents.set(work.workKey, workDocument(work));
       const { vectors, provider } =
         candidates.length > 0
           ? await embedDocuments(deps, input.userId, documents, startedAt)
@@ -388,11 +414,11 @@ export function makeRefreshRecommendations(deps: Deps) {
         feedback.map((entry) => entry.workKey),
       );
       const dismissed = feedback.flatMap((entry) => {
-        const vector = feedbackVectors.get(entry.workKey);
+        const vector = feedbackVectors.get(entry.workKey)?.vector;
         return entry.verdict === "dismissed" && vector ? [vector] : [];
       });
       const added = feedback.flatMap((entry) => {
-        const vector = feedbackVectors.get(entry.workKey);
+        const vector = feedbackVectors.get(entry.workKey)?.vector;
         return entry.verdict === "added" && vector ? [{ vector, weight: ADDED_WEIGHT }] : [];
       });
       const studiedVectors = studied.map((work) => vectors.get(work.workKey) ?? []);
@@ -420,6 +446,7 @@ export function makeRefreshRecommendations(deps: Deps) {
             levelMin,
             levelMax,
             popularity: work.popularity,
+            genres: work.genres,
           };
         }),
       });
@@ -472,6 +499,12 @@ export function makeRefreshRecommendations(deps: Deps) {
         },
         finishedAt,
       );
+      const newlySuggested = await deps.repository.rememberSuggested(
+        input.userId,
+        written.map(({ draft }) => workKeyOf(draft.work)),
+        finishedAt,
+      );
+      await announceNewSuggestions(deps, input.userId, newlySuggested);
       return { refreshed: true };
     } catch (error) {
       await deps.repository.finishRun(
@@ -510,5 +543,28 @@ export function makeAcceptRecommendation(deps: Pick<Deps, "repository" | "clock"
     await deps.repository.saveFeedback(input.userId, input.workKey, "added", deps.clock.now());
     await deps.repository.removeSuggestion(input.userId, input.workKey);
     return suggestion;
+  };
+}
+
+const fingerprintSchema = z.tuple([z.string(), z.string()]).rest(z.unknown());
+
+function fingerprintLanguage(fingerprint: string | null): string | null {
+  if (!fingerprint) return null;
+  try {
+    const parsed = fingerprintSchema.safeParse(JSON.parse(fingerprint));
+    return parsed.success ? parsed.data[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+export function makeGetLearnerInsight(deps: Pick<Deps, "repository">) {
+  return async function getLearnerInsight(
+    userId: string,
+    language: StudyLanguage,
+  ): Promise<LearnerInsight | null> {
+    const run = await deps.repository.getRun(userId);
+    if (!run || fingerprintLanguage(run.fingerprint) !== language) return null;
+    return parseLearnerInsight(run.insight);
   };
 }

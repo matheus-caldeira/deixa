@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const text = z.string().nullish();
+const genres = z.array(z.object({ id: z.number(), name: text })).nullish();
 
 export const searchMultiSchema = z.object({
   results: z
@@ -31,6 +32,7 @@ export const tvDetailsSchema = z.object({
   poster_path: text,
   backdrop_path: text,
   episode_run_time: z.array(z.number()).nullish(),
+  genres,
   seasons: z
     .array(
       z.object({
@@ -65,6 +67,7 @@ export const movieDetailsSchema = z.object({
   poster_path: text,
   backdrop_path: text,
   runtime: z.number().nullish(),
+  genres,
 });
 
 export const workListSchema = z.object({

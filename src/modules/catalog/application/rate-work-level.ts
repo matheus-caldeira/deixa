@@ -12,7 +12,7 @@ import {
   type LevelSourceRepository,
   type WorkLevelRatings,
 } from "./level-sources";
-import type { CatalogRepository, MetadataProvider } from "./ports";
+import type { CatalogRepository, EpisodeLevelMeasurementRepository, MetadataProvider } from "./ports";
 
 export const MAX_LEVEL_REASON_CHARS = 280;
 const MAX_OVERVIEW_CHARS = 1200;
@@ -42,6 +42,7 @@ type Deps = {
   sources: LevelSourceRepository;
   builtin: BuiltinLevelGuide;
   aiRatings: AiLevelRatingRepository;
+  measured: EpisodeLevelMeasurementRepository;
   resolveRater: (userId: string) => Promise<LevelRater | null>;
   clock: Clock;
 };

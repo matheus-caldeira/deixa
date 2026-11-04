@@ -41,6 +41,16 @@ function hashToken(token: string): number {
   return hash >>> 0;
 }
 
+const HEX = 16;
+
+export function documentHash(text: string): string {
+  return `${text.length.toString(HEX)}-${hashToken(text).toString(HEX)}`;
+}
+
+export function workDocument(work: { title: string; overview: string; genres: readonly string[] }): string {
+  return [work.title, work.genres.join(", "), work.overview].filter((part) => part.length > 0).join(". ");
+}
+
 export function hashEmbedding(text: string, dimensions = LOCAL_EMBEDDING_DIMENSIONS): number[] {
   const vector = new Array<number>(dimensions).fill(0);
   const tokens = (text.toLowerCase().match(WORD) ?? []).filter((token) => token.length >= MIN_TOKEN_LENGTH);

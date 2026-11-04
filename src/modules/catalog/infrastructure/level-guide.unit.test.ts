@@ -18,6 +18,7 @@ function details(externalId: string): WorkDetails {
     overview: "",
     year: 2000,
     posterPath: null,
+    genres: [],
     seasons: [],
     runtimeMinutes: null,
     levelRange: ["C2", "C2"],

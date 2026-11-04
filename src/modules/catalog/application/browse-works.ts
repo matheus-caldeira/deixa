@@ -8,7 +8,13 @@ import {
   type LevelRating,
   type LevelSourceRepository,
 } from "./level-sources";
-import type { CatalogRepository, DiscoverSort, MetadataProvider, WorkSummary } from "./ports";
+import type {
+  CatalogRepository,
+  EpisodeLevelMeasurementRepository,
+  DiscoverSort,
+  MetadataProvider,
+  WorkSummary,
+} from "./ports";
 
 const MIN_QUERY_LENGTH = 2;
 
@@ -18,6 +24,7 @@ type Deps = {
   sources: LevelSourceRepository;
   builtin: BuiltinLevelGuide;
   aiRatings: AiLevelRatingRepository;
+  measured: EpisodeLevelMeasurementRepository;
 };
 
 export type BrowsedWork = WorkSummary & {

@@ -51,6 +51,7 @@ import {
   makeSetLevelSourceEnabled,
   makeStartEpisode,
   makeSyncLevelSources,
+  makeMeasureEpisodeLevel,
   type MediaType,
   type MetadataProvider,
 } from "@/modules/catalog";
@@ -58,6 +59,7 @@ import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizz
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { LevelGuidedMetadataProvider, builtinLevelGuide } from "@/modules/catalog/infrastructure/level-guide";
 import { DrizzleLevelSourceRepository } from "@/modules/catalog/infrastructure/drizzle-level-source-repository";
+import { DrizzleEpisodeLevelRepository } from "@/modules/catalog/infrastructure/drizzle-episode-level-repository";
 import { DrizzleAiLevelRatingRepository } from "@/modules/catalog/infrastructure/drizzle-ai-level-rating-repository";
 import { AiLevelRater } from "./ai/ai-level-rater";
 import { AiSpeechToText } from "./ai/ai-speech-to-text";
@@ -185,6 +187,7 @@ import { DrizzleSourceRepository } from "@/modules/subtitle-sources/infrastructu
 import {
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
   type EmbeddingProvider,
@@ -326,6 +329,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     fetcher: platform.levelSourceFetcher(env),
     builtin: builtinLevelGuide,
     aiRatings: new DrizzleAiLevelRatingRepository(db),
+    measured: new DrizzleEpisodeLevelRepository(db),
     catalog,
     clock,
     ids,
@@ -339,6 +343,15 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
       ),
     );
   const subtitles = new DrizzleSubtitleRepository(db);
+  const measureEpisodeLevel = makeMeasureEpisodeLevel({
+    ...levelSourceDeps,
+    readCues: async (episodeId, language) => {
+      const file = (await subtitles.listFiles(episodeId))
+        .filter((entry) => entry.language === language)
+        .at(-1);
+      return file ? subtitles.listCues(file.id) : null;
+    },
+  });
   const highlights = new DrizzleHighlightRepository(db);
   const learning = new DrizzleLearningRepository(db);
   const cards = new DrizzleCardRepository(db);
@@ -560,8 +573,10 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     localEmbedding,
     resolveWriter: resolveSuggestionWriter,
     clock,
+    notify,
     onFallback: (stage: string, reason: string) => log.warn("recommendations.fallback", { stage, reason }),
   };
+  const getLearnerInsight = makeGetLearnerInsight(recommendationDeps);
 
   const sessionDeps = {
     users: identity,
@@ -791,6 +806,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     conversations,
     resolveTutor,
     recentMistakes,
+    studyPortrait: getLearnerInsight,
     awardXp,
     seasonContext: async (userId: string) => getSeasonContext(await learnerOf(userId)),
     createCards: createConversationCards,
@@ -810,6 +826,8 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     study,
     plans: study,
     resolvePlanner,
+    learnerChallenge: async (userId: string, pair: LanguagePair) =>
+      (await getLearnerInsight(userId, pair.target))?.challenge ?? "steady",
     notify,
     clock,
     ids,
@@ -1109,6 +1127,10 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     level_sources_sync: async (payload) => {
       const result = await syncLevelSources(payload);
       log.info("level_sources.synced", result);
+    },
+    episode_level: async (payload) => {
+      const outcome = await measureEpisodeLevel(payload);
+      log.info("episode_level.measured", { episodeId: payload.episodeId, ...outcome });
     },
   };
   const runClaimedJob = makeRunClaimedJob({ jobs, handlers: jobHandlers, clock });

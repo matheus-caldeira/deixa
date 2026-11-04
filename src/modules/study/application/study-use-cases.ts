@@ -13,6 +13,7 @@ import {
   lessonXp,
   type Answer,
   type Exercise,
+  type LessonChallenge,
 } from "../domain/exercises";
 import { assemblePlan, fallbackPlan, type LessonPlan, type PlanProvider } from "../domain/plan";
 import { nodeStates, trailProgressPercent, type NodeState, type TrailLine } from "../domain/trail";
@@ -97,6 +98,7 @@ export type StudyCollaborators = {
     items: { cueId: string; translation: string | null }[],
   ) => Promise<number>;
   resolvePlanner: (userId: string) => Promise<LessonPlanner | null>;
+  learnerChallenge?: (userId: string, pair: LanguagePair) => Promise<LessonChallenge>;
   notify: (input: {
     userId: string;
     kind: "trail_ready" | "trail_failed";
@@ -302,7 +304,7 @@ export function makeGetTrail(deps: Pick<Deps, "plans" | "study">) {
   };
 }
 
-export function makeStartLesson(deps: Pick<Deps, "plans" | "study" | "ids">) {
+export function makeStartLesson(deps: Pick<Deps, "plans" | "study" | "ids" | "learnerChallenge">) {
   return async function startLesson(input: {
     userId: string;
     episodeId: string;
@@ -322,13 +324,14 @@ export function makeStartLesson(deps: Pick<Deps, "plans" | "study" | "ids">) {
       throw new AppError("EPISODE_NOT_READY", "previousBlock");
     }
     const seed = deps.ids.next();
+    const challenge = (await deps.learnerChallenge?.(input.userId, input.pair)) ?? "steady";
     return {
       nodeIndex: block.index,
       seed,
       title: block.title,
       isFinal: block.isFinal,
       replay: states[input.nodeIndex] === "done",
-      exercises: arrangeLesson(block.exercises, seed),
+      exercises: arrangeLesson(block.exercises, seed, challenge),
     };
   };
 }

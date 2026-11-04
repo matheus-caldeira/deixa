@@ -5,8 +5,8 @@ import {
 } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { FixedClock } from "@/shared/clock";
 import { assessLearner, estimateLevelRange, levelFitScore, type StudiedWork } from "../domain/learner";
-import { rankWorks } from "../domain/ranking";
-import { cosine, hashEmbedding, weightedCentroid } from "../domain/vectors";
+import { diversifyByGenre, genreOverlap, rankWorks } from "../domain/ranking";
+import { cosine, documentHash, hashEmbedding, weightedCentroid, workDocument } from "../domain/vectors";
 import { HashEmbeddingProvider } from "../infrastructure/hash-embedding-provider";
 import type { SuggestionWriter, WriterInput } from "./ports";
 import {
@@ -15,21 +15,30 @@ import {
   MIN_REFRESH_HOURS,
   makeAcceptRecommendation,
   makeDismissRecommendation,
+  makeGetLearnerInsight,
   makeGetRecommendations,
   makeRefreshRecommendations,
+  type NewSuggestionsNotice,
 } from "./recommendation-use-cases";
 import { CountingEmbeddingProvider, EMPTY_SIGNALS, InMemoryRecommendationRepository } from "./testing/fakes";
 
 const HOUR_MS = 60 * 60 * 1000;
 const key = (slug: string): string => `fake:${fakeExternalId(slug)}`;
 
-const studied = (slug: string, title: string, overview: string, engagement = 1.5): StudiedWork => ({
+const studied = (
+  slug: string,
+  title: string,
+  overview: string,
+  engagement = 1.5,
+  genres: string[] = [],
+): StudiedWork => ({
   workKey: key(slug),
   provider: "fake",
   externalId: fakeExternalId(slug),
   type: "series",
   title,
   overview,
+  genres,
   engagement,
 });
 
@@ -37,6 +46,8 @@ const SUITS = studied(
   "suits",
   "Suits",
   "Um escritório de advocacia em Nova York. Inglês jurídico, negociações e respostas afiadas.",
+  1.5,
+  ["Drama", "Crime"],
 );
 
 describe("vetores", () => {
@@ -47,6 +58,18 @@ describe("vetores", () => {
     expect(cosine(office, similar)).toBeGreaterThan(cosine(office, distant));
     expect(cosine(office, office)).toBeCloseTo(1);
     expect(cosine([], [])).toBe(0);
+  });
+
+  it("o texto da obra leva os gêneros e aproxima obras do mesmo gênero no vetor local", () => {
+    const comedy = workDocument({ title: "Uma", overview: "Vizinhos num prédio.", genres: ["Comédia"] });
+    expect(comedy).toBe("Uma. Comédia. Vizinhos num prédio.");
+    const sameGenre = workDocument({ title: "Outra", overview: "Uma fazenda.", genres: ["Comédia"] });
+    const otherGenre = workDocument({ title: "Outra", overview: "Uma fazenda.", genres: ["Guerra"] });
+    expect(cosine(hashEmbedding(comedy), hashEmbedding(sameGenre))).toBeGreaterThan(
+      cosine(hashEmbedding(comedy), hashEmbedding(otherGenre)),
+    );
+    expect(documentHash(comedy)).toBe(documentHash(comedy));
+    expect(documentHash(comedy)).not.toBe(documentHash(sameGenre));
   });
 
   it("o centro do gosto pende para a obra com mais peso e ignora vetor vazio", () => {
@@ -111,12 +134,13 @@ describe("retrato do aluno", () => {
 });
 
 describe("ranqueamento", () => {
-  const work = (workKey: string, vector: number[], popularity = 1) => ({
+  const work = (workKey: string, vector: number[], popularity = 1, genres: string[] = []) => ({
     workKey,
     vector,
     levelMin: "B1" as const,
     levelMax: "B2" as const,
     popularity,
+    genres,
   });
 
   it("põe na frente o que parece com o gosto e afasta o que parece com o que foi recusado", () => {
@@ -148,6 +172,63 @@ describe("ranqueamento", () => {
     });
     expect(ranked[0]?.workKey).toBe("facil");
     expect(ranked[0]?.closestIndex).toBeNull();
+  });
+
+  it("uma obra muito estudada não puxa todas as sugestões para o mesmo gênero", () => {
+    const comedyTaste = [1, 0, 0];
+    const works = [
+      work("comedia-1", [1, 0.05, 0], 5, ["Comédia"]),
+      work("comedia-2", [1, 0.1, 0], 5, ["Comédia"]),
+      work("comedia-3", [1, 0.15, 0], 5, ["Comédia", "Romance"]),
+      work("comedia-4", [1, 0.2, 0], 5, ["Comédia"]),
+      work("drama", [0.8, 0.6, 0], 3, ["Drama"]),
+      work("crime", [0.7, 0, 0.7], 2, ["Crime", "Drama"]),
+    ];
+    const ranked = rankWorks({
+      taste: comedyTaste,
+      targetIndex: 2,
+      works,
+      liked: [comedyTaste],
+      dismissed: [],
+    });
+    const order = ranked.map((item) => item.workKey);
+    expect(order[0]).toBe("comedia-1");
+    expect(order.slice(0, 3)).toEqual(["comedia-1", "drama", "comedia-3"]);
+    const relevanceOnly = [...ranked].sort((left, right) => right.score - left.score);
+    expect(relevanceOnly.slice(0, 4).map((item) => item.workKey)).toEqual([
+      "comedia-1",
+      "comedia-2",
+      "comedia-3",
+      "comedia-4",
+    ]);
+  });
+
+  it("a diversidade por gênero vale sem IA e sem histórico, só com nível e popularidade", () => {
+    const ranked = rankWorks({
+      taste: null,
+      targetIndex: 2,
+      liked: [],
+      dismissed: [],
+      works: [
+        work("comedia-a", [], 10, ["Comédia"]),
+        work("comedia-b", [], 9, ["Comédia"]),
+        work("comedia-c", [], 8, ["Comédia"]),
+        work("drama", [], 1, ["Drama"]),
+      ],
+    });
+    expect(ranked.map((item) => item.workKey)).toEqual(["comedia-a", "drama", "comedia-b", "comedia-c"]);
+  });
+
+  it("sem gêneros ou com peso zero, a ordem é a da pontuação", () => {
+    const items = [
+      { key: "a", score: 0.9, genres: ["Comédia"] },
+      { key: "b", score: 0.8, genres: ["Comédia"] },
+      { key: "c", score: 0.5, genres: [] },
+    ];
+    expect(diversifyByGenre(items, 0).map((item) => item.key)).toEqual(["a", "b", "c"]);
+    expect(diversifyByGenre(items).map((item) => item.key)).toEqual(["a", "c", "b"]);
+    expect(genreOverlap(new Set(["drama"]), new Set())).toBe(0);
+    expect(genreOverlap(new Set(["drama", "crime"]), new Set(["drama"]))).toBe(0.5);
   });
 });
 
@@ -329,6 +410,37 @@ describe("sugestões para o usuário", () => {
     expect(embedding.embedded.length).toBe(firstRound);
   });
 
+  it("o vetor da obra estudada inclui os gêneros e é refeito quando o texto da obra muda", async () => {
+    const withoutGenres = { ...SUITS, genres: [] };
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [withoutGenres] });
+    await refresh();
+    const firstRound = embedding.embedded.length;
+    expect(embedding.embedded).toContain(workDocument(withoutGenres));
+    clock.advanceMs(2 * HOUR_MS);
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [SUITS] });
+    await refresh();
+    expect(embedding.embedded.slice(firstRound)).toEqual([
+      "Suits. Drama, Crime. Um escritório de advocacia em Nova York. Inglês jurídico, negociações e respostas afiadas.",
+    ]);
+    expect(repository.embeddings.get(`${embedding.model}|${SUITS.workKey}`)?.documentHash).toBe(
+      documentHash(workDocument(SUITS)),
+    );
+  });
+
+  it("vetor guardado sem marca do texto é refeito uma vez", async () => {
+    await refresh();
+    const stored = repository.embeddings.get(`${embedding.model}|${SUITS.workKey}`);
+    if (!stored) throw new Error("vetor esperado");
+    repository.embeddings.set(`${embedding.model}|${SUITS.workKey}`, { ...stored, documentHash: null });
+    const firstRound = embedding.embedded.length;
+    clock.advanceMs(2 * HOUR_MS);
+    await refresh();
+    expect(embedding.embedded.length).toBe(firstRound + 1);
+    clock.advanceMs(2 * HOUR_MS);
+    await refresh();
+    expect(embedding.embedded.length).toBe(firstRound + 1);
+  });
+
   it("não roda duas atualizações ao mesmo tempo nem em seguida", async () => {
     const [first, second] = await Promise.all([refresh(), refresh()]);
     expect([first.refreshed, second.refreshed].filter(Boolean)).toHaveLength(1);
@@ -395,5 +507,155 @@ describe("sugestões para o usuário", () => {
       makeRefreshRecommendations(broken)({ userId: "ana", level: "B2", language: "en" }),
     ).rejects.toThrow();
     expect(repository.runs.get("ana")).toMatchObject({ status: "FAILED" });
+  });
+});
+
+describe("aviso de sugestões novas", () => {
+  const local = new HashEmbeddingProvider();
+  const source = new FakeMetadataProvider();
+  let repository: InMemoryRecommendationRepository;
+  let clock: FixedClock;
+  let notices: NewSuggestionsNotice[];
+  let visible: number;
+  let reversed: boolean;
+
+  const limitedSource = {
+    name: source.name,
+    listRelatedWorks: async (...args: Parameters<FakeMetadataProvider["listRelatedWorks"]>) =>
+      (await source.listRelatedWorks(...args)).slice(0, visible),
+    listPopularWorks: async (...args: Parameters<FakeMetadataProvider["listPopularWorks"]>) =>
+      (await source.listPopularWorks(...args)).slice(0, visible),
+  };
+  const reorderingWriter: SuggestionWriter = {
+    name: "gemini",
+    write: async (input) => {
+      const keys = input.candidates.map((candidate) => candidate.key);
+      return {
+        items: (reversed ? [...keys].reverse() : keys).map((key) => ({ key, reason: "Combina com você." })),
+      };
+    },
+  };
+  const deps = (notify: (notice: NewSuggestionsNotice) => Promise<void>) => ({
+    repository,
+    resolveCandidates: async () => limitedSource,
+    resolveEmbedding: async () => local,
+    localEmbedding: local,
+    resolveWriter: async () => reorderingWriter,
+    clock,
+    notify,
+  });
+  const collect = async (notice: NewSuggestionsNotice) => {
+    notices.push(notice);
+  };
+  const refresh = (userId = "ana", notify = collect) =>
+    makeRefreshRecommendations(deps(notify))({ userId, level: "B2", language: "en" });
+  const later = () => clock.advanceMs(MIN_REFRESH_HOURS * HOUR_MS);
+
+  beforeEach(() => {
+    repository = new InMemoryRecommendationRepository();
+    clock = new FixedClock("2026-10-12T12:00:00Z");
+    notices = [];
+    visible = 2;
+    reversed = false;
+    repository.signals.set("ana", { ...EMPTY_SIGNALS, works: [SUITS] });
+    repository.signals.set("bia", { ...EMPTY_SIGNALS, works: [SUITS] });
+  });
+
+  it("avisa uma vez quando aparecem obras nunca sugeridas, com link para o Explorar", async () => {
+    await refresh();
+    const first = repository.suggestions.get("ana") ?? [];
+    expect(first.length).toBeGreaterThan(0);
+    expect(notices).toEqual([
+      {
+        userId: "ana",
+        kind: "recommendations_ready",
+        params: { count: first.length },
+        href: "/catalog",
+      },
+    ]);
+  });
+
+  it("não avisa de novo quando só a ordem muda nem quando a rodada se repete", async () => {
+    await refresh();
+    const before = (repository.suggestions.get("ana") ?? []).map((item) => item.workKey);
+    reversed = true;
+    later();
+    expect(await refresh()).toEqual({ refreshed: true });
+    const after = (repository.suggestions.get("ana") ?? []).map((item) => item.workKey);
+    expect(after).not.toEqual(before);
+    expect([...after].sort()).toEqual([...before].sort());
+    later();
+    await refresh();
+    expect(notices).toHaveLength(1);
+  });
+
+  it("avisa só as obras inéditas quando a lista cresce", async () => {
+    await refresh();
+    const before = new Set((repository.suggestions.get("ana") ?? []).map((item) => item.workKey));
+    visible = 20;
+    later();
+    await refresh();
+    const fresh = (repository.suggestions.get("ana") ?? []).filter((item) => !before.has(item.workKey));
+    expect(fresh.length).toBeGreaterThan(0);
+    expect(notices.map((notice) => notice.params.count)).toEqual([before.size, fresh.length]);
+  });
+
+  it("o histórico de uma conta não cala o aviso da outra", async () => {
+    await refresh("ana");
+    await refresh("bia");
+    expect(notices.map((notice) => notice.userId)).toEqual(["ana", "bia"]);
+    expect(notices[1]?.params.count).toBe(notices[0]?.params.count);
+  });
+
+  it("falha no aviso não derruba a rodada", async () => {
+    const result = await refresh("ana", async () => {
+      throw new Error("sino fora do ar");
+    });
+    expect(result).toEqual({ refreshed: true });
+    expect(repository.runs.get("ana")).toMatchObject({ status: "READY" });
+  });
+
+  it("falha ao gravar as sugestões não marca as obras como já sugeridas", async () => {
+    const replace = repository.replaceSuggestions.bind(repository);
+    repository.replaceSuggestions = async () => {
+      throw new Error("banco fora do ar");
+    };
+    await expect(refresh()).rejects.toThrow("banco fora do ar");
+    expect(notices).toHaveLength(0);
+    repository.replaceSuggestions = replace;
+    later();
+    await refresh();
+    const written = repository.suggestions.get("ana") ?? [];
+    expect(written.length).toBeGreaterThan(0);
+    expect(notices.map((notice) => notice.params.count)).toEqual([written.length]);
+  });
+});
+
+describe("retrato do aluno para trilha e tutor", () => {
+  it("devolve o retrato da última rodada só para a própria conta e o mesmo idioma", async () => {
+    const repository = new InMemoryRecommendationRepository();
+    const local = new HashEmbeddingProvider();
+    repository.signals.set("ana", {
+      ...EMPTY_SIGNALS,
+      works: [SUITS],
+      lessons: { answers: 60, correct: 55, attempts: 10, failed: 0 },
+    });
+    await makeRefreshRecommendations({
+      repository,
+      resolveCandidates: async () => new FakeMetadataProvider(),
+      resolveEmbedding: async () => local,
+      localEmbedding: local,
+      resolveWriter: async () => null,
+      clock: new FixedClock("2026-10-12T12:00:00Z"),
+    })({ userId: "ana", level: "B2", language: "en" });
+    const insight = makeGetLearnerInsight({ repository });
+    expect(await insight("ana", "en")).toEqual({
+      challenge: "harder",
+      accuracyPercent: 92,
+      againPercent: null,
+      marksPerHundred: null,
+    });
+    expect(await insight("ana", "fr")).toBeNull();
+    expect(await insight("bia", "en")).toBeNull();
   });
 });

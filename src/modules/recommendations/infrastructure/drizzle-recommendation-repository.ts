@@ -8,6 +8,7 @@ import {
   lessonAttempts,
   mediaItems,
   recommendationFeedback,
+  recommendationHistory,
   recommendationRuns,
   reviewLogs,
   seasons,
@@ -18,13 +19,14 @@ import {
 } from "@/infrastructure/database/schema";
 import { CEFR_LEVELS } from "@/shared/levels";
 import type { LearnerSignals } from "../domain/learner";
-import type { Vector } from "../domain/vectors";
 import type {
+  EmbeddingEntry,
   Feedback,
   FeedbackVerdict,
   RecommendationRepository,
   RecommendationRun,
   RunOutcome,
+  StoredEmbedding,
   Suggestion,
 } from "../application/ports";
 
@@ -35,6 +37,12 @@ const MAX_TERM_CHARS = 40;
 const AGAIN = "again";
 
 const vectorSchema = z.array(z.number());
+const genreNamesSchema = z.array(z.object({ name: z.string().min(1) }));
+
+const genreNames = (value: unknown): string[] => {
+  const parsed = genreNamesSchema.safeParse(value);
+  return parsed.success ? parsed.data.map((genre) => genre.name) : [];
+};
 const suggestionSchema = z.object({
   workKey: z.string(),
   provider: z.enum(["tmdb", "fake"]),
@@ -77,6 +85,7 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
           type: mediaItems.type,
           title: mediaItems.title,
           overview: mediaItems.overview,
+          genres: mediaItems.genres,
           progress: integer(sql`sum(${episodeProgress.progressPercent})`),
         })
         .from(episodeProgress)
@@ -129,6 +138,7 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
                 type: work.type,
                 title: work.title,
                 overview: work.overview,
+                genres: genreNames(work.genres),
                 engagement: STARTED_WEIGHT + work.progress / PERCENT,
               },
             ]
@@ -208,6 +218,17 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
     });
   }
 
+  async rememberSuggested(userId: string, workKeys: string[], now: Date): Promise<number> {
+    const unique = [...new Set(workKeys)];
+    if (unique.length === 0) return 0;
+    const inserted = await this.db
+      .insert(recommendationHistory)
+      .values(unique.map((workKey) => ({ userId, workKey, firstSuggestedAt: now })))
+      .onConflictDoNothing()
+      .returning({ workKey: recommendationHistory.workKey });
+    return inserted.length;
+  }
+
   async removeSuggestion(userId: string, workKey: string): Promise<void> {
     await this.db
       .delete(userRecommendations)
@@ -235,25 +256,25 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
     });
   }
 
-  async getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, Vector>> {
-    const known = new Map<string, Vector>();
+  async getEmbeddings(model: string, workKeys: string[]): Promise<Map<string, StoredEmbedding>> {
+    const known = new Map<string, StoredEmbedding>();
     if (workKeys.length === 0) return known;
     const rows = await this.db
-      .select({ workKey: workEmbeddings.workKey, vector: workEmbeddings.vector })
+      .select({
+        workKey: workEmbeddings.workKey,
+        vector: workEmbeddings.vector,
+        documentHash: workEmbeddings.documentHash,
+      })
       .from(workEmbeddings)
       .where(and(eq(workEmbeddings.model, model), inArray(workEmbeddings.workKey, workKeys)));
     for (const row of rows) {
       const parsed = vectorSchema.safeParse(row.vector);
-      if (parsed.success) known.set(row.workKey, parsed.data);
+      if (parsed.success) known.set(row.workKey, { vector: parsed.data, documentHash: row.documentHash });
     }
     return known;
   }
 
-  async saveEmbeddings(
-    model: string,
-    entries: { workKey: string; vector: Vector }[],
-    now: Date,
-  ): Promise<void> {
+  async saveEmbeddings(model: string, entries: EmbeddingEntry[], now: Date): Promise<void> {
     if (entries.length === 0) return;
     await this.db
       .insert(workEmbeddings)
@@ -262,12 +283,13 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
           workKey: entry.workKey,
           model,
           vector: [...entry.vector],
+          documentHash: entry.documentHash,
           createdAt: now,
         })),
       )
       .onConflictDoUpdate({
         target: [workEmbeddings.workKey, workEmbeddings.model],
-        set: { vector: sql`excluded.vector`, createdAt: now },
+        set: { vector: sql`excluded.vector`, documentHash: sql`excluded.document_hash`, createdAt: now },
       });
   }
 }
