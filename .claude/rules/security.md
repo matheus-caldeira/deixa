@@ -6,7 +6,7 @@ Checklist:
 
 - [ ] Senha com `scrypt` e sal por usuário; sessão por token aleatório guardado como hash, cookie `HttpOnly`, `SameSite=Lax`.
 - [ ] Toda page, action e route handler autenticados resolvem o usuário pela sessão antes de qualquer consulta.
-- [ ] Gestão de contas (`accounts.*`) só para administrador, alvo por `accountId`; último administrador protegido; primeira conta da família só de loopback.
+- [ ] Gestão de contas (`accounts.*`) só para administrador, alvo por `accountId`; último administrador protegido; primeira conta da família só com o código de configuração (`setup-code.txt`), nunca por endereço ou cabeçalho.
 - [ ] Upload valida extensão, tamanho máximo e codificação antes de gravar.
 - [ ] Caminho de arquivo montado no servidor a partir de ids; nunca de nome enviado pelo cliente.
 - [ ] Endpoint de áudio recebe id de fala ou de item, não texto livre.

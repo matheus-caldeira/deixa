@@ -20,10 +20,14 @@ source: PROJETO.md §10 e §15 (critérios de aceite)
 
 ## Contas e administrador
 
-- A primeira conta vira administrador. Na família ela só é criada de pedido do próprio computador
-  (`x-forwarded-for` com um único salto de loopback e `host` `localhost`, `127.x` ou `[::1]`), pelo port
-  `RequestOrigin`; no modo pessoal o cadastro segue aberto. Os dois cabeçalhos podem ser forjados por quem está na
-  rede: crie a primeira conta antes de expor a instalação.
+- A primeira conta vira administrador. Na família ela só é criada com o código de configuração
+  (`setup-code.txt` na pasta de config, que só o dono do computador lê): o cookie do `/setup` destravado ou o campo
+  "Código de configuração" do cadastro, que só aparece enquanto a instalação não tem contas. A conferência é em
+  tempo constante, pelo port `SetupCodeGate` (política `setup-code` da `Platform`); código errado é
+  `SETUP_CODE_INVALID`. Enquanto não há contas o servidor garante o arquivo (inclusive com `DATABASE_URL`) e loga só
+  o nome dele; criada a primeira conta, o código é apagado e o cookie removido. No modo pessoal o cadastro segue
+  aberto (`open`). Endereço de origem e cabeçalhos (`x-forwarded-for`, `host`) nunca servem de prova: vêm do
+  cliente.
 - Só o administrador lista, cria, promove, redefine a senha e remove contas (`accounts.*`); o alvo é `accountId`,
   nunca `userId`. Ninguém remove a própria conta e o último administrador não perde o papel nem é removido
   (transação com trava).

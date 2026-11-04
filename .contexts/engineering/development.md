@@ -79,7 +79,12 @@ configurado na tela `/setup` e o resto no perfil.
   compatível com OpenAI), TMDB e OpenSubtitles em Configurações. A chave do usuário sempre
   vence; sem ela, vale a chave global (definida pelo administrador no perfil ou no `.env`); sem nenhuma, o
   serviço funciona em modo de demonstração.
-- A primeira conta criada é a administradora.
+- A primeira conta criada é a administradora e só nasce com o código de configuração. Enquanto o banco não tem
+  contas (inclusive com `DATABASE_URL` no `.env`, em dev ou no docker), o servidor cria `setup-code.txt` na pasta
+  de config (`DEIXA_CONFIG_DIR`, ou a raiz do projeto sem ela) e o log diz só o nome do arquivo. Em `/signup`,
+  preencha "Código de configuração" com o conteúdo desse arquivo; quem passou pelo `/setup` (ou pela casca, que
+  destrava sozinha em `/setup/unlock`) não precisa digitar. Criada a primeira conta, o arquivo é apagado. Com o
+  `pnpm db:seed` as contas já existem e nada disso aparece.
 - As chaves ficam cifradas no banco com a chave mestra de `master-key.txt`, criado na primeira execução e fora
   do git. Se ele for trocado ou apagado, as chaves guardadas ficam ilegíveis: o app avisa e basta
   cadastrá-las de novo.
