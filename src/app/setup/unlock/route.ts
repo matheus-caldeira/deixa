@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { getDatabaseStatus, prepareFirstAccountCode, verifySetupCode } from "@/infrastructure/setup";
-import { SETUP_COOKIE } from "@/shared/session-cookie";
+import { SETUP_COOKIE, SETUP_COOKIE_MAX_AGE_SECONDS } from "@/shared/session-cookie";
 
-const ONE_HOUR_SECONDS = 3600;
 const MAX_CODE_CHARS = 40;
 const TEMPORARY_REDIRECT = 307;
 
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     httpOnly: true,
     sameSite: "strict",
     path: "/",
-    maxAge: ONE_HOUR_SECONDS,
+    maxAge: SETUP_COOKIE_MAX_AGE_SECONDS,
   });
   return redirectTo(next);
 }

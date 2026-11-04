@@ -9,9 +9,16 @@ import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizz
 import { FakeMetadataProvider } from "@/modules/catalog/infrastructure/fake-metadata-provider";
 import { FakeLlmProvider } from "@/modules/learning/infrastructure/fake-llm-provider";
 import { runSeed } from "@/seed/run-seed";
-import { E2E_DATA_DIR, E2E_SETUP_CONFIG_DIR, e2eEnvironment, e2eSetupTarget } from "./environment";
+import {
+  E2E_DATA_DIR,
+  E2E_FIRST_ACCOUNT_CONFIG_DIR,
+  E2E_SETUP_CONFIG_DIR,
+  e2eEnvironment,
+  e2eFirstAccountEnvironment,
+  e2eSetupTarget,
+} from "./environment";
 
-const E2E_DATABASES = ["deixa_e2e", "deixa_e2e_setup"];
+const E2E_DATABASES = ["deixa_e2e", "deixa_e2e_setup", "deixa_e2e_first_account"];
 
 async function dropDatabase(url: string): Promise<void> {
   const target = new URL(url);
@@ -38,6 +45,10 @@ async function prepare(): Promise<void> {
   setupUrl.pathname = `/${setupTarget.database}`;
   await dropDatabase(setupUrl.toString());
   await rm(E2E_SETUP_CONFIG_DIR, { recursive: true, force: true });
+  const firstAccountUrl = e2eFirstAccountEnvironment().DATABASE_URL ?? "";
+  await dropDatabase(firstAccountUrl);
+  await rm(E2E_FIRST_ACCOUNT_CONFIG_DIR, { recursive: true, force: true });
+  await runMigrations(firstAccountUrl);
   await runMigrations(databaseUrl);
   const handle = openDatabase(databaseUrl);
   const fakeLlm = new FakeLlmProvider();

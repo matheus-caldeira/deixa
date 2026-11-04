@@ -1,10 +1,13 @@
 import { defineConfig } from "@playwright/test";
 import {
   E2E_BASE_URL,
+  E2E_FIRST_ACCOUNT_BASE_URL,
+  E2E_FIRST_ACCOUNT_PORT,
   E2E_PORT,
   E2E_SETUP_BASE_URL,
   E2E_SETUP_PORT,
   e2eEnvironment,
+  e2eFirstAccountEnvironment,
   e2eSetupEnvironment,
 } from "./tests/e2e/environment";
 
@@ -39,6 +42,13 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 60_000,
       env: { ...e2eSetupEnvironment(), NODE_ENV: "production" },
+    },
+    {
+      command: `pnpm exec next start -H 127.0.0.1 -p ${E2E_FIRST_ACCOUNT_PORT}`,
+      url: `${E2E_FIRST_ACCOUNT_BASE_URL}/login`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+      env: { ...e2eFirstAccountEnvironment(), NODE_ENV: "production" },
     },
   ],
 });

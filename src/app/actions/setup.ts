@@ -14,10 +14,8 @@ import {
   verifySetupCode,
   type EmbeddedPhase,
 } from "@/infrastructure/setup";
-import { SETUP_COOKIE } from "@/shared/session-cookie";
+import { SETUP_COOKIE, SETUP_COOKIE_MAX_AGE_SECONDS } from "@/shared/session-cookie";
 import type { ActionResult } from "./result";
-
-const ONE_HOUR_SECONDS = 3600;
 
 type SetupMessage = "alreadyReady" | "locked" | "wrongCode" | "invalidFields";
 type SetupNotice = { key: "untestedVersion"; params: Record<string, string | number> };
@@ -65,7 +63,7 @@ export async function unlockSetupAction(code: unknown): Promise<ActionResult<nul
     httpOnly: true,
     sameSite: "strict",
     path: "/",
-    maxAge: ONE_HOUR_SECONDS,
+    maxAge: SETUP_COOKIE_MAX_AGE_SECONDS,
   });
   return { ok: true, data: null };
 }

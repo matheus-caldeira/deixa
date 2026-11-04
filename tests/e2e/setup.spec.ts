@@ -5,6 +5,7 @@ import { E2E_SETUP_BASE_URL, E2E_SETUP_CONFIG_DIR, e2eSetupTarget } from "./envi
 
 const CODE_FILE = join(E2E_SETUP_CONFIG_DIR, "setup-code.txt");
 const URL_FILE = join(E2E_SETUP_CONFIG_DIR, "database-url.txt");
+const ONE_DAY_SECONDS = 24 * 60 * 60;
 
 test("sem banco configurado: código → conexão → tabelas criadas → primeira conta é a administradora", async ({
   page,
@@ -67,6 +68,8 @@ test("sem banco configurado: código → conexão → tabelas criadas → primei
   await ownerPage.goto(`${E2E_SETUP_BASE_URL}/setup/unlock?code=${readFileSync(CODE_FILE, "utf8").trim()}`);
   await expect(ownerPage).toHaveURL(/\/signup$/);
   await expect(ownerPage.getByLabel("Código de configuração")).toHaveCount(0);
+  const [setupCookie] = (await owner.cookies()).filter((cookie) => cookie.name === "deixa_setup");
+  expect(setupCookie?.expires ?? 0).toBeGreaterThan(Date.now() / 1000 + ONE_DAY_SECONDS);
   await owner.close();
 
   await page.getByLabel("Nome").fill("Dona");
