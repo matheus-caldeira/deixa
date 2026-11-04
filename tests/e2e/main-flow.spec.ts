@@ -208,7 +208,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
   await page.getByRole("button", { name: /^Notificações/ }).click();
   const inbox = page.getByRole("dialog", { name: "Notificações" });
   await expect(inbox.getByText("Seus cards estão prontos")).toHaveCount(0);
-  await expect(inbox.getByText(/Nada por aqui/)).toBeVisible();
+  await expect(inbox.getByText("Sugestões novas no Explorar")).toBeVisible();
   await inbox.getByRole("button", { name: "Fechar" }).click();
 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Conversar" }).click();
