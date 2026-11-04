@@ -1,5 +1,6 @@
 mod labels;
 mod listeners;
+mod mac_notifications;
 mod shell;
 mod updates;
 
@@ -626,6 +627,8 @@ fn open_notification(app: &AppHandle, id: Option<i32>) {
 }
 
 fn listen_notification_clicks(app: &AppHandle) {
+    let native = app.clone();
+    mac_notifications::start(move |id| open_notification(&native, id));
     let handle = app.clone();
     let _ = app.notification().on_action(move |action| {
         if action.action_id() == TAP_ACTION {
@@ -1169,6 +1172,9 @@ fn watch_sign_out(app: &AppHandle) {
 
 fn announce(app: &AppHandle, title: &str, body: &str, href: &str) {
     let id = remember_notification(app, href);
+    if mac_notifications::show(id, title, body) {
+        return;
+    }
     let shown = app.notification().builder().id(id).title(title).body(body).show();
     if cfg!(debug_assertions) {
         eprintln!("aviso nativo: {:?}", shown.map(|_| "enviado ao sistema"));
