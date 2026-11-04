@@ -150,8 +150,31 @@ O `desktop:server` baixa o Node oficial da versão fixada no `.nvmrc` para a pla
 hash no `SHASUMS256.txt` de nodejs.org e guarda o download em `node_modules/.cache/deixa-node/`. Sem rede, use
 o Node da máquina com `DEIXA_DESKTOP_LOCAL_NODE=1 pnpm desktop:server` (só para desenvolvimento).
 
-Se já houver um servidor do Deixa na porta 1300 (por exemplo, `pnpm dev`), a casca usa esse. Os dados do app
-instalado ficam na pasta de dados do sistema, não na pasta do projeto; a pasta do servidor é só leitura.
+Só o executável `node` entra no pacote. No Linux ele passa por `strip --strip-all`; no macOS e no Windows vai
+como baixado, para não quebrar a assinatura oficial. O build da casca (`DEIXA_STANDALONE=1`) deixa `sharp` de fora
+e não grava cache do Next em disco.
+
+Se já houver um servidor do Deixa na porta configurada (por exemplo, `pnpm dev`), a casca usa esse. Senão, ela
+procura a primeira porta livre de 1300 (ou `DEIXA_PORT`) até +10 e usa essa na janela, no QR code e em "Abrir no
+navegador". Os dados do app instalado ficam na pasta de dados do sistema, não na pasta do projeto; a pasta do
+servidor é só leitura.
+
+Arquivos da casca no `DEIXA_CONFIG_DIR`:
+
+| Arquivo                    | Conteúdo                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `desktop-server.pid`       | PID e porta do servidor embutido; na abertura, um órfão confirmado é encerrado |
+| `desktop-auto-enter.txt`   | "Entrar sozinho como o dono" (ligado por padrão)                               |
+| `desktop-update-check.txt` | Última consulta de versão nova no GitHub (uma por dia) e o release encontrado  |
+
+O órfão só é encerrado se ainda escuta na porta gravada, é `node server.js` e responde como Deixa. Quem escuta
+na porta vem de `lsof`, `ss` ou `/proc/net/tcp` no Linux e de `netstat -ano` no Windows (`src-tauri/src/listeners.rs`).
+
+Na bandeja: "Continuar" e o clique no aviso nativo abrem o ponto de estudo (`current.href` de
+`/api/desktop/status`, conferido por `internalPath`); "Iniciar com o sistema" (`tauri-plugin-autostart`,
+desligado por padrão) abre o app com `--hidden`, só na bandeja; "Versão X disponível" abre a página do release,
+sem download automático. No macOS o ícone da bandeja é o modelo monocromático `icons/tray-template@2x.png`. O
+aviso nativo no macOS ainda usa o `NSUserNotificationCenter` (ver o diário).
 
 ## Publicar uma versão
 

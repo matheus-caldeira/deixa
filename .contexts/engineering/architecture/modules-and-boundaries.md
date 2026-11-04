@@ -1,6 +1,6 @@
 ---
 title: Módulos e fronteiras
-updated: 2026-10-10
+updated: 2026-11-03
 source: PROJETO.md §14
 ---
 
@@ -26,8 +26,8 @@ fixtures/             SRT fictícios EN e PT
 
 | Módulo            | Responsabilidade                                                              |
 | ----------------- | ----------------------------------------------------------------------------- |
-| `identity`        | Contas, senha, sessão, preferências                                           |
-| `catalog`         | Obras, temporadas, episódios, `MetadataProvider`, sincronização com o TMDB    |
+| `identity`        | Contas, senha, sessão, preferências, gestão de contas pelo administrador      |
+| `catalog`         | Obras, episódios, gêneros, nível pelas falas, `MetadataProvider`, TMDB        |
 | `subtitles`       | Parser SRT, validação, hash, deduplicação, importação, falas                  |
 | `alignment`       | Alinhamento entre duas legendas de idiomas diferentes por tempo (puro)        |
 | `highlights`      | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio   |
@@ -37,7 +37,7 @@ fixtures/             SRT fictícios EN e PT
 | `audio`           | `TtsProvider`, cache de áudio por hash                                        |
 | `gamification`    | XP por eventos, missões, conquistas e perfil calculado das lições e revisões  |
 | `settings`        | Configurações do servidor guardadas no banco, alteradas só pelo administrador |
-| `recommendations` | Retrato do aluno, vetores das obras, ranqueamento e sugestões personalizadas  |
+| `recommendations` | Retrato do aluno, vetores, ranqueamento por gênero, sugestões e aviso inédito |
 | `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites       |
 | `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio      |
 | `jobs`            | Fila `job_queue`: enfileirar, reivindicar com `SKIP LOCKED`, tentativas       |
