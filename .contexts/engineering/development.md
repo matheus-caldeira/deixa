@@ -150,8 +150,9 @@ O `desktop:server` baixa o Node oficial da versão fixada no `.nvmrc` para a pla
 hash no `SHASUMS256.txt` de nodejs.org e guarda o download em `node_modules/.cache/deixa-node/`. Sem rede, use
 o Node da máquina com `DEIXA_DESKTOP_LOCAL_NODE=1 pnpm desktop:server` (só para desenvolvimento).
 
-Só o executável `node` entra no pacote. No Linux ele passa por `strip --strip-all`; no macOS e no Windows vai
-como baixado, para não quebrar a assinatura oficial. O build da casca (`DEIXA_STANDALONE=1`) deixa `sharp` de fora
+Só o executável `node` entra no pacote. No Linux ele passa por `strip --strip-all`; no macOS por `strip -x` e
+reassinatura ad hoc (117 → 93 MB), aceita só se o binário ainda executa; o bundler assina de novo com a
+identidade do pacote. No Windows vai como baixado (os símbolos já ficam fora, no PDB). O build da casca (`DEIXA_STANDALONE=1`) deixa `sharp` de fora
 e não grava cache do Next em disco.
 
 Se já houver um servidor do Deixa na porta configurada (por exemplo, `pnpm dev`), a casca usa esse. Senão, ela
@@ -173,8 +174,13 @@ na porta vem de `lsof`, `ss` ou `/proc/net/tcp` no Linux e de `netstat -ano` no 
 Na bandeja: "Continuar" e o clique no aviso nativo abrem o ponto de estudo (`current.href` de
 `/api/desktop/status`, conferido por `internalPath`); "Iniciar com o sistema" (`tauri-plugin-autostart`,
 desligado por padrão) abre o app com `--hidden`, só na bandeja; "Versão X disponível" abre a página do release,
-sem download automático. No macOS o ícone da bandeja é o modelo monocromático `icons/tray-template@2x.png`. O
-aviso nativo no macOS ainda usa o `NSUserNotificationCenter` (ver o diário).
+sem download automático. No macOS o ícone da bandeja é o modelo monocromático `icons/tray-template@2x.png`. No
+macOS, rodando de dentro de um `.app`, o aviso nativo vai pelo `UNUserNotificationCenter`
+(`src-tauri/src/mac_notifications.rs`); fora de um `.app` (`pnpm desktop:run`) segue no plugin, que aparece em
+nome do Terminal. Para ver o aviso como Deixa em desenvolvimento, empacote com `pnpm desktop:build`.
+
+`pnpm test:desktop` monta o servidor da casca e percorre, no servidor empacotado com o Node embutido e uma pasta
+de configuração nova, banco → primeira conta → obra → leitura → cards. A janela nativa não é automatizada.
 
 ## Publicar uma versão
 
