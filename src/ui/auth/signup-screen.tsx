@@ -14,7 +14,7 @@ import {
 } from "@/shared/study-languages";
 import { Logo } from "../shell/logo";
 
-export function SignupScreen() {
+export function SignupScreen({ setupCodeFile = null }: { setupCodeFile?: string | null }) {
   const t = useTranslations("auth");
   const levels = useTranslations("levels");
   const languages = useTranslations("languages");
@@ -30,13 +30,22 @@ export function SignupScreen() {
   const [targetLanguage, setTargetLanguage] = useState<StudyLanguage>(() =>
     defaultTargetFor(nativeLanguageFor(locale === "en" ? "en" : "pt-BR")),
   );
+  const [setupCode, setSetupCode] = useState("");
   const [error, setError] = useState("");
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
     startTransition(async () => {
-      const result = await signUpAction({ name, email, password, level, nativeLanguage, targetLanguage });
+      const result = await signUpAction({
+        name,
+        email,
+        password,
+        level,
+        nativeLanguage,
+        targetLanguage,
+        ...(setupCodeFile ? { setupCode } : {}),
+      });
       if (result && !result.ok) setError(result.message);
     });
   };
@@ -48,6 +57,21 @@ export function SignupScreen() {
         <p className="muted">{t("signupIntro")}</p>
       </div>
       <form className="col" style={{ gap: 12 }} onSubmit={submit}>
+        {setupCodeFile ? (
+          <div className="field">
+            <label htmlFor="signup-setup-code">{t("setupCode")}</label>
+            <input
+              id="signup-setup-code"
+              value={setupCode}
+              onChange={(event) => setSetupCode(event.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={40}
+              required
+            />
+            <p className="muted">{t("setupCodeHint", { file: setupCodeFile })}</p>
+          </div>
+        ) : null}
         <div className="field">
           <label htmlFor="signup-name">{t("name")}</label>
           <input

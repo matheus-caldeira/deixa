@@ -9,6 +9,7 @@ import { getEnv } from "./config/env";
 import { loadMasterKey } from "./config/master-key";
 import { sql } from "drizzle-orm";
 import { configDirectory, readStoredDatabaseUrl } from "./config/local-config";
+import { fileSetupCodeGate } from "./config/setup-code-gate";
 import { openDatabase, type DatabaseHandle } from "./database/client";
 import { KokoroTtsProvider } from "./kokoro/kokoro-tts-provider";
 import { logger as defaultLogger } from "./logger/logger";
@@ -22,7 +23,8 @@ export const nodePlatform: Platform = {
   storage: (env) => new LocalFileStorage(env.DATA_DIR),
   passwords: scryptPasswords,
   tokens: randomSessionTokens,
-  firstAccount: "loopback-only",
+  firstAccount: "setup-code",
+  setupCode: fileSetupCodeGate(),
   cipher: (masterKey) => new AesGcmCipher(masterKey),
   personalCipher: new NodePersonalCipher(),
   levelSourceFetcher: (env) =>

@@ -3,11 +3,11 @@
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
-import { getContainer } from "@/infrastructure/container";
 import {
   TESTED_MAJOR_VERSION,
   configureDatabase,
   embeddedDatabaseStatus,
+  familyHasAccounts,
   finishSetup,
   getDatabaseStatus,
   startEmbeddedDatabaseInstall,
@@ -50,6 +50,13 @@ function toUrl(input: z.infer<typeof connectionSchema>): string {
   return `postgres://${credentials}@${input.host}:${input.port}/${input.database}`;
 }
 
+async function settleSetupCode(store: Awaited<ReturnType<typeof cookies>>): Promise<boolean> {
+  if (!(await familyHasAccounts())) return false;
+  finishSetup();
+  store.delete(SETUP_COOKIE);
+  return true;
+}
+
 export async function unlockSetupAction(code: unknown): Promise<ActionResult<null>> {
   if ((await getDatabaseStatus()).state === "ready") return fail("alreadyReady");
   const parsed = z.string().max(40).safeParse(code);
@@ -77,8 +84,7 @@ export async function connectDatabaseAction(
     const t = await getTranslations("setup.reasons");
     return { ok: false, message: t(result.failure) };
   }
-  store.delete(SETUP_COOKIE);
-  const hasAccounts = (await getContainer().listPeople()).length > 0;
+  const hasAccounts = await settleSetupCode(store);
   const untested = result.majorVersion !== null && result.majorVersion < TESTED_MAJOR_VERSION;
   return {
     ok: true,
@@ -112,8 +118,6 @@ export async function embeddedDatabaseProgressAction(): Promise<
   if ((await getDatabaseStatus()).state !== "ready") {
     return { ok: true, data: { phase: { phase: "starting" }, next: null } };
   }
-  finishSetup();
-  store.delete(SETUP_COOKIE);
-  const hasAccounts = (await getContainer().listPeople()).length > 0;
+  const hasAccounts = await settleSetupCode(store);
   return { ok: true, data: { phase, next: hasAccounts ? "/login" : "/signup" } };
 }

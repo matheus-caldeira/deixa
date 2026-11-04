@@ -9,16 +9,27 @@ import { makeResetAccountPassword } from "./reset-account-password";
 import { makeSetAccountAdmin } from "./set-account-admin";
 import { makeSignIn } from "./sign-in";
 import { makeSignUp } from "./sign-up";
-import type { RequestOrigin } from "./ports";
+import type { SetupCodeGate } from "./ports";
 import { InMemoryIdentityStore, plainPasswords, sequentialTokens } from "./testing/fakes";
 
-const remote: RequestOrigin = { isLoopback: async () => false };
-const local: RequestOrigin = { isLoopback: async () => true };
+const SETUP_CODE = "ABCD-EFGH-JKLM";
+
+function fakeSetupCode(): SetupCodeGate & { consumed: boolean } {
+  const gate = {
+    consumed: false,
+    matches: async (candidate: string) => !gate.consumed && candidate === SETUP_CODE,
+    consume: async () => {
+      gate.consumed = true;
+    },
+  };
+  return gate;
+}
 
 function setup() {
   const store = new InMemoryIdentityStore();
   const clock = new FixedClock("2026-11-03T12:00:00Z");
   const files = new InMemoryFileStorage();
+  const setupCode = fakeSetupCode();
   const base = {
     users: store,
     sessions: store,
@@ -34,7 +45,8 @@ function setup() {
     store,
     files,
     clock,
-    signUp: makeSignUp({ ...base, firstAccount: "loopback-only" }),
+    setupCode,
+    signUp: makeSignUp({ ...base, firstAccount: "setup-code", setupCode }),
     signIn: makeSignIn(base),
     listAccounts: makeListAccounts(base),
     createAccount: makeCreateAccount(base),
@@ -57,28 +69,61 @@ describe("gestão de contas", () => {
 
   beforeEach(async () => {
     app = setup();
-    const { userId } = await app.signUp({ ...account("Dona"), origin: local });
+    const { userId } = await app.signUp({ ...account("Dona"), proof: { cookieCode: SETUP_CODE } });
     admin = { userId, isAdmin: true };
   });
 
-  it("primeira conta só nasce de um pedido do próprio computador", async () => {
+  it("primeira conta sem o código de configuração é recusada", async () => {
     const fresh = setup();
-    await expect(fresh.signUp({ ...account("Ana"), origin: remote })).rejects.toMatchObject({
-      code: "FORBIDDEN",
-      detail: { key: "firstAccountLocalOnly" },
+    await expect(fresh.signUp(account("Ana"))).rejects.toMatchObject({ code: "SETUP_CODE_INVALID" });
+    await expect(fresh.signUp({ ...account("Ana"), proof: {} })).rejects.toMatchObject({
+      code: "SETUP_CODE_INVALID",
     });
-    await expect(fresh.signUp(account("Ana"))).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(
+      fresh.signUp({ ...account("Ana"), proof: { cookieCode: "AAAA-BBBB-CCCC", typedCode: "  " } }),
+    ).rejects.toMatchObject({ code: "SETUP_CODE_INVALID" });
     expect(fresh.store.users.size).toBe(0);
-    await fresh.signUp({ ...account("Ana"), origin: local });
-    expect([...fresh.store.users.values()][0]?.isAdmin).toBe(true);
+    expect(fresh.setupCode.consumed).toBe(false);
   });
 
-  it("depois da primeira conta, o cadastro vale de qualquer endereço e não vira admin", async () => {
-    const { userId } = await app.signUp({ ...account("Visita"), origin: remote });
+  it("primeira conta com o código do cookie vira admin e gasta o código", async () => {
+    const fresh = setup();
+    await fresh.signUp({ ...account("Ana"), proof: { cookieCode: SETUP_CODE } });
+    expect([...fresh.store.users.values()][0]?.isAdmin).toBe(true);
+    expect(fresh.setupCode.consumed).toBe(true);
+  });
+
+  it("primeira conta com o código digitado no formulário vira admin, mesmo com cookie vencido", async () => {
+    const fresh = setup();
+    await fresh.signUp({
+      ...account("Ana"),
+      proof: { cookieCode: "AAAA-BBBB-CCCC", typedCode: SETUP_CODE },
+    });
+    expect([...fresh.store.users.values()][0]?.isAdmin).toBe(true);
+    expect(fresh.setupCode.consumed).toBe(true);
+  });
+
+  it("com contas existentes, o cadastro não exige código e não vira admin", async () => {
+    const { userId } = await app.signUp(account("Visita"));
     expect(app.store.users.get(userId)?.isAdmin).toBe(false);
   });
 
-  it("política aberta (modo pessoal) aceita a primeira conta sem origem", async () => {
+  it("política setup-code sem leitor de código recusa a primeira conta", async () => {
+    const store = new InMemoryIdentityStore();
+    const signUp = makeSignUp({
+      users: store,
+      pairs: store,
+      passwords: plainPasswords,
+      clock: new FixedClock("2026-11-03T12:00:00Z"),
+      ids: new SequentialIds("p"),
+      firstAccount: "setup-code",
+    });
+    await expect(signUp({ ...account("Ana"), proof: { typedCode: SETUP_CODE } })).rejects.toMatchObject({
+      code: "SETUP_CODE_INVALID",
+    });
+  });
+
+  it("política aberta (modo pessoal) aceita a primeira conta sem código", async () => {
     const store = new InMemoryIdentityStore();
     const signUp = makeSignUp({
       users: store,

@@ -30,7 +30,9 @@
     "haveAccount": "Já tenho conta",
     "nativeLanguage": "Seu idioma",
     "targetLanguage": "Quero aprender",
-    "discover": "Conheça o {app}"
+    "discover": "Conheça o {app}",
+    "setupCode": "Código de configuração",
+    "setupCodeHint": "Primeira conta desta instalação: ela vira a administradora. Digite o código do arquivo {file}, na pasta de configuração do Deixa neste computador."
   },
   "shell": {
     "tabs": {
@@ -263,14 +265,14 @@
       "transcriptionNoAi": "Configure uma chave de IA para transcrever a sua fala.",
       "adminOnlyAccounts": "Só o administrador gerencia as contas.",
       "lastAdmin": "A instalação precisa de pelo menos um administrador.",
-      "cannotRemoveSelf": "Você não pode remover a própria conta.",
-      "firstAccountLocalOnly": "A primeira conta só pode ser criada no próprio computador em que o Deixa está instalado."
+      "cannotRemoveSelf": "Você não pode remover a própria conta."
     },
     "CARDS_FAILED": "Não foi possível gerar os cards. Tente de novo.",
     "CARDS_TIMEOUT": "A geração demorou demais e foi interrompida. Tente de novo.",
     "PLAN_FAILED": "Não foi possível montar a trilha com IA. Tente de novo.",
     "EMBEDDED_DATABASE_FAILED": "Não foi possível instalar o Postgres embutido. Confira a conexão com a internet e tente de novo.",
-    "SCRIPT_INVALID": "Esse arquivo de roteiro não é válido."
+    "SCRIPT_INVALID": "Esse arquivo de roteiro não é válido.",
+    "SETUP_CODE_INVALID": "Código de configuração ausente ou incorreto. Ele está no arquivo setup-code.txt, na pasta de configuração do Deixa."
   },
   "locales": {
     "pt-BR": "Português (Brasil)",

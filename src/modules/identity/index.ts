@@ -1,17 +1,12 @@
 export * from "./domain/user";
-export {
-  isLoopbackAddress,
-  isLoopbackForwardedFor,
-  isLoopbackHost,
-  isLoopbackRequest,
-} from "./domain/loopback";
 export type {
   AccountFiles,
   AccountRepository,
   AccountSummary,
   FirstAccountPolicy,
+  FirstAccountProof,
   LanguagePairRepository,
-  RequestOrigin,
+  SetupCodeGate,
   PasswordHasher,
   PreferencesRepository,
   StoredLanguagePair,

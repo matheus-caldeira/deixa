@@ -29,11 +29,14 @@ export interface AccountFiles {
   removeFor(accountId: string): Promise<void>;
 }
 
-export interface RequestOrigin {
-  isLoopback(): Promise<boolean>;
+export interface SetupCodeGate {
+  matches(candidate: string): Promise<boolean>;
+  consume(): Promise<void>;
 }
 
-export type FirstAccountPolicy = "loopback-only" | "open";
+export type FirstAccountProof = { cookieCode?: string; typedCode?: string };
+
+export type FirstAccountPolicy = "setup-code" | "open";
 
 export interface SessionRepository {
   createSession(session: {

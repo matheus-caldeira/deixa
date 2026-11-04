@@ -1,7 +1,7 @@
 import type { KeyCipher } from "@/modules/ai-credentials";
 import type { TtsProvider } from "@/modules/audio";
 import type { LevelSourceFetcher } from "@/modules/catalog";
-import type { FirstAccountPolicy, PasswordHasher, SessionTokens } from "@/modules/identity";
+import type { FirstAccountPolicy, PasswordHasher, SessionTokens, SetupCodeGate } from "@/modules/identity";
 import type { PersonalCipher } from "@/modules/packages";
 import type { SubtitleSourceProvider } from "@/modules/subtitle-sources";
 import type { FileStorage } from "@/shared/storage";
@@ -12,6 +12,7 @@ export type Platform = {
   passwords: PasswordHasher;
   tokens: SessionTokens;
   firstAccount: FirstAccountPolicy;
+  setupCode?: SetupCodeGate;
   cipher: (masterKey: string) => KeyCipher;
   personalCipher: PersonalCipher;
   levelSourceFetcher: (env: Env) => LevelSourceFetcher;

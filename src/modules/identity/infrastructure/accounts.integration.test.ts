@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { count, eq, getTableColumns, getTableName, is, isNull, sql, type AnyColumn } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -17,7 +19,9 @@ import type { DatabaseHandle } from "@/infrastructure/database/client";
 import { openTestDatabase, testDatabaseAvailable } from "@/infrastructure/database/test-database";
 import * as schema from "@/infrastructure/database/schema";
 import { InMemoryFileStorage } from "@/shared/storage";
-import type { RequestOrigin } from "../application/ports";
+import { ensureSetupCode, readSetupCode } from "@/infrastructure/config/local-config";
+import { fileSetupCodeGate } from "@/infrastructure/config/setup-code-gate";
+import { nodePlatform } from "@/infrastructure/container";
 
 const TEST_DATABASE = "deixa_accounts_test";
 const PAIR = { target: "en", native: "pt-BR" } as const;
@@ -43,8 +47,7 @@ const RULE_TABLES = [
   "episode_recaps",
   "learning_items",
 ];
-const local: RequestOrigin = { isLoopback: async () => true };
-const remote: RequestOrigin = { isLoopback: async () => false };
+const configDirectory = mkdtempSync(join(tmpdir(), "deixa-accounts-"));
 const fixture = (name: string) => ({
   filename: name,
   bytes: new Uint8Array(readFileSync(`fixtures/${name}`)),
@@ -138,6 +141,7 @@ describe.skipIf(!testDatabaseAvailable)("gestão de contas no banco", () => {
     const llm = new FakeLlmProvider();
     const tutor = new FakeTutorProvider();
     app = buildContainer({
+      platform: { ...nodePlatform, setupCode: fileSetupCodeGate(() => configDirectory) },
       env: parseEnv({
         DATABASE_URL: handle.url,
         AI_CREDENTIALS_MASTER_KEY: Buffer.alloc(32, 7).toString("base64"),
@@ -158,17 +162,19 @@ describe.skipIf(!testDatabaseAvailable)("gestão de contas no banco", () => {
 
   afterAll(async () => {
     await handle?.close();
+    rmSync(configDirectory, { recursive: true, force: true });
   });
 
-  it("a primeira conta só nasce do próprio computador e vira admin; as seguintes não", async () => {
-    await expect(app.signUp({ ...person("Dona"), origin: remote })).rejects.toMatchObject({
-      code: "FORBIDDEN",
-      detail: { key: "firstAccountLocalOnly" },
-    });
-    await expect(app.signUp(person("Dona"))).rejects.toMatchObject({ code: "FORBIDDEN" });
+  it("a primeira conta só nasce com o código de configuração e vira admin; as seguintes não", async () => {
+    const code = ensureSetupCode(configDirectory);
+    await expect(
+      app.signUp({ ...person("Dona"), proof: { typedCode: "AAAA-BBBB-CCCC" } }),
+    ).rejects.toMatchObject({ code: "SETUP_CODE_INVALID" });
+    await expect(app.signUp(person("Dona"))).rejects.toMatchObject({ code: "SETUP_CODE_INVALID" });
     expect(await total(schema.users)).toBe(0);
-    dona = (await app.signUp({ ...person("Dona"), origin: local })).userId;
-    lucas = (await app.signUp({ ...person("Lucas"), origin: remote })).userId;
+    dona = (await app.signUp({ ...person("Dona"), proof: { typedCode: code.toLowerCase() } })).userId;
+    expect(readSetupCode(configDirectory)).toBeNull();
+    lucas = (await app.signUp(person("Lucas"))).userId;
     const created = await app.createAccount({
       actor: { userId: dona, isAdmin: true },
       ...person("Bia"),

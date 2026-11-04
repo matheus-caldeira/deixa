@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { DESKTOP_HOME, desktopTarget } from "./environment";
@@ -23,12 +23,15 @@ test("servidor empacotado numa instalação nova: banco → primeira conta → o
   await page.getByLabel("Nome do banco").fill(target.database);
   await page.getByRole("button", { name: "Testar e conectar" }).click();
   await expect(page).toHaveURL(/\/signup$/, { timeout: 60_000 });
+  expect(existsSync(CODE_FILE)).toBe(true);
+  await expect(page.getByLabel("Código de configuração")).toHaveCount(0);
 
   await page.getByLabel("Nome").fill("Dona");
   await page.getByLabel("E-mail").fill("dona@deixa.example");
   await page.getByLabel(/^Senha/).fill("deixa1234");
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.getByRole("button", { name: "Perfil de Dona" })).toBeVisible();
+  expect(existsSync(CODE_FILE)).toBe(false);
 
   await page.getByRole("navigation", { name: "Áreas" }).getByRole("link", { name: "Explorar" }).click();
   await page.getByRole("button", { name: "Adicionar, importar ou exportar" }).first().click();

@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { randomInt, timingSafeEqual } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -55,6 +55,14 @@ export function ensureSetupCode(directory: string): string {
 
 export function normalizeSetupCode(value: string): string {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+export function matchesSetupCode(directory: string, candidate: string | undefined): boolean {
+  const expected = readSetupCode(directory);
+  if (!expected || !candidate) return false;
+  const given = Buffer.from(normalizeSetupCode(candidate));
+  const known = Buffer.from(normalizeSetupCode(expected));
+  return given.length === known.length && timingSafeEqual(given, known);
 }
 
 export function clearSetupCode(directory: string): void {

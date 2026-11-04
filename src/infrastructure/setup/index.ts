@@ -1,15 +1,15 @@
-import { timingSafeEqual } from "node:crypto";
 import { getEnv } from "../config/env";
-import { refreshSettings } from "../container";
+import { getContainer, refreshSettings } from "../container";
 import {
   SETUP_CODE_FILE,
   clearSetupCode,
   configDirectory,
   ensureSetupCode,
-  normalizeSetupCode,
+  matchesSetupCode,
   readSetupCode,
   saveDatabaseUrl,
 } from "../config/local-config";
+import { WRONG_SETUP_CODE_DELAY_MS } from "../config/setup-code-gate";
 import {
   TESTED_MAJOR_VERSION,
   connectAndPrepare,
@@ -30,23 +30,33 @@ export { getDatabaseStatus, SETUP_CODE_FILE, TESTED_MAJOR_VERSION };
 export type { DatabaseStatus, DetectedServer, EmbeddedPhase };
 
 export function prepareSetupCode(): void {
-  ensureSetupCode(configDirectory());
+  const directory = configDirectory();
+  if (readSetupCode(directory)) return;
+  ensureSetupCode(directory);
+  logger.info("setup_code.created", { codeFile: SETUP_CODE_FILE });
+}
+
+export async function familyHasAccounts(): Promise<boolean> {
+  return getContainer().hasAccounts();
+}
+
+export async function prepareFirstAccountCode(): Promise<boolean> {
+  if (await familyHasAccounts()) {
+    clearSetupCode(configDirectory());
+    return false;
+  }
+  prepareSetupCode();
+  return true;
 }
 
 export function isSetupCode(candidate: string | undefined): boolean {
-  const expected = readSetupCode(configDirectory());
-  if (!expected || !candidate) return false;
-  const given = Buffer.from(normalizeSetupCode(candidate));
-  const known = Buffer.from(normalizeSetupCode(expected));
-  return given.length === known.length && timingSafeEqual(given, known);
+  return matchesSetupCode(configDirectory(), candidate);
 }
-
-const WRONG_CODE_DELAY_MS = 1000;
 
 export async function verifySetupCode(candidate: string | undefined): Promise<boolean> {
   if (candidate === undefined) return false;
   if (isSetupCode(candidate)) return true;
-  await new Promise((resolve) => setTimeout(resolve, WRONG_CODE_DELAY_MS));
+  await new Promise((resolve) => setTimeout(resolve, WRONG_SETUP_CODE_DELAY_MS));
   return false;
 }
 
@@ -80,7 +90,7 @@ export function startEmbeddedDatabaseInstall(): void {
   installing = embeddedPostgres()
     .install()
     .then(async (url) => {
-      const result = await configureDatabase(url, { keepSetupCode: true });
+      const result = await configureDatabase(url);
       if (!result.ok) throw new Error(result.failure);
       logger.info("embedded_postgres.ready", { port: new URL(url).port });
     })
@@ -100,13 +110,11 @@ export function finishSetup(): void {
 
 export async function configureDatabase(
   url: string,
-  options: { keepSetupCode?: boolean } = {},
 ): Promise<{ ok: true; majorVersion: number | null } | { ok: false; failure: ConnectionFailure }> {
   if (databaseComesFromEnvironment()) return { ok: false, failure: "fromEnvironment" };
   const result = await connectAndPrepare(url);
   if (!result.ok) return result;
   saveDatabaseUrl(configDirectory(), result.url);
-  if (!options.keepSetupCode) clearSetupCode(configDirectory());
   forgetDatabaseStatus();
   await refreshSettings();
   return result;

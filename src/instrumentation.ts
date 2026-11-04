@@ -14,6 +14,10 @@ export async function register(): Promise<void> {
   }
   try {
     await refreshSettings();
+    const { prepareFirstAccountCode, SETUP_CODE_FILE } = await import("@/infrastructure/setup");
+    if (await prepareFirstAccountCode()) {
+      logger.warn("setup.first_account_pending", { codeFile: SETUP_CODE_FILE });
+    }
     const { providers, devShortcuts } = getContainer();
     logger.info("providers.active", {
       metadata: providers.metadata,

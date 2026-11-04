@@ -30,7 +30,9 @@
     "haveAccount": "I already have an account",
     "nativeLanguage": "Your language",
     "targetLanguage": "I want to learn",
-    "discover": "Discover {app}"
+    "discover": "Discover {app}",
+    "setupCode": "Setup code",
+    "setupCodeHint": "This is the first account on this installation, and it becomes the administrator. Enter the code from the {file} file in the Deixa configuration folder on this computer."
   },
   "shell": {
     "tabs": {
@@ -263,14 +265,14 @@
       "transcriptionNoAi": "Set up an AI key to transcribe your speech.",
       "adminOnlyAccounts": "Only the administrator manages accounts.",
       "lastAdmin": "The installation needs at least one administrator.",
-      "cannotRemoveSelf": "You cannot remove your own account.",
-      "firstAccountLocalOnly": "The first account can only be created on the computer where Deixa is installed."
+      "cannotRemoveSelf": "You cannot remove your own account."
     },
     "CARDS_FAILED": "We could not generate the cards. Try again.",
     "CARDS_TIMEOUT": "Generation took too long and was stopped. Try again.",
     "PLAN_FAILED": "We could not build the trail with AI. Try again.",
     "EMBEDDED_DATABASE_FAILED": "Could not install the embedded Postgres. Check your internet connection and try again.",
-    "SCRIPT_INVALID": "That script file is not valid."
+    "SCRIPT_INVALID": "That script file is not valid.",
+    "SETUP_CODE_INVALID": "The setup code is missing or wrong. It is in the setup-code.txt file in the Deixa configuration folder."
   },
   "locales": {
     "pt-BR": "Português (Brasil)",

@@ -8,6 +8,7 @@ const URL_FILE = join(E2E_SETUP_CONFIG_DIR, "database-url.txt");
 
 test("sem banco configurado: código → conexão → tabelas criadas → primeira conta é a administradora", async ({
   page,
+  browser,
 }) => {
   const target = e2eSetupTarget();
   await page.goto(`${E2E_SETUP_BASE_URL}/`);
@@ -43,13 +44,37 @@ test("sem banco configurado: código → conexão → tabelas criadas → primei
   await page.getByRole("button", { name: "Testar e conectar" }).click();
   await expect(page).toHaveURL(/\/signup$/, { timeout: 30_000 });
   expect(existsSync(URL_FILE)).toBe(true);
-  expect(existsSync(CODE_FILE)).toBe(false);
+  expect(existsSync(CODE_FILE)).toBe(true);
+  await expect(page.getByLabel("Código de configuração")).toHaveCount(0);
+
+  const stranger = await browser.newContext({ locale: "pt-BR" });
+  const strangerPage = await stranger.newPage();
+  await strangerPage.setExtraHTTPHeaders({ "X-Forwarded-For": "127.0.0.1" });
+  await strangerPage.goto(`${E2E_SETUP_BASE_URL}/signup`);
+  await strangerPage.getByLabel("Código de configuração").fill("AAAA-BBBB-CCCC");
+  await strangerPage.getByLabel("Nome").fill("Intrusa");
+  await strangerPage.getByLabel("E-mail").fill("intrusa@deixa.example");
+  await strangerPage.getByLabel(/^Senha/).fill("deixa1234");
+  await strangerPage.getByRole("button", { name: "Criar conta" }).click();
+  await expect(strangerPage.getByText(/Código de configuração ausente ou incorreto/)).toBeVisible();
+  await strangerPage.goto(`${E2E_SETUP_BASE_URL}/setup/unlock?code=AAAA-BBBB-CCCC`);
+  await expect(strangerPage).toHaveURL(/\/signup$/);
+  await expect(strangerPage.getByLabel("Código de configuração")).toBeVisible();
+  await stranger.close();
+
+  const owner = await browser.newContext({ locale: "pt-BR" });
+  const ownerPage = await owner.newPage();
+  await ownerPage.goto(`${E2E_SETUP_BASE_URL}/setup/unlock?code=${readFileSync(CODE_FILE, "utf8").trim()}`);
+  await expect(ownerPage).toHaveURL(/\/signup$/);
+  await expect(ownerPage.getByLabel("Código de configuração")).toHaveCount(0);
+  await owner.close();
 
   await page.getByLabel("Nome").fill("Dona");
   await page.getByLabel("E-mail").fill("dona@deixa.example");
   await page.getByLabel(/^Senha/).fill("deixa1234");
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.getByRole("button", { name: "Perfil de Dona" })).toBeVisible();
+  expect(existsSync(CODE_FILE)).toBe(false);
   await page.goto(`${E2E_SETUP_BASE_URL}/settings?tab=catalog&scope=global`);
   await expect(page.getByLabel("Chave: TMDB global", { exact: true })).toBeVisible();
 

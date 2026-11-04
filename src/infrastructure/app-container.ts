@@ -1161,7 +1161,11 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     loginThrottle: new AttemptThrottle(MAX_LOGIN_FAILURES, LOGIN_WINDOW_MS, clock),
 
     signIn: makeSignIn(sessionDeps),
-    signUp: makeSignUp({ ...sessionDeps, firstAccount: platform.firstAccount }),
+    signUp: makeSignUp({
+      ...sessionDeps,
+      firstAccount: platform.firstAccount,
+      setupCode: platform.setupCode,
+    }),
     listAccounts: makeListAccounts(accountDeps),
     createAccount: makeCreateAccount(sessionDeps),
     setAccountAdmin: makeSetAccountAdmin(accountDeps),
@@ -1177,6 +1181,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     addLanguagePair: makeAddLanguagePair({ pairs: identity, preferences: identity, clock }),
     switchLanguagePair: makeSwitchLanguagePair({ pairs: identity, preferences: identity }),
     listPeople: () => identity.listByEmailSuffix(""),
+    hasAccounts: () => identity.hasAccounts(),
 
     searchWorks: async (userId: string, query: string) => (await catalogFor(userId)).searchWorks(query),
     listLevelSources: makeListLevelSources(levelSourceDeps),

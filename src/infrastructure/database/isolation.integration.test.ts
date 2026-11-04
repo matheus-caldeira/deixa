@@ -27,7 +27,7 @@ import {
 } from "@/modules/ai-usage/infrastructure/drizzle-ai-usage-repository";
 import { InMemoryFileStorage } from "@/shared/storage";
 import { parseEnv } from "../config/env";
-import { buildContainer, type Container } from "../container";
+import { buildContainer, nodePlatform, type Container } from "../container";
 import { silentLogger } from "../logger/logger";
 import type { DatabaseHandle } from "./client";
 import { openTestDatabase, testDatabaseAvailable } from "./test-database";
@@ -44,6 +44,7 @@ import {
 } from "./schema";
 
 const TEST_DATABASE = "deixa_test";
+const SETUP_CODE = "ABCD-EFGH-JKLM";
 const tutor = new FakeTutorProvider();
 const PAIR = { target: "en", native: "pt-BR" } as const;
 const fixture = (name: string) => ({
@@ -65,6 +66,10 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
     const url = handle.url;
     llm = new FakeLlmProvider();
     app = buildContainer({
+      platform: {
+        ...nodePlatform,
+        setupCode: { matches: async (candidate) => candidate === SETUP_CODE, consume: async () => undefined },
+      },
       env: parseEnv({ DATABASE_URL: url, AI_CREDENTIALS_MASTER_KEY: Buffer.alloc(32, 5).toString("base64") }),
       db: handle.db,
       logger: silentLogger,
@@ -84,7 +89,7 @@ describe.skipIf(!testDatabaseAvailable)("repositórios no Postgres real", () => 
         email: "ana@example.com",
         password: "segredo123",
         level: "A1",
-        origin: { isLoopback: async () => true },
+        proof: { cookieCode: SETUP_CODE },
       })
     ).userId;
     lucas = (
