@@ -11,9 +11,10 @@ import { audioHash, type AudioAssetRepository, type Voice } from "@/modules/audi
 import type { CatalogRepository, MediaItem } from "@/modules/catalog";
 import { posterColorsFor } from "@/modules/catalog";
 import type { LearningRepository } from "@/modules/learning";
+import type { MusicRepository, Song } from "@/modules/music";
 import type { SubtitleRepository } from "@/modules/subtitles";
 import type { IdGenerator } from "@/shared/ids";
-import type { PackagedCard } from "../domain/package";
+import type { PackagedCard, PackagedSong } from "../domain/package";
 import type {
   CueRef,
   ExportableAudio,
@@ -34,11 +35,29 @@ type Deps = {
   subtitles: SubtitleRepository;
   learning: LearningRepository;
   audio: AudioAssetRepository;
+  songs: MusicRepository;
   importSubtitles: PackageCatalogWriter["importSubtitles"];
   ids: IdGenerator;
   voices: Voice[];
   modelVersion: string;
 };
+
+const packagedSongOf = (track: Song | undefined): { song?: PackagedSong } =>
+  track
+    ? {
+        song: {
+          youtubeVideoId: track.youtubeVideoId,
+          artist: track.artist,
+          trackTitle: track.trackTitle,
+          durationMs: track.durationMs,
+          leadInMs: track.leadInMs,
+          pauses: track.pauses,
+          lyricsSource: track.lyricsSource,
+          lyricsExternalId: track.lyricsExternalId,
+          translationSource: track.translationSource,
+        },
+      }
+    : {};
 
 const asWork = (media: MediaItem): ExportableWork => ({
   id: media.id,
@@ -93,6 +112,9 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
   }
 
   async listEpisodes(mediaId: string): Promise<ExportableEpisode[]> {
+    const tracks = new Map(
+      (await this.deps.songs.listTracks(mediaId)).map((track) => [track.episodeId, track]),
+    );
     return (await this.deps.catalog.listEpisodesByMedia(mediaId)).map((episode) => ({
       id: episode.id,
       seasonNumber: episode.seasonNumber,
@@ -102,6 +124,7 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
       durationSeconds: episode.durationSeconds,
       stillPath: episode.stillPath,
       ready: episode.status === "READY",
+      ...packagedSongOf(tracks.get(episode.id)),
     }));
   }
 
@@ -262,6 +285,11 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
         episode.id,
       ]),
     );
+    for (const episode of work.episodes) {
+      const episodeId = episodeIds.get(`s${episode.seasonNumber}e${episode.episodeNumber}`);
+      if (!episode.song || !episodeId) continue;
+      await this.deps.songs.upsertTrack({ ...episode.song, episodeId, mediaItemId: mediaId });
+    }
     return { mediaId, created: !existing, episodeIds };
   }
 

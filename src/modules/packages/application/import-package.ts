@@ -65,6 +65,15 @@ const AUDIO_PATH = (voiceId: string, hash: string, format: string) => `audio/${v
 const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
 const AUDIO_FORMAT = "wav";
 
+function packagePreviewLabel(
+  type: "series" | "movie" | "music",
+  episode: { seasonNumber: number; episodeNumber: number },
+): string {
+  if (type === "movie") return "Filme";
+  if (type === "music") return `Música ${episode.episodeNumber}`;
+  return `T${episode.seasonNumber} · E${episode.episodeNumber}`;
+}
+
 export function makeInspectPackage(deps: Pick<Deps, "reader" | "archive" | "storage" | "ids">) {
   return async function inspectPackage(input: {
     userId: string;
@@ -80,7 +89,7 @@ export function makeInspectPackage(deps: Pick<Deps, "reader" | "archive" | "stor
         title: work.title,
         status: local ? "exists" : "new",
         episodes: work.episodes.map((episode) => ({
-          label: work.type === "movie" ? "Filme" : `T${episode.seasonNumber} · E${episode.episodeNumber}`,
+          label: packagePreviewLabel(work.type, episode),
           title: episode.title,
           status: local?.readyEpisodes.has(episodeKey(episode.seasonNumber, episode.episodeNumber))
             ? "exists"

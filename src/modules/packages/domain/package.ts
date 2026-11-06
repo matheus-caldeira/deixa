@@ -44,6 +44,26 @@ export const episodeRefSchema = z.object({
 });
 export type EpisodeRef = z.infer<typeof episodeRefSchema>;
 
+export const packagedSongSchema = z.object({
+  youtubeVideoId: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+  artist: z.string().max(MAX_SHORT),
+  trackTitle: z.string().max(MAX_SHORT),
+  durationMs: z.number().int().min(0).nullable(),
+  leadInMs: z.number().int().min(0).max(600_000),
+  pauses: z
+    .array(
+      z.object({
+        atMs: z.number().int().min(0),
+        durationMs: z.number().int().min(1).max(600_000),
+      }),
+    )
+    .max(20),
+  lyricsSource: z.enum(["lrclib", "fake", "manual"]),
+  lyricsExternalId: z.string().max(MAX_SHORT).nullable(),
+  translationSource: z.enum(["llm", "manual", "none"]),
+});
+export type PackagedSong = z.infer<typeof packagedSongSchema>;
+
 export const packagedEpisodeSchema = z.object({
   seasonNumber: z.number().int().min(0),
   episodeNumber: z.number().int().min(0),
@@ -60,6 +80,7 @@ export const packagedEpisodeSchema = z.object({
     }),
   ),
   cardsPath: z.string().regex(SAFE_PATH).nullable(),
+  song: packagedSongSchema.optional(),
 });
 export type PackagedEpisode = z.infer<typeof packagedEpisodeSchema>;
 
@@ -73,7 +94,7 @@ export const packagedWorkSchema = z.object({
   workKey: ID,
   metadataProvider: z.enum(["tmdb", "fake", "manual"]),
   externalId: z.string().max(MAX_SHORT),
-  type: z.enum(["series", "movie"]),
+  type: z.enum(["series", "movie", "music"]),
   title: z.string().max(MAX_SHORT),
   originalTitle: z.string().max(MAX_SHORT),
   overview: z.string().max(MAX_TEXT),

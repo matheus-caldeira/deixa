@@ -1,5 +1,5 @@
 import type { StudyLanguage } from "@/shared/study-languages";
-import type { PackagedCard } from "../domain/package";
+import type { PackagedCard, PackagedSong } from "../domain/package";
 
 export type PackageFile = { path: string; bytes: Uint8Array };
 
@@ -12,7 +12,7 @@ export type ExportableWork = {
   id: string;
   metadataProvider: "tmdb" | "fake" | "manual";
   externalId: string;
-  type: "series" | "movie";
+  type: "series" | "movie" | "music";
   title: string;
   originalTitle: string;
   overview: string;
@@ -41,6 +41,7 @@ export type ExportableEpisode = {
   durationSeconds: number | null;
   stillPath: string | null;
   ready: boolean;
+  song?: PackagedSong;
 };
 
 export type ExportableSubtitle = {
@@ -80,7 +81,7 @@ export interface PackageCatalogWriter {
   ensureWork(work: {
     metadataProvider: "tmdb" | "fake" | "manual";
     externalId: string;
-    type: "series" | "movie";
+    type: "series" | "movie" | "music";
     title: string;
     originalTitle: string;
     overview: string;
@@ -99,6 +100,7 @@ export interface PackageCatalogWriter {
       overview: string;
       durationSeconds: number | null;
       stillPath: string | null;
+      song?: PackagedSong;
     }[];
     createdBy: string;
     now: Date;

@@ -77,6 +77,7 @@ export function makeExportPackage(deps: Deps) {
         stillPath: episode.stillPath,
         subtitles: [],
         cardsPath: null,
+        ...(episode.song ? { song: episode.song } : {}),
       };
       if (episode.ready && input.options.subtitles) {
         for (const subtitle of await deps.reader.listSubtitles(episode.id)) {
