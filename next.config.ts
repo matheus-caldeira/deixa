@@ -20,6 +20,7 @@ const WEB_ACTIONS = [
   "auth",
   "catalog",
   "level-sources",
+  "music",
   "notifications",
   "personal-series",
   "pronunciation",
@@ -53,7 +54,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: forDesktop || forWeb,
     maximumDiskCacheSize: forDesktop ? 0 : undefined,
-    remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" },
+      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
+    ],
   },
   redirects: forWeb ? undefined : async () => LEGACY_ROUTES.map((route) => ({ ...route, permanent: false })),
   experimental: {

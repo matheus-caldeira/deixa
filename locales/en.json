@@ -301,7 +301,9 @@
     "inProgress": "In progress",
     "titles": "{count, plural, one {# title} other {# titles}}",
     "nothingFound": "Nothing found for \"{query}\". You can search TMDB and add it below.",
-    "empty": "The catalog is still empty. Add the first episode below."
+    "empty": "The catalog is still empty. Add the first episode below.",
+    "musicTitle": "Music",
+    "musicDetail": "YouTube clips with synced lyrics"
   },
   "catalogOptions": {
     "add": "Add",
@@ -316,7 +318,8 @@
   "poster": {
     "movie": "Movie",
     "series": "Show",
-    "posterOf": "Poster of {title}"
+    "posterOf": "Poster of {title}",
+    "music": "Song"
   },
   "media": {
     "explore": "Explore",
@@ -1822,5 +1825,87 @@
     "trayAutoEnter": "Sign in automatically as the owner",
     "trayAutostart": "Open at login",
     "updateAvailable": "Version {version} available"
+  },
+  "music": {
+    "title": "Music",
+    "intro": "Study with the clips you already watch: the video plays on top and the lyrics scroll below, in time.",
+    "songs": "{count, plural, one {# song} other {# songs}}",
+    "newPlaylist": "New playlist",
+    "playlistName": "Name",
+    "playlistPlaceholder": "E.g. Pop to practice",
+    "createPlaylist": "Create playlist",
+    "providerNote": "Lyrics source: {provider}.",
+    "back": "Back",
+    "addSong": "Add song",
+    "emptyTitle": "No songs yet",
+    "emptyOwner": "Tap + to paste a YouTube clip link and look up the lyrics.",
+    "emptyGuest": "The playlist owner has not added songs yet.",
+    "lines": "{count, plural, one {# line} other {# lines}}",
+    "status": {
+      "NONE": "No lyrics",
+      "UPLOADED": "Uploaded",
+      "PROCESSING": "Processing",
+      "READY": "Ready",
+      "FAILED": "Failed",
+      "NEEDS_REVIEW": "Needs review"
+    },
+    "sourceAi": "AI",
+    "translated": "Translated",
+    "listen": "Listen to {title}",
+    "readAndMark": "Read and mark",
+    "remove": "Remove song",
+    "removeConfirm": "Remove \"{title}\" from the playlist?",
+    "modes": {
+      "both": "Both",
+      "tap": "On tap"
+    },
+    "translationBy": "Translation: {source}",
+    "noTranslation": "No translation yet.",
+    "translateWithAi": "Translate with AI",
+    "translating": "Translating...",
+    "translationRequested": "Translation requested. It arrives shortly.",
+    "noLyrics": "This song has no lyrics yet.",
+    "play": "Play",
+    "pause": "Pause",
+    "playerFailed": "The YouTube video could not be loaded. The lyrics follow a simulated clock: press play to follow along.",
+    "saving": "Saving...",
+    "timingSaved": "Timing saved.",
+    "sync": {
+      "title": "Timing",
+      "close": "Close timing",
+      "hint": "Lyrics time now: {lyrics} s. Adjust the clip delay and mark pauses for intros.",
+      "leadIn": "Initial delay: {seconds} s",
+      "firstLineNow": "The first line starts now",
+      "pauseSeconds": "Pause length (seconds)",
+      "addPause": "Pause here",
+      "noPauses": "No pauses marked.",
+      "pauseItem": "At {at} s of the lyrics, pause of {duration} s",
+      "removePause": "Remove pause",
+      "save": "Save timing",
+      "ownerOnly": "Only the playlist creator can save the timing."
+    },
+    "add": {
+      "title": "Add song",
+      "videoUrl": "YouTube video link",
+      "artist": "Artist",
+      "songTitle": "Song",
+      "searchLyrics": "Search lyrics",
+      "searching": "Searching...",
+      "noCandidates": "No lyrics found. Paste the lyrics as LRC.",
+      "candidates": "Lyrics found",
+      "unknownDuration": "unknown length",
+      "instrumental": "instrumental",
+      "synced": "synced",
+      "notSynced": "no timestamps",
+      "pasteLrc": "Paste lyrics as LRC",
+      "useSearch": "Search lyrics online",
+      "lrcLabel": "Lyrics as LRC",
+      "translationLabel": "Translation (optional, one line per lyric line)",
+      "translateWithAi": "Translate with AI if I do not paste a translation",
+      "submit": "Add to playlist",
+      "adding": "Adding...",
+      "added": "Song added.",
+      "alreadyThere": "This song is already in the playlist."
+    }
   }
 }

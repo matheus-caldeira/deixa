@@ -703,3 +703,28 @@ export function SwapIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" {...props}>
+      <path fill="currentColor" d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z" />
+    </svg>
+  );
+}
+
+export function MusicIcon(props: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M9 18V5l11-2v13M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3zM20 16a3 3 0 1 1-3-3 3 3 0 0 1 3 3z" />
+    </svg>
+  );
+}

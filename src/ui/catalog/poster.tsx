@@ -24,7 +24,7 @@ export function Poster({
   sizes?: string;
 }) {
   const t = useTranslations("poster");
-  const kind = t(media.type === "movie" ? "movie" : "series");
+  const kind = t(media.type);
   if (media.posterUrl) {
     return (
       <div className="poster real">

@@ -121,7 +121,10 @@ export function AppShell({ data, children }: { data: ShellData; children: React.
     return () => window.removeEventListener(OPEN_PROFILE_EVENT, actions.openProfile);
   }, [actions]);
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) =>
+    href === "/"
+      ? pathname === "/"
+      : pathname.startsWith(href) || (href === "/catalog" && pathname.startsWith("/music"));
   const inMore = MORE_LINKS.some((link) => isActive(link.href));
 
   return (

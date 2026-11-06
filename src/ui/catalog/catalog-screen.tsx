@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { LevelFit } from "@/shared/levels";
 import { LANGUAGE_TAGS, type StudyLanguage } from "@/shared/study-languages";
-import { PlusIcon, SearchIcon } from "../icons";
+import { MusicIcon, PlusIcon, SearchIcon } from "../icons";
 import { useShell } from "../shell/app-shell";
 import { Poster, type PosterData } from "./poster";
 import { SuggestionsSection, type SuggestionsView } from "./suggestions-section";
@@ -81,6 +81,15 @@ export function CatalogScreen({
           aria-label={t("search")}
         />
       </label>
+      <Link className="card listrow" href={routes.music()} data-testid="music-entry">
+        <span className="mic">
+          <MusicIcon />
+        </span>
+        <div className="col" style={{ gap: 2, minWidth: 0 }}>
+          <b>{t("musicTitle")}</b>
+          <span className="small muted">{t("musicDetail")}</span>
+        </div>
+      </Link>
       <div className="chips">
         {FILTERS.map((option) => (
           <button

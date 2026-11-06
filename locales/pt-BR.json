@@ -301,7 +301,9 @@
     "inProgress": "Em andamento",
     "titles": "{count, plural, one {# título} other {# títulos}}",
     "nothingFound": "Nada encontrado para \"{query}\". Você pode buscar no TMDB e adicionar abaixo.",
-    "empty": "O catálogo ainda está vazio. Adicione o primeiro episódio abaixo."
+    "empty": "O catálogo ainda está vazio. Adicione o primeiro episódio abaixo.",
+    "musicTitle": "Músicas",
+    "musicDetail": "Clipes do YouTube com a letra sincronizada"
   },
   "catalogOptions": {
     "add": "Adicionar",
@@ -316,7 +318,8 @@
   "poster": {
     "movie": "Filme",
     "series": "Série",
-    "posterOf": "Pôster de {title}"
+    "posterOf": "Pôster de {title}",
+    "music": "Música"
   },
   "media": {
     "explore": "Explorar",
@@ -1822,5 +1825,87 @@
     "trayAutoEnter": "Entrar sozinho como o dono",
     "trayAutostart": "Abrir ao iniciar o computador",
     "updateAvailable": "Versão {version} disponível"
+  },
+  "music": {
+    "title": "Músicas",
+    "intro": "Estude inglês com os clipes que você já ouve: o vídeo toca em cima e a letra rola embaixo, no tempo certo.",
+    "newPlaylist": "Nova playlist",
+    "playlistName": "Nome",
+    "playlistPlaceholder": "Ex.: Pop para treinar",
+    "createPlaylist": "Criar playlist",
+    "providerNote": "Fonte das letras: {provider}.",
+    "back": "Voltar",
+    "addSong": "Adicionar música",
+    "emptyTitle": "Nenhuma música ainda",
+    "emptyOwner": "Toque em + para colar o link de um clipe do YouTube e buscar a letra.",
+    "emptyGuest": "O dono da playlist ainda não adicionou músicas.",
+    "lines": "{count, plural, one {# linha} other {# linhas}}",
+    "status": {
+      "NONE": "Sem letra",
+      "UPLOADED": "Enviada",
+      "PROCESSING": "Processando",
+      "READY": "Pronta",
+      "FAILED": "Falhou",
+      "NEEDS_REVIEW": "Precisa de revisão"
+    },
+    "sourceAi": "IA",
+    "translated": "Traduzida",
+    "listen": "Ouvir {title}",
+    "readAndMark": "Ler e marcar",
+    "remove": "Remover música",
+    "removeConfirm": "Remover \"{title}\" da playlist?",
+    "modes": {
+      "both": "Os dois",
+      "tap": "Ao tocar"
+    },
+    "translationBy": "Tradução: {source}",
+    "noTranslation": "Sem tradução ainda.",
+    "translateWithAi": "Traduzir com IA",
+    "translating": "Traduzindo...",
+    "translationRequested": "Tradução pedida. Ela chega em instantes.",
+    "noLyrics": "Esta música ainda não tem letra.",
+    "play": "Tocar",
+    "pause": "Pausar",
+    "playerFailed": "Não foi possível carregar o vídeo do YouTube. A letra segue um relógio simulado: use play para acompanhar.",
+    "saving": "Salvando...",
+    "timingSaved": "Sincronia salva.",
+    "sync": {
+      "title": "Sincronia",
+      "close": "Fechar sincronia",
+      "hint": "Tempo da letra agora: {lyrics} s. Ajuste o atraso do clipe e marque pausas nas introduções.",
+      "leadIn": "Atraso inicial: {seconds} s",
+      "firstLineNow": "A primeira linha começa agora",
+      "pauseSeconds": "Duração da pausa (segundos)",
+      "addPause": "Pausa aqui",
+      "noPauses": "Nenhuma pausa marcada.",
+      "pauseItem": "Aos {at} s da letra, pausa de {duration} s",
+      "removePause": "Remover pausa",
+      "save": "Salvar sincronia",
+      "ownerOnly": "Só quem criou a playlist salva a sincronia."
+    },
+    "add": {
+      "title": "Adicionar música",
+      "videoUrl": "Link do vídeo do YouTube",
+      "artist": "Artista",
+      "songTitle": "Música",
+      "searchLyrics": "Buscar letras",
+      "searching": "Buscando...",
+      "noCandidates": "Nenhuma letra encontrada. Cole a letra em LRC.",
+      "candidates": "Letras encontradas",
+      "unknownDuration": "duração desconhecida",
+      "instrumental": "instrumental",
+      "synced": "sincronizada",
+      "notSynced": "sem tempos",
+      "pasteLrc": "Colar a letra em LRC",
+      "useSearch": "Buscar letras na internet",
+      "lrcLabel": "Letra em LRC",
+      "translationLabel": "Tradução (opcional, uma linha por linha da letra)",
+      "translateWithAi": "Traduzir com IA se eu não colar a tradução",
+      "submit": "Adicionar à playlist",
+      "adding": "Adicionando...",
+      "added": "Música adicionada.",
+      "alreadyThere": "Esta música já está na playlist."
+    },
+    "songs": "{count, plural, one {# música} other {# músicas}}"
   }
 }
