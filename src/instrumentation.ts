@@ -23,6 +23,7 @@ export async function register(): Promise<void> {
       metadata: providers.metadata,
       tts: providers.tts,
       subtitles: providers.subtitles,
+      lyrics: providers.lyrics,
       devShortcuts,
     });
   } catch (error) {
