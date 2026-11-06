@@ -13,6 +13,9 @@ function withQuery(path: string, query: Query): string {
 
 export const routes = {
   catalog: () => "/catalog",
+  music: () => "/music",
+  playlist: (playlistId: string) => withQuery("/music/playlist", { id: playlistId }),
+  listen: (episodeId: string) => withQuery("/listen", { episode: episodeId }),
   work: (mediaId: string, season?: number | null) => withQuery("/catalog/work", { id: mediaId, season }),
   trail: (mediaId: string, season?: number | string | null) => withQuery("/trail", { id: mediaId, season }),
   personalTrail: (level?: string | null) => withQuery("/trail", { id: PERSONAL_TRAIL_ID, season: level }),

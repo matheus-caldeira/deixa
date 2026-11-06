@@ -34,6 +34,7 @@ const envSchema = z.object({
       .default("true")
       .transform((value) => value === "true"),
   ),
+  LYRICS_PROVIDER: z.preprocess(blankAsUndefined, z.enum(["lrclib", "fake"]).default("lrclib")),
   JOBS_MODE: z.preprocess(blankAsUndefined, z.enum(["inline", "worker"]).default("inline")),
   JOBS_POLL_MS: z.preprocess(blankAsUndefined, z.coerce.number().int().min(200).max(60_000).default(2000)),
   DEV_SHORTCUTS: z.preprocess(

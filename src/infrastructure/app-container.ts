@@ -52,7 +52,7 @@ import {
   makeStartEpisode,
   makeSyncLevelSources,
   makeMeasureEpisodeLevel,
-  type MediaType,
+  type WorkType,
   type MetadataProvider,
 } from "@/modules/catalog";
 import { DrizzleCatalogRepository } from "@/modules/catalog/infrastructure/drizzle-catalog-repository";
@@ -104,6 +104,24 @@ import {
   type DescribeSeriesInput,
 } from "@/modules/personal-series";
 import { DrizzlePersonalSeriesRepository } from "@/modules/personal-series/infrastructure/drizzle-personal-series-repository";
+import {
+  makeAddSong,
+  makeCreatePlaylist,
+  makeEnsureDefaultPlaylist,
+  makeGetPlaylist,
+  makeGetSongPlayer,
+  makeListPlaylists,
+  makeRemoveSong,
+  makeRequestSongTranslation,
+  makeSearchLyrics,
+  makeTranslateSong,
+  makeUpdateSongTiming,
+  type LyricsProvider,
+  type SongSubtitles,
+} from "@/modules/music";
+import { DrizzleMusicRepository } from "@/modules/music/infrastructure/drizzle-music-repository";
+import { FakeLyricsProvider } from "@/modules/music/infrastructure/fake-lyrics-provider";
+import { LrclibLyricsProvider } from "@/modules/music/infrastructure/lrclib-lyrics-provider";
 import { DrizzleConversationRepository } from "@/modules/conversations/infrastructure/drizzle-conversation-repository";
 import { FakeTutorProvider } from "@/modules/conversations/infrastructure/fake-tutor-provider";
 import {
@@ -289,6 +307,7 @@ export type ContainerOptions = {
   storage?: FileStorage;
   metadata?: MetadataProvider;
   subtitleSource?: SubtitleSourceProvider;
+  lyrics?: LyricsProvider;
   tts?: TtsProvider;
   llmForUser?: (userId: string) => Promise<LlmProvider>;
   plannerForUser?: (userId: string) => Promise<LessonPlanner | null>;
@@ -946,6 +965,24 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     const file = (await subtitles.listFiles(episodeId)).find((candidate) => candidate.language === language);
     return file ? subtitles.listCues(file.id) : null;
   }
+  const music = new DrizzleMusicRepository(db);
+  const lyricsProvider: LyricsProvider =
+    options.lyrics ??
+    (env.LYRICS_PROVIDER === "fake" ? new FakeLyricsProvider() : new LrclibLyricsProvider());
+  const songSubtitles: SongSubtitles = {
+    importSubtitles: async (input) => {
+      const result = await importEpisodeSubtitles(input);
+      return { outcome: result.outcome, cueCount: result.cueCount };
+    },
+    listCues: listCuesInLanguage,
+    readOriginal: async (episodeId, language) => {
+      const file = (await subtitles.listFiles(episodeId)).find((stored) => stored.language === language);
+      return file ? storage.read(file.storagePath) : null;
+    },
+    script: (episodeId, pair) => getEpisodeScript(episodeId, pair),
+  };
+  const songDeps = { music, subtitles: songSubtitles };
+  const translateSong = makeTranslateSong({ ...songDeps, resolveLlm });
   const scripts = new DrizzleScriptRepository(db);
   const importEpisodeScript = makeImportEpisodeScript({
     scripts,
@@ -962,7 +999,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     episodeId: string,
   ): Promise<EpisodeSource | null> => {
     const context = await catalog.findEpisodeContext(episodeId);
-    if (!context) return null;
+    if (!context || context.media.type === "music") return null;
     const tmdbId =
       context.media.metadataProvider === "tmdb"
         ? tmdbNumericId(context.media.type, context.media.externalId)
@@ -1030,6 +1067,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     subtitles,
     learning,
     audio: audioAssets,
+    songs: music,
     importSubtitles: async (input) =>
       (await importEpisodeSubtitles({ ...input, native: input.native ?? undefined })).outcome,
     ids,
@@ -1132,13 +1170,22 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
       const outcome = await measureEpisodeLevel(payload);
       log.info("episode_level.measured", { episodeId: payload.episodeId, ...outcome });
     },
+    music_translate: async (payload) => {
+      const outcome = await translateSong(payload);
+      log.info("music.translated", { episodeId: payload.episodeId, ...outcome });
+    },
   };
   const runClaimedJob = makeRunClaimedJob({ jobs, handlers: jobHandlers, clock });
   const runJobInline = makeRunJobInline({ jobs, run: runClaimedJob, clock });
   const runNextJob = makeRunNextJob({ jobs, run: runClaimedJob, clock });
 
   return {
-    providers: { metadata: defaultMetadata.name, tts: tts.name, subtitles: defaultSubtitleSource.name },
+    providers: {
+      metadata: defaultMetadata.name,
+      tts: tts.name,
+      subtitles: defaultSubtitleSource.name,
+      lyrics: lyricsProvider.name,
+    },
     jobsMode: env.JOBS_MODE,
     audioBatchAvailable,
     enqueueJob: makeEnqueueJob({ jobs, clock, ids }),
@@ -1190,7 +1237,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
       (await catalogFor(userId)).browseWorks(input),
     rateWorkLevel: async (input: {
       actor: { userId: string; isAdmin: boolean };
-      type: MediaType;
+      type: WorkType;
       externalId: string;
     }) => (await catalogFor(input.actor.userId)).rateWorkLevel(input),
     addLevelSource: makeAddLevelSource(levelSourceDeps),
@@ -1199,7 +1246,7 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     getWorkLevelRatings: makeGetWorkLevelRatings(levelSourceDeps),
     registerWork: async (input: {
       userId: string | null;
-      type: MediaType;
+      type: WorkType;
       externalId: string;
       force?: boolean;
     }) => (await catalogFor(input.userId)).registerWork(input),
@@ -1219,6 +1266,17 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
     getMediaById: (mediaId: string) => catalog.findMediaById(mediaId),
 
     importEpisodeSubtitles,
+    ensureDefaultPlaylist: makeEnsureDefaultPlaylist({ music, clock, ids }),
+    createPlaylist: makeCreatePlaylist({ music, clock, ids }),
+    listPlaylists: makeListPlaylists({ music }),
+    getPlaylist: makeGetPlaylist({ music }),
+    searchLyrics: makeSearchLyrics({ lyrics: lyricsProvider }),
+    addSong: makeAddSong({ ...songDeps, lyrics: lyricsProvider, ids, clock }),
+    removeSong: makeRemoveSong({ music }),
+    updateSongTiming: makeUpdateSongTiming({ music }),
+    getSongPlayer: makeGetSongPlayer(songDeps),
+    requestSongTranslation: makeRequestSongTranslation(songDeps),
+    translateSong,
     searchSubtitles: async (input: { userId: string; episodeId: string; refresh?: boolean }) =>
       (await sourcesFor(input.userId)).searchSubtitles({ ...input, pair: await pairFor(input.userId) }),
     importFromSource: async (input: {

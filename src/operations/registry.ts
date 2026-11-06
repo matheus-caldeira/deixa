@@ -3,6 +3,8 @@ import { aiSettingsOperations } from "./ai-settings";
 import { audioOperations } from "./audio";
 import { catalogOperations } from "./catalog";
 import { levelSourceOperations } from "./level-sources";
+import { musicOperations } from "./music";
+import { musicViews } from "./views/music";
 import { notificationOperations } from "./notifications";
 import { personalSeriesOperations } from "./personal-series";
 import { pronunciationOperations } from "./pronunciation";
@@ -40,6 +42,8 @@ export const OPERATION_GROUPS = [
   aiSettingsOperations,
   catalogOperations,
   levelSourceOperations,
+  musicOperations,
+  musicViews,
   notificationOperations,
   personalSeriesOperations,
   profileOperations,
@@ -79,6 +83,8 @@ export const OPERATIONS = {
   ...aiSettingsOperations,
   ...catalogOperations,
   ...levelSourceOperations,
+  ...musicOperations,
+  ...musicViews,
   ...notificationOperations,
   ...personalSeriesOperations,
   ...profileOperations,

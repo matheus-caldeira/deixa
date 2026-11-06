@@ -28,6 +28,7 @@ export function e2eEnvironment(): Record<string, string> {
     TMDB_READ_ACCESS_TOKEN: "",
     KOKORO_URL: "",
     DEV_SHORTCUTS: "true",
+    LYRICS_PROVIDER: "fake",
     SESSION_COOKIE_SECURE: "false",
     GEMINI_MODEL: "",
     GEMINI_API_KEY: "",

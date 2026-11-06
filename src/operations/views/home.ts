@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { backdropUrl, posterColorsFor, posterUrl, stillUrl } from "@/modules/catalog";
+import { backdropUrl, posterColorsFor, posterUrl, stillUrl, type MediaType } from "@/modules/catalog";
 import { suggestTheme } from "@/modules/conversations";
 import { pairOf } from "@/modules/identity";
 import { nextEpisodeId } from "@/modules/personal-series";
@@ -32,7 +32,7 @@ export const homeViews = {
       ]);
       const suggestedTheme = suggestTheme(conversations.map((session) => session.themeId));
       const unfinished = conversations.find((session) => session.review === null && session.turnCount > 1);
-      const labelOf = (type: "series" | "movie", season: number, episode: number) =>
+      const labelOf = (type: MediaType, season: number, episode: number) =>
         type === "movie" ? t("label.movie") : t("label.episode", { season, episode });
 
       const ready =
@@ -56,7 +56,7 @@ export const homeViews = {
           : null;
       const progress =
         overview.inProgress.find((entry) => entry.episodeId === currentId)?.progressPercent ?? 0;
-      const trailHref = (mediaId: string, type: "series" | "movie", season: number) =>
+      const trailHref = (mediaId: string, type: MediaType, season: number) =>
         type === "movie" ? routes.trail(mediaId) : routes.trail(mediaId, season);
 
       const seen = new Set(episode ? [episode.media.id] : []);
