@@ -15,6 +15,7 @@ const entry = {
 function provider(
   responses: (Response | Error)[],
   seen: { url: string; headers: HeadersInit | undefined }[] = [],
+  failures: { event: string; service: string; status: number | string }[] = [],
 ) {
   const queue = [...responses];
   const fetchImpl = (async (url: string | URL | Request, init?: RequestInit) => {
@@ -24,7 +25,12 @@ function provider(
     if (next instanceof Error) throw next;
     return next;
   }) as typeof fetch;
-  return new LrclibLyricsProvider({ baseUrl: "https://lrclib.test/api", fetchImpl, retryDelayMs: 0 });
+  return new LrclibLyricsProvider({
+    baseUrl: "https://lrclib.test/api",
+    fetchImpl,
+    retryDelayMs: 0,
+    onFailure: (event, fields) => failures.push({ event, ...fields }),
+  });
 }
 
 const json = (body: unknown, status = 200) =>
@@ -70,8 +76,11 @@ describe("LrclibLyricsProvider", () => {
   it("tenta de novo uma vez e depois vira erro tratável", async () => {
     const recovered = provider([new Error("rede"), json([entry])]);
     expect(await recovered.search({ query: "x" })).toHaveLength(1);
-    const down = provider([json({}, 503), json({}, 503)]);
-    await expect(down.search({ query: "x" })).rejects.toMatchObject({ code: "MUSIC_PROVIDER_UNAVAILABLE" });
+    const failures: { event: string; service: string; status: number | string }[] = [];
+    const down = provider([json({}, 503), json({}, 503)], [], failures);
+    const error = await down.search({ query: "x" }).catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "MUSIC_PROVIDER_UNAVAILABLE", detail: null });
+    expect(failures).toEqual([{ event: "lyrics.provider.unavailable", service: "lrclib", status: 503 }]);
   });
 
   it("resposta fora do formato vira erro tratável", async () => {

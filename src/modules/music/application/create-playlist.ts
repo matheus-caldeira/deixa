@@ -19,7 +19,10 @@ export function makeCreatePlaylist(deps: { music: MusicRepository; clock: Clock;
     const title = input.title.replace(/\s+/g, " ").trim();
     if (title.length === 0 || title.length > MAX_PLAYLIST_TITLE) throw new AppError("INVALID_INPUT");
     if ((await deps.music.countPlaylistsBy(input.userId)) >= MAX_PLAYLISTS_PER_USER) {
-      throw new AppError("INVALID_INPUT", "tooManyPlaylists");
+      throw new AppError("INVALID_INPUT", {
+        key: "tooManyPlaylists",
+        params: { max: MAX_PLAYLISTS_PER_USER },
+      });
     }
     const id = deps.ids.next();
     return deps.music.ensurePlaylist({

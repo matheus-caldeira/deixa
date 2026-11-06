@@ -968,7 +968,9 @@ export function buildAppContainer(options: ContainerOptions & { platform: Platfo
   const music = new DrizzleMusicRepository(db);
   const lyricsProvider: LyricsProvider =
     options.lyrics ??
-    (env.LYRICS_PROVIDER === "fake" ? new FakeLyricsProvider() : new LrclibLyricsProvider());
+    (env.LYRICS_PROVIDER === "fake"
+      ? new FakeLyricsProvider()
+      : new LrclibLyricsProvider({ onFailure: (event, fields) => log.warn(event, fields) }));
   const songSubtitles: SongSubtitles = {
     importSubtitles: async (input) => {
       const result = await importEpisodeSubtitles(input);

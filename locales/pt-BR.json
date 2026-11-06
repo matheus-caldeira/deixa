@@ -179,6 +179,8 @@
     "MUSIC_TRANSLATION_MISMATCH": "A tradução precisa ter uma linha para cada linha da letra, ou ser um LRC com os mesmos tempos.",
     "MUSIC_PROVIDER_UNAVAILABLE": "A busca de letras está fora do ar. Tente de novo em instantes ou cole a letra.",
     "detail": {
+      "tooManySongs": "Esta playlist já tem o máximo de {max} músicas. Crie outra playlist.",
+      "tooManyPlaylists": "Você já tem o máximo de {max} playlists.",
       "tooManyAttempts": "Muitas tentativas. Espere alguns minutos e tente de novo.",
       "chooseZip": "Escolha um arquivo .deixa.zip.",
       "packageTooLarge": "O arquivo passa do tamanho máximo de {gb} GB.",

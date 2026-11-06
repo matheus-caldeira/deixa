@@ -179,6 +179,8 @@
     "MUSIC_TRANSLATION_MISMATCH": "The translation must have one line for each lyric line, or be an LRC with the same times.",
     "MUSIC_PROVIDER_UNAVAILABLE": "The lyrics search is down. Try again in a moment or paste the lyrics.",
     "detail": {
+      "tooManySongs": "This playlist already has the maximum of {max} songs. Create another playlist.",
+      "tooManyPlaylists": "You already have the maximum of {max} playlists.",
       "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
       "chooseZip": "Choose a .deixa.zip file.",
       "packageTooLarge": "The file exceeds the maximum size of {gb} GB.",

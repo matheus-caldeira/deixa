@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "@/shared/clock";
 import { AppError } from "@/shared/errors";
 import type { LanguagePair } from "@/shared/study-languages";
+import { MAX_PLAYLISTS_PER_USER } from "../domain/music";
 import { FakeLyricsProvider } from "../infrastructure/fake-lyrics-provider";
 import { makeAddSong, type AddSongInput } from "./add-song";
 import { makeCreatePlaylist } from "./create-playlist";
@@ -91,6 +92,18 @@ describe("playlists", () => {
     expect(playlist.title).toBe("Treino de manhã");
     await expect(app.createPlaylist({ userId: OWNER, title: "   ", language: "en" })).rejects.toMatchObject({
       code: "INVALID_INPUT",
+    });
+  });
+
+  it("recusa playlist além do limite com o máximo na mensagem", async () => {
+    for (let index = 0; index < MAX_PLAYLISTS_PER_USER; index += 1) {
+      await app.createPlaylist({ userId: OWNER, title: `Lista ${index}`, language: "en" });
+    }
+    await expect(
+      app.createPlaylist({ userId: OWNER, title: "Mais uma", language: "en" }),
+    ).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      detail: { key: "tooManyPlaylists", params: { max: MAX_PLAYLISTS_PER_USER } },
     });
   });
 

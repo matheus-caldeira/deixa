@@ -46,18 +46,24 @@ function toCandidate(document: LyricsDocument): LyricsCandidate {
 }
 
 type Fetch = typeof fetch;
+type FailureLog = (event: string, fields: { service: string; status: number | string }) => void;
 
 export class LrclibLyricsProvider implements LyricsProvider {
   readonly name = "lrclib" as const;
 
   constructor(
-    private readonly options: { baseUrl?: string; fetchImpl?: Fetch; retryDelayMs?: number } = {},
+    private readonly options: {
+      baseUrl?: string;
+      fetchImpl?: Fetch;
+      retryDelayMs?: number;
+      onFailure?: FailureLog;
+    } = {},
   ) {}
 
   private async request(path: string): Promise<Response> {
     const fetchImpl = this.options.fetchImpl ?? fetch;
     const url = `${this.options.baseUrl ?? LRCLIB_BASE_URL}${path}`;
-    let lastFailure: unknown = null;
+    let lastStatus: number | string = "network";
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       try {
         const response = await fetchImpl(url, {
@@ -65,18 +71,16 @@ export class LrclibLyricsProvider implements LyricsProvider {
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
         if (response.status !== HTTP_TOO_MANY && response.status < HTTP_SERVER_ERROR) return response;
-        lastFailure = new Error(`status ${response.status}`);
+        lastStatus = response.status;
       } catch (error) {
-        lastFailure = error;
+        lastStatus = error instanceof Error && error.name === "TimeoutError" ? "timeout" : "network";
       }
       if (attempt < MAX_ATTEMPTS) {
         await new Promise((resolve) => setTimeout(resolve, this.options.retryDelayMs ?? RETRY_DELAY_MS));
       }
     }
-    throw new AppError("MUSIC_PROVIDER_UNAVAILABLE", {
-      key: "lrclib",
-      params: { reason: lastFailure instanceof Error ? lastFailure.message : "unknown" },
-    });
+    this.options.onFailure?.("lyrics.provider.unavailable", { service: this.name, status: lastStatus });
+    throw new AppError("MUSIC_PROVIDER_UNAVAILABLE");
   }
 
   async search(query: LyricsQuery): Promise<LyricsCandidate[]> {

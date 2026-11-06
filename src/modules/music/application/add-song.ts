@@ -89,7 +89,10 @@ export function makeAddSong(deps: {
     }
     if (existing) await deps.music.removeSong(existing.episodeId);
     if ((await deps.music.listSongs(input.playlistId)).length >= MAX_SONGS_PER_PLAYLIST) {
-      throw new AppError("INVALID_INPUT", "tooManySongs");
+      throw new AppError("INVALID_INPUT", {
+        key: "tooManySongs",
+        params: { max: MAX_SONGS_PER_PLAYLIST },
+      });
     }
 
     const lyrics = await loadLyrics(input.lyrics);
