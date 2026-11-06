@@ -24,26 +24,27 @@ fixtures/             SRT fictícios EN e PT
 
 ## Módulos
 
-| Módulo            | Responsabilidade                                                              |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `identity`        | Contas, senha, sessão, preferências, gestão de contas pelo administrador      |
-| `catalog`         | Obras, episódios, gêneros, nível pelas falas, `MetadataProvider`, TMDB        |
-| `subtitles`       | Parser SRT, validação, hash, deduplicação, importação, falas                  |
-| `alignment`       | Alinhamento entre duas legendas de idiomas diferentes por tempo (puro)        |
-| `highlights`      | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio   |
-| `learning`        | Itens de aprendizado, explicações, `LlmProvider`, geração de cards            |
-| `flashcards`      | Cards do usuário, agendamento de revisão, histórico                           |
-| `ai-credentials`  | Chave Gemini por usuário: cifra, teste, máscara, remoção                      |
-| `audio`           | `TtsProvider`, cache de áudio por hash                                        |
-| `gamification`    | XP por eventos, missões, conquistas e perfil calculado das lições e revisões  |
-| `settings`        | Configurações do servidor guardadas no banco, alteradas só pelo administrador |
-| `recommendations` | Retrato do aluno, vetores, ranqueamento por gênero, sugestões e aviso inédito |
-| `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites       |
-| `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio      |
-| `jobs`            | Fila `job_queue`: enfileirar, reivindicar com `SKIP LOCKED`, tentativas       |
-| `scripts`         | Roteiro `.txt` conferido contra a legenda; falas completadas na leitura       |
-| `conversations`   | Tutor: conversa, encerramento, revisão em job, cards escolhidos e termos      |
-| `personal-series` | Série pessoal: temporada por nível, episódios por tema, trilha e lição        |
+| Módulo            | Responsabilidade                                                                |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `identity`        | Contas, senha, sessão, preferências, gestão de contas pelo administrador        |
+| `catalog`         | Obras, episódios, gêneros, nível pelas falas, `MetadataProvider`, TMDB          |
+| `subtitles`       | Parser SRT, validação, hash, deduplicação, importação, falas                    |
+| `alignment`       | Alinhamento entre duas legendas de idiomas diferentes por tempo (puro)          |
+| `highlights`      | Marcações, agrupamento em expressões, contagem anônima, leitura do episódio     |
+| `learning`        | Itens de aprendizado, explicações, `LlmProvider`, geração de cards              |
+| `flashcards`      | Cards do usuário, agendamento de revisão, histórico                             |
+| `ai-credentials`  | Chave Gemini por usuário: cifra, teste, máscara, remoção                        |
+| `audio`           | `TtsProvider`, cache de áudio por hash                                          |
+| `gamification`    | XP por eventos, missões, conquistas e perfil calculado das lições e revisões    |
+| `settings`        | Configurações do servidor guardadas no banco, alteradas só pelo administrador   |
+| `recommendations` | Retrato do aluno, vetores, ranqueamento por gênero, sugestões e aviso inédito   |
+| `ai-usage`        | Medição de tokens e valor por chamada de IA, preços por modelo, limites         |
+| `packages`        | Formato `.deixa.zip`: exportar e importar obras, legendas, cards e áudio        |
+| `jobs`            | Fila `job_queue`: enfileirar, reivindicar com `SKIP LOCKED`, tentativas         |
+| `scripts`         | Roteiro `.txt` conferido contra a legenda; falas completadas na leitura         |
+| `conversations`   | Tutor: conversa, encerramento, revisão em job, cards escolhidos e termos        |
+| `personal-series` | Série pessoal: temporada por nível, episódios por tema, trilha e lição          |
+| `music`           | Playlists e músicas: letra sincronizada (LRC), `LyricsProvider`, tempo do clipe |
 
 Os módulos `levels`, `spaced-repetition` e `conversations` do PROJETO.md nascem quando suas fases
 chegarem; até lá, nível mora em `shared/levels` e o agendamento de revisão em `flashcards/domain`.

@@ -43,7 +43,7 @@ src/ui/               componentes React, icons.tsx, styles/ (tokens e classes do
 src/modules/<m>/      domain/ · application/ (casos de uso + ports) · infrastructure/ · index.ts
                       identity, catalog, subtitles, alignment, highlights, learning, flashcards,
                       ai-credentials, audio, gamification, study, notifications, conversations,
-                      subtitle-sources, recommendations, settings, ai-usage, packages, jobs, scripts
+                      subtitle-sources, recommendations, settings, ai-usage, packages, jobs, scripts, music
 src/infrastructure/   config/env.ts, database/, storage/, tmdb/, ai/, kokoro/, logger/, container.ts
 src/shared/           app.ts (APP_NAME), errors, levels, locales, study-languages (par de idiomas), clock, ids
 src/i18n/             request.ts (idioma por pedido), messages.ts (carrega locales/<idioma>.json)

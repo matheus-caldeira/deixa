@@ -20,7 +20,7 @@ Corpo opcional explicando o porquê.
 
 Tipos: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
 Escopos: módulos (`identity`, `catalog`, `subtitles`, `alignment`, `highlights`, `learning`, `flashcards`,
-`gamification`, `ai-credentials`, `audio`) ou áreas (`ui`, `infra`, `shared`, `contexts`, `harness`, `docs`).
+`gamification`, `ai-credentials`, `audio`, `music`) ou áreas (`ui`, `infra`, `shared`, `contexts`, `harness`, `docs`).
 
 ## Antes de cada commit
 
