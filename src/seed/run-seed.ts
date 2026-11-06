@@ -27,6 +27,7 @@ import { pairKey, type LanguagePair } from "@/shared/study-languages";
 import { assemblePlan } from "@/modules/study";
 import { scryptPasswords } from "@/modules/identity/infrastructure/crypto";
 import { systemClock } from "@/shared/clock";
+import { FakeLyricsProvider } from "@/modules/music/infrastructure/fake-lyrics-provider";
 import { isAppError } from "@/shared/errors";
 import { uuidGenerator } from "@/shared/ids";
 import { normalizeTerm, tokenize } from "@/shared/text";
@@ -38,6 +39,7 @@ import {
   SEED_PASSWORD,
   SEED_PLAN_LEVELS,
   SEED_PROFILES,
+  SEED_SONGS,
   SEED_WORKS,
   SHARED_MARKS,
   type EpisodeKey,
@@ -199,6 +201,33 @@ export async function runSeed(input: {
   log(
     `obras: ${SEED_WORKS.length} via ${metadata.name}, episódios cadastrados: ${episodeIdByKey.size}, trilhas prontas: ${seededPlans}`,
   );
+
+  const fallbackLyrics = new FakeLyricsProvider();
+  let seededSongs = 0;
+  for (const userId of userIdBySlug.values()) {
+    const playlist = await container.ensureDefaultPlaylist({ userId, language: SEED_PAIR.target });
+    for (const song of SEED_SONGS) {
+      const base = {
+        userId,
+        isAdmin: false,
+        playlistId: playlist.id,
+        videoUrl: song.youtubeVideoId,
+        artist: song.artist,
+        title: song.title,
+        pair: SEED_PAIR,
+        translateWithAi: false,
+      };
+      try {
+        await container.addSong({ ...base, lyrics: { kind: "provider", lyricsId: song.lrclibId } });
+      } catch (error) {
+        if (!isAppError(error)) throw error;
+        const fallback = await fallbackLyrics.get(song.fallbackLyricsId);
+        await container.addSong({ ...base, lyrics: { kind: "lrc", text: fallback?.syncedLrc ?? "" } });
+      }
+      seededSongs += 1;
+    }
+  }
+  log(`músicas: ${seededSongs} em ${userIdBySlug.size} playlists (letra do ${container.providers.lyrics})`);
 
   async function marksFor(
     episodeId: string,

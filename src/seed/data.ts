@@ -250,3 +250,40 @@ export const SHARED_MARKS: readonly {
   },
   { episode: "himym-1-3", by: ["lucas"], marks: [[15, 1, 3]], lines: [] },
 ];
+
+export const SEED_SONGS: readonly {
+  artist: string;
+  title: string;
+  youtubeVideoId: string;
+  lrclibId: string;
+  fallbackLyricsId: string;
+}[] = [
+  {
+    artist: "Taylor Swift",
+    title: "Shake It Off",
+    youtubeVideoId: "nfWlot6h_JM",
+    lrclibId: "183",
+    fallbackLyricsId: "fake-1",
+  },
+  {
+    artist: "Taylor Swift",
+    title: "Anti-Hero",
+    youtubeVideoId: "b1kbLwvqugk",
+    lrclibId: "326",
+    fallbackLyricsId: "fake-2",
+  },
+  {
+    artist: "Taylor Swift",
+    title: "Love Story",
+    youtubeVideoId: "8xg3vE8Ie_E",
+    lrclibId: "8202",
+    fallbackLyricsId: "fake-3",
+  },
+  {
+    artist: "Taylor Swift",
+    title: "Blank Space",
+    youtubeVideoId: "e-ORhEE9VVg",
+    lrclibId: "45",
+    fallbackLyricsId: "fake-4",
+  },
+];
