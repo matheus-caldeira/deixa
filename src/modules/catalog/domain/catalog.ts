@@ -2,7 +2,8 @@ import type { StudyLanguage } from "@/shared/study-languages";
 import type { CefrLevel } from "@/shared/levels";
 import { MS_PER_DAY } from "@/shared/time";
 
-export type MediaType = "series" | "movie";
+export type WorkType = "series" | "movie";
+export type MediaType = WorkType | "music";
 export type MetadataProviderName = "tmdb" | "fake";
 export type MetadataSource = MetadataProviderName | "manual";
 export type EpisodeStatus = "NONE" | "UPLOADED" | "PROCESSING" | "READY" | "FAILED" | "NEEDS_REVIEW";
@@ -90,7 +91,9 @@ export function isMetadataStale(syncedAt: Date | null, now: Date): boolean {
 }
 
 export function episodeLabel(type: MediaType, seasonNumber: number, episodeNumber: number): string {
-  return type === "movie" ? "Filme" : `T${seasonNumber} · E${episodeNumber}`;
+  if (type === "movie") return "Filme";
+  if (type === "music") return `Música ${episodeNumber}`;
+  return `T${seasonNumber} · E${episodeNumber}`;
 }
 
 export function posterUrl(posterPath: string | null): string | null {

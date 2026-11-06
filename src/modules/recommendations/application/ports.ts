@@ -1,4 +1,4 @@
-import type { MediaType, MetadataProvider, MetadataProviderName } from "@/modules/catalog";
+import type { WorkType, MetadataProvider, MetadataProviderName } from "@/modules/catalog";
 import type { CefrLevel } from "@/shared/levels";
 import type { Challenge, LearnerSignals } from "../domain/learner";
 import type { Vector } from "../domain/vectors";
@@ -25,7 +25,7 @@ export type WriterInput = {
   candidates: {
     key: string;
     title: string;
-    type: MediaType;
+    type: WorkType;
     year: number | null;
     genres: string[];
     overview: string;
@@ -45,7 +45,7 @@ export type Suggestion = {
   workKey: string;
   provider: MetadataProviderName;
   externalId: string;
-  type: MediaType;
+  type: WorkType;
   title: string;
   originalTitle: string;
   overview: string;

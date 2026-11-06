@@ -46,7 +46,10 @@ export function makeGetCatalogOverview(deps: {
         },
       ];
     });
-    return { entries, inProgress };
+    return {
+      entries: entries.filter((entry) => entry.media.type !== "music"),
+      inProgress: inProgress.filter((entry) => entry.media.type !== "music"),
+    };
   };
 }
 

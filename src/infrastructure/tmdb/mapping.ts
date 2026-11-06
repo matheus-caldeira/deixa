@@ -1,6 +1,6 @@
 import type {
   EpisodeMetadata,
-  MediaType,
+  WorkType,
   WorkCandidate,
   WorkDetails,
   WorkGenre,
@@ -85,7 +85,7 @@ export function mapSearchResults(localized: TmdbSearchMulti, english?: TmdbSearc
 }
 
 export function mapWorkList(
-  type: MediaType,
+  type: WorkType,
   list: TmdbWorkList,
   genreNames: ReadonlyMap<number, string>,
 ): WorkCandidate[] {

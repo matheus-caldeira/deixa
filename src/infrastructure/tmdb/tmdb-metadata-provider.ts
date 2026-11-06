@@ -2,7 +2,7 @@ import type {
   DiscoverQuery,
   DiscoverSort,
   EpisodeMetadata,
-  MediaType,
+  WorkType,
   MetadataProvider,
   WorkCandidate,
   WorkDetails,
@@ -34,7 +34,7 @@ import type { StudyLanguage } from "@/shared/study-languages";
 const PORTUGUESE = "pt-BR";
 const ENGLISH = "en-US";
 const TMDB_KIND = { series: "tv", movie: "movie" } as const;
-const MEDIA_TYPES: readonly MediaType[] = ["series", "movie"];
+const MEDIA_TYPES: readonly WorkType[] = ["series", "movie"];
 const TMDB_LANGUAGE: Record<StudyLanguage, string> = { en: "en", "pt-BR": "pt", es: "es", fr: "fr" };
 const POPULAR_FILTERS = {
   sort_by: "popularity.desc",
@@ -54,11 +54,11 @@ const DISCOVER_SORT: Record<DiscoverSort, Record<string, string>> = {
 export class TmdbMetadataProvider implements MetadataProvider {
   readonly name = "tmdb" as const;
 
-  private readonly genreNames = new Map<MediaType, Promise<ReadonlyMap<number, string>>>();
+  private readonly genreNames = new Map<WorkType, Promise<ReadonlyMap<number, string>>>();
 
   constructor(private readonly client: TmdbClient) {}
 
-  private genresFor(type: MediaType): Promise<ReadonlyMap<number, string>> {
+  private genresFor(type: WorkType): Promise<ReadonlyMap<number, string>> {
     const known = this.genreNames.get(type);
     if (known) return known;
     const loading = this.client
@@ -69,7 +69,7 @@ export class TmdbMetadataProvider implements MetadataProvider {
     return loading;
   }
 
-  async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
+  async listRelatedWorks(type: WorkType, externalId: string): Promise<WorkCandidate[]> {
     const id = tmdbNumericId(type, externalId);
     if (!id) return [];
     const [list, genres] = await Promise.all([
@@ -140,7 +140,7 @@ export class TmdbMetadataProvider implements MetadataProvider {
     return mapSearchResults(localized, english);
   }
 
-  async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
+  async getWork(type: WorkType, externalId: string): Promise<WorkDetails> {
     const id = tmdbNumericId(type, externalId);
     if (!id) throw new AppError("METADATA_NOT_FOUND");
     if (type === "movie") {

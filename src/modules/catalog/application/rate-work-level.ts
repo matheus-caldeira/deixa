@@ -3,7 +3,7 @@ import { AppError } from "@/shared/errors";
 import type { Clock } from "@/shared/clock";
 import { CEFR_LEVELS, levelIndex } from "@/shared/levels";
 import { cleanLlmText } from "@/shared/llm-text";
-import type { MediaType } from "../domain/catalog";
+import type { WorkType } from "../domain/catalog";
 import { RATING_KEY_PATTERN, sameRange, type LevelRange } from "../domain/level-ratings";
 import {
   makeResolveLevelRatings,
@@ -18,7 +18,7 @@ export const MAX_LEVEL_REASON_CHARS = 280;
 const MAX_OVERVIEW_CHARS = 1200;
 
 export type LevelRaterInput = {
-  type: MediaType;
+  type: WorkType;
   title: string;
   originalTitle: string;
   year: number | null;
@@ -53,7 +53,7 @@ export function makeRateWorkLevel(deps: Deps) {
   const resolve = makeResolveLevelRatings(deps);
   return async function rateWorkLevel(input: {
     actor: { userId: string; isAdmin: boolean };
-    type: MediaType;
+    type: WorkType;
     externalId: string;
   }): Promise<RatedWork> {
     if (!input.actor.isAdmin) throw new AppError("FORBIDDEN", "adminOnlyLevelRating");

@@ -30,6 +30,10 @@ export type AppErrorCode =
   | "AUDIO_BUSY"
   | "AUDIO_UNAVAILABLE"
   | "ACCOUNT_NOT_FOUND"
+  | "MUSIC_INVALID_VIDEO"
+  | "MUSIC_LYRICS_UNAVAILABLE"
+  | "MUSIC_TRANSLATION_MISMATCH"
+  | "MUSIC_PROVIDER_UNAVAILABLE"
   | "SETUP_CODE_INVALID";
 
 export type MessageParams = Record<string, string | number>;

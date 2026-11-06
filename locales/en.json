@@ -174,6 +174,10 @@
     "AUDIO_BUSY": "We are already generating other audio for you. Try again in a moment.",
     "AUDIO_UNAVAILABLE": "Audio is not available right now.",
     "ACCOUNT_NOT_FOUND": "We could not find this account.",
+    "MUSIC_INVALID_VIDEO": "This does not look like a YouTube link.",
+    "MUSIC_LYRICS_UNAVAILABLE": "We found no synced lyrics for this song. Pick another result or paste the lyrics in LRC format.",
+    "MUSIC_TRANSLATION_MISMATCH": "The translation must have one line for each lyric line, or be an LRC with the same times.",
+    "MUSIC_PROVIDER_UNAVAILABLE": "The lyrics search is down. Try again in a moment or paste the lyrics.",
     "detail": {
       "tooManyAttempts": "Too many attempts. Wait a few minutes and try again.",
       "chooseZip": "Choose a .deixa.zip file.",
@@ -1438,6 +1442,7 @@
     "level": "Level {level}",
     "label": {
       "movie": "Full movie",
+      "song": "Song {episode}",
       "episode": "S{season} · E{episode}",
       "personal": "{level} · episode {episode}"
     },

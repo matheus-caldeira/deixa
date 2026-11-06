@@ -72,7 +72,7 @@ export interface SubtitleRepository {
 export type EpisodeLocation = {
   episodeId: string;
   mediaId: string;
-  mediaType: "series" | "movie";
+  mediaType: "series" | "movie" | "music";
   seasonNumber: number;
 };
 

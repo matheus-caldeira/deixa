@@ -75,6 +75,12 @@ export const episodeLevelPayloadSchema = z.object({
   language,
 });
 
+export const musicTranslatePayloadSchema = z.object({
+  userId: z.uuid(),
+  episodeId: z.uuid(),
+  pair,
+});
+
 export const PAYLOAD_SCHEMAS = {
   generate_plan: generatePlanPayloadSchema,
   card_batch: cardBatchPayloadSchema,
@@ -86,6 +92,7 @@ export const PAYLOAD_SCHEMAS = {
   personal_series_description: personalSeriesDescriptionPayloadSchema,
   level_sources_sync: levelSourcesSyncPayloadSchema,
   episode_level: episodeLevelPayloadSchema,
+  music_translate: musicTranslatePayloadSchema,
 } satisfies Record<JobKind, z.ZodType>;
 
 export type JobPayloads = { [K in JobKind]: z.infer<(typeof PAYLOAD_SCHEMAS)[K]> };

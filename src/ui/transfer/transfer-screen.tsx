@@ -18,7 +18,7 @@ import { useErrorText } from "../shell/use-error-text";
 export type TransferWork = {
   id: string;
   title: string;
-  type: "series" | "movie";
+  type: "series" | "movie" | "music";
   seasons: {
     seasonNumber: number;
     episodes: { id: string; episodeNumber: number; title: string; ready: boolean }[];

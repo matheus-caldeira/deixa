@@ -65,6 +65,9 @@ function setup() {
     episode_level: async (payload) => {
       calls.push(`episode-level:${payload.episodeId}`);
     },
+    music_translate: async (payload) => {
+      calls.push(`music:${payload.episodeId}`);
+    },
   };
   const run = makeRunClaimedJob({ jobs, handlers, clock });
   return {

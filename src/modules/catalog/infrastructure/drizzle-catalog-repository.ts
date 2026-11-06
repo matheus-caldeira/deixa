@@ -73,7 +73,7 @@ function toGenres(value: unknown): WorkGenre[] {
 function toMedia(row: MediaRow, uploaderName: string | null): MediaItem {
   return {
     id: row.id,
-    type: row.type === "movie" ? "movie" : "series",
+    type: row.type === "movie" || row.type === "music" ? row.type : "series",
     title: row.title,
     originalTitle: row.originalTitle,
     overview: row.overview,

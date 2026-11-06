@@ -20,7 +20,7 @@ export type ReviewCard = {
   contextTranslation: string | null;
   source: {
     mediaTitle: string | null;
-    mediaType: "series" | "movie" | null;
+    mediaType: "series" | "movie" | "music" | null;
     seasonNumber: number | null;
     episodeNumber: number | null;
     sourceKind: string;
@@ -53,9 +53,11 @@ export function ReviewScreen({ view, tabs }: { view: ReviewView; tabs?: React.Re
     const episode =
       source.mediaType === "movie"
         ? t("movie")
-        : source.seasonNumber !== null && source.episodeNumber !== null
-          ? t("seasonEpisode", { season: source.seasonNumber, episode: source.episodeNumber })
-          : null;
+        : source.mediaType === "music"
+          ? null
+          : source.seasonNumber !== null && source.episodeNumber !== null
+            ? t("seasonEpisode", { season: source.seasonNumber, episode: source.episodeNumber })
+            : null;
     const suffix = t.has(`sources.${source.sourceKind}`) ? t(`sources.${source.sourceKind}`) : null;
     return [source.mediaTitle, episode, suffix].filter((part) => part).join(" · ") || t("title");
   };

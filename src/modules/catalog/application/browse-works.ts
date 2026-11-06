@@ -1,5 +1,5 @@
 import type { StudyLanguage } from "@/shared/study-languages";
-import type { MediaType } from "../domain/catalog";
+import type { WorkType } from "../domain/catalog";
 import type { LevelRange } from "../domain/level-ratings";
 import {
   makeResolveLevelRatings,
@@ -41,7 +41,7 @@ export function makeBrowseWorks(deps: Deps) {
   const resolve = makeResolveLevelRatings(deps);
   return async function browseWorks(input: {
     query: string;
-    type: MediaType;
+    type: WorkType;
     language: StudyLanguage | null;
     sort: DiscoverSort;
     page: number;

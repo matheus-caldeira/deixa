@@ -10,7 +10,7 @@ import {
   isMetadataStale,
   posterColorsFor,
   type MediaItem,
-  type MediaType,
+  type WorkType,
 } from "../domain/catalog";
 import type { CatalogRepository, MetadataProvider, WorkDetails } from "./ports";
 
@@ -93,7 +93,7 @@ async function storeWork(
 export function makeRegisterWork(deps: Deps) {
   return async function registerWork(input: {
     userId: string | null;
-    type: MediaType;
+    type: WorkType;
     externalId: string;
     force?: boolean;
   }): Promise<{ mediaId: string; fetched: boolean }> {
@@ -126,7 +126,7 @@ export function makeRefreshWork(deps: Deps) {
   }): Promise<{ refreshed: boolean }> {
     const media = await deps.catalog.findMediaById(input.mediaId);
     if (!media) throw new AppError("MEDIA_NOT_FOUND");
-    if (media.metadataProvider !== deps.metadata.name) return { refreshed: false };
+    if (media.type === "music" || media.metadataProvider !== deps.metadata.name) return { refreshed: false };
     if (!input.force && !isMetadataStale(media.metadataSyncedAt, deps.clock.now()))
       return { refreshed: false };
     const result = await registerWork({

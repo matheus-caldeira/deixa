@@ -1,7 +1,7 @@
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import { z } from "zod";
 import { AppError } from "@/shared/errors";
-import type { MediaType } from "../domain/catalog";
+import type { WorkType } from "../domain/catalog";
 import type {
   DiscoverQuery,
   EpisodeMetadata,
@@ -75,7 +75,7 @@ export class StaticMetadataProvider implements MetadataProvider {
     this.works = staticCatalogSchema.parse(catalog).works;
   }
 
-  private find(type: MediaType, externalId: string): StaticWork {
+  private find(type: WorkType, externalId: string): StaticWork {
     const work = this.works.find((candidate) => candidate.externalId === externalId);
     if (!work || work.type !== type) throw new AppError("METADATA_NOT_FOUND");
     return work;
@@ -97,7 +97,7 @@ export class StaticMetadataProvider implements MetadataProvider {
       .map(toSummary);
   }
 
-  async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
+  async getWork(type: WorkType, externalId: string): Promise<WorkDetails> {
     const work = this.find(type, externalId);
     return {
       ...toSummary(work),
@@ -119,7 +119,7 @@ export class StaticMetadataProvider implements MetadataProvider {
     return season.episodes.map((episode) => ({ ...episode, overview: "" }));
   }
 
-  async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
+  async listRelatedWorks(type: WorkType, externalId: string): Promise<WorkCandidate[]> {
     const origin = this.works.find((work) => work.externalId === externalId && work.type === type);
     if (!origin) return [];
     return this.works.flatMap((work, position) =>

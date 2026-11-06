@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { StudyLanguage } from "@/shared/study-languages";
-import type { MediaType } from "../domain/catalog";
+import type { WorkType } from "../domain/catalog";
 import { RATING_KEY_PATTERN, levelRangeTextSchema, type LevelRange } from "../domain/level-ratings";
 import type { BuiltinLevelGuide } from "../application/level-sources";
 import type {
@@ -30,7 +30,7 @@ export function levelGuideEntries(): { externalId: string; range: LevelRange }[]
 
 export type LevelRangeResolver = (externalIds: readonly string[]) => Promise<ReadonlyMap<string, LevelRange>>;
 
-const KIND_BY_TYPE: Record<MediaType, string> = { series: "tv", movie: "movie" };
+const KIND_BY_TYPE: Record<WorkType, string> = { series: "tv", movie: "movie" };
 
 const belongs = (work: WorkSummary) => work.externalId.startsWith(`${KIND_BY_TYPE[work.type]}:`);
 
@@ -56,7 +56,7 @@ export class LevelGuidedMetadataProvider implements MetadataProvider {
     return this.guided(await this.inner.searchWorks(query));
   }
 
-  async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
+  async getWork(type: WorkType, externalId: string): Promise<WorkDetails> {
     const details = await this.inner.getWork(type, externalId);
     const range = belongs(details)
       ? (await this.resolve([details.externalId])).get(details.externalId)
@@ -68,7 +68,7 @@ export class LevelGuidedMetadataProvider implements MetadataProvider {
     return this.inner.getSeasonEpisodes(externalId, seasonNumber);
   }
 
-  async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
+  async listRelatedWorks(type: WorkType, externalId: string): Promise<WorkCandidate[]> {
     return this.guided(await this.inner.listRelatedWorks(type, externalId));
   }
 

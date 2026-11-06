@@ -527,5 +527,17 @@
     "bps": true,
     "folderMillis": 1793749814865,
     "hash": "55d9f9b14f2e3d81207340a702d59e915ba1b46bed9d317c59f4d4f269319ca2"
+  },
+  {
+    "tag": "0036_song_tracks",
+    "sql": [
+      "CREATE TABLE \"song_tracks\" (\n\t\"episode_id\" uuid PRIMARY KEY NOT NULL,\n\t\"media_item_id\" uuid NOT NULL,\n\t\"youtube_video_id\" text NOT NULL,\n\t\"artist\" text NOT NULL,\n\t\"track_title\" text NOT NULL,\n\t\"duration_ms\" integer,\n\t\"lead_in_ms\" integer DEFAULT 0 NOT NULL,\n\t\"pauses\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"lyrics_source\" text NOT NULL,\n\t\"lyrics_external_id\" text,\n\t\"translation_source\" text DEFAULT 'none' NOT NULL,\n\t\"created_at\" timestamp with time zone NOT NULL\n);\n",
+      "\nALTER TABLE \"song_tracks\" ADD CONSTRAINT \"song_tracks_episode_id_episodes_id_fk\" FOREIGN KEY (\"episode_id\") REFERENCES \"public\".\"episodes\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"song_tracks\" ADD CONSTRAINT \"song_tracks_media_item_id_media_items_id_fk\" FOREIGN KEY (\"media_item_id\") REFERENCES \"public\".\"media_items\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"song_tracks_media_video\" ON \"song_tracks\" USING btree (\"media_item_id\",\"youtube_video_id\");"
+    ],
+    "bps": true,
+    "folderMillis": 1794007702237,
+    "hash": "9b8a58ddbb6a36a32b91e19160ed5ff7879e65028afeb191ff16619416f47bf2"
   }
 ]

@@ -12,7 +12,7 @@ export type DueCardRecord = {
   contextTranslation: string | null;
   pronunciation: string | null;
   mediaTitle: string | null;
-  mediaType: "series" | "movie" | null;
+  mediaType: "series" | "movie" | "music" | null;
   seasonNumber: number | null;
   episodeNumber: number | null;
   sourceKind: string;

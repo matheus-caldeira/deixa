@@ -6,6 +6,7 @@ import type {
   EpisodeContext,
   MediaItem,
   MediaType,
+  WorkType,
   MetadataProviderName,
   MetadataSource,
   PosterColors,
@@ -16,7 +17,7 @@ import type {
 export type WorkSummary = {
   provider: MetadataProviderName;
   externalId: string;
-  type: MediaType;
+  type: WorkType;
   title: string;
   originalTitle: string;
   overview: string;
@@ -39,7 +40,7 @@ export type WorkCandidate = WorkSummary & {
 export const DISCOVER_SORTS = ["popular", "votes", "rating"] as const;
 export type DiscoverSort = (typeof DISCOVER_SORTS)[number];
 export type DiscoverQuery = {
-  type: MediaType;
+  type: WorkType;
   language: StudyLanguage | null;
   sort: DiscoverSort;
   page: number;
@@ -66,9 +67,9 @@ export type EpisodeMetadata = {
 export interface MetadataProvider {
   readonly name: MetadataProviderName;
   searchWorks(query: string): Promise<WorkSummary[]>;
-  getWork(type: MediaType, externalId: string): Promise<WorkDetails>;
+  getWork(type: WorkType, externalId: string): Promise<WorkDetails>;
   getSeasonEpisodes(externalId: string, seasonNumber: number): Promise<EpisodeMetadata[]>;
-  listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]>;
+  listRelatedWorks(type: WorkType, externalId: string): Promise<WorkCandidate[]>;
   listPopularWorks(language: StudyLanguage): Promise<WorkCandidate[]>;
   discoverWorks(query: DiscoverQuery): Promise<WorkPage>;
 }

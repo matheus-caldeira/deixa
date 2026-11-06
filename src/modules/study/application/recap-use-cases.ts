@@ -36,7 +36,7 @@ export interface RecapRepository {
 }
 
 export type RecapLabel =
-  | { kind: "catalog"; mediaType: "series" | "movie"; season: number; episode: number }
+  | { kind: "catalog"; mediaType: "series" | "movie" | "music"; season: number; episode: number }
   | { kind: "personal"; level: string; episode: number };
 
 export type RecapInfo = {

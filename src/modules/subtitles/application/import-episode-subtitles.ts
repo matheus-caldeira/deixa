@@ -43,6 +43,8 @@ const PERCENT = 100;
 
 function episodeDirectory(location: EpisodeLocation): string {
   if (location.mediaType === "movie") return `catalog/movies/${location.mediaId}`;
+  if (location.mediaType === "music")
+    return `catalog/music/${location.mediaId}/episodes/${location.episodeId}`;
   return `catalog/series/${location.mediaId}/seasons/${location.seasonNumber}/episodes/${location.episodeId}`;
 }
 

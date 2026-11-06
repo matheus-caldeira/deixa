@@ -1,7 +1,7 @@
 import { normalizeLanguageTag, type StudyLanguage } from "@/shared/study-languages";
 import { AppError } from "@/shared/errors";
 import type { CefrLevel } from "@/shared/levels";
-import type { MediaType, PosterColors, WorkGenre } from "../domain/catalog";
+import type { WorkType, PosterColors, WorkGenre } from "../domain/catalog";
 import type {
   DiscoverQuery,
   EpisodeMetadata,
@@ -15,7 +15,7 @@ import type {
 type FakeWork = {
   slug: string;
   title: string;
-  type: MediaType;
+  type: WorkType;
   year: number;
   levels: readonly [CefrLevel, CefrLevel];
   accent: string;
@@ -233,7 +233,7 @@ export class FakeMetadataProvider implements MetadataProvider {
     return FAKE_WORKS.filter((work) => work.title.toLowerCase().includes(needle)).map(toSummary);
   }
 
-  async getWork(type: MediaType, externalId: string): Promise<WorkDetails> {
+  async getWork(type: WorkType, externalId: string): Promise<WorkDetails> {
     this.calls.work += 1;
     const work = findWork(externalId);
     if (work.type !== type) throw new AppError("METADATA_NOT_FOUND");
@@ -251,7 +251,7 @@ export class FakeMetadataProvider implements MetadataProvider {
     };
   }
 
-  async listRelatedWorks(type: MediaType, externalId: string): Promise<WorkCandidate[]> {
+  async listRelatedWorks(type: WorkType, externalId: string): Promise<WorkCandidate[]> {
     const origin = FAKE_WORKS.find((work) => `${EXTERNAL_PREFIX}${work.slug}` === externalId);
     if (!origin || origin.type !== type) return [];
     return FAKE_WORKS.flatMap((work, position) =>

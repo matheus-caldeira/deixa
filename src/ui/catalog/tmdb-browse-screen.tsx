@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { openTmdbWorkAction, rateWorkLevelAction } from "@/app/actions/catalog";
-import type { DiscoverSort, MediaType } from "@/modules/catalog";
+import type { DiscoverSort, WorkType } from "@/modules/catalog";
 import type { LevelFit } from "@/shared/levels";
 import { STUDY_LANGUAGES, type StudyLanguage } from "@/shared/study-languages";
 import { BackIcon, SearchIcon } from "../icons";
@@ -16,7 +16,7 @@ import { routes } from "@/shared/routes";
 
 export type TmdbBrowseFilters = {
   query: string;
-  type: MediaType;
+  type: WorkType;
   language: StudyLanguage | "all";
   sort: DiscoverSort;
   page: number;
@@ -35,7 +35,7 @@ export type TmdbWorkView = {
 };
 
 const SORTS: DiscoverSort[] = ["popular", "votes", "rating"];
-const TYPES: MediaType[] = ["series", "movie"];
+const TYPES: WorkType[] = ["series", "movie"];
 const LANGUAGES: (StudyLanguage | "all")[] = [...STUDY_LANGUAGES, "all"];
 
 function hrefFor(filters: TmdbBrowseFilters, change: Partial<TmdbBrowseFilters>): string {
