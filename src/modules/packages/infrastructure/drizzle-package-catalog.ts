@@ -11,7 +11,7 @@ import { audioHash, type AudioAssetRepository, type Voice } from "@/modules/audi
 import type { CatalogRepository, MediaItem } from "@/modules/catalog";
 import { posterColorsFor } from "@/modules/catalog";
 import type { LearningRepository } from "@/modules/learning";
-import type { MusicRepository, Song } from "@/modules/music";
+import { playlistExternalId, type MusicRepository, type Song } from "@/modules/music";
 import type { SubtitleRepository } from "@/modules/subtitles";
 import type { IdGenerator } from "@/shared/ids";
 import type { PackagedCard, PackagedSong } from "../domain/package";
@@ -217,12 +217,23 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
     }));
   }
 
+  private async mayExtend(
+    media: MediaItem,
+    work: Parameters<PackageCatalogWriter["ensureWork"]>[0],
+  ): Promise<boolean> {
+    if (media.type !== "music") return true;
+    const playlist = await this.deps.songs.findPlaylist(media.id);
+    return playlist?.createdBy === work.createdBy;
+  }
+
   async ensureWork(work: Parameters<PackageCatalogWriter["ensureWork"]>[0]) {
-    const existing = await this.deps.catalog.findMediaByExternal(work.metadataProvider, work.externalId);
+    const found = await this.deps.catalog.findMediaByExternal(work.metadataProvider, work.externalId);
+    const existing = found && (await this.mayExtend(found, work)) ? found : null;
     let mediaId = existing?.id;
     if (!mediaId) {
+      const id = this.deps.ids.next();
       mediaId = await this.deps.catalog.upsertMedia({
-        id: this.deps.ids.next(),
+        id,
         type: work.type,
         title: work.title,
         originalLanguage: "en",
@@ -230,7 +241,7 @@ export class DrizzlePackageCatalog implements PackageCatalogReader, PackageCatal
         overview: work.overview,
         year: work.year,
         metadataProvider: work.metadataProvider,
-        externalId: work.externalId,
+        externalId: found && !existing ? playlistExternalId(id) : work.externalId,
         posterPath: work.posterPath,
         backdropPath: work.backdropPath,
         posterColors: work.posterColors ?? posterColorsFor(work.title),

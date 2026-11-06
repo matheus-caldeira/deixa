@@ -41,6 +41,8 @@ const uploadSchema = z.object({
 });
 const tmdbWorkSchema = z.object({ type: mediaTypeSchema, externalId: z.string().regex(/^(tv|movie):\d+$/) });
 
+const isMusicWork = (context: { media: { type: string } }): boolean => context.media.type === "music";
+
 export const uploadSubtitlesSchema = z.object({
   mediaId: idSchema,
   episodeId: idSchema,
@@ -197,7 +199,9 @@ export const catalogOperations = {
     run: async ({ user, app, schedule, readSample }, input): Promise<ImportView> => {
       const episodeId = input.episodeId;
       const context = await app.getEpisodeContext(episodeId);
-      if (!context || context.media.id !== input.mediaId) throw new AppError("EPISODE_NOT_FOUND");
+      if (!context || context.media.id !== input.mediaId || isMusicWork(context)) {
+        throw new AppError("EPISODE_NOT_FOUND");
+      }
       const pair = pairOf(user.preferences);
       const sample = input.useSample && app.devShortcuts;
       const target = sample
@@ -298,7 +302,7 @@ export const catalogOperations = {
     run: async ({ user, app, schedule }, input): Promise<SourceImportView> => {
       const { mediaId, episodeId, targetFileId, nativeFileId } = input;
       const context = await app.getEpisodeContext(episodeId);
-      if (!context || context.media.id !== mediaId) throw new AppError("EPISODE_NOT_FOUND");
+      if (!context || context.media.id !== mediaId || isMusicWork(context)) throw new AppError("EPISODE_NOT_FOUND");
       const result = await app.importFromSource({
         userId: user.id,
         episodeId,
