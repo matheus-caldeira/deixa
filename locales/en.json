@@ -1641,6 +1641,10 @@
       "title": "Subtitles and scripts",
       "body": "Subtitles and scripts of real titles are copyrighted. Use them for personal or family study. Exporting a package for your own copy is personal use; publishing packages with subtitles is redistribution and needs permission from the rights holders."
     },
+    "music": {
+      "title": "Music",
+      "body": "The video plays through the official YouTube player embedded in the page; YouTube receives the view like any embedded video and follows its own policy. When you search for lyrics, the artist and title go to LRCLIB. The lyrics stay in the installation's catalog for personal or family study; lyrics are copyrighted and must not be published in packages."
+    },
     "control": {
       "title": "What you control",
       "body": "You can remove your AI keys, export your data in a personal package encrypted with your password and import it into another installation. Deleting the account from the app is not available yet."
@@ -1650,9 +1654,9 @@
     "signIn": "Sign in",
     "signUp": "Create account",
     "hero": {
-      "eyebrow": "Languages through your shows",
-      "title": "Learn from the shows and movies you already watch.",
-      "lead": "{app} turns an episode's subtitles into reading, cards, exercises and conversation. You study the lines you are going to hear, with the scene still fresh in your mind.",
+      "eyebrow": "Languages through your shows and songs",
+      "title": "Learn from the shows, movies and songs you already love.",
+      "lead": "{app} turns an episode's subtitles or a music video's lyrics into reading, cards, exercises and conversation. You study what you are going to hear, with the scene still fresh in your mind.",
       "primary": "Get started",
       "secondary": "See how it works",
       "imageAlt": "Explore screen on a computer, with the catalog and suggestions"
@@ -1732,6 +1736,10 @@
       "keys": {
         "title": "Your AI, your keys",
         "body": "Google, OpenAI, Anthropic, OpenRouter or Ollama, with a spending limit if you want one."
+      },
+      "music": {
+        "title": "Music",
+        "body": "The video plays on top and the synced lyrics scroll below, with translation and cards."
       }
     },
     "tutor": {
@@ -1742,6 +1750,21 @@
       "point2": "The cards you pick become a personal study series",
       "point3": "On a review card, say the sentence and see what was missing",
       "imageAlt": "Talk screen with the tutor's topics"
+    },
+    "music": {
+      "eyebrow": "Music",
+      "title": "Study with the songs you listen to",
+      "body": "Paste the YouTube link of the video. {app} finds the lyrics with timings, plays the video on top and scrolls the lyrics below, highlighting the current line, like a songbook that follows the song.",
+      "point1": "Line-by-line AI translation, timed to each verse",
+      "point2": "Adjust the intro delay and the pauses in the video",
+      "point3": "Mark verses and turn them into cards, just like an episode",
+      "label": "Synced lyrics example",
+      "time": "Verse 3 · 00:42",
+      "line1": "The light comes in through the window",
+      "line2": "And I am still in my coat",
+      "line3": "We said we would leave by sunrise",
+      "translation": "E eu ainda estou de casaco",
+      "caption": "Made-up lyrics, for illustration only. The line being sung is highlighted."
     },
     "modes": {
       "eyebrow": "Two ways to use it",
@@ -1763,7 +1786,7 @@
     },
     "trust": {
       "title": "Your data and the ground rules",
-      "body": "{app} does not play video or distribute subtitles: you bring files you have the right to use. Your AI keys are encrypted and never come back to the screen. Your voice recordings are not stored.",
+      "body": "{app} does not host video or distribute subtitles or lyrics: you bring files you have the right to use, and music videos play through the official YouTube player. Your AI keys are encrypted and never come back to the screen. Your voice recordings are not stored.",
       "link": "Read privacy and rights"
     },
     "final": {
@@ -1774,7 +1797,8 @@
     "footer": {
       "free": "{app} · source available for non-commercial use",
       "privacy": "Privacy and rights",
-      "tmdb": "Title metadata from TMDB, not endorsed or certified by TMDB."
+      "tmdb": "Title metadata from TMDB, not endorsed or certified by TMDB.",
+      "lyrics": "Synced lyrics by LRCLIB; videos through the YouTube player."
     }
   },
   "desktop": {

@@ -1641,6 +1641,10 @@
       "title": "Legendas e roteiros",
       "body": "Legendas e roteiros de obras reais têm direitos autorais. Use-os para estudo pessoal ou da família. Exportar um pacote para uma cópia sua é uso pessoal; publicar pacotes com legendas é redistribuição e depende de autorização de quem tem os direitos."
     },
+    "music": {
+      "title": "Músicas",
+      "body": "O clipe toca pelo player oficial do YouTube, embutido na página; o YouTube recebe a visualização como em qualquer vídeo incorporado e segue a política dele. Ao buscar uma letra, o artista e o título vão para o LRCLIB. A letra fica no catálogo da instalação para estudo pessoal ou da família; letras têm direitos autorais e não devem ser publicadas em pacotes."
+    },
     "control": {
       "title": "O que você controla",
       "body": "Você pode remover suas chaves de IA, exportar seus dados num pacote pessoal cifrado com a sua senha e importá-lo em outra instalação. Apagar a conta pela tela ainda não existe."
@@ -1650,9 +1654,9 @@
     "signIn": "Entrar",
     "signUp": "Criar conta",
     "hero": {
-      "eyebrow": "Idiomas com as suas séries",
-      "title": "Aprenda com as séries e os filmes que você já assiste.",
-      "lead": "O {app} transforma a legenda do episódio em leitura, cards, exercícios e conversa. Você estuda as falas que vai ouvir, com a cena ainda na cabeça.",
+      "eyebrow": "Idiomas com as suas séries e músicas",
+      "title": "Aprenda com as séries, os filmes e as músicas que você já curte.",
+      "lead": "O {app} transforma a legenda do episódio ou a letra do clipe em leitura, cards, exercícios e conversa. Você estuda o que vai ouvir, com a cena ainda na cabeça.",
       "primary": "Começar agora",
       "secondary": "Ver como funciona",
       "imageAlt": "Tela Explorar no computador, com o catálogo de obras e as sugestões"
@@ -1732,6 +1736,10 @@
       "keys": {
         "title": "Sua IA, suas chaves",
         "body": "Google, OpenAI, Anthropic, OpenRouter ou Ollama, com limite de gasto se quiser."
+      },
+      "music": {
+        "title": "Músicas",
+        "body": "O clipe toca em cima e a letra sincronizada rola embaixo, com tradução e cards."
       }
     },
     "tutor": {
@@ -1742,6 +1750,21 @@
       "point2": "Os cards que você escolher viram uma série pessoal de estudo",
       "point3": "No card de revisão, fale a frase e veja o que faltou",
       "imageAlt": "Tela Conversar com os temas do tutor"
+    },
+    "music": {
+      "eyebrow": "Músicas",
+      "title": "Estude com as músicas que você ouve",
+      "body": "Cole o link do clipe no YouTube. O {app} busca a letra com os tempos, toca o vídeo em cima e rola a letra embaixo, com a linha atual em destaque, como numa cifra que acompanha a música.",
+      "point1": "Tradução linha a linha pela IA, no tempo de cada verso",
+      "point2": "Ajuste o atraso da introdução e as pausas do clipe",
+      "point3": "Marque os versos e transforme em cards, como num episódio",
+      "label": "Exemplo de letra sincronizada",
+      "time": "Verso 3 · 00:42",
+      "line1": "The light comes in through the window",
+      "line2": "And I am still in my coat",
+      "line3": "We said we would leave by sunrise",
+      "translation": "E eu ainda estou de casaco",
+      "caption": "Letra fictícia, só para ilustrar. A linha que está tocando fica em destaque."
     },
     "modes": {
       "eyebrow": "Dois jeitos de usar",
@@ -1763,7 +1786,7 @@
     },
     "trust": {
       "title": "Seus dados e as regras do jogo",
-      "body": "O {app} não reproduz vídeo nem distribui legendas: você traz os arquivos que tem direito de usar. Suas chaves de IA ficam cifradas e nunca voltam para a tela. A gravação da sua voz não é guardada.",
+      "body": "O {app} não hospeda vídeo nem distribui legendas ou letras: você traz os arquivos que tem direito de usar, e os clipes tocam pelo player oficial do YouTube. Suas chaves de IA ficam cifradas e nunca voltam para a tela. A gravação da sua voz não é guardada.",
       "link": "Ler privacidade e direitos"
     },
     "final": {
@@ -1774,7 +1797,8 @@
     "footer": {
       "free": "{app} · código aberto para uso não comercial",
       "privacy": "Privacidade e direitos",
-      "tmdb": "Metadados de obras pelo TMDB, sem endosso ou certificação do TMDB."
+      "tmdb": "Metadados de obras pelo TMDB, sem endosso ou certificação do TMDB.",
+      "lyrics": "Letras sincronizadas pelo LRCLIB; vídeos pelo player do YouTube."
     }
   },
   "desktop": {

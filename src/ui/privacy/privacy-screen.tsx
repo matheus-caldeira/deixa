@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { APP_NAME } from "@/shared/app";
 import { BackIcon } from "../icons";
 
-const SECTIONS = ["stored", "where", "ai", "audio", "limits", "rights", "control"] as const;
+const SECTIONS = ["stored", "where", "ai", "audio", "limits", "rights", "music", "control"] as const;
 
 export function PrivacyScreen() {
   const t = useTranslations("privacy");

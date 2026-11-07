@@ -36,7 +36,7 @@ test("login → buscar obra → upload EN+PT → ler → marcar → gerar cards 
 }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/welcome$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("séries e os filmes");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("os filmes e as músicas");
   await page.getByRole("link", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await signIn(page, "Matheus");

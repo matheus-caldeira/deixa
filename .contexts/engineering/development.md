@@ -53,25 +53,26 @@ Em desenvolvimento, a configuração vem do `.env`, validado com Zod em `src/inf
 [`.env.example`](../../.env.example) lista os nomes, sem valores. No aplicativo instalado não há `.env`: o banco é
 configurado na tela `/setup` e o resto no perfil.
 
-| Variável                              | Para quê                                                                                |
-| ------------------------------------- | --------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                        | Conexão com o Postgres. Sem ela, vale o endereço guardado pela tela `/setup`            |
-| `AI_CREDENTIALS_MASTER_KEY`           | Opcional. Substitui a chave mestra do arquivo `master-key.txt` (testes)                 |
-| `TMDB_READ_ACCESS_TOKEN`              | Chave global do TMDB (token de leitura)                                                 |
-| `TMDB_API_KEY`                        | Chave global do TMDB (chave de API), usada se o token for recusado                      |
-| `OPENSUBTITLES_API_KEY`               | Chave global do OpenSubtitles                                                           |
-| `OPENSUBTITLES_USERNAME`              | Opcional: usuário para login antes do download                                          |
-| `OPENSUBTITLES_PASSWORD`              | Opcional: senha desse usuário                                                           |
-| `GEMINI_API_KEY`                      | Chave global do Gemini, para quem não cadastrou a própria                               |
-| `GEMINI_MODEL`                        | Modelo inicial de geração (Google); o administrador troca em Configurações              |
-| `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` | Padrão do teto de downloads por conta; o administrador pode trocar no perfil            |
-| `KOKORO_URL`                          | Padrão do endereço do Kokoro; o administrador pode trocar no perfil                     |
-| `DATA_DIR`                            | Diretório das legendas e dos áudios (padrão `data`, fora do git)                        |
-| `DEIXA_CONFIG_DIR`                    | Pasta de `master-key.txt`, `database-url.txt` e dos arquivos locais da casca            |
-| `SESSION_COOKIE_SECURE`               | `true` por padrão; `false` permite entrar por HTTP na rede interna                      |
-| `DEV_SHORTCUTS`                       | `true` mostra o atalho de arquivos de exemplo                                           |
-| `JOBS_MODE`                           | `inline` (padrão) roda os jobs no próprio servidor; `worker` deixa para o `pnpm worker` |
-| `JOBS_POLL_MS`                        | Intervalo do worker entre consultas à fila (padrão 2000)                                |
+| Variável                              | Para quê                                                                                           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                        | Conexão com o Postgres. Sem ela, vale o endereço guardado pela tela `/setup`                       |
+| `AI_CREDENTIALS_MASTER_KEY`           | Opcional. Substitui a chave mestra do arquivo `master-key.txt` (testes)                            |
+| `TMDB_READ_ACCESS_TOKEN`              | Chave global do TMDB (token de leitura)                                                            |
+| `TMDB_API_KEY`                        | Chave global do TMDB (chave de API), usada se o token for recusado                                 |
+| `OPENSUBTITLES_API_KEY`               | Chave global do OpenSubtitles                                                                      |
+| `OPENSUBTITLES_USERNAME`              | Opcional: usuário para login antes do download                                                     |
+| `OPENSUBTITLES_PASSWORD`              | Opcional: senha desse usuário                                                                      |
+| `GEMINI_API_KEY`                      | Chave global do Gemini, para quem não cadastrou a própria                                          |
+| `GEMINI_MODEL`                        | Modelo inicial de geração (Google); o administrador troca em Configurações                         |
+| `SUBTITLE_DOWNLOADS_PER_USER_PER_DAY` | Padrão do teto de downloads por conta; o administrador pode trocar no perfil                       |
+| `KOKORO_URL`                          | Padrão do endereço do Kokoro; o administrador pode trocar no perfil                                |
+| `DATA_DIR`                            | Diretório das legendas e dos áudios (padrão `data`, fora do git)                                   |
+| `DEIXA_CONFIG_DIR`                    | Pasta de `master-key.txt`, `database-url.txt` e dos arquivos locais da casca                       |
+| `SESSION_COOKIE_SECURE`               | `true` por padrão; `false` permite entrar por HTTP na rede interna                                 |
+| `DEV_SHORTCUTS`                       | `true` mostra o atalho de arquivos de exemplo                                                      |
+| `JOBS_MODE`                           | `inline` (padrão) roda os jobs no próprio servidor; `worker` deixa para o `pnpm worker`            |
+| `LYRICS_PROVIDER`                     | `lrclib` (padrão) busca letras sincronizadas no LRCLIB; `fake` usa letras fictícias (testes e e2e) |
+| `JOBS_POLL_MS`                        | Intervalo do worker entre consultas à fila (padrão 2000)                                           |
 
 ### Chaves de API
 

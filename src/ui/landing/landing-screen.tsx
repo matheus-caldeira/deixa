@@ -14,6 +14,7 @@ import {
   LockIcon,
   MarkerIcon,
   MicIcon,
+  MusicIcon,
   TargetIcon,
 } from "../icons";
 import { Logo } from "../shell/logo";
@@ -32,6 +33,7 @@ const FEATURES: { key: string; icon: ReactNode }[] = [
   { key: "read", icon: <MarkerIcon /> },
   { key: "cards", icon: <CardsIcon /> },
   { key: "study", icon: <TargetIcon /> },
+  { key: "music", icon: <MusicIcon /> },
   { key: "talk", icon: <ChatIcon /> },
   { key: "voice", icon: <MicIcon /> },
   { key: "progress", icon: <ChartIcon /> },
@@ -172,6 +174,29 @@ export function LandingScreen() {
         </div>
       </section>
 
+      <section className="landing-band">
+        <figure className="card landing-example" aria-label={t("music.label")}>
+          <span className="eyebrow">{t("music.time")}</span>
+          <p className="muted">{t("music.line1")}</p>
+          <p>
+            <strong>{t("music.line2")}</strong>
+          </p>
+          <p className="muted small">{t("music.translation")}</p>
+          <p className="muted">{t("music.line3")}</p>
+          <figcaption className="note">{t("music.caption")}</figcaption>
+        </figure>
+        <div className="col" style={{ gap: 10 }}>
+          <span className="eyebrow">{t("music.eyebrow")}</span>
+          <h2>{t("music.title")}</h2>
+          <p className="muted">{t("music.body", app)}</p>
+          <ul className="landing-list">
+            <li>{t("music.point1")}</li>
+            <li>{t("music.point2")}</li>
+            <li>{t("music.point3")}</li>
+          </ul>
+        </div>
+      </section>
+
       <section className="col" style={{ gap: 22 }}>
         <div className="col" style={{ gap: 8 }}>
           <span className="eyebrow">{t("modes.eyebrow")}</span>
@@ -219,6 +244,7 @@ export function LandingScreen() {
           {t("footer.privacy")}
         </Link>
         <span>{t("footer.tmdb")}</span>
+        <span>{t("footer.lyrics")}</span>
       </footer>
     </div>
   );

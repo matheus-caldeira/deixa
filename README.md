@@ -4,10 +4,10 @@
 
 # Deixa
 
-**Aprenda um idioma com as séries e os filmes que você já assiste.**
+**Aprenda um idioma com as séries, os filmes e as músicas que você já curte.**
 
-Leia o episódio inteiro, marque o que não entendeu, transforme as marcações em revisão e converse com um tutor,
-por texto ou por voz.
+Leia o episódio inteiro ou acompanhe a letra do clipe, marque o que não entendeu, transforme as marcações em
+revisão e converse com um tutor, por texto ou por voz.
 
 [![CI](https://github.com/matheus-caldeira/deixa/actions/workflows/ci.yml/badge.svg)](https://github.com/matheus-caldeira/deixa/actions/workflows/ci.yml)
 [![Versão](https://img.shields.io/github/v/release/matheus-caldeira/deixa?label=vers%C3%A3o&color=2F43D6)](https://github.com/matheus-caldeira/deixa/releases)
@@ -21,7 +21,7 @@ por texto ou por voz.
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![PGlite](https://img.shields.io/badge/PGlite-0.5-4169E1?logo=postgresql&logoColor=white)
 
-[Motivação](#motivação) · [Como funciona](#como-funciona) · [O que ele faz](#o-que-ele-faz) ·
+[Motivação](#motivação) · [Como funciona](#como-funciona) · [Músicas](#músicas) · [O que ele faz](#o-que-ele-faz) ·
 [Dois jeitos de usar](#dois-jeitos-de-usar) · [Instalar](#instalar) · [Como usar](#como-usar) ·
 [Desenvolvimento](#desenvolvimento) · [Direitos autorais](#direitos-autorais-e-pirataria) · [Licença](#licença)
 
@@ -80,11 +80,31 @@ explicar o termo (etiqueta **IA**).
 uma trilha de exercícios, montada com as falas dele e dosada pelo seu nível (A1 a C2). Quando você conclui um
 episódio, a recapitulação volta em 1, 7 e 30 dias.
 
+## Músicas
+
+Também dá para estudar com clipes. Cole o link do vídeo no YouTube, informe artista e título e escolha a letra
+sincronizada que o Deixa encontrar. O clipe toca em cima e a letra rola embaixo, com a linha atual em destaque,
+como numa cifra que acompanha a música. Tocar num verso leva o vídeo até ele.
+
+- **Playlists.** Cada conta começa com "Minhas músicas" e pode criar outras. Cada playlist é uma obra do
+  catálogo e cada música é um episódio dela, então leitura, marcação, cards, trilha e pacote funcionam igual.
+- **Letra com tempos.** Vem do [LRCLIB](https://lrclib.net), sem chave, no formato LRC. Você também pode colar
+  uma letra LRC.
+- **Tradução.** A IA traduz a letra linha a linha numa única chamada, e cada verso traduzido herda o tempo do
+  original (etiqueta **IA**). Se preferir, cole a sua tradução, uma linha por verso.
+- **Sincronia.** Clipe com introdução? Ajuste o atraso inicial (±0,1 s e ±0,5 s), use "a primeira linha começa
+  agora" com o vídeo tocando e adicione pausas no meio do clipe. Só quem criou a playlist salva.
+- **Modos de exibição.** Os dois idiomas, tradução ao tocar, só o idioma de estudo ou só o idioma base.
+
+A decisão e as alternativas pesquisadas (Musixmatch, Genius, NetEase) estão no
+[ADR 0024](.contexts/engineering/decisions/0024-musica-letra-sincronizada.md).
+
 ## O que ele faz
 
 | Área              | O que você faz                                                                                                       |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------- |
 | **Explorar**      | Monta o catálogo de séries e filmes por temporada e episódio e recebe sugestões pelo seu gosto e pelo seu nível      |
+| **Músicas**       | Toca o clipe do YouTube com a letra sincronizada rolando embaixo, tradução por verso e ajuste de sincronia           |
 | **Ler**           | Lê o episódio com os dois idiomas alinhados, em três modos de exibição, ouve cada fala e marca palavras e expressões |
 | **Cards**         | Transforma as marcações em cards com significado, pronúncia e exemplo, só para você ou para o catálogo da casa       |
 | **Estudar**       | Segue a trilha do episódio ou a trilha da obra inteira, com seletor de temporada                                     |
@@ -169,17 +189,20 @@ qualquer hospedagem estática. O [`vercel.json`](vercel.json) já traz os cabeç
 6. **Traga a legenda.** Envie os seus arquivos `.srt` ou busque no OpenSubtitles com a sua chave. Nada é
    baixado sem você confirmar. Se tiver o roteiro em `.txt`, ele completa as falas cortadas.
 7. **Leia e marque.** Toque nas palavras que não conhece.
-8. **Gere os cards e estude.** Os cards entram na revisão, e a trilha do episódio aparece no Início.
-9. **Converse.** Em Conversar, escolha um tema e fale com o tutor. O botão "Chamada de voz" deixa a conversa
-   toda por áudio.
+8. **Ou escolha uma música.** Em Explorar, abra "Músicas", toque em "+" na playlist e cole o link do clipe.
+   Ajuste a sincronia se o vídeo tiver introdução.
+9. **Gere os cards e estude.** Os cards entram na revisão, e a trilha do episódio aparece no Início.
+10. **Converse.** Em Conversar, escolha um tema e fale com o tutor. O botão "Chamada de voz" deixa a conversa
+    toda por áudio.
 
 ### Chaves de API
 
-| Serviço            | Para quê                                                    | Sem a chave                               |
-| ------------------ | ----------------------------------------------------------- | ----------------------------------------- |
-| **TMDB**           | Buscar séries, filmes, temporadas e imagens                 | Só as obras de demonstração               |
-| **OpenSubtitles**  | Buscar e baixar legendas quando você pede                   | Envio manual dos arquivos `.srt`          |
-| **Provedor de IA** | Explicar termos, montar trilhas, sugerir obras, tutor e voz | Explicações simuladas; a revisão funciona |
+| Serviço            | Para quê                                                                     | Sem a chave                                           |
+| ------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **TMDB**           | Buscar séries, filmes, temporadas e imagens                                  | Só as obras de demonstração                           |
+| **OpenSubtitles**  | Buscar e baixar legendas quando você pede                                    | Envio manual dos arquivos `.srt`                      |
+| **Provedor de IA** | Explicar termos, traduzir letras, montar trilhas, sugerir obras, tutor e voz | Explicações e traduções simuladas; a revisão funciona |
+| **LRCLIB**         | Letras sincronizadas das músicas (não precisa de chave)                      | Colar a letra em LRC                                  |
 
 As chaves ficam cifradas com AES-256-GCM e nunca voltam para o navegador. A chave da conta vence a chave global
 da instalação, que só o administrador altera.
@@ -267,7 +290,10 @@ Documentação:
 
 **O Deixa não distribui, não hospeda e não dá acesso a séries, filmes nem legendas.**
 
-- O aplicativo **não reproduz vídeo**. Ele trabalha só com texto de legenda.
+- O aplicativo **não hospeda vídeo**. Séries e filmes ficam só no texto da legenda; os clipes de música tocam
+  pelo player oficial do YouTube, embutido na página, a partir do link que você cola.
+- **Letras de música também têm direitos autorais.** A letra é buscada no LRCLIB quando você adiciona a música e
+  fica só na sua instalação. O repositório guarda apenas os ids dos clipes de demonstração, nunca a letra.
 - O repositório e os instaladores **não trazem nenhuma legenda real**. Os exemplos são diálogos fictícios,
   escritos para o projeto.
 - As legendas que você usa são **suas**: você envia os arquivos ou as busca no OpenSubtitles com a sua própria
@@ -296,6 +322,8 @@ Cada serviço externo fica atrás de uma interface (`MetadataProvider`, `LlmProv
 - Publicar o modo pessoal e testar no Safari e no iPhone.
 - Testar a chamada de voz com chave real no celular.
 - Exportar os níveis do catálogo do TMDB também no modo pessoal.
+- Músicas: licença comercial de letras antes de abrir o catálogo, destaque palavra a palavra (karaokê) e
+  detecção automática do atraso inicial do clipe.
 
 ## Licença
 
@@ -315,6 +343,8 @@ completo, que é o que vale, está em [LICENSE.md](LICENSE.md).
   endorsed or certified by TMDB.
 - Busca de legendas a pedido do usuário: [OpenSubtitles](https://www.opensubtitles.com).
 - Voz local: [Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI).
+- Letras sincronizadas: [LRCLIB](https://lrclib.net).
+- Clipes: player incorporado do [YouTube](https://www.youtube.com).
 - Banco no navegador: [PGlite](https://pglite.dev).
 - Fontes Bricolage Grotesque, Figtree e JetBrains Mono, sob a licença OFL.
 
